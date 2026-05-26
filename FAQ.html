@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,
+                   initial-scale=1.0">
+    <title>Bizen HT - FAQ</title>
+    <link rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #e91e63;
+            --secondary: #9c27b0;
+            --gold: #ffd700;
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0c0;
+            --text-muted: #6a6a80;
+            --border: #2a2a3a;
+            --radius: 12px;
+            --radius-lg: 20px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat',
+                         sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            background: rgba(10,10,15,0.97);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid
+                var(--border);
+            padding: 15px 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+        }
+
+        .nav-c {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .logo-i {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(
+                135deg,
+                var(--primary),
+                var(--secondary)
+            );
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .logo-t {
+            font-family: 'Playfair Display',
+                         serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .logo-ht {
+            background: linear-gradient(
+                135deg,
+                var(--primary),
+                var(--secondary)
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color:
+                transparent;
+        }
+
+        .nav-back {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+
+        .nav-back:hover {
+            color: var(--primary);
+        }
+
+        /* HERO */
+        .faq-hero {
+            padding: 120px 20px 60px;
+            text-align: center;
+            background: radial-gradient(
+                ellipse at 50% 50%,
+                rgba(233,30,99,0.1) 0%,
+                transparent 60%
+            );
+        }
+
+        .faq-hero h1 {
+            font-family: 'Playfair Display',
+                         serif;
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .faq-hero p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            max-width: 600px;
+            margin: 0 auto 30px;
+            line-height: 1.7;
+        }
+
+        /* SEARCH */
+        .faq-search {
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .faq-search input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            color: white;
+            font-family: 'Montserrat',
+                         sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .faq-search input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px
+                rgba(233,30,99,0.2);
+        }
+
+        .faq-search i {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        /* CATEGORIES */
+        .faq-cats {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 30px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .cat-btn {
+            padding: 8px 22px;
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: 'Montserrat',
+                         sans-serif;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .cat-btn:hover,
+        .cat-btn.active {
+            background: linear-gradient(
+                135deg,
+                var(--primary),
+                var(--secondary)
+            );
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* FAQ CONTAINER */
+        .faq-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px 80px;
+        }
+
+        /* SECTION TITLE */
+        .faq-section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            margin-top: 40px;
+        }
+
+        .faq-section-title i {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(
+                135deg,
+                var(--primary),
+                var(--secondary)
+            );
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .faq-section-title h2 {
+            font-family: 'Playfair Display',
+                         serif;
+            font-size: 1.4rem;
+        }
+
+        /* FAQ ITEM */
+        .faq-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .faq-item.open {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px
+                rgba(233,30,99,0.15);
+        }
+
+        .faq-question {
+            width: 100%;
+            padding: 20px 22px;
+            background: none;
+            border: none;
+            color: white;
+            font-family: 'Montserrat',
+                         sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            text-align: left;
+            transition: all 0.3s;
+        }
+
+        .faq-question:hover {
+            color: var(--primary);
+        }
+
+        .faq-item.open .faq-question {
+            color: var(--primary);
+        }
+
+        .faq-question .faq-icon {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.3s;
+            font-size: 0.75rem;
+        }
+
+        .faq-item.open .faq-icon {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: rotate(45deg);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s
+                cubic-bezier(0, 1, 0, 1);
+        }
+
+        .faq-item.open .faq-answer {
+            max-height: 1000px;
+            transition: max-height 0.4s
+                ease-in-out;
+        }
+
+        .faq-answer-inner {
+            padding: 0 22px 22px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.8;
+            border-top: 1px solid
+                var(--border);
+            padding-top: 18px;
+        }
+
+        .faq-answer-inner strong {
+            color: var(--primary);
+        }
+
+        .faq-answer-inner ul {
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+
+        .faq-answer-inner li {
+            margin-bottom: 6px;
+        }
+
+        /* CONTACT CTA */
+        .faq-cta {
+            background: linear-gradient(
+                135deg,
+                rgba(233,30,99,0.1),
+                rgba(156,39,176,0.1)
+            );
+            border: 1px solid
+                rgba(233,30,99,0.3);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .faq-cta h3 {
+            font-family: 'Playfair Display',
+                         serif;
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+
+        .faq-cta p {
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+        }
+
+        .faq-cta-btns {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-wa {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: #25D366;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Montserrat',
+                         sans-serif;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn-mail {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Montserrat',
+                         sans-serif;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        /* HIDDEN */
+        .faq-item.hidden-faq {
+            display: none;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .faq-hero h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-c">
+            <a href="index.html" class="logo">
+                <span class="logo-i">
+                    <i class="fas fa-heart"></i>
+                </span>
+                <span class="logo-t">
+                    Bizen<span class="logo-ht">
+                        HT
+                    </span>
+                </span>
+            </a>
+            <a href="index.html"
+               class="nav-back">
+                <i class="fas fa-arrow-left"></i>
+                Retounen sou Sit la
+            </a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <div class="faq-hero">
+        <h1>
+            <span style="background:
+            linear-gradient(135deg,
+            var(--primary),
+            var(--secondary));
+            -webkit-background-clip:text;
+            -webkit-text-fill-color:
+            transparent">
+                FAQ
+            </span>
+            - Kesyon Reponn
+        </h1>
+        <p>
+            Tout kesyon ou ta ka genyen
+            sou Bizen HT - nou reponn yo
+            klè ak onèt.
+        </p>
+
+        <!-- SEARCH -->
+        <div class="faq-search">
+            <i class="fas fa-search"></i>
+            <input type="text"
+                   id="faqSearch"
+                   placeholder="Chache yon kesyon..."
+                   oninput="searchFAQ(this.value)">
+        </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="faq-cats">
+        <button class="cat-btn active"
+                onclick="filterCat('all',this)">
+            Tout
+        </button>
+        <button class="cat-btn"
+                onclick="filterCat(
+                    'general',this
+                )">
+            <i class="fas fa-question"></i>
+            Jeneral
+        </button>
+        <button class="cat-btn"
+                onclick="filterCat(
+                    'compte',this
+                )">
+            <i class="fas fa-user"></i>
+            Kont
+        </button>
+        <button class="cat-btn"
+                onclick="filterCat(
+                    'premium',this
+                )">
+            <i class="fas fa-crown"></i>
+            Premium
+        </button>
+        <button class="cat-btn"
+                onclick="filterCat(
+                    'reservation',this
+                )">
+            <i class="fas fa-calendar"></i>
+            Rezevasyon
+        </button>
+        <button class="cat-btn"
+                onclick="filterCat(
+                    'prestate',this
+                )">
+            <i class="fas fa-star"></i>
+            Prestate
+        </button>
+        <button class="cat-btn"
+                onclick="filterCat(
+                    'krey',this
+                )">
+            <i class="fas fa-users"></i>
+            Krèy
+        </button>
+        <button class="cat-btn"
+                onclick="filterCat(
+                    'peman',this
+                )">
+            <i class="fas fa-mobile-alt"></i>
+            Peman
+        </button>
+        <button class="cat-btn"
+                onclick="filterCat(
+                    'sekirite',this
+                )">
+            <i class="fas fa-shield-alt"></i>
+            Sekirite
+        </button>
+    </div>
+
+    <!-- FAQ CONTENT -->
+    <div class="faq-container">
+
+        <!-- SECTION GENERALE -->
+        <div class="faq-section-title"
+             data-cat="general">
+            <i class="fas fa-question"></i>
+            <h2>Kesyon Jeneral</h2>
+        </div>
+
+        <div class="faq-item"
+             data-cat="general">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Kisa Bizen HT ye egzakteman?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Bizen HT se yon platfòm
+                    Ayisyen ki mete granmoun
+                    an kontak pou pase bon
+                    moman ansanm. Se tankou
+                    yon sit randevou espesyal
+                    kote ou ka jwenn yon
+                    prestatè oswa yon gwoup
+                    (Krèy) pou akonpaye ou
+                    nan yon moman romantik,
+                    pou yon dine, yon sware,
+                    oswa nenpòt moman ou vle
+                    pataje ak yon moun.
+                    <br><br>
+                    <strong>Diferans ak yon
+                    sit randevou nòmal :</strong>
+                    Isit la, ou pa chache
+                    yon amou pèmanan. Ou peye
+                    pou yon moman espesyal,
+                    diskrè, epi pwofesyonèl.
+                    Hotel inclus nan chak
+                    rezevasyon (pou prestatè
+                    endividyèl).
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="general">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Èske Bizen HT legal an Ayiti?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Bizen HT se yon sèvis
+                    konpayon legal. Nou pa
+                    bay sèvis ilegal. Tout
+                    prestatè yo se granmoun
+                    (18 an+) ki chwazi
+                    volontèman pou ofri
+                    konpayi yo pou moman
+                    romantik ak detant.
+                    <br><br>
+                    Platfòm nan travay nan
+                    kad legal pou sevis
+                    konpayon ak esòt - ki
+                    diferan de aktivite
+                    ilegal. Tout manm dwe
+                    gen 18 an oswa plis pou
+                    yo ka itilize sèvis la.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="general">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Bizen HT disponib nan ki
+                zòn an Ayiti?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Aktyèlman nou gen prestatè
+                    nan plizyè zòn :
+                    <ul>
+                        <li>Pòtoprens</li>
+                        <li>Pétion-Ville</li>
+                        <li>Delmas</li>
+                        <li>Tabarre</li>
+                        <li>Carrefour</li>
+                        <li>Kap-Ayisyen</li>
+                        <li>Les Cayes</li>
+                        <li>Jacmel</li>
+                    </ul>
+                    Nou ap grandi chak jou!
+                    Si zòn ou pa nan lis la,
+                    kontakte nou - nou ka
+                    jwenn yon solisyon.
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION KONT -->
+        <div class="faq-section-title"
+             data-cat="compte">
+            <i class="fas fa-user"></i>
+            <h2>Kont ak Enskripsyon</h2>
+        </div>
+
+        <div class="faq-item"
+             data-cat="compte">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Kijan pou mwen kreye yon kont?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Gen 2 fason pou kreye
+                    kont ou :
+                    <ul>
+                        <li>
+                            <strong>Google :</strong>
+                            Klike "Kontinye ak
+                            Google" - pi rapid,
+                            pa bezwen modpas
+                        </li>
+                        <li>
+                            <strong>Imel :</strong>
+                            Antre imel ou ak
+                            yon modpas (6
+                            karaktè minimum)
+                        </li>
+                    </ul>
+                    Kont kliyan kreye
+                    otomatikman. Kont prestatè
+                    bezwen validasyon nan
+                    ekip nou (24-48 èdtan).
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="compte">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Mwen bliye modpas mwen, kisa
+                mwen fè?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Klike sou
+                    <strong>"Bliye modpas?"</strong>
+                    nan paj koneksyon an.
+                    Antre imel ou epi ou pral
+                    resevwa yon lyen
+                    reyinisyalizasyon nan
+                    kèk minit.
+                    <br><br>
+                    Si ou pa resevwa imèl la,
+                    tcheke dosye SPAM ou oswa
+                    kontakte nou sou WhatsApp.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="compte">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Èske mwen ka chanje imel mwen?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Wi, ou ka chanje imel ou
+                    nan seksyon
+                    <strong>Paramèt</strong>
+                    nan dashboard ou. Pou
+                    rezon sekirite, ou pral
+                    bezwen konfime chanjman an
+                    ak modpas aktyèl ou.
+                    <br><br>
+                    Oswa kontakte nou
+                    direkteman ak prèv
+                    idantite ou.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="compte">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Kijan pou mwen efase kont mwen?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Pou efase kont ou,
+                    kontakte nou pa imel nan
+                    <strong>
+                        bizenht@gmail.com
+                    </strong>
+                    ak sijè "Efase Kont" ak
+                    imel kont ou. Nou ap
+                    efase tout done ou nan
+                    72 èdtan.
+                    <br><br>
+                    Nòt : Si ou gen yon
+                    abònman Premium aktif,
+                    li pa ka ranbouse.
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION PREMIUM -->
+        <div class="faq-section-title"
+             data-cat="premium">
+            <i class="fas fa-crown"></i>
+            <h2>Membership Premium</h2>
+        </div>
+
+        <div class="faq-item"
+             data-cat="premium">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Kisa Premium ban mwen ki
+                diferan de gratis?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    <strong>Akse Gratis :</strong>
+                    <ul>
+                        <li>
+                            Wè kèk pwofil
+                            (limite)
+                        </li>
+                        <li>
+                            Wè foto ak videyo
+                            galri
+                        </li>
+                        <li>Wè pri yo</li>
+                    </ul>
+                    <br>
+                    <strong>Premium (1,000 Gdes):</strong>
+                    <ul>
+                        <li>
+                            Tout pwofil konplè
+                            debloke
+                        </li>
+                        <li>
+                            Foto ak videyo klè
+                        </li>
+                        <li>
+                            Rezève nenpòt
+                            prestatè
+                        </li>
+                        <li>
+                            Hotel inclus
+                            otomatikman
+                        </li>
+                        <li>
+                            Chwazi dat ak
+                            pozisyon
+                        </li>
+                        <li>Sipò prioritè 24/7</li>
+                        <li>Badge VIP</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="premium">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Premium lan dire konbyen
+                tan?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Premium Bizen HT se yon
+                    <strong>peman inik</strong>
+                    - ou peye 1,000 Gdes yon
+                    sèl fwa epi ou gen akse
+                    <strong>pou toujou</strong>.
+                    Pa gen abònman mwa, pa gen
+                    renouvèlman otomatik.
+                    <br><br>
+                    Ou peye yon fwa, ou jwenn
+                    akse pèmanan!
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="premium">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Èske Premium ka ranbouse?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Malereuseman, Premium pa
+                    ranbousab apre aktivasyon.
+                    Men nou ofri yon garanti:
+                    <br><br>
+                    Si ou gen yon pwoblèm
+                    teknik ki anpeche ou
+                    itilize sèvis la nan
+                    premye 48 èdtan, kontakte
+                    nou epi nou ap jwenn yon
+                    solisyon pou ou.
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION RESERVATION -->
+        <div class="faq-section-title"
+             data-cat="reservation">
+            <i class="fas fa-calendar"></i>
+            <h2>Rezevasyon</h2>
+        </div>
+
+        <div class="faq-item"
+             data-cat="reservation">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Kijan rezevasyon an fonksyone?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Pwosesis la senp :
+                    <ul>
+                        <li>
+                            Chwazi yon prestatè
+                            ou renmen
+                        </li>
+                        <li>
+                            Klike "Rezève"
+                            (bezwen Premium)
+                        </li>
+                        <li>
+                            Chwazi dat, lè,
+                            ak opsyon hotel
+                        </li>
+                        <li>
+                            Konfime rezevasyon
+                            an
+                        </li>
+                        <li>
+                            Ekip nou kontakte
+                            ou pa WhatsApp/SMS
+                            pou konfime detay
+                            yo
+                        </li>
+                    </ul>
+                    Rezevasyon konfime nan
+                    kèk minit jeneralman.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="reservation">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Kisa "Hotel Inclus" vle di?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Pou rezevasyon prestatè
+                    endividyèl, pri rezevasyon
+                    an <strong>deja enkli</strong>
+                    yon chanm nan yon hotel
+                    patnè Bizen HT.
+                    <br><br>
+                    Ou ka tou :
+                    <ul>
+                        <li>
+                            Chwazi hotel patnè
+                            nou (GRATIS - inclus)
+                        </li>
+                        <li>
+                            Chwazi pwòp hotel pa
+                            ou (fre chanm sou
+                            kont ou)
+                        </li>
+                    </ul>
+                    Hotel patnè yo nan tout
+                    zòn prensip yo an Ayiti.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="reservation">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Èske mwen ka anile yon
+                rezevasyon?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Wi, ou ka anile yon
+                    rezevasyon
+                    <strong>
+                        anvan 24 èdtan
+                    </strong>
+                    anvan dat rezevasyon
+                    an san pènalite.
+                    <br><br>
+                    Anilasyon mwens pase
+                    24 èdtan ka enkouri yon
+                    frè kanselasyon.
+                    Kontakte nou rapidman
+                    si ou bezwen anile.
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION PRESTATE -->
+        <div class="faq-section-title"
+             data-cat="prestate">
+            <i class="fas fa-star"></i>
+            <h2>Prestatè</h2>
+        </div>
+
+        <div class="faq-item"
+             data-cat="prestate">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Kijan pou mwen vin yon
+                prestatè sou Bizen HT?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Pou vin prestatè :
+                    <ul>
+                        <li>
+                            Klike "Enskri" →
+                            Chwazi "Prestatè"
+                        </li>
+                        <li>
+                            Ranpli fòmilè a
+                            (non, deskripsyon,
+                            pri, foto...)
+                        </li>
+                        <li>
+                            Voye demann lan
+                        </li>
+                        <li>
+                            Ekip nou revize
+                            demann ou nan
+                            24-48 èdtan
+                        </li>
+                        <li>
+                            Si ou aksepte, kont
+                            ou aktive
+                            otomatikman
+                        </li>
+                    </ul>
+                    <strong>Kondisyon :</strong>
+                    18 an+, foto otantik,
+                    ak akseptasyon règleman
+                    nou yo.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="prestate">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Konbyen komisyon Bizen HT
+                pran sou chak rezevasyon?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Bizen HT pran yon komisyon
+                    de <strong>10%</strong>
+                    sou chak rezevasyon.
+                    <br><br>
+                    <strong>Egzanp :</strong>
+                    Si ou mete pri ou a
+                    5,000 Gdes :
+                    <ul>
+                        <li>
+                            Ou resevwa :
+                            <strong>4,500 Gdes</strong>
+                        </li>
+                        <li>
+                            Komisyon Bizen HT :
+                            500 Gdes
+                        </li>
+                    </ul>
+                    Komisyon sa a kouvri
+                    sèvis platfòm nan, hotel
+                    patnè yo, ak sipò kliyan.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="prestate">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Kijan mwen resevwa lajan mwen?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Apre chak rezevasyon
+                    konfime, lajan ou (90%
+                    du pri) ajoute nan
+                    <strong>solde</strong>
+                    ou nan dashboard ou.
+                    <br><br>
+                    Ou ka mande retrè a
+                    nenpòt lè via MonCash.
+                    Retrè trete nan 24-48
+                    èdtan jou travay.
+                    <br><br>
+                    Montan minimòm retrè :
+                    <strong>500 Gdes</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION KREY -->
+        <div class="faq-section-title"
+             data-cat="krey">
+            <i class="fas fa-users"></i>
+            <h2>Gwoup Krèy</h2>
+        </div>
+
+        <div class="faq-item"
+             data-cat="krey">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Kisa yon Krèy ye sou
+                Bizen HT?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Yon
+                    <strong>Krèy</strong>
+                    se yon gwoup de plizyè
+                    prestatè (2 a 10 moun)
+                    ki travay ansanm pou
+                    ofri yon eksperyans
+                    plis entans ak inoubliab.
+                    <br><br>
+                    Pou rezevasyon Krèy,
+                    ou pa gen hotel inclus -
+                    ou chwazi kote ou vle
+                    resevwa gwoup la :
+                    lakay ou, nan yon hotel
+                    ou chwazi, oswa yon lòt
+                    kote.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="krey">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Kijan pri Krèy la
+                kalkile?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Pri Krèy la se yon
+                    pri total pou tout gwoup
+                    la - pa pa moun.
+                    <br><br>
+                    <strong>Egzanp :</strong>
+                    Krèy 3 moun ak pri
+                    15,000 Gdes vle di ou
+                    peye 15,000 Gdes pou tout
+                    gwoup la ansanm, pa 15,000
+                    chak.
+                    <br><br>
+                    Bizen HT pran 10%
+                    komisyon sou pri total la.
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION PEMAN -->
+        <div class="faq-section-title"
+             data-cat="peman">
+            <i class="fas fa-mobile-alt"></i>
+            <h2>Peman</h2>
+        </div>
+
+        <div class="faq-item"
+             data-cat="peman">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Ki metòd peman nou aksepte?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Aktyèlman, nou aksepte
+                    sèlman :
+                    <ul>
+                        <li>
+                            <strong>MonCash</strong>
+                            (Digicel) - Peman
+                            otomatik via Bazik.io
+                        </li>
+                    </ul>
+                    Nou travay pou ajoute plis
+                    metòd peman soon (NatCash,
+                    virement bancaire, etc.)
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="peman">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Peman an segire?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Wi! Tout peman sou Bizen
+                    HT pwoteje pa :
+                    <ul>
+                        <li>
+                            <strong>MonCash</strong>
+                            - Sistèm peman
+                            Digicel a ki
+                            gen bon reputasyon
+                        </li>
+                        <li>
+                            <strong>Bazik.io</strong>
+                            - Entèmedyè
+                            peman serye
+                        </li>
+                        <li>
+                            <strong>HTTPS</strong>
+                            - Tout done chifre
+                        </li>
+                    </ul>
+                    Nou pa janm stoke
+                    enfòmasyon kat bank ou.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="peman">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Mwen peye men Premium pa
+                aktive, kisa mwen fè?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Pa panike! Gen 2 rezon
+                    posib :
+                    <ul>
+                        <li>
+                            Sistèm nan ka pran
+                            jiska 5 minit pou
+                            konfime otomatikman
+                        </li>
+                        <li>
+                            Si ou te peye
+                            manyèlman, ekip nou
+                            bezwen verifye
+                            referans ou a
+                        </li>
+                    </ul>
+                    Si apre 30 minit ou
+                    toujou pa gen Premium,
+                    kontakte nou sou WhatsApp
+                    ak <strong>referans
+                    tranzaksyon MonCash
+                    ou a</strong> epi nou ap
+                    aktive kont ou imedyatman.
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION SEKIRITE -->
+        <div class="faq-section-title"
+             data-cat="sekirite">
+            <i class="fas fa-shield-alt"></i>
+            <h2>Sekirite ak Diskresyon</h2>
+        </div>
+
+        <div class="faq-item"
+             data-cat="sekirite">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Èske yo ka konnen mwen sou
+                Bizen HT?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Diskresyon se yon pilye
+                    Bizen HT. Nou garanti :
+                    <ul>
+                        <li>
+                            Nou pa pataje
+                            enfòmasyon ou ak
+                            pèsonn
+                        </li>
+                        <li>
+                            Kont ou pa
+                            parèt piblikman
+                        </li>
+                        <li>
+                            Foto yo proteje
+                            ak flou pou
+                            kont gratis
+                        </li>
+                        <li>
+                            Rezevasyon ou
+                            konfidansyèl
+                            100%
+                        </li>
+                        <li>
+                            Nou itilize HTTPS
+                            pou tout done
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="sekirite">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Kijan ou verifye ke prestatè
+                yo reyèl?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Chak prestatè pase nan
+                    yon pwosesis verifikasyon
+                    manyèl :
+                    <ul>
+                        <li>
+                            Revizyon foto ak
+                            videyo pou
+                            otantisyte
+                        </li>
+                        <li>
+                            Verifikasyon laj
+                            (18 an+)
+                        </li>
+                        <li>
+                            Revizyon deskripsyon
+                            ak enfòmasyon
+                        </li>
+                        <li>
+                            Apwobasyon manyèl
+                            pa ekip nou
+                        </li>
+                    </ul>
+                    Pwofil ki pa pase
+                    verifikasyon yo pa janm
+                    parèt sou platfòm nan.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item"
+             data-cat="sekirite">
+            <button class="faq-question"
+                    onclick="togFaq(this)">
+                Kisa mwen fè si yon prestatè
+                konpòte l mal?
+                <span class="faq-icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-inner">
+                    Sekirite kliyan yo se
+                    priyorite nòmero 1 nou.
+                    Si ou gen yon pwoblèm :
+                    <ul>
+                        <li>
+                            Kontakte nou
+                            <strong>imedyatman</strong>
+                            sou WhatsApp
+                        </li>
+                        <li>
+                            Bay tout detay
+                            sou sa ki te pase
+                        </li>
+                        <li>
+                            Ekip nou ap
+                            envestige nan 24h
+                        </li>
+                        <li>
+                            Kont prestatè a
+                            ka jele oswa efase
+                            si nesesè
+                        </li>
+                    </ul>
+                    Nou pran tout rapò
+                    seryeuseman.
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTACT CTA -->
+        <div class="faq-cta">
+            <h3>Pa jwenn repons ou?</h3>
+            <p>
+                Ekip Bizen HT disponib pou
+                reponn tout kesyon ou yo.
+                Kontakte nou dirèkteman!
+            </p>
+            <div class="faq-cta-btns">
+                <a href="https://wa.me/50947464283?text=Bonjou%20Bizen%20HT"
+                   target="_blank"
+                   class="btn-wa">
+                    <i class="fab fa-whatsapp"></i>
+                    WhatsApp
+                </a>
+                <a href="mailto:bizenht@gmail.com.com"
+                   class="btn-mail">
+                    <i class="fas fa-envelope"></i>
+                    Bizenht@gmail.com
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+    /* ====================================
+       FAQ TOGGLE
+       ==================================== */
+    function togFaq(btn) {
+        var item = btn.parentElement;
+        var isOpen =
+            item.classList.contains("open");
+
+        /* Close all */
+        var all = document.querySelectorAll(
+            ".faq-item"
+        );
+        for (var i = 0; i < all.length; i++) {
+            all[i].classList.remove("open");
+        }
+
+        /* Open clicked if was closed */
+        if (!isOpen) {
+            item.classList.add("open");
+            /* Scroll into view */
+            setTimeout(function () {
+                item.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest"
+                });
+            }, 100);
+        }
+    }
+
+    /* ====================================
+       SEARCH FAQ
+       ==================================== */
+    function searchFAQ(query) {
+        var q = query.toLowerCase().trim();
+        var items = document.querySelectorAll(
+            ".faq-item"
+        );
+
+        items.forEach(function (item) {
+            var text =
+                item.textContent.toLowerCase();
+            if (q === "" ||
+                text.includes(q)) {
+                item.classList
+                    .remove("hidden-faq");
+            } else {
+                item.classList
+                    .add("hidden-faq");
+            }
+        });
+
+        /* Also show/hide section titles */
+        var sections =
+            document.querySelectorAll(
+                ".faq-section-title"
+            );
+        sections.forEach(function (sec) {
+            sec.style.display = "";
+        });
+    }
+
+    /* ====================================
+       FILTER BY CATEGORY
+       ==================================== */
+    function filterCat(cat, btn) {
+        /* Update active button */
+        var btns = document.querySelectorAll(
+            ".cat-btn"
+        );
+        btns.forEach(function (b) {
+            b.classList.remove("active");
+        });
+        btn.classList.add("active");
+
+        /* Clear search */
+        var search =
+            document.getElementById(
+                "faqSearch"
+            );
+        if (search) search.value = "";
+
+        /* Filter items */
+        var items = document.querySelectorAll(
+            ".faq-item"
+        );
+        items.forEach(function (item) {
+            var itemCat =
+                item.getAttribute("data-cat");
+            if (cat === "all" ||
+                itemCat === cat) {
+                item.classList
+                    .remove("hidden-faq");
+            } else {
+                item.classList
+                    .add("hidden-faq");
+            }
+        });
+
+        /* Filter section titles */
+        var sections =
+            document.querySelectorAll(
+                ".faq-section-title"
+            );
+        sections.forEach(function (sec) {
+            var secCat =
+                sec.getAttribute("data-cat");
+            if (cat === "all" ||
+                secCat === cat) {
+                sec.style.display = "";
+            } else {
+                sec.style.display = "none";
+            }
+        });
+    }
+
+    /* Open first item by default */
+    var firstItem =
+        document.querySelector(".faq-item");
+    if (firstItem) {
+        firstItem.classList.add("open");
+    }
+    </script>
+</body>
+</html>

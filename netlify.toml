@@ -1,0 +1,30 @@
+[build]
+  functions = "Netlify/Functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/admin.html"
+  to = "/404.html"
+  status = 404
+
+[[redirects]]
+  from = "/admin"
+  to = "/404.html"
+  status = 404
+
+[[redirects]]
+  from = "/Vye"
+  to = "/Vye.html"
+  status = 200
+
+[[redirects]]
+  from = "/success.html"
+  to = "/?payment=success"
+  status = 302
+
+[[redirects]]
+  from = "/error.html"
+  to = "/?payment=error"
+  status = 302

@@ -1,0 +1,2274 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,
+                   initial-scale=1.0">
+    <title>Bizen HT - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary: #e91e63;
+            --secondary: #9c27b0;
+            --gold: #ffd700;
+            --bg: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-side: #0d0d15;
+            --text: #ffffff;
+            --text-muted: #6a6a80;
+            --text-sec: #b0b0c0;
+            --border: #2a2a3a;
+            --green: #4caf50;
+            --red: #f44336;
+            --orange: #ff9800;
+            --blue: #2196f3;
+            --purple: #9c27b0;
+            --radius: 12px;
+            --radius-lg: 20px;
+            --radius-full: 50px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* LOGIN */
+        #loginScreen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .login-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 50px 40px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .login-logo {
+            width: 70px; height: 70px;
+            background: var(--red);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .login-box h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+        }
+
+        .login-box > p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 30px;
+        }
+
+        .lg-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            margin-bottom: 15px;
+        }
+
+        .lg-input:focus {
+            border-color: var(--red);
+        }
+
+        .lg-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--red), #b71c1c);
+            border: none;
+            border-radius: var(--radius-full);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .lg-error {
+            color: var(--red);
+            font-size: 0.8rem;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* ADMIN PANEL */
+        #adminPanel {
+            display: none;
+            min-height: 100vh;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-side);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            top: 0; left: 0;
+            z-index: 100;
+        }
+
+        .sb-top {
+            padding: 22px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sb-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .sb-logo-ico {
+            width: 36px; height: 36px;
+            background: var(--red);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: white;
+        }
+
+        .sb-logo-txt {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .sb-logo-sub {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+
+        .sb-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(244,67,54,0.08);
+            border-radius: var(--radius);
+        }
+
+        .sb-avatar {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, var(--red), #b71c1c);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .sb-uname {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .sb-urole {
+            font-size: 0.6rem;
+            color: var(--red);
+            font-weight: 600;
+        }
+
+        .sb-nav {
+            flex: 1;
+            padding: 15px 0;
+            overflow-y: auto;
+        }
+
+        .sb-cat {
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+
+        .sb-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            color: var(--text-sec);
+            font-size: 0.83rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: 'Montserrat', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .sb-link:hover {
+            background: rgba(244,67,54,0.08);
+            color: white;
+        }
+
+        .sb-link.active {
+            background: rgba(244,67,54,0.12);
+            color: var(--red);
+            border-right: 3px solid var(--red);
+        }
+
+        .sb-link i {
+            width: 18px;
+            text-align: center;
+        }
+
+        .sb-bdg {
+            margin-left: auto;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            font-size: 0.6rem;
+            font-weight: 700;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .bdg-r { background: var(--red); color: white; }
+        .bdg-o { background: var(--orange); color: white; }
+        .bdg-g { background: var(--green); color: white; }
+        .bdg-b { background: var(--blue); color: white; }
+        .bdg-p { background: var(--gold); color: #000; }
+
+        .sb-footer {
+            padding: 12px 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .sb-logout {
+            color: var(--red) !important;
+        }
+
+        /* MAIN */
+        .main {
+            flex: 1;
+            margin-left: 260px;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        /* PAGE HEADER */
+        .ph {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .ph-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.7rem;
+        }
+
+        .ph-title span { color: var(--red); }
+
+        /* SECTIONS - CORRIGE */
+        .pg {
+            display: none;
+        }
+
+        .pg.on {
+            display: block;
+        }
+
+        /* STATS */
+        .sg {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+
+        .sc {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sc::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+        }
+
+        .sc.bl::before { background: var(--blue); }
+        .sc.rd::before { background: var(--red); }
+        .sc.gn::before { background: var(--green); }
+        .sc.gd::before { background: var(--gold); }
+        .sc.og::before { background: var(--orange); }
+        .sc.pp::before { background: var(--purple); }
+
+        .sc-ico {
+            width: 42px; height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            margin-bottom: 14px;
+        }
+
+        .sc-ico.bl { background: rgba(33,150,243,0.15); color: var(--blue); }
+        .sc-ico.rd { background: rgba(244,67,54,0.15); color: var(--red); }
+        .sc-ico.gn { background: rgba(76,175,80,0.15); color: var(--green); }
+        .sc-ico.gd { background: rgba(255,215,0,0.15); color: var(--gold); }
+        .sc-ico.og { background: rgba(255,152,0,0.15); color: var(--orange); }
+        .sc-ico.pp { background: rgba(156,39,176,0.15); color: var(--purple); }
+
+        .sc-val {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.9rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .sc-lbl {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* TABLE */
+        .tc {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: 22px;
+        }
+
+        .tc-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .tc-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tc-title i { color: var(--red); }
+
+        .tc-filters {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+
+        .tf {
+            padding: 5px 13px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-full);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .tf.active, .tf:hover {
+            background: rgba(244,67,54,0.12);
+            color: var(--red);
+            border-color: var(--red);
+        }
+
+        .srch {
+            padding: 7px 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-full);
+            color: white;
+            font-size: 0.78rem;
+            outline: none;
+            min-width: 180px;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .srch:focus { border-color: var(--red); }
+
+        .tscroll {
+            overflow-x: auto;
+            max-height: 480px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        th {
+            padding: 11px 16px;
+            text-align: left;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 11px 16px;
+            font-size: 0.8rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            color: var(--text-sec);
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background: rgba(244,67,54,0.03);
+        }
+
+        /* BADGES */
+        .sbadge {
+            padding: 3px 9px;
+            border-radius: var(--radius-full);
+            font-size: 0.62rem;
+            font-weight: 600;
+            white-space: nowrap;
+            display: inline-block;
+        }
+
+        .sbadge.green { background: rgba(76,175,80,0.15); color: var(--green); }
+        .sbadge.red { background: rgba(244,67,54,0.15); color: var(--red); }
+        .sbadge.orange { background: rgba(255,152,0,0.15); color: var(--orange); }
+        .sbadge.blue { background: rgba(33,150,243,0.15); color: var(--blue); }
+        .sbadge.gold { background: rgba(255,215,0,0.15); color: var(--gold); }
+        .sbadge.purple { background: rgba(156,39,176,0.15); color: var(--purple); }
+        .sbadge { background: rgba(255,255,255,0.07); color: var(--text-muted); }
+
+        /* ACTION BUTTONS */
+        .ab {
+            padding: 4px 9px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.67rem;
+            font-weight: 600;
+            margin: 2px;
+            white-space: nowrap;
+            font-family: 'Montserrat', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .ab:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+
+        .ab-app { background: rgba(76,175,80,0.18); color: var(--green); }
+        .ab-pre { background: rgba(255,215,0,0.18); color: var(--gold); }
+        .ab-con { background: rgba(33,150,243,0.18); color: var(--blue); }
+        .ab-frz { background: rgba(255,152,0,0.18); color: var(--orange); }
+        .ab-ufrz { background: rgba(76,175,80,0.18); color: var(--green); }
+        .ab-del { background: rgba(244,67,54,0.18); color: var(--red); }
+        .ab-rpr { background: rgba(255,152,0,0.18); color: var(--orange); }
+
+        /* FINANCE */
+        .fg {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+
+        .fc {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            text-align: center;
+        }
+
+        .fc h4 {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 14px;
+        }
+
+        .fv {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .fs {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        /* TOAST */
+        #adTst {
+            position: fixed;
+            bottom: 25px; right: 25px;
+            padding: 13px 20px;
+            border-radius: var(--radius);
+            font-size: 0.83rem;
+            z-index: 99999;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            max-width: 300px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+        }
+
+        #adTst.on { display: flex; }
+
+        /* MOBILE */
+        .mob-tog {
+            display: none;
+            position: fixed;
+            top: 14px; left: 14px;
+            z-index: 200;
+            width: 36px; height: 36px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sb-ov {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 90;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                left: -270px;
+                transition: left 0.3s ease;
+            }
+            .sidebar.open { left: 0; }
+            .main {
+                margin-left: 0;
+                padding: 20px;
+                padding-top: 55px;
+            }
+            .mob-tog { display: flex; }
+            .sb-ov.on { display: block; }
+            .sg { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .sg { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="adTst"></div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+    <div class="login-box">
+        <div class="login-logo">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <h2>Bizen HT Admin</h2>
+        <p>Konekte ak kont administratè</p>
+        <input class="lg-input"
+               type="email"
+               id="lgEm"
+               placeholder="Email admin">
+        <input class="lg-input"
+               type="password"
+               id="lgPw"
+               placeholder="Modpas"
+               onkeydown="if(event.key==='Enter')doAdmLogin()">
+        <button class="lg-btn"
+                onclick="doAdmLogin()">
+            <i class="fas fa-lock"></i>
+            Konekte
+        </button>
+        <p class="lg-error" id="lgErr"></p>
+    </div>
+</div>
+
+<!-- MOBILE TOGGLE -->
+<button class="mob-tog"
+        id="mobTog"
+        onclick="togSB()">
+    <i class="fas fa-bars"></i>
+</button>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sb-ov"
+     id="sbOv"
+     onclick="closeSB()">
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel"
+     style="display:none;min-height:100vh">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sb-top">
+            <div class="sb-logo">
+                <div class="sb-logo-ico">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div>
+                    <div class="sb-logo-txt">
+                        Bizen HT
+                    </div>
+                    <div class="sb-logo-sub">
+                        Admin Panel
+                    </div>
+                </div>
+            </div>
+            <div class="sb-user">
+                <div class="sb-avatar">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div>
+                    <div class="sb-uname"
+                         id="sbName">
+                        Admin
+                    </div>
+                    <div class="sb-urole">
+                        Administratè
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sb-nav">
+            <div class="sb-cat">Jeneral</div>
+            <button class="sb-link active"
+                    onclick="goPage('dash',this)">
+                <i class="fas fa-home"></i>
+                Dashboard
+            </button>
+
+            <div class="sb-cat">
+                Jesyon Kont
+            </div>
+            <button class="sb-link"
+                    onclick="goPage('users',this)">
+                <i class="fas fa-users"></i>
+                Itilizate
+                <span class="sb-bdg bdg-b"
+                      id="bdgU">0</span>
+            </button>
+            <button class="sb-link"
+                    onclick="goPage('fl',this)">
+                <i class="fas fa-star"></i>
+                Prestate
+                <span class="sb-bdg bdg-r"
+                      id="bdgF">0</span>
+            </button>
+            <button class="sb-link"
+                    onclick="goPage('pend',this)">
+                <i class="fas fa-clock"></i>
+                An Atant
+                <span class="sb-bdg bdg-o"
+                      id="bdgPe">0</span>
+            </button>
+            <button class="sb-link"
+                    onclick="goPage('prem',this)">
+                <i class="fas fa-crown"></i>
+                Manm Premium
+                <span class="sb-bdg bdg-p"
+                      id="bdgPr">0</span>
+            </button>
+            <button class="sb-link"
+                    onclick="goPage('krey',this)">
+                <i class="fas fa-users"></i>
+                Gwoup Krey
+                <span class="sb-bdg bdg-r"
+                      id="bdgKrey">0</span>
+            </button>
+
+            <div class="sb-cat">Aktivite</div>
+            <button class="sb-link"
+                    onclick="goPage('res',this)">
+                <i class="fas fa-calendar-check"></i>
+                Rezevasyon
+                <span class="sb-bdg bdg-g"
+                      id="bdgR">0</span>
+            </button>
+            <button class="sb-link"
+                    onclick="goPage('pay',this)">
+                <i class="fas fa-credit-card"></i>
+                Peman
+                <span class="sb-bdg bdg-o"
+                      id="bdgPy">0</span>
+            </button>
+
+            <div class="sb-cat">Finans</div>
+            <button class="sb-link"
+                    onclick="goPage('fin',this)">
+                <i class="fas fa-chart-pie"></i>
+                Rapò Finansye
+            </button>
+            <button class="sb-link"
+                    onclick="goPage('comm',this)">
+                <i class="fas fa-percentage"></i>
+                Komisyon
+            </button>
+        </nav>
+
+        <div class="sb-footer">
+            <a href="index.html"
+               class="sb-link">
+                <i class="fas fa-globe"></i>
+                Sit la
+            </a>
+            <button class="sb-link sb-logout"
+                    onclick="doLogout()">
+                <i class="fas fa-sign-out-alt"></i>
+                Dekonekte
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <!-- DASHBOARD -->
+        <div class="pg on" id="pg-dash">
+            <div class="ph">
+                <h1 class="ph-title">
+                    Dashboard
+                    <span>Admin</span>
+                </h1>
+                <button class="tf"
+                        onclick="loadAll()">
+                    <i class="fas fa-sync"></i>
+                    Rafraichi
+                </button>
+            </div>
+            <div class="sg">
+                <div class="sc bl">
+                    <div class="sc-ico bl">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="sc-val"
+                         id="stU">0</div>
+                    <div class="sc-lbl">
+                        Itilizate
+                    </div>
+                </div>
+                <div class="sc rd">
+                    <div class="sc-ico rd">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="sc-val"
+                         id="stF">0</div>
+                    <div class="sc-lbl">
+                        Prestate
+                    </div>
+                </div>
+                <div class="sc gd">
+                    <div class="sc-ico gd">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="sc-val"
+                         id="stP">0</div>
+                    <div class="sc-lbl">
+                        Premium
+                    </div>
+                </div>
+                <div class="sc og">
+                    <div class="sc-ico og">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="sc-val"
+                         id="stPe">0</div>
+                    <div class="sc-lbl">
+                        An Atant
+                    </div>
+                </div>
+                <div class="sc gn">
+                    <div class="sc-ico gn">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="sc-val"
+                         id="stR">0</div>
+                    <div class="sc-lbl">
+                        Rezevasyon
+                    </div>
+                </div>
+                <div class="sc pp">
+                    <div class="sc-ico pp">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="sc-val"
+                         id="stRev">0 G</div>
+                    <div class="sc-lbl">
+                        Revni Bizen HT
+                    </div>
+                </div>
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title">
+                        <i class="fas fa-clock"></i>
+                        Denye Aktivite
+                    </div>
+                </div>
+                <div id="recent">
+                    <div style="text-align:center;padding:40px;color:var(--text-muted)">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        Chaje...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- USERS -->
+        <div class="pg" id="pg-users">
+            <div class="ph">
+                <h1 class="ph-title">
+                    <i class="fas fa-users"
+                       style="color:var(--blue)"></i>
+                    Itilizate
+                </h1>
+                <input class="srch"
+                       placeholder="Chache..."
+                       oninput="srchTbl('tbU',this.value)">
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title">
+                        <i class="fas fa-users"></i>
+                        Tout Itilizate
+                    </div>
+                    <div class="tc-filters">
+                        <button class="tf active"
+                                onclick="fltTbl('tbU','all',this)">
+                            Tout
+                        </button>
+                        <button class="tf"
+                                onclick="fltTbl('tbU','premium',this)">
+                            Premium
+                        </button>
+                        <button class="tf"
+                                onclick="fltTbl('tbU','free',this)">
+                            Gratis
+                        </button>
+                    </div>
+                </div>
+                <div class="tscroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Non</th>
+                                <th>Imel</th>
+                                <th>Telefon</th>
+                                <th>Plan</th>
+                                <th>Estati</th>
+                                <th>Dat</th>
+                                <th>Aksyon</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbU">
+                            <tr>
+                                <td colspan="7"
+                                    style="text-align:center;padding:30px;color:var(--text-muted)">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    Chaje...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- FREELANCERS -->
+        <div class="pg" id="pg-fl">
+            <div class="ph">
+                <h1 class="ph-title">
+                    <i class="fas fa-star"
+                       style="color:var(--red)"></i>
+                    Prestate
+                </h1>
+                <input class="srch"
+                       placeholder="Chache..."
+                       oninput="srchTbl('tbF',this.value)">
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title">
+                        <i class="fas fa-star"></i>
+                        Tout Prestate
+                    </div>
+                    <div class="tc-filters">
+                        <button class="tf active"
+                                onclick="fltTbl('tbF','all',this)">
+                            Tout
+                        </button>
+                        <button class="tf"
+                                onclick="fltTbl('tbF','active',this)">
+                            Aktif
+                        </button>
+                        <button class="tf"
+                                onclick="fltTbl('tbF','en_attente',this)">
+                            An Atant
+                        </button>
+                        <button class="tf"
+                                onclick="fltTbl('tbF','frozen',this)">
+                            Jele
+                        </button>
+                    </div>
+                </div>
+                <div class="tscroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Non</th>
+                                <th>Seks</th>
+                                <th>Lokasyon</th>
+                                <th>Pri/Moman</th>
+                                <th>Solde</th>
+                                <th>Estati</th>
+                                <th>Aksyon</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbF">
+                            <tr>
+                                <td colspan="7"
+                                    style="text-align:center;padding:30px;color:var(--text-muted)">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    Chaje...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PENDING -->
+        <div class="pg" id="pg-pend">
+            <div class="ph">
+                <h1 class="ph-title">
+                    <i class="fas fa-clock"
+                       style="color:var(--orange)"></i>
+                    Kont An Atant
+                </h1>
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title">
+                        <i class="fas fa-clock"></i>
+                        Demann an atant validasyon
+                    </div>
+                </div>
+                <div class="tscroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Non</th>
+                                <th>Lokasyon</th>
+                                <th>Tip</th>
+                                <th>Pri</th>
+                                <th>Dat</th>
+                                <th>Aksyon</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbPe">
+                            <tr>
+                                <td colspan="6"
+                                    style="text-align:center;padding:30px;color:var(--text-muted)">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    Chaje...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PREMIUM -->
+        <div class="pg" id="pg-prem">
+            <div class="ph">
+                <h1 class="ph-title">
+                    <i class="fas fa-crown"
+                       style="color:var(--gold)"></i>
+                    Manm Premium
+                </h1>
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title">
+                        <i class="fas fa-crown"></i>
+                        Tout Manm Premium
+                    </div>
+                </div>
+                <div class="tscroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Non</th>
+                                <th>Imel</th>
+                                <th>Telefon</th>
+                                <th>Dat</th>
+                                <th>Aksyon</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbPr">
+                            <tr>
+                                <td colspan="5"
+                                    style="text-align:center;padding:30px;color:var(--text-muted)">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    Chaje...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- KREY -->
+        <div class="pg" id="pg-krey">
+            <div class="ph">
+                <h1 class="ph-title">
+                    <i class="fas fa-users"
+                       style="color:var(--purple)"></i>
+                    Gwoup Krey
+                </h1>
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title">
+                        <i class="fas fa-users"></i>
+                        Tout Gwoup Krey
+                    </div>
+                    <div class="tc-filters">
+                        <button class="tf active"
+                                onclick="fltTbl('tbKrey','all',this)">
+                            Tout
+                        </button>
+                        <button class="tf"
+                                onclick="fltTbl('tbKrey','active',this)">
+                            Aktif
+                        </button>
+                        <button class="tf"
+                                onclick="fltTbl('tbKrey','en_attente',this)">
+                            An Atant
+                        </button>
+                    </div>
+                </div>
+                <div class="tscroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Non Gwoup</th>
+                                <th>Zon</th>
+                                <th>Manm</th>
+                                <th>Pri</th>
+                                <th>Solde</th>
+                                <th>Estati</th>
+                                <th>Aksyon</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbKrey">
+                            <tr>
+                                <td colspan="7"
+                                    style="text-align:center;padding:30px;color:var(--text-muted)">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    Chaje...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESERVATIONS -->
+        <div class="pg" id="pg-res">
+            <div class="ph">
+                <h1 class="ph-title">
+                    <i class="fas fa-calendar-check"
+                       style="color:var(--green)"></i>
+                    Rezevasyon
+                </h1>
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title">
+                        <i class="fas fa-calendar"></i>
+                        Tout Rezevasyon
+                    </div>
+                    <div class="tc-filters">
+                        <button class="tf active"
+                                onclick="fltTbl('tbR','all',this)">
+                            Tout
+                        </button>
+                        <button class="tf"
+                                onclick="fltTbl('tbR','en_attente',this)">
+                            An Atant
+                        </button>
+                        <button class="tf"
+                                onclick="fltTbl('tbR','confirmed',this)">
+                            Konfime
+                        </button>
+                    </div>
+                </div>
+                <div class="tscroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kliyan</th>
+                                <th>Prestate</th>
+                                <th>Dat</th>
+                                <th>Kote</th>
+                                <th>Pri</th>
+                                <th>Tip</th>
+                                <th>Estati</th>
+                                <th>Aksyon</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbR">
+                            <tr>
+                                <td colspan="8"
+                                    style="text-align:center;padding:30px;color:var(--text-muted)">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    Chaje...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAYMENTS -->
+        <div class="pg" id="pg-pay">
+            <div class="ph">
+                <h1 class="ph-title">
+                    <i class="fas fa-credit-card"
+                       style="color:var(--blue)"></i>
+                    Peman
+                </h1>
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title">
+                        <i class="fas fa-credit-card"></i>
+                        Tout Peman Premium
+                    </div>
+                    <div class="tc-filters">
+                        <button class="tf active"
+                                onclick="fltTbl('tbPy','all',this)">
+                            Tout
+                        </button>
+                        <button class="tf"
+                                onclick="fltTbl('tbPy','en_attente',this)">
+                            An Atant
+                        </button>
+                        <button class="tf"
+                                onclick="fltTbl('tbPy','confirmed',this)">
+                            Konfime
+                        </button>
+                    </div>
+                </div>
+                <div class="tscroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Itilizate</th>
+                                <th>Metod</th>
+                                <th>Referans</th>
+                                <th>Montan</th>
+                                <th>Estati</th>
+                                <th>Dat</th>
+                                <th>Aksyon</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbPy">
+                            <tr>
+                                <td colspan="7"
+                                    style="text-align:center;padding:30px;color:var(--text-muted)">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    Chaje...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- FINANCE -->
+        <div class="pg" id="pg-fin">
+            <div class="ph">
+                <h1 class="ph-title">
+                    <i class="fas fa-chart-pie"
+                       style="color:var(--green)"></i>
+                    Rapò Finansye
+                </h1>
+                <div class="tc-filters">
+                    <button class="tf active"
+                            onclick="loadFin('all',this)">
+                        Tout
+                    </button>
+                    <button class="tf"
+                            onclick="loadFin('week',this)">
+                        Semèn
+                    </button>
+                    <button class="tf"
+                            onclick="loadFin('month',this)">
+                        Mwa
+                    </button>
+                </div>
+            </div>
+            <div class="fg">
+                <div class="fc">
+                    <h4>
+                        <i class="fas fa-money-bill"></i>
+                        Total Rezevasyon
+                    </h4>
+                    <div class="fv"
+                         style="color:var(--green)"
+                         id="finR">0 G</div>
+                    <div class="fs">
+                        Montan total rezevasyon
+                    </div>
+                </div>
+                <div class="fc">
+                    <h4>
+                        <i class="fas fa-percentage"></i>
+                        Komisyon Bizen (10%)
+                    </h4>
+                    <div class="fv"
+                         style="color:var(--gold)"
+                         id="finC">0 G</div>
+                    <div class="fs">
+                        10% sou chak rezevasyon
+                    </div>
+                </div>
+                <div class="fc">
+                    <h4>
+                        <i class="fas fa-crown"></i>
+                        Revni Membership
+                    </h4>
+                    <div class="fv"
+                         style="color:var(--blue)"
+                         id="finP">0 G</div>
+                    <div class="fs">
+                        1,000 G x manm Premium
+                    </div>
+                </div>
+                <div class="fc">
+                    <h4>
+                        <i class="fas fa-chart-line"></i>
+                        Revni Net Total
+                    </h4>
+                    <div class="fv"
+                         style="color:var(--red)"
+                         id="finT">0 G</div>
+                    <div class="fs">
+                        Komisyon + Membership
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMMISSIONS -->
+        <div class="pg" id="pg-comm">
+            <div class="ph">
+                <h1 class="ph-title">
+                    <i class="fas fa-percentage"
+                       style="color:var(--purple)"></i>
+                    Komisyon Prestate
+                </h1>
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title">
+                        <i class="fas fa-percentage"></i>
+                        Komisyon pa Prestate
+                    </div>
+                </div>
+                <div class="tscroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prestate</th>
+                                <th>Rezevasyon</th>
+                                <th>Total Touche</th>
+                                <th>Komisyon (10%)</th>
+                                <th>Net Prestate</th>
+                                <th>Solde</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbComm">
+                            <tr>
+                                <td colspan="6"
+                                    style="text-align:center;padding:30px;color:var(--text-muted)">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    Chaje...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+/* ====================================
+   FIREBASE CONFIG
+   ==================================== */
+var fbCfg = {
+    apiKey: "AIzaSyADWklo0scZNWkhudRn_VBhrapXl4AZL_E",
+    authDomain: "bizen-ht.firebaseapp.com",
+    projectId: "bizen-ht",
+    storageBucket: "bizen-ht.firebasestorage.app",
+    messagingSenderId: "248857953518",
+    appId: "1:248857953518:web:f85b1b37abd849add01fff"
+};
+
+/* METTEZ VOTRE VRAI EMAIL ADMIN ICI */
+var ADMIN_EMAIL = "bizenht@gmail.com";
+
+var db, auth;
+
+try {
+    firebase.initializeApp(fbCfg);
+    db = firebase.firestore();
+    auth = firebase.auth();
+    console.log("Firebase OK");
+} catch(e) {
+    console.warn("Firebase:", e.message);
+}
+
+/* ====================================
+   AUTH STATE
+   ==================================== */
+auth.onAuthStateChanged(function(user) {
+    console.log("Auth state:", user ? user.email : "null");
+    if (user && user.email === ADMIN_EMAIL) {
+        showPanel(user.email);
+        loadAll();
+    } else if (user) {
+        auth.signOut();
+        showLoginError("Ou pa gen akse admin!");
+    }
+});
+
+/* ====================================
+   LOGIN
+   ==================================== */
+function doAdmLogin() {
+    var em = document.getElementById("lgEm").value.trim();
+    var pw = document.getElementById("lgPw").value;
+
+    document.getElementById("lgErr").style.display = "none";
+
+    if (!em || !pw) {
+        showLoginError("Antre imel ak modpas.");
+        return;
+    }
+
+    if (!auth) {
+        showLoginError("Firebase pa disponib.");
+        return;
+    }
+
+    auth.signInWithEmailAndPassword(em, pw)
+        .then(function(r) {
+            console.log("Login:", r.user.email);
+            if (r.user.email === ADMIN_EMAIL) {
+                showPanel(r.user.email);
+                loadAll();
+            } else {
+                auth.signOut();
+                showLoginError("Ou pa gen akse admin!");
+            }
+        })
+        .catch(function(error) {
+            console.error("Login error:", error.code);
+            var msg = "Imel oswa modpas pa korek.";
+            if (error.code === "auth/user-not-found") msg = "Kont pa trouve.";
+            if (error.code === "auth/wrong-password") msg = "Modpas pa korek.";
+            if (error.code === "auth/invalid-credential") msg = "Imel oswa modpas pa korek.";
+            showLoginError(msg);
+        });
+}
+
+function showLoginError(msg) {
+    var err = document.getElementById("lgErr");
+    if (err) {
+        err.textContent = msg;
+        err.style.display = "block";
+    }
+}
+
+document.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") doAdmLogin();
+});
+
+/* ====================================
+   SHOW PANEL
+   ==================================== */
+function showPanel(email) {
+    var ls = document.getElementById("loginScreen");
+    if (ls) ls.style.display = "none";
+
+    var ap = document.getElementById("adminPanel");
+    if (ap) {
+        ap.style.display = "flex";
+        ap.style.flexDirection = "row";
+        ap.style.minHeight = "100vh";
+        ap.style.width = "100%";
+    }
+
+    var sn = document.getElementById("sbName");
+    if (sn) sn.textContent = email.split("@")[0];
+
+    console.log("Panel shown for:", email);
+}
+
+/* ====================================
+   LOGOUT
+   ==================================== */
+function doLogout() {
+    auth.signOut().then(function() {
+        location.reload();
+    });
+}
+
+/* ====================================
+   MOBILE SIDEBAR
+   ==================================== */
+function togSB() {
+    var sb = document.getElementById("sidebar");
+    var ov = document.getElementById("sbOv");
+    if (sb) sb.classList.toggle("open");
+    if (ov) ov.classList.toggle("on");
+}
+
+function closeSB() {
+    var sb = document.getElementById("sidebar");
+    var ov = document.getElementById("sbOv");
+    if (sb) sb.classList.remove("open");
+    if (ov) ov.classList.remove("on");
+}
+
+/* ====================================
+   NAVIGATION - CORRIGE
+   ==================================== */
+function goPage(page, btn) {
+    /* Hide all pages */
+    var pages = document.querySelectorAll(".pg");
+    for (var i = 0; i < pages.length; i++) {
+        pages[i].classList.remove("on");
+    }
+
+    /* Show target page */
+    var target = document.getElementById("pg-" + page);
+    if (target) {
+        target.classList.add("on");
+    } else {
+        console.warn("Page not found: pg-" + page);
+    }
+
+    /* Update active link */
+    var links = document.querySelectorAll(".sb-link");
+    for (var j = 0; j < links.length; j++) {
+        links[j].classList.remove("active");
+    }
+    if (btn) btn.classList.add("active");
+
+    closeSB();
+}
+
+/* ====================================
+   LOAD ALL DATA
+   ==================================== */
+function loadAll() {
+    console.log("Loading all data...");
+    loadUsers();
+    loadReservations();
+    loadPayments();
+    loadFinance();
+    loadRecent();
+    loadCommissions();
+}
+
+/* ====================================
+   LOAD USERS - TOUS LES TYPES
+   ==================================== */
+function loadUsers() {
+    if (!db) {
+        console.warn("No DB");
+        return;
+    }
+
+    console.log("Loading users...");
+
+    db.collection("users")
+        .get()
+        .then(function(snap) {
+            console.log("Total docs:", snap.size);
+
+            var users = [];
+            var fls = [];
+            var kreys = [];
+            var pending = [];
+            var premium = [];
+
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                d.id = doc.id;
+
+                console.log("Doc:", d.email, "type:", d.type, "status:", d.status);
+
+                if (d.type === "freelancer") {
+                    fls.push(d);
+                    if (d.status === "en_attente") pending.push(d);
+                } else if (d.type === "krey") {
+                    kreys.push(d);
+                    if (d.status === "en_attente") pending.push(d);
+                } else if (d.type !== "admin") {
+                    users.push(d);
+                    if (d.isPremium) premium.push(d);
+                }
+            });
+
+            console.log("Users:", users.length, "FL:", fls.length, "Krey:", kreys.length, "Pending:", pending.length);
+
+            /* Update stats */
+            setVal("stU", users.length);
+            setVal("stF", fls.length);
+            setVal("stP", premium.length);
+            setVal("stPe", pending.length);
+
+            /* Update badges */
+            setBdg("bdgU", users.length);
+            setBdg("bdgF", fls.length);
+            setBdg("bdgPe", pending.length);
+            setBdg("bdgPr", premium.length);
+            setBdg("bdgKrey", kreys.length);
+
+            /* Render tables */
+            renderUsersTable(users);
+            renderFLTable(fls);
+            renderPendingTable(pending);
+            renderPremiumTable(premium);
+            renderKreyTable(kreys);
+        })
+        .catch(function(err) {
+            console.error("loadUsers error:", err);
+            toast("Ere chajman: " + err.message, false);
+        });
+}
+
+/* ====================================
+   RENDER USERS TABLE
+   ==================================== */
+function renderUsersTable(list) {
+    var tb = document.getElementById("tbU");
+    if (!tb) return;
+
+    if (!list || list.length === 0) {
+        tb.innerHTML = emptyRow(7, "Pa gen itilizate anko");
+        return;
+    }
+
+    var h = "";
+    list.forEach(function(u) {
+        var planB = u.isPremium
+            ? '<span class="sbadge gold"><i class="fas fa-crown"></i> Premium</span>'
+            : '<span class="sbadge">Gratis</span>';
+        var statB = u.status === "frozen"
+            ? '<span class="sbadge red">Jele</span>'
+            : '<span class="sbadge green">Aktif</span>';
+        var date = fmtDate(u.createdAt && u.createdAt.toDate ? u.createdAt.toDate() : null);
+
+        h += '<tr data-filter="' + (u.isPremium ? "premium" : "free") + '">';
+        h += '<td><strong>' + (u.prenom || '') + ' ' + (u.nom || '') + '</strong><br><small style="color:#6a6a80">' + (u.email || '') + '</small></td>';
+        h += '<td>' + (u.telephone || 'N/A') + '</td>';
+        h += '<td>' + planB + '</td>';
+        h += '<td>' + statB + '</td>';
+        h += '<td>' + date + '</td>';
+        h += '<td>';
+        if (!u.isPremium) {
+            h += btn("ab-pre", "admAction('premium','" + u.id + "')", "fa-crown", "Premium");
+        } else {
+            h += btn("ab-rpr", "admAction('unpremium','" + u.id + "')", "fa-times", "-Premium");
+        }
+        if (u.status !== "frozen") {
+            h += btn("ab-frz", "admAction('freeze','" + u.id + "')", "fa-ban", "Jele");
+        } else {
+            h += btn("ab-ufrz", "admAction('unfreeze','" + u.id + "')", "fa-check", "Debloke");
+        }
+        h += btn("ab-del", "admAction('delete','" + u.id + "')", "fa-trash", "Efase");
+        h += '</td></tr>';
+    });
+
+    tb.innerHTML = h;
+}
+
+/* ====================================
+   RENDER FREELANCERS TABLE
+   ==================================== */
+function renderFLTable(list) {
+    var tb = document.getElementById("tbF");
+    if (!tb) return;
+
+    if (!list || list.length === 0) {
+        tb.innerHTML = emptyRow(7, "Pa gen prestate anko");
+        return;
+    }
+
+    var h = "";
+    list.forEach(function(f) {
+        var stCl = f.status === "active" ? "green" : f.status === "en_attente" ? "orange" : "red";
+        var stTxt = f.status === "active" ? "Aktif" : f.status === "en_attente" ? "An Atant" : "Jele";
+
+        h += '<tr data-filter="' + (f.status || '') + '">';
+        h += '<td><strong>' + (f.prenom || '') + ' ' + (f.nom || '') + '</strong><br><small style="color:#6a6a80">' + (f.email || '') + '</small></td>';
+        h += '<td>' + (f.genre === "femme" ? "Fanm" : "Gason") + '</td>';
+        h += '<td>' + (f.localisation || 'N/A') + '</td>';
+        h += '<td>' + ((f.prixMoment || 0).toLocaleString()) + ' G</td>';
+        h += '<td>' + ((f.solde || 0).toLocaleString()) + ' G</td>';
+        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
+        h += '<td>';
+        if (f.status === "en_attente") h += btn("ab-app", "admAction('approve','" + f.id + "')", "fa-check", "Apwouve");
+        if (f.status === "active") h += btn("ab-frz", "admAction('freeze','" + f.id + "')", "fa-ban", "Jele");
+        if (f.status === "frozen") h += btn("ab-ufrz", "admAction('unfreeze','" + f.id + "')", "fa-check", "Debloke");
+        h += btn("ab-del", "admAction('delete','" + f.id + "')", "fa-trash", "Efase");
+        h += '</td></tr>';
+    });
+
+    tb.innerHTML = h;
+}
+
+/* ====================================
+   RENDER PENDING TABLE
+   ==================================== */
+function renderPendingTable(list) {
+    var tb = document.getElementById("tbPe");
+    if (!tb) return;
+
+    if (!list || list.length === 0) {
+        tb.innerHTML = emptyRow(6, "Pa gen demann an atant!");
+        return;
+    }
+
+    var h = "";
+    list.forEach(function(f) {
+        var typeTxt = f.type === "krey" ? "Gwoup Krey" : "Prestate";
+        var date = fmtDate(f.createdAt && f.createdAt.toDate ? f.createdAt.toDate() : null);
+
+        h += '<tr>';
+        h += '<td><strong>' + (f.prenom || f.kreyName || '') + ' ' + (f.nom || '') + '</strong><br><small style="color:#6a6a80">' + (f.email || '') + '</small></td>';
+        h += '<td>' + (f.localisation || f.kreyZone || 'N/A') + '</td>';
+        h += '<td>' + typeTxt + '</td>';
+        h += '<td>' + ((f.prixMoment || f.kreyPrice || 0).toLocaleString()) + ' G</td>';
+        h += '<td>' + date + '</td>';
+        h += '<td>';
+        h += btn("ab-app", "admAction('approve','" + f.id + "')", "fa-check", "Apwouve");
+        h += btn("ab-del", "admAction('delete','" + f.id + "')", "fa-times", "Refize");
+        h += '</td></tr>';
+    });
+
+    tb.innerHTML = h;
+}
+
+/* ====================================
+   RENDER PREMIUM TABLE
+   ==================================== */
+function renderPremiumTable(list) {
+    var tb = document.getElementById("tbPr");
+    if (!tb) return;
+
+    if (!list || list.length === 0) {
+        tb.innerHTML = emptyRow(5, "Pa gen manm Premium anko");
+        return;
+    }
+
+    var h = "";
+    list.forEach(function(u) {
+        var date = fmtDate(
+            u.premiumActivatedAt && u.premiumActivatedAt.toDate
+                ? u.premiumActivatedAt.toDate()
+                : u.createdAt && u.createdAt.toDate
+                    ? u.createdAt.toDate()
+                    : null
+        );
+        h += '<tr>';
+        h += '<td><strong>' + (u.prenom || '') + ' ' + (u.nom || '') + '</strong></td>';
+        h += '<td>' + (u.email || 'N/A') + '</td>';
+        h += '<td>' + (u.telephone || 'N/A') + '</td>';
+        h += '<td>' + date + '</td>';
+        h += '<td>' + btn("ab-rpr", "admAction('unpremium','" + u.id + "')", "fa-times", "Retire Premium") + '</td></tr>';
+    });
+
+    tb.innerHTML = h;
+}
+
+/* ====================================
+   RENDER KREY TABLE
+   ==================================== */
+function renderKreyTable(list) {
+    var tb = document.getElementById("tbKrey");
+    if (!tb) return;
+
+    if (!list || list.length === 0) {
+        tb.innerHTML = emptyRow(7, "Pa gen gwoup Krey anko");
+        return;
+    }
+
+    var h = "";
+    list.forEach(function(k) {
+        var stCl = k.status === "active" ? "green" : k.status === "en_attente" ? "orange" : "red";
+        var stTxt = k.status === "active" ? "Aktif" : k.status === "en_attente" ? "An Atant" : "Jele";
+
+        h += '<tr data-filter="' + (k.status || '') + '">';
+        h += '<td><strong>' + (k.kreyName || k.prenom || '') + '</strong><br><small style="color:#6a6a80">' + (k.email || '') + '</small></td>';
+        h += '<td>' + (k.kreyZone || 'N/A') + '</td>';
+        h += '<td>' + (k.kreyMemberCount || 0) + ' manm</td>';
+        h += '<td>' + ((k.kreyPrice || 0).toLocaleString()) + ' G</td>';
+        h += '<td>' + ((k.solde || 0).toLocaleString()) + ' G</td>';
+        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
+        h += '<td>';
+        if (k.status === "en_attente") h += btn("ab-app", "admAction('approve','" + k.id + "')", "fa-check", "Apwouve");
+        if (k.status === "active") h += btn("ab-frz", "admAction('freeze','" + k.id + "')", "fa-ban", "Jele");
+        if (k.status === "frozen") h += btn("ab-ufrz", "admAction('unfreeze','" + k.id + "')", "fa-check", "Debloke");
+        h += btn("ab-del", "admAction('delete','" + k.id + "')", "fa-trash", "Efase");
+        h += '</td></tr>';
+    });
+
+    tb.innerHTML = h;
+}
+
+/* ====================================
+   LOAD RESERVATIONS
+   ==================================== */
+function loadReservations() {
+    if (!db) return;
+
+    db.collection("reservations")
+        .get()
+        .then(function(snap) {
+            var list = [];
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                d.id = doc.id;
+                list.push(d);
+            });
+
+            list.sort(function(a, b) {
+                var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+                var tb2 = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+                return tb2 - ta;
+            });
+
+            setVal("stR", list.length);
+            setBdg("bdgR", list.length);
+            renderResTable(list);
+        })
+        .catch(function(err) {
+            console.error("loadRes error:", err);
+        });
+}
+
+/* ====================================
+   RENDER RESERVATIONS TABLE
+   ==================================== */
+function renderResTable(list) {
+    var tb = document.getElementById("tbR");
+    if (!tb) return;
+
+    if (!list || list.length === 0) {
+        tb.innerHTML = emptyRow(8, "Pa gen rezevasyon anko");
+        return;
+    }
+
+    var h = "";
+    list.forEach(function(r) {
+        var stCl = r.status === "confirmed" ? "green" : r.status === "cancelled" ? "red" : "orange";
+        var stTxt = r.status === "confirmed" ? "Konfime" : r.status === "cancelled" ? "Anile" : "An Atant";
+        var typTxt = r.type === "krey" ? "Krey" : "Endividyel";
+        var typCl = r.type === "krey" ? "purple" : "blue";
+        var kote = r.type === "krey" ? (r.locationName || "Prive") : (r.hotelName || "Hotel");
+
+        h += '<tr data-filter="' + (r.status || '') + '">';
+        h += '<td><small>' + (r.userEmail || 'N/A') + '</small></td>';
+        h += '<td>' + (r.prestateName || 'N/A') + '</td>';
+        h += '<td>' + (r.date || 'N/A') + '</td>';
+        h += '<td><small>' + kote + '</small></td>';
+        h += '<td>' + (r.price || 'N/A') + '</td>';
+        h += '<td><span class="sbadge ' + typCl + '">' + typTxt + '</span></td>';
+        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
+        h += '<td>';
+        if (r.status === "en_attente") h += btn("ab-app", "resAction('confirm','" + r.id + "')", "fa-check", "Konfime");
+        if (r.status !== "cancelled") h += btn("ab-del", "resAction('cancel','" + r.id + "')", "fa-times", "Anile");
+        h += '</td></tr>';
+    });
+
+    tb.innerHTML = h;
+}
+
+/* ====================================
+   LOAD PAYMENTS
+   ==================================== */
+function loadPayments() {
+    if (!db) return;
+
+    db.collection("payments")
+        .get()
+        .then(function(snap) {
+            var list = [];
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                d.id = doc.id;
+                list.push(d);
+            });
+
+            list.sort(function(a, b) {
+                var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+                var tb2 = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+                return tb2 - ta;
+            });
+
+            var pending = list.filter(function(p) { return p.status === "en_attente"; });
+            setBdg("bdgPy", pending.length);
+            renderPayTable(list);
+
+            var revenue = list.filter(function(p) { return p.status === "confirmed"; }).length * 1000;
+            setVal("stRev", revenue.toLocaleString() + " G");
+        })
+        .catch(function(err) {
+            console.error("loadPay error:", err);
+        });
+}
+
+/* ====================================
+   RENDER PAYMENTS TABLE
+   ==================================== */
+function renderPayTable(list) {
+    var tb = document.getElementById("tbPy");
+    if (!tb) return;
+
+    if (!list || list.length === 0) {
+        tb.innerHTML = emptyRow(7, "Pa gen peman anko");
+        return;
+    }
+
+    var h = "";
+    list.forEach(function(p) {
+        var stCl = p.status === "confirmed" ? "green" : "orange";
+        var stTxt = p.status === "confirmed" ? "Konfime" : "An Atant";
+        var methCl = p.method === "natcash" ? "orange" : "gold";
+        var date = fmtDate(p.createdAt && p.createdAt.toDate ? p.createdAt.toDate() : null);
+
+        h += '<tr data-filter="' + (p.status || '') + '">';
+        h += '<td><small>' + (p.email || 'N/A') + '</small></td>';
+        h += '<td><span class="sbadge ' + methCl + '">' + (p.method === "natcash" ? "NatCash" : "MonCash") + '</span></td>';
+        h += '<td><code style="font-size:0.72rem">' + (p.reference || p.orderId || 'N/A') + '</code></td>';
+        h += '<td><strong>' + ((p.amount || 1000).toLocaleString()) + ' G</strong></td>';
+        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
+        h += '<td>' + date + '</td>';
+        h += '<td>';
+        if (p.status === "en_attente") h += btn("ab-app", "payAction('confirm','" + p.id + "','" + (p.userId || '') + "')", "fa-check", "Konfime+Premium");
+        h += btn("ab-del", "payAction('delete','" + p.id + "','')", "fa-trash", "Efase");
+        h += '</td></tr>';
+    });
+
+    tb.innerHTML = h;
+}
+
+/* ====================================
+   LOAD FINANCE
+   ==================================== */
+function loadFinance() {
+    if (!db) return;
+
+    db.collection("reservations").get()
+        .then(function(snap) {
+            var totalRes = 0;
+            var totalComm = 0;
+            snap.forEach(function(doc) {
+                var r = doc.data();
+                if (r.status !== "cancelled") {
+                    var p = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
+                    totalRes += p;
+                    totalComm += Math.round(p * 0.1);
+                }
+            });
+            setVal("finR", totalRes.toLocaleString() + " G");
+            setVal("finC", totalComm.toLocaleString() + " G");
+        });
+
+    db.collection("payments")
+        .where("status", "==", "confirmed")
+        .get()
+        .then(function(snap) {
+            var prem = snap.size * 1000;
+            setVal("finP", prem.toLocaleString() + " G");
+            var finTEl = document.getElementById("finT");
+            if (finTEl) {
+                var finR = parseInt((document.getElementById("finC") ? document.getElementById("finC").textContent : "0").replace(/[^0-9]/g, "")) || 0;
+                setVal("finT", (finR + prem).toLocaleString() + " G");
+            }
+        })
+        .catch(function() {});
+}
+
+function loadFin(period, btn) {
+    if (btn) {
+        var sibs = btn.parentElement.querySelectorAll(".tf");
+        sibs.forEach(function(s) { s.classList.remove("active"); });
+        btn.classList.add("active");
+    }
+    loadFinance();
+}
+
+/* ====================================
+   LOAD RECENT
+   ==================================== */
+function loadRecent() {
+    if (!db) return;
+
+    var recentEl = document.getElementById("recent");
+    if (!recentEl) return;
+
+    db.collection("reservations")
+        .limit(8)
+        .get()
+        .then(function(snap) {
+            if (snap.empty) {
+                recentEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Pa gen aktivite anko</div>';
+                return;
+            }
+
+            var h = "";
+            snap.forEach(function(doc) {
+                var r = doc.data();
+                var stCl = r.status === "confirmed" ? "green" : "orange";
+                var stTxt = r.status === "confirmed" ? "Konfime" : "An Atant";
+
+                h += '<div style="display:flex;align-items:center;gap:15px;padding:14px 20px;border-bottom:1px solid #2a2a3a">';
+                h += '<div style="width:38px;height:38px;border-radius:10px;background:rgba(76,175,80,0.1);display:flex;align-items:center;justify-content:center;color:#4caf50;flex-shrink:0"><i class="fas fa-calendar-check"></i></div>';
+                h += '<div style="flex:1"><strong style="font-size:0.85rem">' + (r.prestateName || 'N/A') + '</strong><br><small style="color:#6a6a80">' + (r.userEmail || 'N/A') + ' | ' + (r.date || 'N/A') + '</small></div>';
+                h += '<span class="sbadge ' + stCl + '">' + stTxt + '</span>';
+                h += '</div>';
+            });
+
+            recentEl.innerHTML = h;
+        })
+        .catch(function(err) {
+            console.error("loadRecent error:", err);
+        });
+}
+
+/* ====================================
+   LOAD COMMISSIONS
+   ==================================== */
+function loadCommissions() {
+    if (!db) return;
+
+    var tb = document.getElementById("tbComm");
+    if (!tb) return;
+
+    db.collection("reservations").get()
+        .then(function(snap) {
+            var commByFL = {};
+            snap.forEach(function(doc) {
+                var r = doc.data();
+                if (r.status === "cancelled") return;
+                var name = r.prestateName || "Unknown";
+                var price = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
+                if (!commByFL[name]) {
+                    commByFL[name] = { count: 0, total: 0, comm: 0, net: 0 };
+                }
+                commByFL[name].count++;
+                commByFL[name].total += price;
+                commByFL[name].comm += Math.round(price * 0.1);
+                commByFL[name].net += Math.round(price * 0.9);
+            });
+
+            var keys = Object.keys(commByFL);
+            if (keys.length === 0) {
+                tb.innerHTML = emptyRow(6, "Pa gen done komisyon anko");
+                return;
+            }
+
+            var h = "";
+            keys.forEach(function(name) {
+                var d = commByFL[name];
+                h += '<tr>';
+                h += '<td><strong>' + name + '</strong></td>';
+                h += '<td>' + d.count + '</td>';
+                h += '<td>' + d.total.toLocaleString() + ' G</td>';
+                h += '<td style="color:var(--gold)">' + d.comm.toLocaleString() + ' G</td>';
+                h += '<td style="color:var(--green)">' + d.net.toLocaleString() + ' G</td>';
+                h += '<td style="color:var(--blue)">N/A</td>';
+                h += '</tr>';
+            });
+
+            tb.innerHTML = h;
+        });
+}
+
+/* ====================================
+   ADMIN ACTIONS
+   ==================================== */
+function admAction(action, uid) {
+    if (!db) return;
+
+    if (action === "delete") {
+        if (!confirm("ATANSYON: Efase kont sa a?")) return;
+        if (!confirm("Ou seten?")) return;
+        db.collection("users").doc(uid).delete()
+            .then(function() {
+                toast("Kont efase!", true);
+                loadAll();
+            });
+        return;
+    }
+
+    var updates = {};
+    var msgs = {
+        premium: "Aktive Premium?",
+        unpremium: "Retire Premium?",
+        approve: "Apwouve kont sa a?",
+        freeze: "Jele kont sa a?",
+        unfreeze: "Debloke kont sa a?"
+    };
+
+    if (!confirm(msgs[action] || "Kontinye?")) return;
+
+    if (action === "premium") updates = { isPremium: true };
+    else if (action === "unpremium") updates = { isPremium: false };
+    else if (action === "approve") updates = { status: "active" };
+    else if (action === "freeze") updates = { status: "frozen" };
+    else if (action === "unfreeze") updates = { status: "active" };
+
+    db.collection("users").doc(uid).update(updates)
+        .then(function() {
+            var succMsgs = {
+                premium: "Premium aktive!",
+                unpremium: "Premium retire!",
+                approve: "Kont apwouve!",
+                freeze: "Kont jele!",
+                unfreeze: "Kont debloke!"
+            };
+            toast(succMsgs[action] || "Fini!", true);
+            loadAll();
+        })
+        .catch(function(err) {
+            toast("Ere: " + err.message, false);
+        });
+}
+
+/* ====================================
+   RESERVATION ACTIONS
+   ==================================== */
+function resAction(action, id) {
+    if (!db) return;
+    var status = action === "confirm" ? "confirmed" : "cancelled";
+    if (!confirm(action === "confirm" ? "Konfime rezevasyon?" : "Anile rezevasyon?")) return;
+    db.collection("reservations").doc(id).update({ status: status })
+        .then(function() {
+            toast(action === "confirm" ? "Konfime!" : "Anile!", true);
+            loadReservations();
+        });
+}
+
+/* ====================================
+   PAYMENT ACTIONS
+   ==================================== */
+function payAction(action, id, userId) {
+    if (!db) return;
+
+    if (action === "confirm") {
+        if (!confirm("Konfime peman ak aktive Premium?")) return;
+        db.collection("payments").doc(id).update({ status: "confirmed" })
+            .then(function() {
+                if (userId) {
+                    return db.collection("users").doc(userId).update({
+                        isPremium: true,
+                        premiumActivatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+            })
+            .then(function() {
+                toast("Konfime! Premium aktive!", true);
+                loadPayments();
+                loadAll();
+            });
+    }
+
+    if (action === "delete") {
+        if (!confirm("Efase peman?")) return;
+        db.collection("payments").doc(id).delete()
+            .then(function() {
+                toast("Peman efase!", true);
+                loadPayments();
+            });
+    }
+}
+
+/* ====================================
+   SEARCH
+   ==================================== */
+function srchTbl(tableId, query) {
+    var rows = document.querySelectorAll("#" + tableId + " tr");
+    var q = query.toLowerCase();
+    rows.forEach(function(r) {
+        r.style.display = r.textContent.toLowerCase().includes(q) ? "" : "none";
+    });
+}
+
+/* ====================================
+   FILTER
+   ==================================== */
+function fltTbl(tableId, filter, btn) {
+    if (btn) {
+        var sibs = btn.parentElement.querySelectorAll(".tf");
+        sibs.forEach(function(s) { s.classList.remove("active"); });
+        btn.classList.add("active");
+    }
+
+    var rows = document.querySelectorAll("#" + tableId + " tr");
+    rows.forEach(function(r) {
+        if (filter === "all") {
+            r.style.display = "";
+        } else {
+            var rf = r.getAttribute("data-filter");
+            r.style.display = (rf === filter) ? "" : "none";
+        }
+    });
+}
+
+/* ====================================
+   HELPERS
+   ==================================== */
+function setVal(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val;
+}
+
+function setBdg(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val;
+}
+
+function fmtDate(date) {
+    if (!date) return "N/A";
+    return date.toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+    });
+}
+
+function btn(cls, action, ico, lbl) {
+    return '<button class="ab ' + cls + '" onclick="' + action + '">' +
+        '<i class="fas ' + ico + '"></i> ' + lbl + '</button>';
+}
+
+function emptyRow(cols, msg) {
+    return '<tr><td colspan="' + cols + '" style="text-align:center;padding:40px;color:var(--text-muted)">' +
+        '<i class="fas fa-inbox" style="font-size:2rem;margin-bottom:10px;display:block;opacity:0.3"></i>' +
+        msg + '</td></tr>';
+}
+
+function toast(msg, isGood) {
+    var el = document.getElementById("adTst");
+    if (!el) return;
+    var cl = isGood ? "#4caf50" : "#f44336";
+    var ic = isGood ? "fa-check-circle" : "fa-times-circle";
+    el.style.cssText = "background:#15151f;border:1px solid " + cl + ";color:white;padding:14px 20px;";
+    el.innerHTML = '<i class="fas ' + ic + '" style="color:' + cl + '"></i> <span>' + msg + '</span>';
+    el.classList.add("on");
+    setTimeout(function() { el.classList.remove("on"); }, 3500);
+}
+</script>
+</body>
+</html>
