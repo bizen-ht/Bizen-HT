@@ -96,16 +96,10 @@ function doRequest(options, body) {
    POST /token
    ==================================== */
 async function getToken() {
-    console.log(
-        "[TOKEN] Getting token for:",
-        BAZIK_USER_ID
-    );
+    console.log("[TOKEN] Getting token for:", BAZIK_USER_ID);
 
     if (!BAZIK_USER_ID || !BAZIK_SECRET) {
-        throw new Error(
-            "Missing BAZIK_USER_ID or " +
-            "BAZIK_SECRET env variables"
-        );
+        throw new Error("Missing BAZIK_USER_ID or BAZIK_SECRET env variables");
     }
 
     var bodyObj = {
@@ -120,29 +114,24 @@ async function getToken() {
         path: '/token',
         method: 'POST',
         headers: {
-            'Content-Type':
-                'application/json',
-            'Content-Length':
-                Buffer.byteLength(bodyStr)
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(bodyStr)
         }
     };
 
-    var result = await doRequest(
-        options, bodyStr
-    );
+    var result = await doRequest(options, bodyStr);
 
     console.log("[TOKEN RESULT]", result);
 
-    if (!result.access_token) {
-        throw new Error(
-            "No access_token received. " +
-            "Response: " +
-            JSON.stringify(result)
-        );
+    /* BAZIK returns token, not access_token */
+    var finalToken = result.access_token || result.token || null;
+
+    if (!finalToken) {
+        throw new Error("No token received. Response: " + JSON.stringify(result));
     }
 
     console.log("[TOKEN] Success ✅");
-    return result.access_token;
+    return finalToken;
 }
 
 /* ====================================
@@ -167,9 +156,9 @@ async function createMoncashPayment(
         "Gdes"
     );
 
-    var bodyObj = {
-        gdes: parseFloat(amount),
-        userID: BAZIK_USER_ID,
+   var bodyObj = {
+    gdes: parseFloat(amount),
+    userID: userId || ("bizenht_" + Date.now()),
         successUrl: SITE_URL +
             "/?payment=success&ref=" +
             referenceId,
@@ -343,35 +332,30 @@ exports.handler = async function(
            TEST CONNECTION
            ============================ */
         if (action === 'test') {
-            try {
-                var token = await getToken();
-                return {
-                    statusCode: 200,
-                    headers: CORS,
-                    body: JSON.stringify({
-                        success: true,
-                        message:
-                            "Bazik.io konekte! " +
-                            "Peman pret.",
-                        userId: BAZIK_USER_ID,
-                        hasToken: true
-                    })
-                };
-            } catch(testErr) {
-                return {
-                    statusCode: 200,
-                    headers: CORS,
-                    body: JSON.stringify({
-                        success: false,
-                        error: testErr.message,
-                        hint:
-                            "Check env vars: " +
-                            "BAZIK_USER_ID and " +
-                            "BAZIK_SECRET"
-                    })
-                };
-            }
-        }
+    try {
+        var token = await getToken();
+        return {
+            statusCode: 200,
+            headers: CORS,
+            body: JSON.stringify({
+                success: true,
+                message:
+                    "Bazik.io konekte! " +
+                    "Peman pret.",
+                hasToken: !!token
+            })
+        };
+    } catch(testErr) {
+        return {
+            statusCode: 200,
+            headers: CORS,
+            body: JSON.stringify({
+                success: false,
+                error: testErr.message
+            })
+        };
+    }
+}
 
         /* ============================
            CREATE PAYMENT
