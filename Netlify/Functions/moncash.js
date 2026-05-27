@@ -1,436 +1,369 @@
-/* ====================================
-   BAZIK.IO MONCASH - BIZEN HT
-   Based on official Bazik documentation
-   ==================================== */
-
 const https = require('https');
+const crypto = require('crypto');
 
 /* ====================================
-   CONFIG - From environment variables
+   CONFIG
    ==================================== */
-var BAZIK_USER_ID =
+const BAZIK_USER_ID =
     process.env.BAZIK_USER_ID || "";
 
-var BAZIK_SECRET =
+const BAZIK_SECRET =
     process.env.BAZIK_SECRET || "";
 
-var BAZIK_HOST = "api.bazik.io";
-
-var SITE_URL = "https://bizenht.com";
+const BAZIK_HOST = "api.bazik.io";
+const SITE_URL = "https://bizenht.com";
 
 /* ====================================
-   CORS HEADERS
+   CORS
    ==================================== */
-var CORS = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers':
-        'Content-Type',
-    'Access-Control-Allow-Methods':
-        'POST, OPTIONS',
-    'Content-Type': 'application/json'
+const CORS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers":
+        "Content-Type",
+    "Access-Control-Allow-Methods":
+        "POST, OPTIONS",
+    "Content-Type": "application/json"
 };
 
 /* ====================================
-   HTTP HELPER
+   HTTP REQUEST HELPER
    ==================================== */
 function doRequest(options, body) {
-    return new Promise(function(
-        resolve, reject
-    ) {
-        var req = https.request(
+    return new Promise(function(resolve, reject) {
+        const req = https.request(
             options,
             function(res) {
-                var chunks = [];
-                res.on('data', function(c) {
-                    chunks.push(c);
+                let raw = "";
+
+                res.on("data", function(chunk) {
+                    raw += chunk;
                 });
-                res.on('end', function() {
-                    var raw =
-                        Buffer.concat(chunks)
-                        .toString();
+
+                res.on("end", function() {
                     console.log(
                         "[HTTP]",
                         options.method,
-                        options.hostname +
                         options.path,
                         "->",
                         res.statusCode
                     );
                     console.log(
-                        "[BODY]",
-                        raw.substring(0, 300)
+                        "[RAW]",
+                        raw.substring(0, 500)
                     );
+
                     try {
-                        resolve(
-                            JSON.parse(raw)
-                        );
-                    } catch(e) {
                         resolve({
-                            _raw: raw,
-                            _status: res.statusCode
+                            statusCode: res.statusCode,
+                            data: JSON.parse(raw)
+                        });
+                    } catch (e) {
+                        resolve({
+                            statusCode: res.statusCode,
+                            data: raw
                         });
                     }
                 });
             }
         );
-        req.on('error', function(err) {
-            console.error(
-                "[REQUEST ERROR]",
-                err.message
-            );
+
+        req.on("error", function(err) {
             reject(err);
         });
+
         req.setTimeout(30000, function() {
-            req.destroy();
-            reject(new Error("Timeout"));
+            req.destroy(
+                new Error("Request timeout")
+            );
         });
+
         if (body) {
             req.write(body);
         }
+
         req.end();
     });
 }
 
 /* ====================================
-   STEP 1 - GET AUTH TOKEN
-   POST /token
+   GET AUTH TOKEN
+   BAZIK RETURNS "token", NOT "access_token"
    ==================================== */
 async function getToken() {
-    console.log("[TOKEN] Getting token for:", BAZIK_USER_ID);
-
     if (!BAZIK_USER_ID || !BAZIK_SECRET) {
-        throw new Error("Missing BAZIK_USER_ID or BAZIK_SECRET env variables");
+        throw new Error(
+            "Missing Netlify env vars: " +
+            "BAZIK_USER_ID / BAZIK_SECRET"
+        );
     }
 
-    var bodyObj = {
+    const body = JSON.stringify({
         userID: BAZIK_USER_ID,
         secretKey: BAZIK_SECRET
-    };
-    var bodyStr = JSON.stringify(bodyObj);
+    });
 
-    var options = {
+    const options = {
         hostname: BAZIK_HOST,
         port: 443,
-        path: '/token',
-        method: 'POST',
+        path: "/token",
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(bodyStr)
+            "Content-Type": "application/json",
+            "Content-Length":
+                Buffer.byteLength(body)
         }
     };
 
-    var result = await doRequest(options, bodyStr);
+    const result = await doRequest(
+        options, body
+    );
 
-    console.log("[TOKEN RESULT]", result);
+    console.log(
+        "[TOKEN RESULT]",
+        result.data
+    );
 
-    /* BAZIK returns token, not access_token */
-    var finalToken = result.access_token || result.token || null;
+    const token =
+        result.data &&
+        (result.data.token ||
+         result.data.access_token);
 
-    if (!finalToken) {
-        throw new Error("No token received. Response: " + JSON.stringify(result));
+    if (!token) {
+        throw new Error(
+            "No token received. Response: " +
+            JSON.stringify(result.data)
+        );
     }
 
-    console.log("[TOKEN] Success ✅");
-    return finalToken;
+    return token;
 }
 
 /* ====================================
-   STEP 2 - CREATE MONCASH PAYMENT
+   CREATE MONCASH PAYMENT
+   According to your Bazik docs:
    POST /moncash/token
-   (as shown in Bazik docs)
    ==================================== */
-async function createMoncashPayment(
-    amount,
-    referenceId,
-    customerEmail,
-    customerFirstName,
-    customerLastName,
-    userId
-) {
-    var token = await getToken();
+async function createPayment(payload) {
+    const token = await getToken();
 
-    console.log(
-        "[PAYMENT] Creating payment:",
-        referenceId,
-        "Amount:", amount,
-        "Gdes"
-    );
-
-   var bodyObj = {
-    gdes: parseFloat(amount),
-    userID: userId || ("bizenht_" + Date.now()),
-        successUrl: SITE_URL +
-            "/?payment=success&ref=" +
-            referenceId,
-        errorUrl: SITE_URL +
-            "/?payment=error&ref=" +
-            referenceId,
+    const body = JSON.stringify({
+        gdes: parseFloat(payload.amount),
+        userID: payload.userId || crypto.randomUUID(),
+        successUrl:
+            SITE_URL + "/?payment=success",
         description:
             "Bizen HT - Membership Premium",
-        referenceId: referenceId,
+        referenceId: payload.referenceId,
+        errorUrl:
+            SITE_URL + "/?payment=error",
         customerFirstName:
-            customerFirstName || "Client",
+            payload.firstName || "Client",
         customerLastName:
-            customerLastName || "Bizen",
+            payload.lastName || "Bizen",
         customerEmail:
-            customerEmail || "",
-        webhookUrl: SITE_URL +
+            payload.email || "",
+        webhookUrl:
+            SITE_URL +
             "/.netlify/functions/webhook",
         metadata: {
-            userId: userId || "",
-            email: customerEmail || "",
-            product: "premium_membership",
-            site: "bizenht.com"
+            firebaseUserId:
+                payload.firebaseUserId || "",
+            firebaseEmail:
+                payload.email || "",
+            site: "bizenht.com",
+            product: "premium"
         }
-    };
+    });
 
-    var bodyStr = JSON.stringify(bodyObj);
-
-    var options = {
+    const options = {
         hostname: BAZIK_HOST,
         port: 443,
-        path: '/moncash/token',
-        method: 'POST',
+        path: "/moncash/token",
+        method: "POST",
         headers: {
-            'Content-Type':
-                'application/json',
-            'Content-Length':
-                Buffer.byteLength(bodyStr),
-            'Authorization':
-                'Bearer ' + token
+            "Content-Type": "application/json",
+            "Authorization":
+                "Bearer " + token,
+            "Content-Length":
+                Buffer.byteLength(body)
         }
     };
 
-    var result = await doRequest(
-        options, bodyStr
+    const result = await doRequest(
+        options, body
     );
 
-    console.log("[PAYMENT RESULT]", result);
-    return result;
+    console.log(
+        "[PAYMENT RESULT]",
+        result.data
+    );
+
+    return result.data;
 }
 
 /* ====================================
-   STEP 3 - VERIFY PAYMENT
+   VERIFY PAYMENT
+   We try multiple possible endpoints
+   because Bazik docs can vary
    ==================================== */
 async function verifyPayment(referenceId) {
-    var token = await getToken();
+    const token = await getToken();
 
-    console.log(
-        "[VERIFY] Checking:", referenceId
-    );
-
-    /* Try different verify endpoints */
-    var endpoints = [
-        '/moncash/verify/' + referenceId,
-        '/payment/verify/' + referenceId,
-        '/payment/' + referenceId + '/status',
-        '/moncash/status/' + referenceId
+    const endpoints = [
+        "/moncash/verify/" + referenceId,
+        "/payment/verify/" + referenceId,
+        "/payment/" + referenceId,
+        "/moncash/" + referenceId
     ];
 
-    for (var i = 0;
-         i < endpoints.length; i++) {
+    for (let i = 0; i < endpoints.length; i++) {
         try {
-            var options = {
+            const options = {
                 hostname: BAZIK_HOST,
                 port: 443,
                 path: endpoints[i],
-                method: 'GET',
+                method: "GET",
                 headers: {
-                    'Authorization':
-                        'Bearer ' + token,
-                    'Content-Type':
-                        'application/json'
+                    "Authorization":
+                        "Bearer " + token,
+                    "Content-Type":
+                        "application/json"
                 }
             };
 
-            var result = await doRequest(
-                options, null
-            );
+            const result =
+                await doRequest(
+                    options, null
+                );
 
-            console.log(
-                "[VERIFY] Result from",
-                endpoints[i], ":", result
-            );
+            const data = result.data || {};
 
-            /* Check various success states */
+            const verified =
+                data.status === "success" ||
+                data.status === "completed" ||
+                data.status === "paid" ||
+                data.success === true ||
+                data.paid === true;
+
             if (
-                result.status === 'success' ||
-                result.status === 'completed' ||
-                result.status === 'paid' ||
-                result.paid === true ||
-                result.success === true
+                data.status ||
+                data.success ||
+                data.paid
             ) {
                 return {
-                    verified: true,
-                    status: result.status ||
-                        'success',
-                    raw: result
+                    verified: verified,
+                    status:
+                        data.status || "unknown",
+                    raw: data
                 };
             }
-
-            if (result.status) {
-                return {
-                    verified: false,
-                    status: result.status,
-                    raw: result
-                };
-            }
-        } catch(e) {
+        } catch (e) {
             console.log(
-                "[VERIFY] Endpoint",
+                "[VERIFY FAIL]",
                 endpoints[i],
-                "failed:", e.message
+                e.message
             );
         }
     }
 
     return {
         verified: false,
-        status: 'unknown'
+        status: "unknown"
     };
 }
 
 /* ====================================
-   MAIN HANDLER
+   HANDLER
    ==================================== */
 exports.handler = async function(
     event, context
 ) {
-    /* Handle CORS preflight */
-    if (event.httpMethod === 'OPTIONS') {
+    if (event.httpMethod === "OPTIONS") {
         return {
             statusCode: 200,
             headers: CORS,
-            body: ''
-        };
-    }
-
-    /* Only POST */
-    if (event.httpMethod !== 'POST') {
-        return {
-            statusCode: 405,
-            headers: CORS,
-            body: JSON.stringify({
-                success: false,
-                error: 'Method Not Allowed'
-            })
+            body: ""
         };
     }
 
     try {
-        var body = JSON.parse(
-            event.body || '{}'
+        const body = JSON.parse(
+            event.body || "{}"
         );
-        var action = body.action;
+        const action = body.action;
 
         console.log(
-            "=== REQUEST ===",
-            "Action:", action
+            "=== ACTION ===",
+            action
         );
 
-        /* ============================
-           TEST CONNECTION
-           ============================ */
-        if (action === 'test') {
-    try {
-        var token = await getToken();
-        return {
-            statusCode: 200,
-            headers: CORS,
-            body: JSON.stringify({
-                success: true,
-                message:
-                    "Bazik.io konekte! " +
-                    "Peman pret.",
-                hasToken: !!token
-            })
-        };
-    } catch(testErr) {
-        return {
-            statusCode: 200,
-            headers: CORS,
-            body: JSON.stringify({
-                success: false,
-                error: testErr.message
-            })
-        };
-    }
-}
+        /* TEST */
+        if (action === "test") {
+            try {
+                const token = await getToken();
+                return {
+                    statusCode: 200,
+                    headers: CORS,
+                    body: JSON.stringify({
+                        success: true,
+                        message:
+                            "Bazik.io konekte! " +
+                            "Peman pret.",
+                        hasToken: !!token
+                    })
+                };
+            } catch (e) {
+                return {
+                    statusCode: 200,
+                    headers: CORS,
+                    body: JSON.stringify({
+                        success: false,
+                        error: e.message
+                    })
+                };
+            }
+        }
 
-        /* ============================
-           CREATE PAYMENT
-           ============================ */
-        if (action === 'create') {
-            var amount =
-                body.amount || 1000;
-            var userId =
-                body.userId || "";
-            var userEmail =
-                body.userEmail || "";
-            var firstName =
-                body.firstName || "Client";
-            var lastName =
-                body.lastName || "Bizen";
-
-            /* Generate unique reference */
-            var referenceId =
-                'BHT' +
-                Date.now().toString(36)
-                    .toUpperCase() +
+        /* CREATE PAYMENT */
+        if (action === "create") {
+            const referenceId =
+                "BHT-" +
+                Date.now() + "-" +
                 Math.random()
                     .toString(36)
-                    .substr(2, 4)
+                    .substr(2, 6)
                     .toUpperCase();
 
-            console.log(
-                "[CREATE] Reference:",
-                referenceId
-            );
+            const result =
+                await createPayment({
+                    amount:
+                        body.amount || 1000,
+                    userId:
+                        body.userId || "",
+                    firebaseUserId:
+                        body.userId || "",
+                    email:
+                        body.userEmail || "",
+                    firstName:
+                        body.firstName ||
+                        "Client",
+                    lastName:
+                        body.lastName ||
+                        "Bizen",
+                    referenceId:
+                        referenceId
+                });
 
-            var payment =
-                await createMoncashPayment(
-                    amount,
-                    referenceId,
-                    userEmail,
-                    firstName,
-                    lastName,
-                    userId
-                );
-
-            /* Extract payment URL from
-               various possible fields */
-            var paymentUrl =
-                payment.paymentUrl ||
-                payment.payment_url ||
-                payment.redirect_url ||
-                payment.redirectUrl ||
-                payment.url ||
-                payment.link ||
-                payment.redirectLink ||
-                payment.payUrl ||
+            /* Try to extract payment URL */
+            const paymentUrl =
+                result.paymentUrl ||
+                result.payment_url ||
+                result.redirectUrl ||
+                result.redirect_url ||
+                result.url ||
+                result.link ||
+                result.token ||
                 null;
-
-            /* If MonCash token returned,
-               build redirect URL */
-            if (!paymentUrl &&
-                (payment.token ||
-                 payment.moncash_token)) {
-                var tk =
-                    payment.token ||
-                    payment.moncash_token;
-                /* Production MonCash URL */
-                paymentUrl =
-                    'https://moncashbutton' +
-                    '.digicelgroup.com/' +
-                    'Moncash-middleware/' +
-                    'Payment/Redirect?token=' +
-                    tk;
-            }
-
-            console.log(
-                "[CREATE] Payment URL:",
-                paymentUrl
-            );
 
             return {
                 statusCode: 200,
@@ -439,32 +372,33 @@ exports.handler = async function(
                     success: !!paymentUrl,
                     referenceId: referenceId,
                     paymentUrl: paymentUrl,
-                    rawResponse: payment
+                    rawResponse: result
                 })
             };
         }
 
-        /* ============================
-           VERIFY PAYMENT
-           ============================ */
-        if (action === 'verify') {
-            var refId =
+        /* VERIFY PAYMENT */
+        if (action === "verify") {
+            const referenceId =
                 body.referenceId ||
                 body.orderId;
 
-            if (!refId) {
+            if (!referenceId) {
                 return {
                     statusCode: 400,
                     headers: CORS,
                     body: JSON.stringify({
                         success: false,
-                        error: 'referenceId requis'
+                        error:
+                            "referenceId requis"
                     })
                 };
             }
 
-            var verifyResult =
-                await verifyPayment(refId);
+            const result =
+                await verifyPayment(
+                    referenceId
+                );
 
             return {
                 statusCode: 200,
@@ -472,27 +406,26 @@ exports.handler = async function(
                 body: JSON.stringify({
                     success: true,
                     verified:
-                        verifyResult.verified,
-                    status: verifyResult.status
+                        result.verified,
+                    status: result.status,
+                    raw: result.raw
                 })
             };
         }
 
-        /* Unknown action */
         return {
             statusCode: 400,
             headers: CORS,
             body: JSON.stringify({
                 success: false,
-                error: 'Action invalide: ' +
-                    action
+                error: "Action invalide"
             })
         };
 
-    } catch(error) {
+    } catch (error) {
         console.error(
             "[HANDLER ERROR]",
-            error.message
+            error
         );
         return {
             statusCode: 500,
