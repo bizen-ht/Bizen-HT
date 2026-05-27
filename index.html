@@ -4102,59 +4102,217 @@ function selectHotel(type) {
 /* ====================================
    GOOGLE AUTH
    ==================================== */
+/* ====================================
+   GOOGLE AUTH - DEBUG VERSION
+   ==================================== */
 function loginWithGoogle() {
-    if (!auth) { toast("Firebase pa disponib.", "err"); return; }
-    var provider = new firebase.auth.GoogleAuthProvider();
+    if (!auth) {
+        toast(
+            "Firebase pa disponib.",
+            "err"
+        );
+        return;
+    }
+
+    var provider =
+        new firebase.auth.GoogleAuthProvider();
+
     provider.addScope("email");
     provider.addScope("profile");
+
+    console.log(
+        "[GOOGLE] Starting popup login..."
+    );
+
     auth.signInWithPopup(provider)
         .then(function (result) {
+            console.log(
+                "[GOOGLE] SUCCESS",
+                result
+            );
+
             var user = result.user;
-            var isNew = result.additionalUserInfo.isNewUser;
+            var isNew =
+                result.additionalUserInfo
+                ? result.additionalUserInfo
+                    .isNewUser
+                : false;
+
             if (db) {
                 if (isNew) {
                     var nm = "";
                     var pr = "";
+
                     if (user.displayName) {
-                        var parts = user.displayName.split(" ");
+                        var parts =
+                            user.displayName
+                            .split(" ");
                         pr = parts[0] || "";
-                        nm = parts.slice(1).join(" ") || "";
+                        nm = parts.slice(1)
+                            .join(" ") || "";
                     } else {
-                        pr = user.email.split("@")[0];
+                        pr =
+                            user.email
+                            .split("@")[0];
                     }
-                    db.collection("users").doc(user.uid).set({
-                        prenom: pr,
-                        nom: nm,
-                        email: user.email,
-                        telephone: "",
-                        isPremium: false,
-                        type: "user",
-                        status: "active",
-                        emailVerified: true,
-                        loginMethod: "google",
-                        photoURL: user.photoURL || "",
-                        favorites: [],
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                    }).catch(function () {});
+
+                    db.collection("users")
+                        .doc(user.uid)
+                        .set({
+                            prenom: pr,
+                            nom: nm,
+                            email: user.email,
+                            telephone: "",
+                            isPremium: false,
+                            type: "user",
+                            status: "active",
+                            emailVerified: true,
+                            loginMethod: "google",
+                            photoURL:
+                                user.photoURL || "",
+                            favorites: [],
+                            createdAt:
+                                firebase.firestore
+                                .FieldValue
+                                .serverTimestamp(),
+                            lastLogin:
+                                firebase.firestore
+                                .FieldValue
+                                .serverTimestamp()
+                        })
+                        .then(function() {
+                            console.log(
+                                "[GOOGLE] New user " +
+                                "saved to Firestore"
+                            );
+                        })
+                        .catch(function(err) {
+                            console.error(
+                                "[GOOGLE] Firestore " +
+                                "save error:",
+                                err
+                            );
+                        });
                 } else {
-                    db.collection("users").doc(user.uid).update({
-                        emailVerified: true,
-                        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                    }).catch(function () {});
+                    db.collection("users")
+                        .doc(user.uid)
+                        .update({
+                            emailVerified: true,
+                            lastLogin:
+                                firebase.firestore
+                                .FieldValue
+                                .serverTimestamp()
+                        })
+                        .then(function() {
+                            console.log(
+                                "[GOOGLE] Existing user " +
+                                "updated"
+                            );
+                        })
+                        .catch(function(err) {
+                            console.warn(
+                                "[GOOGLE] Update " +
+                                "warning:",
+                                err
+                            );
+                        });
                 }
             }
+
             cM("lM");
             cM("sM");
-            var name = user.displayName ? user.displayName.split(" ")[0] : "Ou";
-            showOk(isNew ? "Byenveni sou Bizen HT!" : "Koneksyon Reyisi!", "Byenveni " + name + "!");
+
+            var name =
+                user.displayName
+                ? user.displayName
+                    .split(" ")[0]
+                : "Ou";
+
+            showOk(
+                isNew
+                    ? "Byenveni sou Bizen HT!"
+                    : "Koneksyon Reyisi!",
+                "Byenveni " + name + "!"
+            );
         })
         .catch(function (error) {
-            if (error.code === "auth/popup-closed-by-user") return;
-            toast("Ere Google: " + error.message, "err");
+            console.error(
+                "[GOOGLE] ERROR CODE:",
+                error.code
+            );
+            console.error(
+                "[GOOGLE] ERROR MESSAGE:",
+                error.message
+            );
+            console.error(
+                "[GOOGLE] FULL ERROR:",
+                error
+            );
+
+            if (
+                error.code ===
+                "auth/popup-closed-by-user"
+            ) {
+                return;
+            }
+
+            if (
+                error.code ===
+                "auth/popup-blocked"
+            ) {
+                toast(
+                    "Popup Google a bloke. " +
+                    "Pèmèt popup yo epi " +
+                    "eseye ankò.",
+                    "err"
+                );
+                return;
+            }
+
+            if (
+                error.code ===
+                "auth/unauthorized-domain"
+            ) {
+                toast(
+                    "Domaine sa a poko " +
+                    "otorize nan Firebase.",
+                    "err"
+                );
+                return;
+            }
+
+            if (
+                error.code ===
+                "auth/operation-not-allowed"
+            ) {
+                toast(
+                    "Google Auth pa aktive " +
+                    "nan Firebase.",
+                    "err"
+                );
+                return;
+            }
+
+            if (
+                error.code ===
+                "auth/network-request-failed"
+            ) {
+                toast(
+                    "Pwoblèm koneksyon entènèt " +
+                    "oswa Google API.",
+                    "err"
+                );
+                return;
+            }
+
+            toast(
+                "Ere Google: " +
+                error.code + " - " +
+                error.message,
+                "err"
+            );
         });
 }
-
 /* ====================================
    EMAIL VERIFICATION FUNCTIONS
    ==================================== */
