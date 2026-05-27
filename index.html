@@ -4789,7 +4789,7 @@ function initMonCashPayment() {
             "Ou dwe konekte dabo.",
             "err"
         );
-        setTimeout(function() {
+        setTimeout(function () {
             oM("lM");
         }, 1500);
         return;
@@ -4802,7 +4802,6 @@ function initMonCashPayment() {
         "mcStatus"
     );
 
-    /* Update button */
     if (btn) {
         btn.innerHTML =
             '<i class="fas fa-spinner ' +
@@ -4811,14 +4810,12 @@ function initMonCashPayment() {
         btn.style.opacity = "0.7";
     }
 
-    /* Update status */
     if (statusEl) {
         statusEl.style.display = "block";
         statusEl.style.cssText =
             "display:block;padding:10px;" +
             "background:rgba(255,204,0,0.1);" +
-            "border:1px solid rgba(" +
-            "255,204,0,0.3);" +
+            "border:1px solid rgba(255,204,0,0.3);" +
             "border-radius:10px;" +
             "font-size:0.82rem;" +
             "text-align:center;" +
@@ -4826,14 +4823,12 @@ function initMonCashPayment() {
             "margin-bottom:15px";
         statusEl.innerHTML =
             '<i class="fas fa-spinner ' +
-            'fa-spin"></i> ' +
-            'Koneksyon ak MonCash...';
+            'fa-spin"></i> Koneksyon ak MonCash...';
     }
 
     var uid = auth.currentUser.uid;
     var email = auth.currentUser.email || "";
 
-    /* Get user name from Firestore */
     var firstName = "Client";
     var lastName = "Bizen";
 
@@ -4841,7 +4836,7 @@ function initMonCashPayment() {
         db.collection("users")
             .doc(uid)
             .get()
-            .then(function(doc) {
+            .then(function (doc) {
                 if (doc.exists) {
                     var d = doc.data();
                     firstName =
@@ -4850,82 +4845,93 @@ function initMonCashPayment() {
                         d.nom || "Bizen";
                 }
                 doCreatePayment(
-                    uid, email,
-                    firstName, lastName,
-                    btn, statusEl
+                    uid,
+                    email,
+                    firstName,
+                    lastName,
+                    btn,
+                    statusEl
                 );
             })
-            .catch(function() {
+            .catch(function () {
                 doCreatePayment(
-                    uid, email,
-                    firstName, lastName,
-                    btn, statusEl
+                    uid,
+                    email,
+                    firstName,
+                    lastName,
+                    btn,
+                    statusEl
                 );
             });
     } else {
         doCreatePayment(
-            uid, email,
-            firstName, lastName,
-            btn, statusEl
+            uid,
+            email,
+            firstName,
+            lastName,
+            btn,
+            statusEl
         );
     }
 }
-
 function doCreatePayment(
-    userId, email,
-    firstName, lastName,
-    btn, statusEl
+    userId,
+    email,
+    firstName,
+    lastName,
+    btn,
+    statusEl
 ) {
-    console.log(
-        "[PAYMENT] Creating for:",
-        email
-    );
-
-    fetch(
-        "/.netlify/functions/moncash",
-        {
-            method: "POST",
-            headers: {
-                "Content-Type":
-                    "application/json"
-            },
-            body: JSON.stringify({
-                action: "create",
-                amount: 1000,
-                userId: userId,
-                userEmail: email,
-                firstName: firstName,
-                lastName: lastName
-            })
-        }
-    )
-        .then(function(res) {
-            if (!res.ok) {
-                throw new Error(
-                    "HTTP " + res.status
-                );
-            }
+    fetch("/.netlify/functions/moncash", {
+        method: "POST",
+        headers: {
+            "Content-Type":
+                "application/json"
+        },
+        body: JSON.stringify({
+            action: "create",
+            amount: 1000,
+            userId: userId,
+            userEmail: email,
+            firstName: firstName,
+            lastName: lastName
+        })
+    })
+        .then(function (res) {
             return res.json();
         })
-        .then(function(data) {
+        .then(function (data) {
             console.log(
-                "[PAYMENT] Response:", data
+                "[PAYMENT RESPONSE]",
+                data
             );
 
-            /* Reset button */
             if (btn) {
                 btn.innerHTML =
                     '<i class="fas ' +
-                    'fa-mobile-alt"></i>' +
-                    ' Peye 1,000 Gdes ' +
-                    'via MonCash';
+                    'fa-mobile-alt"></i> ' +
+                    'Peye 1,000 Gdes via MonCash';
                 btn.disabled = false;
                 btn.style.opacity = "1";
             }
 
-            if (data.success &&
-                data.paymentUrl) {
-                /* Save order to Firebase */
+            var finalUrl = null;
+
+            if (data.paymentUrl) {
+                finalUrl = data.paymentUrl;
+            } else if (
+                data.rawResponse &&
+                data.rawResponse.redirectUrl
+            ) {
+                finalUrl =
+                    data.rawResponse.redirectUrl;
+            }
+
+            if (data.success && finalUrl) {
+                currentOrderId =
+                    data.referenceId ||
+                    null;
+
                 if (db) {
                     db.collection("payments")
                         .add({
@@ -4933,28 +4939,24 @@ function doCreatePayment(
                             email: email,
                             method: "moncash",
                             referenceId:
-                                data.referenceId,
+                                data.referenceId ||
+                                null,
                             amount: 1000,
                             status: "en_attente",
                             provider: "bazik",
-                            createdAt: firebase
-                                .firestore
+                            createdAt:
+                                firebase.firestore
                                 .FieldValue
                                 .serverTimestamp()
                         })
-                        .catch(function() {});
+                        .catch(function () {});
                 }
 
-                currentOrderId =
-                    data.referenceId;
-
-                /* Update status */
                 if (statusEl) {
                     statusEl.innerHTML =
                         '<i class="fas ' +
-                        'fa-external-link-alt">' +
-                        '</i> ' +
-                        'Ap ouvri MonCash...';
+                        'fa-external-link-alt"></i> ' +
+                        'Redirection vers MonCash...';
                     statusEl.style.color =
                         "#4caf50";
                     statusEl.style.borderColor =
@@ -4963,40 +4965,37 @@ function doCreatePayment(
                         "rgba(76,175,80,0.1)";
                 }
 
-                /* Open MonCash */
-                setTimeout(function() {
-                    window.open(
-                        data.paymentUrl,
-                        "_blank"
-                    );
+                /* Try popup first */
+                var newWin = window.open(
+                    finalUrl,
+                    "_blank"
+                );
 
-                    if (statusEl) {
-                        statusEl.innerHTML =
-                            '<i class="fas ' +
-                            'fa-clock"></i> ' +
-                            'Ap tann konfirmasyon...';
-                    }
+                /* If popup blocked, redirect same tab */
+                if (
+                    !newWin ||
+                    newWin.closed ||
+                    typeof newWin.closed ===
+                        "undefined"
+                ) {
+                    window.location.href =
+                        finalUrl;
+                    return;
+                }
 
-                    /* Start checking */
+                setTimeout(function () {
                     startPaymentCheck(
                         data.referenceId,
                         userId
                     );
-                }, 800);
+                }, 5000);
 
             } else {
-                /* No payment URL */
-                console.log(
-                    "[PAYMENT] No URL. Raw:",
-                    data.rawResponse
-                );
-
                 if (statusEl) {
                     statusEl.innerHTML =
                         '<i class="fas ' +
-                        'fa-exclamation-triangle">' +
-                        '</i> Pa jwenn lyen. ' +
-                        'Itilize metod manyel la.';
+                        'fa-exclamation-triangle"></i> ' +
+                        'Pa jwenn lyen peman.';
                     statusEl.style.color =
                         "#ff9800";
                     statusEl.style.borderColor =
@@ -5004,36 +5003,46 @@ function doCreatePayment(
                     statusEl.style.background =
                         "rgba(255,152,0,0.1)";
                 }
+
+                toast(
+                    "Lyen peman pa disponib.",
+                    "err"
+                );
             }
         })
-        .catch(function(err) {
+        .catch(function (err) {
             console.error(
-                "[PAYMENT] Fetch error:",
-                err.message
+                "[PAYMENT ERROR]",
+                err
             );
 
-            /* Reset button */
             if (btn) {
                 btn.innerHTML =
                     '<i class="fas ' +
-                    'fa-mobile-alt"></i>' +
-                    ' Peye 1,000 Gdes ' +
-                    'via MonCash';
+                    'fa-mobile-alt"></i> ' +
+                    'Peye 1,000 Gdes via MonCash';
                 btn.disabled = false;
                 btn.style.opacity = "1";
             }
 
             if (statusEl) {
                 statusEl.innerHTML =
-                    '<i class="fas fa-times-circle">' +
-                    '</i> Koneksyon echwe. ' +
-                    'Verifye koneksyon entènèt ou.';
-                statusEl.style.color = "#f44336";
+                    '<i class="fas ' +
+                    'fa-times-circle"></i> ' +
+                    'Koneksyon echwe.';
+                statusEl.style.color =
+                    "#f44336";
                 statusEl.style.borderColor =
                     "rgba(244,67,54,0.3)";
                 statusEl.style.background =
                     "rgba(244,67,54,0.1)";
             }
+
+            toast(
+                "Koneksyon echwe pandan " +
+                "kreyasyon peman an.",
+                "err"
+            );
         });
 }
 
