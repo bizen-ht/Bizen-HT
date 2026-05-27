@@ -5642,7 +5642,7 @@ function doAdminLogin(e) {
     var adminApp;
     try { adminApp = firebase.app("admChk"); }
     catch (ex) {
-        try { adminApp = firebase.initializeApp({ apiKey: "AIzaSyADWklo0scZNWkhudRn_VBhrapXl4AZL_E", authDomain: "bizenht.com", projectId: "bizen-ht" }, "admChk"); }
+        try { adminApp = firebase.initializeApp({ apiKey: "AIzaSyADWklo0scZNWkhudRn_VBhrapXl4AZL_E", authDomain: "bizen-ht.firebaseapp.com", projectId: "bizen-ht" }, "admChk"); }
         catch (ex2) { adminApp = firebase.app("admChk"); }
     }
     adminApp.auth().signInWithEmailAndPassword(em, pw)
