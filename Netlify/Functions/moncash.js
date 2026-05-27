@@ -1,4 +1,6 @@
 const https = require('https');
+const BUILD_VERSION =
+    "moncash-fix-token-v2";
 const crypto = require('crypto');
 
 /* ====================================
