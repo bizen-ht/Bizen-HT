@@ -10,6 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
     <style>
         :root {
             --primary: #e91e63;
@@ -528,7 +529,32 @@
                     </button>
                 </div>
             </div>
+<!-- KREY MENU -->
+<div id="kreyMenu" style="display:none">
+    <div class="sb-nav-group">
+        <div class="sb-nav-label">
+            Dashboard Krey
+        </div>
 
+        <button class="sb-link"
+                onclick="showSection('krey-overview',this)">
+            <i class="fas fa-home"></i>
+            Apesi Jeneral
+        </button>
+
+        <button class="sb-link"
+                onclick="showSection('krey-profile',this)">
+            <i class="fas fa-images"></i>
+            Medias Krey
+        </button>
+
+        <button class="sb-link"
+                onclick="showSection('settings',this)">
+            <i class="fas fa-cog"></i>
+            Paramèt
+        </button>
+    </div>
+</div>
         </nav>
 
         <div class="sb-footer">
@@ -878,7 +904,218 @@
                 </button>
             </div>
         </div>
+<!-- ===== KREY OVERVIEW ===== -->
+<div class="dash-section" id="sec-krey-overview">
+    <div class="dash-top">
+        <h1>
+            <i class="fas fa-users"
+               style="color:var(--purple)"></i>
+            Dashboard <span>Krèy</span>
+        </h1>
+        <div class="top-actions">
+            <span id="kreyStatus"
+                  class="sb-badge"
+                  style="font-size:0.8rem;
+                         padding:6px 15px">
+                Chaje...
+            </span>
+        </div>
+    </div>
 
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-card-top">
+                <div class="stat-card-ico pink">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+            <div class="stat-val"
+                 id="kreyMembersCount">
+                0
+            </div>
+            <div class="stat-label">
+                Kantite Manm
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-top">
+                <div class="stat-card-ico gold">
+                    <i class="fas fa-tag"></i>
+                </div>
+            </div>
+            <div class="stat-val"
+                 id="kreyPriceDisplay">
+                0 G
+            </div>
+            <div class="stat-label">
+                Pri pa Moman
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-top">
+                <div class="stat-card-ico green">
+                    <i class="fas fa-wallet"></i>
+                </div>
+            </div>
+            <div class="stat-val"
+                 id="kreySoldeDisplay">
+                0 G
+            </div>
+            <div class="stat-label">
+                Solde Gwoup la
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-top">
+                <div class="stat-card-ico orange">
+                    <i class="fas fa-percentage"></i>
+                </div>
+            </div>
+            <div class="stat-val">
+                10%
+            </div>
+            <div class="stat-label">
+                Komisyon Bizen HT
+            </div>
+        </div>
+    </div>
+
+    <div class="dash-table-wrap">
+        <div class="dash-table-head">
+            <h3>Enfomasyon Gwoup la</h3>
+        </div>
+        <div style="padding:25px">
+            <p style="margin-bottom:10px">
+                <strong>Non Gwoup :</strong>
+                <span id="kreyNameDisplay">
+                    Chaje...
+                </span>
+            </p>
+            <p style="margin-bottom:10px">
+                <strong>Zon de Sevis :</strong>
+                <span id="kreyZoneDisplay">
+                    Chaje...
+                </span>
+            </p>
+            <p style="margin-bottom:10px">
+                <strong>Deskripsyon :</strong>
+                <span id="kreyDescDisplay">
+                    Chaje...
+                </span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ===== KREY PROFILE / MEDIA ===== -->
+<div class="dash-section" id="sec-krey-profile">
+    <div class="dash-top">
+        <h1>
+            <i class="fas fa-images"
+               style="color:var(--purple)"></i>
+            Medias <span>Krèy</span>
+        </h1>
+    </div>
+
+    <div style="background:var(--bg-card);
+                border:1px solid var(--border);
+                border-radius:var(--radius-lg);
+                padding:30px;
+                max-width:700px">
+
+        <h3 style="font-family:'Playfair Display',serif;
+                   margin-bottom:20px">
+            Jere Medias Gwoup la
+        </h3>
+
+        <!-- Upload Photos -->
+        <div style="margin-bottom:20px">
+            <label style="display:block;
+                          font-size:0.8rem;
+                          color:var(--text-muted);
+                          margin-bottom:8px">
+                Ajoute nouvo foto
+            </label>
+            <input type="file"
+                   id="kreyDashPhotos"
+                   multiple
+                   accept="image/*"
+                   style="margin-bottom:10px;
+                          color:white">
+            <button onclick="uploadKreyDashPhotos()"
+                    style="padding:10px 20px;
+                           background:rgba(233,30,99,0.12);
+                           border:1px solid rgba(233,30,99,0.3);
+                           border-radius:50px;
+                           color:#e91e63;
+                           cursor:pointer;
+                           font-family:Montserrat,sans-serif;
+                           font-size:0.8rem;
+                           font-weight:600">
+                <i class="fas fa-upload"></i>
+                Upload Foto
+            </button>
+        </div>
+
+        <!-- Upload Videos -->
+        <div style="margin-bottom:20px">
+            <label style="display:block;
+                          font-size:0.8rem;
+                          color:var(--text-muted);
+                          margin-bottom:8px">
+                Ajoute nouvo videyo
+            </label>
+            <input type="file"
+                   id="kreyDashVideos"
+                   multiple
+                   accept="video/*"
+                   style="margin-bottom:10px;
+                          color:white">
+            <button onclick="uploadKreyDashVideos()"
+                    style="padding:10px 20px;
+                           background:rgba(33,150,243,0.12);
+                           border:1px solid rgba(33,150,243,0.3);
+                           border-radius:50px;
+                           color:#2196f3;
+                           cursor:pointer;
+                           font-family:Montserrat,sans-serif;
+                           font-size:0.8rem;
+                           font-weight:600">
+                <i class="fas fa-upload"></i>
+                Upload Videyo
+            </button>
+        </div>
+
+        <!-- Photos List -->
+        <div style="margin-top:25px">
+            <h4 style="margin-bottom:10px;
+                       font-size:0.9rem">
+                Foto yo
+            </h4>
+            <div id="kreyPhotosList"
+                 style="display:flex;
+                        gap:10px;
+                        flex-wrap:wrap">
+            </div>
+        </div>
+
+        <!-- Videos List -->
+        <div style="margin-top:25px">
+            <h4 style="margin-bottom:10px;
+                       font-size:0.9rem">
+                Videyo yo
+            </h4>
+            <div id="kreyVideosList"
+                 style="display:flex;
+                        flex-direction:column;
+                        gap:10px">
+            </div>
+        </div>
+    </div>
+</div>
     </main>
 </div>
 
@@ -895,11 +1132,12 @@ var fbCfg = {
     appId: "1:248857953518:web:f85b1b37abd849add01fff"
 };
 
-var db, auth;
+var db, auth, storage;
 try {
     firebase.initializeApp(fbCfg);
     db = firebase.firestore();
-    auth = firebase.auth();
+auth = firebase.auth();
+storage = firebase.storage();
     console.log("Firebase OK");
 } catch (e) {
     console.warn("Firebase:", e.message);
@@ -1185,29 +1423,90 @@ function setupFreelancer() {
    SETUP KREY
    ==================================== */
 function setupKrey() {
-    var uM = document.getElementById("userMenu");
-    var flM = document.getElementById("freelancerMenu");
+    var uM = document.getElementById(
+        "userMenu"
+    );
     if (uM) uM.style.display = "none";
+
+    var flM = document.getElementById(
+        "freelancerMenu"
+    );
     if (flM) flM.style.display = "none";
 
-    setEl("sbName", userData.kreyName || userData.prenom || "Krey");
-    setEl("sbEmail", userData.email || "");
-    setEl("dashUserName", "Dashboard Krey");
+    var kM = document.getElementById(
+        "kreyMenu"
+    );
+    if (kM) kM.style.display = "block";
 
-    var badges = document.getElementById("sbBadges");
+    setEl("sbName",
+        userData.kreyName ||
+        userData.prenom || "Krey"
+    );
+    setEl("sbEmail", userData.email || "");
+
+    var badges = document.getElementById(
+        "sbBadges"
+    );
     if (badges) {
         badges.innerHTML =
-            '<span class="sb-badge" style="background:linear-gradient(135deg,#ff5722,#e91e63);color:white">' +
-            '<i class="fas fa-users"></i> Gwoup Krey</span>';
+            '<span class="sb-badge" ' +
+            'style="background:linear-gradient(' +
+            '135deg,#ff5722,#e91e63);' +
+            'color:white">' +
+            '<i class="fas fa-users"></i> ' +
+            'Gwoup Krey</span>';
     }
 
-    /* Show user menu as fallback */
-    var uMenu = document.getElementById("userMenu");
-    if (uMenu) uMenu.style.display = "block";
+    setEl("dashUserName",
+        "Dashboard Krey"
+    );
 
-    showSection("overview", null);
+    /* Infos générales */
+    setEl("kreyNameDisplay",
+        userData.kreyName ||
+        userData.prenom || "N/A"
+    );
+    setEl("kreyZoneDisplay",
+        userData.kreyZone || "N/A"
+    );
+    setEl("kreyDescDisplay",
+        userData.kreyDescription || "N/A"
+    );
+    setEl("kreyMembersCount",
+        userData.kreyMemberCount || 0
+    );
+    setEl("kreyPriceDisplay",
+        (userData.kreyPrice || 0) + " G"
+    );
+    setEl("kreySoldeDisplay",
+        (userData.solde || 0) + " G"
+    );
+
+    var statusEl = document.getElementById(
+        "kreyStatus"
+    );
+    if (statusEl) {
+        var txt = "An Atant";
+        var col = "#ff9800";
+        if (userData.status === "active") {
+            txt = "Aktif";
+            col = "#4caf50";
+        } else if (
+            userData.status === "frozen"
+        ) {
+            txt = "Jele";
+            col = "#f44336";
+        }
+        statusEl.textContent = txt;
+        statusEl.style.color = col;
+    }
+
+    /* Charger médias */
+    loadKreyMedia();
+
+    /* Afficher première section */
+    showSection("krey-overview", null);
 }
-
 /* ====================================
    BUILD PLAN SECTION
    ==================================== */
@@ -1620,6 +1919,326 @@ function showToast(msg, type) {
     t.innerHTML = '<i class="fas ' + ic + '" style="color:' + cl + '"></i><span>' + msg + '</span>';
     document.body.appendChild(t);
     setTimeout(function () { if (t.parentNode) t.remove(); }, 3500);
+}
+
+/* ====================================
+   LOAD KREY MEDIA
+   ==================================== */
+function loadKreyMedia() {
+    if (!userData) return;
+
+    var photos =
+        userData.media &&
+        userData.media.photos
+        ? userData.media.photos
+        : [];
+
+    var videos =
+        userData.media &&
+        userData.media.videos
+        ? userData.media.videos
+        : [];
+
+    renderKreyPhotos(photos);
+    renderKreyVideos(videos);
+}
+
+function renderKreyPhotos(photos) {
+    var box = document.getElementById(
+        "kreyPhotosList"
+    );
+    if (!box) return;
+
+    if (!photos || photos.length === 0) {
+        box.innerHTML =
+            '<p style="font-size:0.8rem;' +
+            'color:#6a6a80">' +
+            'Pa gen foto anko</p>';
+        return;
+    }
+
+    var h = "";
+    photos.forEach(function(photo, idx) {
+        h += '<div style="width:100px">';
+        h += '<div style="position:relative;' +
+            'width:100px;height:100px;' +
+            'border-radius:10px;' +
+            'overflow:hidden;' +
+            'border:1px solid #2a2a3a">';
+        h += '<img src="' + photo.url + '" ' +
+            'style="width:100%;height:100%;' +
+            'object-fit:cover">';
+        h += '<button onclick=' +
+            '"deleteKreyMedia(' +
+            '\'photo\',\'' +
+            photo.path + '\',' +
+            idx + ')" ' +
+            'style="position:absolute;' +
+            'top:4px;right:4px;' +
+            'width:22px;height:22px;' +
+            'border:none;border-radius:50%;' +
+            'background:rgba(244,67,54,0.9);' +
+            'color:white;cursor:pointer;' +
+            'font-size:0.7rem">' +
+            '<i class="fas fa-times"></i>' +
+            '</button></div></div>';
+    });
+
+    box.innerHTML = h;
+}
+
+function renderKreyVideos(videos) {
+    var box = document.getElementById(
+        "kreyVideosList"
+    );
+    if (!box) return;
+
+    if (!videos || videos.length === 0) {
+        box.innerHTML =
+            '<p style="font-size:0.8rem;' +
+            'color:#6a6a80">' +
+            'Pa gen videyo anko</p>';
+        return;
+    }
+
+    var h = "";
+    videos.forEach(function(video, idx) {
+        h += '<div style="display:flex;' +
+            'align-items:center;' +
+            'justify-content:space-between;' +
+            'padding:12px 15px;' +
+            'background:rgba(255,255,255,0.03);' +
+            'border:1px solid #2a2a3a;' +
+            'border-radius:10px">';
+        h += '<div><strong style="' +
+            'font-size:0.82rem">' +
+            (video.name || "Videyo") +
+            '</strong><br>' +
+            '<a href="' + video.url + '" ' +
+            'target="_blank" ' +
+            'style="font-size:0.75rem">' +
+            'We videyo</a></div>';
+        h += '<button onclick=' +
+            '"deleteKreyMedia(' +
+            '\'video\',\'' +
+            video.path + '\',' +
+            idx + ')" ' +
+            'style="padding:6px 12px;' +
+            'border:none;border-radius:50px;' +
+            'background:rgba(244,67,54,0.15);' +
+            'color:#f44336;cursor:pointer;' +
+            'font-size:0.72rem">' +
+            '<i class="fas fa-trash"></i>' +
+            '</button></div>';
+    });
+
+    box.innerHTML = h;
+}
+
+/* ====================================
+   UPLOAD NEW KREY PHOTOS
+   ==================================== */
+async function uploadKreyDashPhotos() {
+    if (!storage || !db || !currentUser) return;
+
+    var input = document.getElementById(
+        "kreyDashPhotos"
+    );
+    if (!input || !input.files ||
+        input.files.length === 0) {
+        showToast(
+            "Chwazi foto yo anvan.",
+            "error"
+        );
+        return;
+    }
+
+    var uploaded = [];
+
+    for (var i = 0; i < input.files.length; i++) {
+        var file = input.files[i];
+        if (!file.type.startsWith("image/")) {
+            continue;
+        }
+
+        var safeName =
+            Date.now() + "_" +
+            file.name.replace(/\s+/g, "_");
+        var path =
+            "krey/" +
+            currentUser.uid +
+            "/photos/" +
+            safeName;
+
+        var ref = storage.ref(path);
+
+        await ref.put(file);
+        var url = await ref.getDownloadURL();
+
+        uploaded.push({
+            name: file.name,
+            url: url,
+            path: path,
+            createdAt:
+                new Date().toISOString()
+        });
+    }
+
+    var oldPhotos =
+        userData.media &&
+        userData.media.photos
+        ? userData.media.photos
+        : [];
+
+    await db.collection("users")
+        .doc(currentUser.uid)
+        .update({
+            "media.photos":
+                oldPhotos.concat(uploaded)
+        });
+
+    userData.media = userData.media || {};
+    userData.media.photos =
+        oldPhotos.concat(uploaded);
+
+    loadKreyMedia();
+    input.value = "";
+    showToast(
+        "Foto yo ajoute!",
+        "success"
+    );
+}
+
+/* ====================================
+   UPLOAD NEW KREY VIDEOS
+   ==================================== */
+async function uploadKreyDashVideos() {
+    if (!storage || !db || !currentUser) return;
+
+    var input = document.getElementById(
+        "kreyDashVideos"
+    );
+    if (!input || !input.files ||
+        input.files.length === 0) {
+        showToast(
+            "Chwazi videyo yo anvan.",
+            "error"
+        );
+        return;
+    }
+
+    var uploaded = [];
+
+    for (var i = 0; i < input.files.length; i++) {
+        var file = input.files[i];
+        if (!file.type.startsWith("video/")) {
+            continue;
+        }
+
+        var safeName =
+            Date.now() + "_" +
+            file.name.replace(/\s+/g, "_");
+        var path =
+            "krey/" +
+            currentUser.uid +
+            "/videos/" +
+            safeName;
+
+        var ref = storage.ref(path);
+
+        await ref.put(file);
+        var url = await ref.getDownloadURL();
+
+        uploaded.push({
+            name: file.name,
+            url: url,
+            path: path,
+            createdAt:
+                new Date().toISOString()
+        });
+    }
+
+    var oldVideos =
+        userData.media &&
+        userData.media.videos
+        ? userData.media.videos
+        : [];
+
+    await db.collection("users")
+        .doc(currentUser.uid)
+        .update({
+            "media.videos":
+                oldVideos.concat(uploaded)
+        });
+
+    userData.media = userData.media || {};
+    userData.media.videos =
+        oldVideos.concat(uploaded);
+
+    loadKreyMedia();
+    input.value = "";
+    showToast(
+        "Videyo yo ajoute!",
+        "success"
+    );
+}
+
+/* ====================================
+   DELETE KREY MEDIA
+   ==================================== */
+async function deleteKreyMedia(
+    mediaType,
+    path,
+    index
+) {
+    if (!storage || !db || !currentUser) return;
+
+    if (!confirm("Efase medya sa a?")) {
+        return;
+    }
+
+    try {
+        await storage.ref(path).delete();
+
+        if (mediaType === "photo") {
+            var photos =
+                userData.media.photos || [];
+            photos.splice(index, 1);
+
+            await db.collection("users")
+                .doc(currentUser.uid)
+                .update({
+                    "media.photos": photos
+                });
+
+            userData.media.photos = photos;
+            loadKreyMedia();
+        } else {
+            var videos =
+                userData.media.videos || [];
+            videos.splice(index, 1);
+
+            await db.collection("users")
+                .doc(currentUser.uid)
+                .update({
+                    "media.videos": videos
+                });
+
+            userData.media.videos = videos;
+            loadKreyMedia();
+        }
+
+        showToast(
+            "Medya a efase!",
+            "success"
+        );
+    } catch (e) {
+        console.error(e);
+        showToast(
+            "Ere pandan efasman.",
+            "error"
+        );
+    }
 }
 </script>
 </body>

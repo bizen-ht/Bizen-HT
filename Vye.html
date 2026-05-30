@@ -13,6 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
     <style>
         :root {
             --primary: #e91e63;
@@ -631,6 +632,158 @@
         @media (max-width: 480px) {
             .sg { grid-template-columns: 1fr; }
         }
+    /* ADMIN DETAIL MODAL */
+.adm-modal-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    padding: 20px;
+}
+
+.adm-modal-bg.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.adm-modal {
+    background: #15151f;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 35px;
+    max-width: 700px;
+    width: 100%;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.adm-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.adm-modal h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    margin-bottom: 20px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+}
+
+.detail-row span:first-child {
+    color: var(--text-muted);
+    min-width: 120px;
+}
+
+.detail-row span:last-child {
+    color: var(--text-sec);
+    text-align: right;
+    word-break: break-word;
+}
+
+.admin-media-section {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.admin-media-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+}
+
+.admin-media-grid {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.admin-media-item {
+    width: 100px;
+    height: 100px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border);
+    background: #000;
+}
+
+.admin-media-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.admin-media-video {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+    font-size: 1.6rem;
+    background: rgba(0,0,0,0.8);
+}
+
+.admin-media-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(244,67,54,0.95);
+    color: white;
+    cursor: pointer;
+    font-size: 0.7rem;
+}
+
+.admin-media-open {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    right: 4px;
+    padding: 3px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    font-size: 0.65rem;
+    text-align: center;
+    text-decoration: none;
+}
+
+.ab-viw {
+    background: rgba(156,39,176,0.18);
+    color: var(--purple);
+}
     </style>
 </head>
 <body>
@@ -1395,6 +1548,29 @@
 
     </main>
 </div>
+<!-- DETAIL MODAL -->
+<div class="adm-modal-bg" id="detailModal">
+    <div class="adm-modal">
+        <button class="adm-modal-close"
+                onclick="closeDetailModal()">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h3 id="detailTitle">
+            Detail Kont
+        </h3>
+
+        <div id="detailContent">
+        </div>
+
+        <div id="detailActions"
+             style="margin-top:20px;
+                    display:flex;
+                    gap:10px;
+                    flex-wrap:wrap">
+        </div>
+    </div>
+</div>
 
 <script>
 /* ====================================
@@ -1412,12 +1588,13 @@ var fbCfg = {
 /* METTEZ VOTRE VRAI EMAIL ADMIN ICI */
 var ADMIN_EMAIL = "bizenht@gmail.com";
 
-var db, auth;
+var db, auth, storage;
 
 try {
     firebase.initializeApp(fbCfg);
     db = firebase.firestore();
-    auth = firebase.auth();
+auth = firebase.auth();
+storage = firebase.storage();
     console.log("Firebase OK");
 } catch(e) {
     console.warn("Firebase:", e.message);
@@ -1674,6 +1851,13 @@ function renderUsersTable(list) {
         h += '<td>' + statB + '</td>';
         h += '<td>' + date + '</td>';
         h += '<td>';
+        h += actBtn(
+    "ab-viw",
+    "viewAccountDetail('" +
+    u.id + "')",
+    "fa-eye",
+    "Voir"
+);
         if (!u.isPremium) {
             h += btn("ab-pre", "admAction('premium','" + u.id + "')", "fa-crown", "Premium");
         } else {
@@ -1716,6 +1900,13 @@ function renderFLTable(list) {
         h += '<td>' + ((f.solde || 0).toLocaleString()) + ' G</td>';
         h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
         h += '<td>';
+        h += actBtn(
+    "ab-viw",
+    "viewAccountDetail('" +
+    f.id + "')",
+    "fa-eye",
+    "Voir"
+);
         if (f.status === "en_attente") h += btn("ab-app", "admAction('approve','" + f.id + "')", "fa-check", "Apwouve");
         if (f.status === "active") h += btn("ab-frz", "admAction('freeze','" + f.id + "')", "fa-ban", "Jele");
         if (f.status === "frozen") h += btn("ab-ufrz", "admAction('unfreeze','" + f.id + "')", "fa-check", "Debloke");
@@ -1815,6 +2006,13 @@ function renderKreyTable(list) {
         h += '<td>' + ((k.solde || 0).toLocaleString()) + ' G</td>';
         h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
         h += '<td>';
+        h += actBtn(
+    "ab-viw",
+    "viewAccountDetail('" +
+    k.id + "')",
+    "fa-eye",
+    "Voir"
+);
         if (k.status === "en_attente") h += btn("ab-app", "admAction('approve','" + k.id + "')", "fa-check", "Apwouve");
         if (k.status === "active") h += btn("ab-frz", "admAction('freeze','" + k.id + "')", "fa-ban", "Jele");
         if (k.status === "frozen") h += btn("ab-ufrz", "admAction('unfreeze','" + k.id + "')", "fa-check", "Debloke");
@@ -2268,6 +2466,314 @@ function toast(msg, isGood) {
     el.innerHTML = '<i class="fas ' + ic + '" style="color:' + cl + '"></i> <span>' + msg + '</span>';
     el.classList.add("on");
     setTimeout(function() { el.classList.remove("on"); }, 3500);
+}
+/* ====================================
+   VIEW ACCOUNT DETAIL
+   ==================================== */
+function viewAccountDetail(uid) {
+    if (!db) return;
+
+    db.collection("users")
+        .doc(uid)
+        .get()
+        .then(function(doc) {
+            if (!doc.exists) {
+                showAdminToast(
+                    "Kont pa jwenn.",
+                    false
+                );
+                return;
+            }
+
+            var d = doc.data();
+
+            var title =
+                ((d.prenom || d.kreyName || "") +
+                " " +
+                (d.nom || "")).trim();
+
+            if (!title) title = "Detail Kont";
+
+            document.getElementById(
+                "detailTitle"
+            ).textContent = title;
+
+            var html = "";
+
+            html += detailRow("ID", uid);
+            html += detailRow("Type", d.type);
+            html += detailRow("Non", title);
+            html += detailRow("Email", d.email);
+            html += detailRow("Telefon", d.telephone);
+            html += detailRow("Status", d.status);
+            html += detailRow(
+                "Premium",
+                d.isPremium ? "Wi" : "Non"
+            );
+
+            if (d.type === "freelancer") {
+                html += detailRow(
+                    "Genre", d.genre
+                );
+                html += detailRow(
+                    "Lokasyon",
+                    d.localisation
+                );
+                html += detailRow(
+                    "Pri/Moman",
+                    d.prixMoment
+                        ? d.prixMoment +
+                          " Gdes"
+                        : "N/A"
+                );
+                html += detailRow(
+                    "Solde",
+                    d.solde
+                        ? d.solde +
+                          " Gdes"
+                        : "0 Gdes"
+                );
+                html += detailRow(
+                    "Deskripsyon",
+                    d.description
+                );
+            }
+
+            if (d.type === "krey") {
+                html += detailRow(
+                    "Non Krey",
+                    d.kreyName
+                );
+                html += detailRow(
+                    "Zon",
+                    d.kreyZone
+                );
+                html += detailRow(
+                    "Manm",
+                    d.kreyMemberCount
+                );
+                html += detailRow(
+                    "Pri Krey",
+                    d.kreyPrice
+                        ? d.kreyPrice +
+                          " Gdes"
+                        : "N/A"
+                );
+                html += detailRow(
+                    "Deskripsyon",
+                    d.kreyDescription
+                );
+            }
+
+            html += buildAdminMediaSection(
+                uid, d
+            );
+
+            document.getElementById(
+                "detailContent"
+            ).innerHTML = html;
+
+            var acts = "";
+            acts += '<button class="ab ab-del" ' +
+                'onclick="admAction(' +
+                '\'delete\',\'' +
+                uid +
+                '\');closeDetailModal()">' +
+                '<i class="fas fa-trash"></i> ' +
+                'Efase Kont</button>';
+
+            document.getElementById(
+                "detailActions"
+            ).innerHTML = acts;
+
+            document.getElementById(
+                "detailModal"
+            ).classList.add("show");
+        })
+        .catch(function(err) {
+            console.error(err);
+            showAdminToast(
+                "Ere pandan chajman detay.",
+                false
+            );
+        });
+}
+
+function detailRow(label, value) {
+    if (
+        value === undefined ||
+        value === null ||
+        value === ""
+    ) {
+        value = "N/A";
+    }
+
+    return '<div class="detail-row">' +
+        '<span>' + label + '</span>' +
+        '<span>' + value + '</span>' +
+        '</div>';
+}
+
+function buildAdminMediaSection(uid, data) {
+    var media = data.media || {};
+    var photos = media.photos || [];
+    var videos = media.videos || [];
+
+    var html = "";
+
+    html += '<div class="admin-media-section">';
+    html += '<div class="admin-media-title">';
+    html += '<i class="fas fa-images" ' +
+            'style="color:var(--primary);' +
+            'margin-right:8px"></i>';
+    html += 'Medias Uploades';
+    html += '</div>';
+
+    /* Photos */
+    html += '<h4 style="font-size:0.9rem;' +
+            'margin-bottom:10px">' +
+            'Photos (' + photos.length + ')' +
+            '</h4>';
+
+    if (photos.length === 0) {
+        html += '<p style="font-size:0.8rem;' +
+                'color:var(--text-muted);' +
+                'margin-bottom:15px">' +
+                'Pa gen foto.</p>';
+    } else {
+        html += '<div class="admin-media-grid">';
+        photos.forEach(function(p, index) {
+            html += '<div class="admin-media-item">';
+            html += '<img src="' + p.url + '">';
+            html += '<button class="admin-media-delete" ' +
+                    'onclick="deleteAdminMedia(' +
+                    '\'' + uid + '\',' +
+                    '\'photo\',' +
+                    '\'' + p.path + '\',' +
+                    index + ')">';
+            html += '<i class="fas fa-times"></i>';
+            html += '</button>';
+            html += '<a class="admin-media-open" ' +
+                    'href="' + p.url + '" ' +
+                    'target="_blank">Ouvri</a>';
+            html += '</div>';
+        });
+        html += '</div>';
+    }
+
+    /* Videos */
+    html += '<h4 style="font-size:0.9rem;' +
+            'margin:20px 0 10px">' +
+            'Videos (' + videos.length + ')' +
+            '</h4>';
+
+    if (videos.length === 0) {
+        html += '<p style="font-size:0.8rem;' +
+                'color:var(--text-muted)">' +
+                'Pa gen videyo.</p>';
+    } else {
+        html += '<div class="admin-media-grid">';
+        videos.forEach(function(v, index) {
+            html += '<div class="admin-media-item">';
+            html += '<div class="admin-media-video">';
+            html += '<i class="fas fa-video"></i>';
+            html += '</div>';
+            html += '<button class="admin-media-delete" ' +
+                    'onclick="deleteAdminMedia(' +
+                    '\'' + uid + '\',' +
+                    '\'video\',' +
+                    '\'' + v.path + '\',' +
+                    index + ')">';
+            html += '<i class="fas fa-times"></i>';
+            html += '</button>';
+            html += '<a class="admin-media-open" ' +
+                    'href="' + v.url + '" ' +
+                    'target="_blank">Ouvri</a>';
+            html += '</div>';
+        });
+        html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+}
+
+function closeDetailModal() {
+    var m = document.getElementById(
+        "detailModal"
+    );
+    if (m) {
+        m.classList.remove("show");
+    }
+}
+
+/* ====================================
+   DELETE MEDIA ADMIN
+   ==================================== */
+async function deleteAdminMedia(
+    uid,
+    mediaType,
+    path,
+    index
+) {
+    if (!confirm(
+        "Efase media sa a?"
+    )) {
+        return;
+    }
+
+    try {
+        if (storage && path) {
+            await storage.ref(path).delete();
+        }
+
+        var doc = await db.collection("users")
+            .doc(uid)
+            .get();
+
+        if (!doc.exists) {
+            showAdminToast(
+                "Kont pa jwenn.",
+                false
+            );
+            return;
+        }
+
+        var data = doc.data();
+        var media = data.media || {};
+        var arrName =
+            mediaType === "photo"
+            ? "photos"
+            : "videos";
+
+        var list = media[arrName] || [];
+        list.splice(index, 1);
+
+        var updateObj = {};
+        updateObj["media." + arrName] = list;
+
+        await db.collection("users")
+            .doc(uid)
+            .update(updateObj);
+
+        showAdminToast(
+            "Media efase!",
+            true
+        );
+
+        /* Reload modal detail */
+        viewAccountDetail(uid);
+
+        /* Reload main data */
+        loadAll();
+
+    } catch (err) {
+        console.error(err);
+        showAdminToast(
+            "Ere pandan efasman media.",
+            false
+        );
+    }
 }
 </script>
 </body>

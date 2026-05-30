@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 
     <style>
@@ -1498,6 +1499,34 @@ body.no-screenshot * {
         rgba(233, 30, 99, 0.8)
     ) !important;
 }
+
+/* MEDIA GALLERY IN PROFILE */
+.p-media-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border);
+}
+.p-media-item {
+    aspect-ratio: 1/1;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+    cursor: pointer;
+    position: relative;
+}
+.p-media-item img {
+    width: 100%; height: 100%; object-fit: cover;
+}
+.p-media-video-icon {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: white; font-size: 1.2rem;
+    text-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
     </style>
 </head>
 <body>
@@ -2280,7 +2309,24 @@ body.no-screenshot * {
               display:none">
     </p>
 </div>
-<div class="fg"><label>Videyo (opsyonel)</label><input type="file" accept="video/*" class="fi"><p class="fhint">MP4 (Maks 50MB)</p></div><div class="fg"><label>Modpas</label><input type="password" placeholder="omwen 6 karaktè" required id="fpw"><button type="button" class="tpw" onclick="tPw('fpw')"><i class="fas fa-eye"></i></button></div><label class="ckl"><input type="checkbox" required> Mwen dako ak kondisyon yo, 10% komisyon, mwen gen 18+, e mwen konprann kont mwen ap pase nan validasyon.</label><button type="submit" class="btn btn-secondary fw"><i class="fas fa-paper-plane"></i> Voye Demann Mwen</button></form>
+<div class="fg"><label>Videyo (opsyonel)</label><input type="file" accept="video/*" class="fi"><p class="fhint">MP4 (Maks 50MB)</p></div><div class="fg"><label>Modpas</label><input type="password" placeholder="omwen 6 karaktè" required id="fpw"><button type="button" class="tpw" onclick="tPw('fpw')"><i class="fas fa-eye"></i></button></div>
+            <div class="fg">
+                <label>
+                    <i class="fas fa-camera" style="color:var(--primary);margin-right:5px"></i>
+                    Foto Gwoup la (plizyè foto)
+                </label>
+                <input type="file" id="kreyNewPhotos" multiple accept="image/*" class="fi" required>
+                <p class="form-hint">JPG, PNG (Maks 5MB chak)</p>
+            </div>
+            <div class="fg">
+                <label>
+                    <i class="fas fa-video" style="color:var(--primary);margin-right:5px"></i>
+                    Videyo prezantasyon (opsyonel)
+                </label>
+                <input type="file" id="kreyNewVideos" accept="video/*" class="fi">
+                <p class="form-hint">MP4 (Maks 50MB)</p>
+            </div>
+<label class="ckl"><input type="checkbox" required> Mwen dako ak kondisyon yo, 10% komisyon, mwen gen 18+, e mwen konprann kont mwen ap pase nan validasyon.</label><button type="submit" class="btn btn-secondary fw"><i class="fas fa-paper-plane"></i> Voye Demann Mwen</button></form>
 <!-- KREY FORM -->
 <form class="mform hidden"
       id="kF"
@@ -2760,11 +2806,12 @@ var fbCfg = {
     appId: "1:248857953518:web:f85b1b37abd849add01fff"
 };
 
-var db, auth;
+var db, auth, storage;
 try {
     firebase.initializeApp(fbCfg);
-    db = firebase.firestore();
-    auth = firebase.auth();
+db = firebase.firestore();
+auth = firebase.auth();
+storage = firebase.storage();
 } catch (e) {
     console.warn("Firebase:", e.message);
 }
@@ -4559,14 +4606,72 @@ function doFR(e) {
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
             });
         })
-        .then(function () {
-            btn.innerHTML = btnOrig; btn.disabled = false;
-            cM("sM"); bT(); f.reset();
-            uploadedPhotos = [];
-            updatePhotoPreview();
-            auth.signOut();
-            showEmailVerifModal(em);
-        })
+        .then(async function () {
+    var createdUser = auth.currentUser;
+    var uid = createdUser
+        ? createdUser.uid
+        : null;
+
+    /* Upload photos */
+    var uploadedPhotoData = [];
+    if (uid && uploadedPhotos.length > 0) {
+        uploadedPhotoData =
+            await uploadFilesToStorage(
+                uploadedPhotos,
+                uid,
+                "photos",
+                "prestataires"
+            );
+    }
+
+    /* Upload video */
+    var uploadedVideoData = [];
+    var vidInput = f.querySelector(
+        "input[type='file'][accept='video/*']"
+    );
+
+    if (
+        uid &&
+        vidInput &&
+        vidInput.files &&
+        vidInput.files.length > 0
+    ) {
+        uploadedVideoData =
+            await uploadFilesToStorage(
+                vidInput.files,
+                uid,
+                "videos",
+                "prestataires"
+            );
+    }
+
+    /* First photo = profile photo */
+    var profilePhoto = "";
+    if (uploadedPhotoData.length > 0) {
+        profilePhoto =
+            uploadedPhotoData[0].url;
+    }
+
+    /* Save media refs in Firestore */
+    if (uid) {
+        await saveUserMedia(
+            uid,
+            uploadedPhotoData,
+            uploadedVideoData,
+            profilePhoto
+        );
+    }
+
+    btn.innerHTML = btnOrig;
+    btn.disabled = false;
+    cM("sM");
+    bT();
+    f.reset();
+    uploadedPhotos = [];
+    updatePhotoPreview();
+    auth.signOut();
+    showEmailVerifModal(em);
+})
         .catch(function (error) {
             btn.innerHTML = btnOrig; btn.disabled = false;
             if (authOk) {
@@ -4682,13 +4787,44 @@ function doKR(e) {
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
             });
         })
-        .then(function () {
+                .then(async function () {
+            var createdUser = auth.currentUser;
+            var uid = createdUser ? createdUser.uid : null;
+
+            var photoInput = document.getElementById("kreyNewPhotos");
+            var vidInput = document.getElementById("kreyNewVideos");
+            var uploadedPhotoData = [];
+            var uploadedVideoData = [];
+
+            /* Upload photos Krey */
+            if (uid && photoInput && photoInput.files.length > 0) {
+                uploadedPhotoData = await uploadFilesToStorage(
+                    photoInput.files, uid, "photos", "krey"
+                );
+            }
+
+            /* Upload video Krey */
+            if (uid && vidInput && vidInput.files && vidInput.files.length > 0) {
+                uploadedVideoData = await uploadFilesToStorage(
+                    vidInput.files, uid, "videos", "krey"
+                );
+            }
+
+            /* Premiere photo = photo de profil */
+            var profilePhoto = "";
+            if (uploadedPhotoData.length > 0) {
+                profilePhoto = uploadedPhotoData[0].url;
+            }
+
+            /* Sauvegarder dans Firestore */
+            if (uid) {
+                await saveUserMedia(uid, uploadedPhotoData, uploadedVideoData, profilePhoto);
+            }
+
             if (btn) { btn.innerHTML = btnOrig; btn.disabled = false; }
             cM("sM"); bT();
             var kf = document.getElementById("kF");
             if (kf) kf.reset();
-            uploadedKreyPhotos = [];
-            updateKreyPhotoPreview();
             auth.signOut();
             showEmailVerifModal(contactEmail);
         })
@@ -4728,40 +4864,80 @@ function chkPrem(uid) {
         });
 }
 
-function unlockUI() {
-    var pcCards = document.querySelectorAll(".pc");
-    for (var i = 0; i < pcCards.length; i++) {
-        var btn = pcCards[i].querySelector(".btn-res");
-        if (btn) {
-            btn.innerHTML = '<i class="fas fa-calendar-check"></i> Rezeve (Hotel Inclus)';
-            btn.style.cssText = "background:linear-gradient(135deg,#e91e63,#9c27b0);color:white;border:none;";
+async function unlockUI() {
+    // 1. Débloquer les boutons et enlever le flou visuel
+    document.querySelectorAll(".blur-ov").forEach(el => el.style.display = "none");
+    document.querySelectorAll(".blt").forEach(el => {
+        el.style.filter = "none";
+        el.style.color = "#b0b0c0";
+    });
+
+    // 2. Changer les boutons de réservation
+    document.querySelectorAll(".btn-res").forEach(btn => {
+        btn.innerHTML = '<i class="fas fa-calendar-check"></i> Rezève Kounye a';
+        btn.style.cssText = "background:linear-gradient(135deg,#e91e63,#9c27b0);color:white;border:none;";
+        
+        // Identifier si c'est un Krey ou un individuel
+        if (btn.closest(".krey-card")) {
+            btn.setAttribute("onclick", "openKreyRes(this)");
+        } else {
             btn.setAttribute("onclick", "openResModal(this)");
         }
+    });
+
+    // 3. Charger et afficher les médias réels des prestataires
+    const pcElements = document.querySelectorAll(".pc, .krey-card");
+    
+    for (let el of pcElements) {
+        const id = el.getAttribute("data-f"); // On utilise le locationKey ou ID
+        if (!id) continue;
+
+        // Note: Pour un système réel, on ferait une requête par ID. 
+        // Ici on va chercher dans une collection "users" filtrée par localisation ou ID
+        try {
+            const snap = await db.collection("users")
+                .where("status", "==", "active")
+                .where("localisation", "==", id) // Ou un autre identifiant unique
+                .limit(1).get();
+
+            if (!snap.empty) {
+                const pData = snap.docs[0].data();
+                if (pData.media) {
+                    renderPrivateMedia(el, pData.media);
+                }
+            }
+        } catch (e) { console.warn("Erreur chargement média:", e); }
     }
-    var kCards = document.querySelectorAll(".krey-card");
-    for (var j = 0; j < kCards.length; j++) {
-        var kBtn = kCards[j].querySelector(".btn-res");
-        if (kBtn) {
-            kBtn.innerHTML = '<i class="fas fa-calendar-check"></i> Rezeve Krey';
-            kBtn.style.cssText = "background:linear-gradient(135deg,#e91e63,#9c27b0);color:white;border:none;";
-            kBtn.setAttribute("onclick", "openKreyRes(this)");
-        }
+}
+
+// Fonction pour injecter les miniatures dans la carte
+function renderPrivateMedia(cardEl, media) {
+    const body = cardEl.querySelector(".pc-body, .krey-body");
+    if (!body) return;
+
+    let mediaHtml = '<div class="p-media-grid">';
+    
+    // Afficher les 3 premières photos
+    const photos = media.photos || [];
+    photos.slice(0, 3).forEach(photo => {
+        mediaHtml += `
+            <div class="p-media-item" onclick="window.open('${photo.url}', '_blank')">
+                <img src="${photo.url}">
+            </div>`;
+    });
+
+    // Afficher la première vidéo si elle existe
+    const videos = media.videos || [];
+    if (videos.length > 0) {
+        mediaHtml += `
+            <div class="p-media-item" onclick="window.open('${videos[0].url}', '_blank')">
+                <div class="p-media-video-icon"><i class="fas fa-play-circle"></i></div>
+                <video src="${videos[0].url}" style="width:100%; height:100%; object-fit:cover;"></video>
+            </div>`;
     }
-    var bls = document.querySelectorAll(".blur-ov");
-    for (var k = 0; k < bls.length; k++) {
-        bls[k].style.display = "none";
-    }
-    var bts = document.querySelectorAll(".blt");
-    for (var l = 0; l < bts.length; l++) {
-        bts[l].style.filter = "none";
-        bts[l].style.color = "#b0b0c0";
-    }
-    /* Unlock krey slides - DANS la fonction */
-    try {
-        unlockKreySlides();
-    } catch (e) {
-        console.warn("Krey unlock error:", e.message);
-    }
+
+    mediaHtml += '</div>';
+    body.insertAdjacentHTML('beforeend', mediaHtml);
 }
 /* ====================================
    RESERVATION MODAL
@@ -5683,6 +5859,86 @@ function switchDTab(id, btn) {
         btn.style.background = "rgba(233,30,99,0.15)";
         btn.style.color = "#e91e63";
     }
+}
+/* ====================================
+   FIREBASE STORAGE HELPERS
+   ==================================== */
+async function uploadFilesToStorage(
+    files,
+    userId,
+    type,
+    folderRoot
+) {
+    if (!storage || !files || files.length === 0) {
+        return [];
+    }
+
+    var uploaded = [];
+
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+
+        var safeName =
+            Date.now() + "_" +
+            file.name.replace(/\s+/g, "_");
+
+        var path =
+            folderRoot + "/" +
+            userId + "/" +
+            type + "/" +
+            safeName;
+
+        var ref = storage.ref(path);
+
+        await ref.put(file);
+
+        var url = await ref.getDownloadURL();
+
+        uploaded.push({
+            name: file.name,
+            url: url,
+            path: path,
+            type: type,
+            size: file.size,
+            createdAt:
+                new Date().toISOString()
+        });
+    }
+
+    return uploaded;
+}
+
+async function saveUserMedia(
+    userId,
+    photos,
+    videos,
+    profilePhoto
+) {
+    if (!db || !userId) return;
+
+    var docRef = db.collection("users")
+        .doc(userId);
+
+    var doc = await docRef.get();
+    var data = doc.exists
+        ? doc.data()
+        : {};
+
+    var existingMedia = data.media || {};
+    var existingPhotos =
+        existingMedia.photos || [];
+    var existingVideos =
+        existingMedia.videos || [];
+
+    await docRef.set({
+        profilePhoto: profilePhoto || "",
+        media: {
+            photos:
+                existingPhotos.concat(photos),
+            videos:
+                existingVideos.concat(videos)
+        }
+    }, { merge: true });
 }
 </script>
 <!-- EMAIL VERIFICATION MODAL -->
