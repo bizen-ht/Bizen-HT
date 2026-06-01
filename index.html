@@ -3670,7 +3670,36 @@ function startAutoSlide(id) {
    INIT
    ==================================== */
 document.addEventListener("DOMContentLoaded", function () {
+    /* ====================================
+       PAYMENT RETURN CHECK
+       ==================================== */
+    try {
+        var params = new URLSearchParams(
+            window.location.search
+        );
+        var payStatus = params.get("payment");
+        var payRef = params.get("ref");
 
+        if (payStatus === "success") {
+            handlePaymentSuccess(payRef);
+        }
+
+        if (payStatus === "error") {
+            setTimeout(function () {
+                toast(
+                    "Peman an pa te " +
+                    "konplete. Eseye ankò.",
+                    "err"
+                );
+                oM("pM");
+            }, 800);
+        }
+    } catch (e) {
+        console.warn(
+            "payment return parse error:",
+            e
+        );
+    }
     stopPre();
 
     try { renderCards(); } catch (e) { console.warn(e); }
@@ -5240,6 +5269,7 @@ function doCreatePayment(
                 data
             );
 
+}
             if (btn) {
                 btn.innerHTML =
                     '<i class="fas ' +
@@ -5262,6 +5292,24 @@ function doCreatePayment(
             }
 
             if (data.success && finalUrl) {
+                         if (db) {
+    db.collection("payments")
+        .add({
+            userId: userId,
+            email: email,
+            method: "moncash",
+            referenceId:
+                data.referenceId || null,
+            amount: 1000,
+            status: "en_attente",
+            provider: "bazik",
+            createdAt:
+                firebase.firestore
+                .FieldValue
+                .serverTimestamp()
+        })
+        .catch(function () {});
+        
                 currentOrderId =
                     data.referenceId ||
                     null;
@@ -5445,7 +5493,96 @@ function startPaymentCheck(
         10000 /* Check every 10 seconds */
     );
 }
+/* ====================================
+   HANDLE PAYMENT SUCCESS
+   ==================================== */
+function handlePaymentSuccess(ref) {
+    if (!auth || !db) {
+        showOk(
+            "Peman Resevwa!",
+            "Nou resevwa notifikasyon " +
+            "peman an. Konekte sou kont " +
+            "ou pou aktivasyon an."
+        );
+        return;
+    }
 
+    auth.onAuthStateChanged(function (user) {
+        if (!user) {
+            showOk(
+                "Peman Resevwa!",
+                "Konekte sou kont ou " +
+                "pou aktivasyon Premium la."
+            );
+            return;
+        }
+
+        db.collection("users")
+            .doc(user.uid)
+            .update({
+                isPremium: true,
+                premiumActivatedAt:
+                    firebase.firestore
+                    .FieldValue
+                    .serverTimestamp(),
+                premiumSource:
+                    "bazik_success_return"
+            })
+            .then(function () {
+                /* Si paiement existe,
+                   on le marque confirmed */
+                if (ref) {
+                    db.collection("payments")
+                        .where(
+                            "referenceId",
+                            "==",
+                            ref
+                        )
+                        .get()
+                        .then(function (snap) {
+                            snap.forEach(function (doc) {
+                                doc.ref.update({
+                                    status: "confirmed"
+                                });
+                            });
+                        })
+                        .catch(function () {});
+                }
+
+                try {
+                    unlockUI();
+                } catch (e) {}
+
+                showOk(
+                    "Premium Aktive!",
+                    "Peman ou resevwa " +
+                    "ak sikse. Kont ou " +
+                    "Premium kounye a!"
+                );
+
+                /* Nettoyer l’URL */
+                try {
+                    window.history.replaceState(
+                        {},
+                        document.title,
+                        window.location.pathname
+                    );
+                } catch (e) {}
+            })
+            .catch(function (err) {
+                console.error(
+                    "Premium update error:",
+                    err
+                );
+                showOk(
+                    "Peman Resevwa!",
+                    "Nou resevwa peman ou " +
+                    "men aktivasyon an pran " +
+                    "reta. Ekip nou ap tcheke."
+                );
+            });
+    });
+}
 /* ====================================
    ACTIVATE PREMIUM
    ==================================== */

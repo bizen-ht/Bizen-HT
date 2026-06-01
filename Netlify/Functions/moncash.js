@@ -152,12 +152,16 @@ async function createPayment(payload) {
         gdes: parseFloat(payload.amount),
         userID: payload.userId || crypto.randomUUID(),
         successUrl:
-            SITE_URL + "/?payment=success",
+    SITE_URL +
+    "/?payment=success&ref=" +
+    payload.referenceId,
         description:
             "Bizen HT - Membership Premium",
         referenceId: payload.referenceId,
         errorUrl:
-            SITE_URL + "/?payment=error",
+    SITE_URL +
+    "/?payment=error&ref=" +
+    payload.referenceId,
         customerFirstName:
             payload.firstName || "Client",
         customerLastName:
@@ -169,7 +173,8 @@ async function createPayment(payload) {
             "/.netlify/functions/webhook",
         metadata: {
             firebaseUserId:
-                payload.firebaseUserId || "",
+    payload.firebaseUserId ||
+    payload.userId || "",
             firebaseEmail:
                 payload.email || "",
             site: "bizenht.com",

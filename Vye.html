@@ -1585,43 +1585,53 @@ var fbCfg = {
     appId: "1:248857953518:web:f85b1b37abd849add01fff"
 };
 
-/* METTEZ VOTRE VRAI EMAIL ADMIN ICI */
 var ADMIN_EMAIL = "bizenht@gmail.com";
-
 var db, auth, storage;
 
 try {
     firebase.initializeApp(fbCfg);
     db = firebase.firestore();
-auth = firebase.auth();
-storage = firebase.storage();
-    console.log("Firebase OK");
+    auth = firebase.auth();
+    storage = firebase.storage();
 } catch(e) {
-    console.warn("Firebase:", e.message);
+    console.warn("Firebase error:", e);
 }
 
+var adminUsers = [];
+var adminFL = [];
+var adminKrey = [];
+var adminRes = [];
+var adminPay = [];
+
+var unsubUsers = null;
+var unsubRes = null;
+var unsubPay = null;
+
 /* ====================================
-   AUTH STATE
+   AUTH CHECK
    ==================================== */
-auth.onAuthStateChanged(function(user) {
-    console.log("Auth state:", user ? user.email : "null");
-    if (user && user.email === ADMIN_EMAIL) {
-        showPanel(user.email);
-        loadAll();
-    } else if (user) {
-        auth.signOut();
-        showLoginError("Ou pa gen akse admin!");
-    }
-});
+if (auth) {
+    auth.onAuthStateChanged(function(user) {
+        if (user && user.email === ADMIN_EMAIL) {
+            showPanel(user.email);
+            startRealtimeSync();
+        } else if (user) {
+            auth.signOut();
+            showLoginError("Ou pa gen akse admin!");
+        }
+    });
+}
 
 /* ====================================
    LOGIN
    ==================================== */
 function doAdmLogin() {
-    var em = document.getElementById("lgEm").value.trim();
-    var pw = document.getElementById("lgPw").value;
-
-    document.getElementById("lgErr").style.display = "none";
+    var em = document.getElementById("lgEm")
+        ? document.getElementById("lgEm").value.trim()
+        : "";
+    var pw = document.getElementById("lgPw")
+        ? document.getElementById("lgPw").value
+        : "";
 
     if (!em || !pw) {
         showLoginError("Antre imel ak modpas.");
@@ -1635,21 +1645,24 @@ function doAdmLogin() {
 
     auth.signInWithEmailAndPassword(em, pw)
         .then(function(r) {
-            console.log("Login:", r.user.email);
             if (r.user.email === ADMIN_EMAIL) {
                 showPanel(r.user.email);
-                loadAll();
+                startRealtimeSync();
             } else {
                 auth.signOut();
                 showLoginError("Ou pa gen akse admin!");
             }
         })
         .catch(function(error) {
-            console.error("Login error:", error.code);
+            console.error(error);
             var msg = "Imel oswa modpas pa korek.";
-            if (error.code === "auth/user-not-found") msg = "Kont pa trouve.";
-            if (error.code === "auth/wrong-password") msg = "Modpas pa korek.";
-            if (error.code === "auth/invalid-credential") msg = "Imel oswa modpas pa korek.";
+            if (error.code === "auth/user-not-found") {
+                msg = "Kont pa trouve.";
+            }
+            if (error.code === "auth/wrong-password" ||
+                error.code === "auth/invalid-credential") {
+                msg = "Modpas pa korek.";
+            }
             showLoginError(msg);
         });
 }
@@ -1661,10 +1674,6 @@ function showLoginError(msg) {
         err.style.display = "block";
     }
 }
-
-document.addEventListener("keydown", function(e) {
-    if (e.key === "Enter") doAdmLogin();
-});
 
 /* ====================================
    SHOW PANEL
@@ -1681,343 +1690,459 @@ function showPanel(email) {
         ap.style.width = "100%";
     }
 
-    var sn = document.getElementById("sbName");
-    if (sn) sn.textContent = email.split("@")[0];
-
-    console.log("Panel shown for:", email);
-}
-
-/* ====================================
-   LOGOUT
-   ==================================== */
-function doLogout() {
-    auth.signOut().then(function() {
-        location.reload();
-    });
-}
-
-/* ====================================
-   MOBILE SIDEBAR
-   ==================================== */
-function togSB() {
-    var sb = document.getElementById("sidebar");
-    var ov = document.getElementById("sbOv");
-    if (sb) sb.classList.toggle("open");
-    if (ov) ov.classList.toggle("on");
-}
-
-function closeSB() {
-    var sb = document.getElementById("sidebar");
-    var ov = document.getElementById("sbOv");
-    if (sb) sb.classList.remove("open");
-    if (ov) ov.classList.remove("on");
-}
-
-/* ====================================
-   NAVIGATION - CORRIGE
-   ==================================== */
-function goPage(page, btn) {
-    /* Hide all pages */
-    var pages = document.querySelectorAll(".pg");
-    for (var i = 0; i < pages.length; i++) {
-        pages[i].classList.remove("on");
+    var sbName = document.getElementById("sbName");
+    if (sbName) {
+        sbName.textContent = email.split("@")[0];
     }
-
-    /* Show target page */
-    var target = document.getElementById("pg-" + page);
-    if (target) {
-        target.classList.add("on");
-    } else {
-        console.warn("Page not found: pg-" + page);
-    }
-
-    /* Update active link */
-    var links = document.querySelectorAll(".sb-link");
-    for (var j = 0; j < links.length; j++) {
-        links[j].classList.remove("active");
-    }
-    if (btn) btn.classList.add("active");
-
-    closeSB();
 }
 
 /* ====================================
-   LOAD ALL DATA
+   REALTIME SYNC
    ==================================== */
-function loadAll() {
-    console.log("Loading all data...");
-    loadUsers();
-    loadReservations();
-    loadPayments();
-    loadFinance();
-    loadRecent();
-    loadCommissions();
-}
+function startRealtimeSync() {
+    if (!db) return;
 
-/* ====================================
-   LOAD USERS - TOUS LES TYPES
-   ==================================== */
-function loadUsers() {
-    if (!db) {
-        console.warn("No DB");
-        return;
-    }
+    if (unsubUsers) unsubUsers();
+    if (unsubRes) unsubRes();
+    if (unsubPay) unsubPay();
 
-    console.log("Loading users...");
-
-    db.collection("users")
-        .get()
-        .then(function(snap) {
-            console.log("Total docs:", snap.size);
-
-            var users = [];
-            var fls = [];
-            var kreys = [];
-            var pending = [];
-            var premium = [];
+    /* USERS */
+    unsubUsers = db.collection("users")
+        .onSnapshot(function(snap) {
+            adminUsers = [];
+            adminFL = [];
+            adminKrey = [];
 
             snap.forEach(function(doc) {
                 var d = doc.data();
                 d.id = doc.id;
 
-                console.log("Doc:", d.email, "type:", d.type, "status:", d.status);
-
                 if (d.type === "freelancer") {
-                    fls.push(d);
-                    if (d.status === "en_attente") pending.push(d);
+                    adminFL.push(d);
                 } else if (d.type === "krey") {
-                    kreys.push(d);
-                    if (d.status === "en_attente") pending.push(d);
+                    adminKrey.push(d);
                 } else if (d.type !== "admin") {
-                    users.push(d);
-                    if (d.isPremium) premium.push(d);
+                    adminUsers.push(d);
                 }
             });
 
-            console.log("Users:", users.length, "FL:", fls.length, "Krey:", kreys.length, "Pending:", pending.length);
+            renderUsersTable(adminUsers);
+            renderFLTable(adminFL);
+            renderKreyTable(adminKrey);
 
-            /* Update stats */
-            setVal("stU", users.length);
-            setVal("stF", fls.length);
-            setVal("stP", premium.length);
+            var pending =
+                adminFL.filter(function(f) {
+                    return f.status === "en_attente";
+                }).concat(
+                    adminKrey.filter(function(k) {
+                        return k.status === "en_attente";
+                    })
+                );
+
+            renderPendingTable(pending);
+
+            var premiumUsers =
+                adminUsers.filter(function(u) {
+                    return u.isPremium === true;
+                });
+
+            renderPremiumTable(premiumUsers);
+
+            /* Stats */
+            setVal("stU", adminUsers.length);
+            setVal("stF", adminFL.length);
+            setVal("stP", premiumUsers.length);
             setVal("stPe", pending.length);
 
-            /* Update badges */
-            setBdg("bdgU", users.length);
-            setBdg("bdgF", fls.length);
+            setBdg("bdgU", adminUsers.length);
+            setBdg("bdgF", adminFL.length);
+            setBdg("bdgPr", premiumUsers.length);
             setBdg("bdgPe", pending.length);
-            setBdg("bdgPr", premium.length);
-            setBdg("bdgKrey", kreys.length);
+            setBdg("bdgKrey", adminKrey.length);
+        });
 
-            /* Render tables */
-            renderUsersTable(users);
-            renderFLTable(fls);
-            renderPendingTable(pending);
-            renderPremiumTable(premium);
-            renderKreyTable(kreys);
-        })
-        .catch(function(err) {
-            console.error("loadUsers error:", err);
-            toast("Ere chajman: " + err.message, false);
+    /* RESERVATIONS */
+    unsubRes = db.collection("reservations")
+        .onSnapshot(function(snap) {
+            adminRes = [];
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                d.id = doc.id;
+                adminRes.push(d);
+            });
+
+            renderResTable(adminRes);
+            setVal("stR", adminRes.length);
+            setBdg("bdgR", adminRes.length);
+
+            renderRecent();
+            renderFinance();
+            renderCommissions();
+        });
+
+    /* PAYMENTS */
+    unsubPay = db.collection("payments")
+        .onSnapshot(function(snap) {
+            adminPay = [];
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                d.id = doc.id;
+                adminPay.push(d);
+            });
+
+            renderPayTable(adminPay);
+
+            var pendingPay =
+                adminPay.filter(function(p) {
+                    return p.status === "en_attente";
+                }).length;
+
+            setBdg("bdgPy", pendingPay);
+
+            renderFinance();
+            renderRecent();
         });
 }
 
 /* ====================================
-   RENDER USERS TABLE
+   TABLE RENDERS
    ==================================== */
 function renderUsersTable(list) {
     var tb = document.getElementById("tbU");
     if (!tb) return;
 
-    if (!list || list.length === 0) {
-        tb.innerHTML = emptyRow(7, "Pa gen itilizate anko");
+    if (!list.length) {
+        tb.innerHTML = emptyRow(7,
+            "Pa gen itilizate anko");
         return;
     }
 
     var h = "";
     list.forEach(function(u) {
         var planB = u.isPremium
-            ? '<span class="sbadge gold"><i class="fas fa-crown"></i> Premium</span>'
+            ? '<span class="sbadge gold">Premium</span>'
             : '<span class="sbadge">Gratis</span>';
+
         var statB = u.status === "frozen"
             ? '<span class="sbadge red">Jele</span>'
             : '<span class="sbadge green">Aktif</span>';
-        var date = fmtDate(u.createdAt && u.createdAt.toDate ? u.createdAt.toDate() : null);
 
-        h += '<tr data-filter="' + (u.isPremium ? "premium" : "free") + '">';
-        h += '<td><strong>' + (u.prenom || '') + ' ' + (u.nom || '') + '</strong><br><small style="color:#6a6a80">' + (u.email || '') + '</small></td>';
+        var date = fmtDate(
+            u.createdAt && u.createdAt.toDate
+                ? u.createdAt.toDate()
+                : null
+        );
+
+        h += '<tr data-filter="' +
+            (u.isPremium ? "premium" : "free") +
+            '">';
+        h += '<td><strong>' +
+            (u.prenom || '') + ' ' +
+            (u.nom || '') +
+            '</strong><br><small style="color:#6a6a80">' +
+            (u.email || '') + '</small></td>';
         h += '<td>' + (u.telephone || 'N/A') + '</td>';
         h += '<td>' + planB + '</td>';
         h += '<td>' + statB + '</td>';
         h += '<td>' + date + '</td>';
         h += '<td>';
-        h += actBtn(
-    "ab-viw",
-    "viewAccountDetail('" +
-    u.id + "')",
-    "fa-eye",
-    "Voir"
-);
+        h += actBtn("ab-viw",
+            "viewAccountDetail('" + u.id + "')",
+            "fa-eye", "Voir");
+
         if (!u.isPremium) {
-            h += btn("ab-pre", "admAction('premium','" + u.id + "')", "fa-crown", "Premium");
+            h += actBtn("ab-pre",
+                "admAction('premium','" +
+                u.id + "')",
+                "fa-crown", "Premium");
         } else {
-            h += btn("ab-rpr", "admAction('unpremium','" + u.id + "')", "fa-times", "-Premium");
+            h += actBtn("ab-rpr",
+                "admAction('unpremium','" +
+                u.id + "')",
+                "fa-times", "-Premium");
         }
+
         if (u.status !== "frozen") {
-            h += btn("ab-frz", "admAction('freeze','" + u.id + "')", "fa-ban", "Jele");
+            h += actBtn("ab-frz",
+                "admAction('freeze','" +
+                u.id + "')",
+                "fa-ban", "Jele");
         } else {
-            h += btn("ab-ufrz", "admAction('unfreeze','" + u.id + "')", "fa-check", "Debloke");
+            h += actBtn("ab-ufrz",
+                "admAction('unfreeze','" +
+                u.id + "')",
+                "fa-check", "Debloke");
         }
-        h += btn("ab-del", "admAction('delete','" + u.id + "')", "fa-trash", "Efase");
+
+        h += actBtn("ab-del",
+            "admAction('delete','" +
+            u.id + "')",
+            "fa-trash", "Efase");
         h += '</td></tr>';
     });
 
     tb.innerHTML = h;
 }
 
-/* ====================================
-   RENDER FREELANCERS TABLE
-   ==================================== */
 function renderFLTable(list) {
     var tb = document.getElementById("tbF");
     if (!tb) return;
 
-    if (!list || list.length === 0) {
-        tb.innerHTML = emptyRow(7, "Pa gen prestate anko");
+    if (!list.length) {
+        tb.innerHTML = emptyRow(7,
+            "Pa gen prestate anko");
         return;
     }
 
     var h = "";
     list.forEach(function(f) {
-        var stCl = f.status === "active" ? "green" : f.status === "en_attente" ? "orange" : "red";
-        var stTxt = f.status === "active" ? "Aktif" : f.status === "en_attente" ? "An Atant" : "Jele";
+        var stCl = f.status === "active"
+            ? "green"
+            : f.status === "en_attente"
+                ? "orange"
+                : "red";
+        var stTxt = f.status === "active"
+            ? "Aktif"
+            : f.status === "en_attente"
+                ? "An Atant"
+                : "Jele";
 
-        h += '<tr data-filter="' + (f.status || '') + '">';
-        h += '<td><strong>' + (f.prenom || '') + ' ' + (f.nom || '') + '</strong><br><small style="color:#6a6a80">' + (f.email || '') + '</small></td>';
-        h += '<td>' + (f.genre === "femme" ? "Fanm" : "Gason") + '</td>';
-        h += '<td>' + (f.localisation || 'N/A') + '</td>';
-        h += '<td>' + ((f.prixMoment || 0).toLocaleString()) + ' G</td>';
-        h += '<td>' + ((f.solde || 0).toLocaleString()) + ' G</td>';
-        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
+        h += '<tr data-filter="' +
+            (f.status || '') + '">';
+        h += '<td><strong>' +
+            (f.prenom || '') + ' ' +
+            (f.nom || '') +
+            '</strong><br><small style="color:#6a6a80">' +
+            (f.email || '') + '</small></td>';
+        h += '<td>' +
+            (f.genre === "femme"
+                ? "Fanm"
+                : "Gason") + '</td>';
+        h += '<td>' +
+            (f.localisation || 'N/A') + '</td>';
+        h += '<td>' +
+            ((f.prixMoment || 0)
+                .toLocaleString()) +
+            ' G</td>';
+        h += '<td>' +
+            ((f.solde || 0)
+                .toLocaleString()) +
+            ' G</td>';
+        h += '<td><span class="sbadge ' +
+            stCl + '">' +
+            stTxt + '</span></td>';
         h += '<td>';
-        h += actBtn(
-    "ab-viw",
-    "viewAccountDetail('" +
-    f.id + "')",
-    "fa-eye",
-    "Voir"
-);
-        if (f.status === "en_attente") h += btn("ab-app", "admAction('approve','" + f.id + "')", "fa-check", "Apwouve");
-        if (f.status === "active") h += btn("ab-frz", "admAction('freeze','" + f.id + "')", "fa-ban", "Jele");
-        if (f.status === "frozen") h += btn("ab-ufrz", "admAction('unfreeze','" + f.id + "')", "fa-check", "Debloke");
-        h += btn("ab-del", "admAction('delete','" + f.id + "')", "fa-trash", "Efase");
+
+        h += actBtn("ab-viw",
+            "viewAccountDetail('" +
+            f.id + "')",
+            "fa-eye", "Voir");
+
+        if (f.status === "en_attente") {
+            h += actBtn("ab-app",
+                "admAction('approve','" +
+                f.id + "')",
+                "fa-check", "Apwouve");
+        }
+
+        if (f.status === "active") {
+            h += actBtn("ab-frz",
+                "admAction('freeze','" +
+                f.id + "')",
+                "fa-ban", "Jele");
+        }
+
+        if (f.status === "frozen") {
+            h += actBtn("ab-ufrz",
+                "admAction('unfreeze','" +
+                f.id + "')",
+                "fa-check", "Debloke");
+        }
+
+        h += actBtn("ab-del",
+            "admAction('delete','" +
+            f.id + "')",
+            "fa-trash", "Efase");
+
         h += '</td></tr>';
     });
 
     tb.innerHTML = h;
 }
 
-/* ====================================
-   RENDER PENDING TABLE
-   ==================================== */
+function renderKreyTable(list) {
+    var tb = document.getElementById("tbKrey");
+    if (!tb) return;
+
+    if (!list.length) {
+        tb.innerHTML = emptyRow(7,
+            "Pa gen gwoup Krey anko");
+        return;
+    }
+
+    var h = "";
+    list.forEach(function(k) {
+        var stCl = k.status === "active"
+            ? "green"
+            : k.status === "en_attente"
+                ? "orange"
+                : "red";
+        var stTxt = k.status === "active"
+            ? "Aktif"
+            : k.status === "en_attente"
+                ? "An Atant"
+                : "Jele";
+
+        h += '<tr data-filter="' +
+            (k.status || '') + '">';
+        h += '<td><strong>' +
+            (k.kreyName || k.prenom || '') +
+            '</strong><br><small style="color:#6a6a80">' +
+            (k.email || '') +
+            '</small></td>';
+        h += '<td>' +
+            (k.kreyZone || 'N/A') + '</td>';
+        h += '<td>' +
+            (k.kreyMemberCount || 0) +
+            ' manm</td>';
+        h += '<td>' +
+            ((k.kreyPrice || 0)
+                .toLocaleString()) +
+            ' G</td>';
+        h += '<td>' +
+            ((k.solde || 0)
+                .toLocaleString()) +
+            ' G</td>';
+        h += '<td><span class="sbadge ' +
+            stCl + '">' +
+            stTxt + '</span></td>';
+        h += '<td>';
+
+        h += actBtn("ab-viw",
+            "viewAccountDetail('" +
+            k.id + "')",
+            "fa-eye", "Voir");
+
+        if (k.status === "en_attente") {
+            h += actBtn("ab-app",
+                "admAction('approve','" +
+                k.id + "')",
+                "fa-check", "Apwouve");
+        }
+
+        if (k.status === "active") {
+            h += actBtn("ab-frz",
+                "admAction('freeze','" +
+                k.id + "')",
+                "fa-ban", "Jele");
+        }
+
+        if (k.status === "frozen") {
+            h += actBtn("ab-ufrz",
+                "admAction('unfreeze','" +
+                k.id + "')",
+                "fa-check", "Debloke");
+        }
+
+        h += actBtn("ab-del",
+            "admAction('delete','" +
+            k.id + "')",
+            "fa-trash", "Efase");
+
+        h += '</td></tr>';
+    });
+
+    tb.innerHTML = h;
+}
+
 function renderPendingTable(list) {
     var tb = document.getElementById("tbPe");
     if (!tb) return;
 
-    if (!list || list.length === 0) {
-        tb.innerHTML = emptyRow(6, "Pa gen demann an atant!");
+    if (!list.length) {
+        tb.innerHTML = emptyRow(6,
+            "Pa gen demann an atant!");
         return;
     }
 
     var h = "";
     list.forEach(function(f) {
-        var typeTxt = f.type === "krey" ? "Gwoup Krey" : "Prestate";
-        var date = fmtDate(f.createdAt && f.createdAt.toDate ? f.createdAt.toDate() : null);
+        var typeTxt = f.type === "krey"
+            ? "Gwoup Krey"
+            : "Prestate";
+
+        var date = fmtDate(
+            f.createdAt && f.createdAt.toDate
+                ? f.createdAt.toDate()
+                : null
+        );
 
         h += '<tr>';
-        h += '<td><strong>' + (f.prenom || f.kreyName || '') + ' ' + (f.nom || '') + '</strong><br><small style="color:#6a6a80">' + (f.email || '') + '</small></td>';
-        h += '<td>' + (f.localisation || f.kreyZone || 'N/A') + '</td>';
+        h += '<td><strong>' +
+            ((f.kreyName || f.prenom || '') +
+            ' ' + (f.nom || '')).trim() +
+            '</strong><br><small style="color:#6a6a80">' +
+            (f.email || '') + '</small></td>';
+        h += '<td>' +
+            (f.localisation || f.kreyZone || 'N/A') +
+            '</td>';
         h += '<td>' + typeTxt + '</td>';
-        h += '<td>' + ((f.prixMoment || f.kreyPrice || 0).toLocaleString()) + ' G</td>';
+        h += '<td>' +
+            ((f.prixMoment || f.kreyPrice || 0)
+                .toLocaleString()) +
+            ' G</td>';
         h += '<td>' + date + '</td>';
         h += '<td>';
-        h += btn("ab-app", "admAction('approve','" + f.id + "')", "fa-check", "Apwouve");
-        h += btn("ab-del", "admAction('delete','" + f.id + "')", "fa-times", "Refize");
+        h += actBtn("ab-app",
+            "admAction('approve','" +
+            f.id + "')",
+            "fa-check", "Apwouve");
+        h += actBtn("ab-del",
+            "admAction('delete','" +
+            f.id + "')",
+            "fa-times", "Refize");
         h += '</td></tr>';
     });
 
     tb.innerHTML = h;
 }
 
-/* ====================================
-   RENDER PREMIUM TABLE
-   ==================================== */
 function renderPremiumTable(list) {
     var tb = document.getElementById("tbPr");
     if (!tb) return;
 
-    if (!list || list.length === 0) {
-        tb.innerHTML = emptyRow(5, "Pa gen manm Premium anko");
+    if (!list.length) {
+        tb.innerHTML = emptyRow(5,
+            "Pa gen manm Premium anko");
         return;
     }
 
     var h = "";
     list.forEach(function(u) {
         var date = fmtDate(
-            u.premiumActivatedAt && u.premiumActivatedAt.toDate
+            u.premiumActivatedAt &&
+            u.premiumActivatedAt.toDate
                 ? u.premiumActivatedAt.toDate()
-                : u.createdAt && u.createdAt.toDate
+                : u.createdAt &&
+                  u.createdAt.toDate
                     ? u.createdAt.toDate()
                     : null
         );
+
         h += '<tr>';
-        h += '<td><strong>' + (u.prenom || '') + ' ' + (u.nom || '') + '</strong></td>';
+        h += '<td><strong>' +
+            (u.prenom || '') + ' ' +
+            (u.nom || '') +
+            '</strong></td>';
         h += '<td>' + (u.email || 'N/A') + '</td>';
         h += '<td>' + (u.telephone || 'N/A') + '</td>';
         h += '<td>' + date + '</td>';
-        h += '<td>' + btn("ab-rpr", "admAction('unpremium','" + u.id + "')", "fa-times", "Retire Premium") + '</td></tr>';
-    });
-
-    tb.innerHTML = h;
-}
-
-/* ====================================
-   RENDER KREY TABLE
-   ==================================== */
-function renderKreyTable(list) {
-    var tb = document.getElementById("tbKrey");
-    if (!tb) return;
-
-    if (!list || list.length === 0) {
-        tb.innerHTML = emptyRow(7, "Pa gen gwoup Krey anko");
-        return;
-    }
-
-    var h = "";
-    list.forEach(function(k) {
-        var stCl = k.status === "active" ? "green" : k.status === "en_attente" ? "orange" : "red";
-        var stTxt = k.status === "active" ? "Aktif" : k.status === "en_attente" ? "An Atant" : "Jele";
-
-        h += '<tr data-filter="' + (k.status || '') + '">';
-        h += '<td><strong>' + (k.kreyName || k.prenom || '') + '</strong><br><small style="color:#6a6a80">' + (k.email || '') + '</small></td>';
-        h += '<td>' + (k.kreyZone || 'N/A') + '</td>';
-        h += '<td>' + (k.kreyMemberCount || 0) + ' manm</td>';
-        h += '<td>' + ((k.kreyPrice || 0).toLocaleString()) + ' G</td>';
-        h += '<td>' + ((k.solde || 0).toLocaleString()) + ' G</td>';
-        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
-        h += '<td>';
-        h += actBtn(
-    "ab-viw",
-    "viewAccountDetail('" +
-    k.id + "')",
-    "fa-eye",
-    "Voir"
-);
-        if (k.status === "en_attente") h += btn("ab-app", "admAction('approve','" + k.id + "')", "fa-check", "Apwouve");
-        if (k.status === "active") h += btn("ab-frz", "admAction('freeze','" + k.id + "')", "fa-ban", "Jele");
-        if (k.status === "frozen") h += btn("ab-ufrz", "admAction('unfreeze','" + k.id + "')", "fa-check", "Debloke");
-        h += btn("ab-del", "admAction('delete','" + k.id + "')", "fa-trash", "Efase");
-        h += '</td></tr>';
+        h += '<td>' +
+            actBtn("ab-rpr",
+                "admAction('unpremium','" +
+                u.id + "')",
+                "fa-times", "Retire Premium") +
+            '</td></tr>';
     });
 
     tb.innerHTML = h;
@@ -2032,37 +2157,32 @@ function loadReservations() {
     db.collection("reservations")
         .get()
         .then(function(snap) {
-            var list = [];
+            adminRes = [];
             snap.forEach(function(doc) {
                 var d = doc.data();
                 d.id = doc.id;
-                list.push(d);
+                adminRes.push(d);
             });
 
-            list.sort(function(a, b) {
+            adminRes.sort(function(a, b) {
                 var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
-                var tb2 = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
-                return tb2 - ta;
+                var tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+                return tb - ta;
             });
 
-            setVal("stR", list.length);
-            setBdg("bdgR", list.length);
-            renderResTable(list);
-        })
-        .catch(function(err) {
-            console.error("loadRes error:", err);
+            setVal("stR", adminRes.length);
+            setBdg("bdgR", adminRes.length);
+            renderResTable(adminRes);
         });
 }
 
-/* ====================================
-   RENDER RESERVATIONS TABLE
-   ==================================== */
 function renderResTable(list) {
     var tb = document.getElementById("tbR");
     if (!tb) return;
 
-    if (!list || list.length === 0) {
-        tb.innerHTML = emptyRow(8, "Pa gen rezevasyon anko");
+    if (!list.length) {
+        tb.innerHTML = emptyRow(8,
+            "Pa gen rezevasyon anko");
         return;
     }
 
@@ -2074,7 +2194,7 @@ function renderResTable(list) {
         var typCl = r.type === "krey" ? "purple" : "blue";
         var kote = r.type === "krey" ? (r.locationName || "Prive") : (r.hotelName || "Hotel");
 
-        h += '<tr data-filter="' + (r.status || '') + '">';
+        h += '<tr data-filter="' + (r.status || '') + '" data-type="' + (r.type || 'individual') + '">';
         h += '<td><small>' + (r.userEmail || 'N/A') + '</small></td>';
         h += '<td>' + (r.prestateName || 'N/A') + '</td>';
         h += '<td>' + (r.date || 'N/A') + '</td>';
@@ -2083,8 +2203,12 @@ function renderResTable(list) {
         h += '<td><span class="sbadge ' + typCl + '">' + typTxt + '</span></td>';
         h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
         h += '<td>';
-        if (r.status === "en_attente") h += btn("ab-app", "resAction('confirm','" + r.id + "')", "fa-check", "Konfime");
-        if (r.status !== "cancelled") h += btn("ab-del", "resAction('cancel','" + r.id + "')", "fa-times", "Anile");
+        if (r.status === "en_attente") {
+            h += actBtn("ab-app", "resAction('confirm','" + r.id + "')", "fa-check", "Konfime");
+        }
+        if (r.status !== "cancelled") {
+            h += actBtn("ab-del", "resAction('cancel','" + r.id + "')", "fa-times", "Anile");
+        }
         h += '</td></tr>';
     });
 
@@ -2100,40 +2224,43 @@ function loadPayments() {
     db.collection("payments")
         .get()
         .then(function(snap) {
-            var list = [];
+            adminPay = [];
             snap.forEach(function(doc) {
                 var d = doc.data();
                 d.id = doc.id;
-                list.push(d);
+                adminPay.push(d);
             });
 
-            list.sort(function(a, b) {
+            adminPay.sort(function(a, b) {
                 var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
-                var tb2 = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
-                return tb2 - ta;
+                var tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+                return tb - ta;
             });
 
-            var pending = list.filter(function(p) { return p.status === "en_attente"; });
-            setBdg("bdgPy", pending.length);
-            renderPayTable(list);
+            var pending = adminPay.filter(function(p) {
+                return p.status === "en_attente";
+            });
 
-            var revenue = list.filter(function(p) { return p.status === "confirmed"; }).length * 1000;
+            setBdg("bdgPy", pending.length);
+            renderPayTable(adminPay);
+
+            var revenue = adminPay.filter(function(p) {
+                return p.status === "confirmed";
+            }).reduce(function(sum, p) {
+                return sum + (p.amount || 0);
+            }, 0);
+
             setVal("stRev", revenue.toLocaleString() + " G");
-        })
-        .catch(function(err) {
-            console.error("loadPay error:", err);
         });
 }
 
-/* ====================================
-   RENDER PAYMENTS TABLE
-   ==================================== */
 function renderPayTable(list) {
     var tb = document.getElementById("tbPy");
     if (!tb) return;
 
-    if (!list || list.length === 0) {
-        tb.innerHTML = emptyRow(7, "Pa gen peman anko");
+    if (!list.length) {
+        tb.innerHTML = emptyRow(7,
+            "Pa gen peman anko");
         return;
     }
 
@@ -2147,13 +2274,15 @@ function renderPayTable(list) {
         h += '<tr data-filter="' + (p.status || '') + '">';
         h += '<td><small>' + (p.email || 'N/A') + '</small></td>';
         h += '<td><span class="sbadge ' + methCl + '">' + (p.method === "natcash" ? "NatCash" : "MonCash") + '</span></td>';
-        h += '<td><code style="font-size:0.72rem">' + (p.reference || p.orderId || 'N/A') + '</code></td>';
+        h += '<td><code style="font-size:0.72rem">' + (p.reference || p.referenceId || 'N/A') + '</code></td>';
         h += '<td><strong>' + ((p.amount || 1000).toLocaleString()) + ' G</strong></td>';
         h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
         h += '<td>' + date + '</td>';
         h += '<td>';
-        if (p.status === "en_attente") h += btn("ab-app", "payAction('confirm','" + p.id + "','" + (p.userId || '') + "')", "fa-check", "Konfime+Premium");
-        h += btn("ab-del", "payAction('delete','" + p.id + "','')", "fa-trash", "Efase");
+        if (p.status === "en_attente") {
+            h += actBtn("ab-app", "payAction('confirm','" + p.id + "','" + (p.userId || '') + "')", "fa-check", "Konfime+Premium");
+        }
+        h += actBtn("ab-del", "payAction('delete','" + p.id + "','')", "fa-trash", "Efase");
         h += '</td></tr>';
     });
 
@@ -2166,131 +2295,130 @@ function renderPayTable(list) {
 function loadFinance() {
     if (!db) return;
 
-    db.collection("reservations").get()
-        .then(function(snap) {
-            var totalRes = 0;
-            var totalComm = 0;
-            snap.forEach(function(doc) {
-                var r = doc.data();
-                if (r.status !== "cancelled") {
-                    var p = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
-                    totalRes += p;
-                    totalComm += Math.round(p * 0.1);
-                }
-            });
-            setVal("finR", totalRes.toLocaleString() + " G");
-            setVal("finC", totalComm.toLocaleString() + " G");
-        });
+    var totalRes = 0;
+    var totalComm = 0;
 
-    db.collection("payments")
-        .where("status", "==", "confirmed")
-        .get()
-        .then(function(snap) {
-            var prem = snap.size * 1000;
-            setVal("finP", prem.toLocaleString() + " G");
-            var finTEl = document.getElementById("finT");
-            if (finTEl) {
-                var finR = parseInt((document.getElementById("finC") ? document.getElementById("finC").textContent : "0").replace(/[^0-9]/g, "")) || 0;
-                setVal("finT", (finR + prem).toLocaleString() + " G");
-            }
-        })
-        .catch(function() {});
-}
+    adminRes.forEach(function(r) {
+        if (r.status === "cancelled") return;
+        var p = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
+        totalRes += p;
+        totalComm += Math.round(p * 0.10);
+    });
 
-function loadFin(period, btn) {
-    if (btn) {
-        var sibs = btn.parentElement.querySelectorAll(".tf");
-        sibs.forEach(function(s) { s.classList.remove("active"); });
-        btn.classList.add("active");
-    }
-    loadFinance();
+    var prem = adminPay.filter(function(p) {
+        return p.status === "confirmed";
+    }).reduce(function(sum, p) {
+        return sum + (p.amount || 0);
+    }, 0);
+
+    setVal("finR", totalRes.toLocaleString() + " G");
+    setVal("finC", totalComm.toLocaleString() + " G");
+    setVal("finP", prem.toLocaleString() + " G");
+    setVal("finT", (totalComm + prem).toLocaleString() + " G");
 }
 
 /* ====================================
-   LOAD RECENT
+   LOAD RECENT ACTIVITY
    ==================================== */
 function loadRecent() {
-    if (!db) return;
-
     var recentEl = document.getElementById("recent");
     if (!recentEl) return;
 
-    db.collection("reservations")
-        .limit(8)
-        .get()
-        .then(function(snap) {
-            if (snap.empty) {
-                recentEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Pa gen aktivite anko</div>';
-                return;
-            }
+    var items = [];
 
-            var h = "";
-            snap.forEach(function(doc) {
-                var r = doc.data();
-                var stCl = r.status === "confirmed" ? "green" : "orange";
-                var stTxt = r.status === "confirmed" ? "Konfime" : "An Atant";
-
-                h += '<div style="display:flex;align-items:center;gap:15px;padding:14px 20px;border-bottom:1px solid #2a2a3a">';
-                h += '<div style="width:38px;height:38px;border-radius:10px;background:rgba(76,175,80,0.1);display:flex;align-items:center;justify-content:center;color:#4caf50;flex-shrink:0"><i class="fas fa-calendar-check"></i></div>';
-                h += '<div style="flex:1"><strong style="font-size:0.85rem">' + (r.prestateName || 'N/A') + '</strong><br><small style="color:#6a6a80">' + (r.userEmail || 'N/A') + ' | ' + (r.date || 'N/A') + '</small></div>';
-                h += '<span class="sbadge ' + stCl + '">' + stTxt + '</span>';
-                h += '</div>';
-            });
-
-            recentEl.innerHTML = h;
-        })
-        .catch(function(err) {
-            console.error("loadRecent error:", err);
+    adminRes.slice(0, 5).forEach(function(r) {
+        items.push({
+            ico: "fa-calendar-check",
+            cl: "#4caf50",
+            txt: "Rezevasyon: " + (r.prestateName || "N/A"),
+            sub: (r.userEmail || "N/A") + " | " + (r.date || "N/A"),
+            st: r.status === "confirmed" ? "Konfime" : "An Atant",
+            sc: r.status === "confirmed" ? "green" : "orange"
         });
+    });
+
+    adminPay.slice(0, 3).forEach(function(p) {
+        items.push({
+            ico: "fa-credit-card",
+            cl: "#2196f3",
+            txt: "Peman: " + ((p.amount || 1000).toLocaleString()) + " Gdes",
+            sub: (p.email || "N/A") + " | " + (p.method || "N/A"),
+            st: p.status === "confirmed" ? "Konfime" : "An Atant",
+            sc: p.status === "confirmed" ? "green" : "orange"
+        });
+    });
+
+    if (!items.length) {
+        recentEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Pa gen aktivite anko</div>';
+        return;
+    }
+
+    var h = "";
+    items.forEach(function(it) {
+        h += '<div style="display:flex;align-items:center;gap:15px;padding:14px 20px;border-bottom:1px solid #2a2a3a">';
+        h += '<div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;color:' + it.cl + ';flex-shrink:0">';
+        h += '<i class="fas ' + it.ico + '"></i>';
+        h += '</div>';
+        h += '<div style="flex:1">';
+        h += '<strong style="font-size:0.85rem">' + it.txt + '</strong><br>';
+        h += '<small style="color:#6a6a80">' + it.sub + '</small>';
+        h += '</div>';
+        h += '<span class="sbadge ' + it.sc + '">' + it.st + '</span>';
+        h += '</div>';
+    });
+
+    recentEl.innerHTML = h;
 }
 
 /* ====================================
    LOAD COMMISSIONS
    ==================================== */
 function loadCommissions() {
-    if (!db) return;
-
     var tb = document.getElementById("tbComm");
     if (!tb) return;
 
-    db.collection("reservations").get()
-        .then(function(snap) {
-            var commByFL = {};
-            snap.forEach(function(doc) {
-                var r = doc.data();
-                if (r.status === "cancelled") return;
-                var name = r.prestateName || "Unknown";
-                var price = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
-                if (!commByFL[name]) {
-                    commByFL[name] = { count: 0, total: 0, comm: 0, net: 0 };
-                }
-                commByFL[name].count++;
-                commByFL[name].total += price;
-                commByFL[name].comm += Math.round(price * 0.1);
-                commByFL[name].net += Math.round(price * 0.9);
-            });
+    var commByFL = {};
 
-            var keys = Object.keys(commByFL);
-            if (keys.length === 0) {
-                tb.innerHTML = emptyRow(6, "Pa gen done komisyon anko");
-                return;
-            }
+    adminRes.forEach(function(r) {
+        if (r.status === "cancelled") return;
+        var name = r.prestateName || "Unknown";
+        var price = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
 
-            var h = "";
-            keys.forEach(function(name) {
-                var d = commByFL[name];
-                h += '<tr>';
-                h += '<td><strong>' + name + '</strong></td>';
-                h += '<td>' + d.count + '</td>';
-                h += '<td>' + d.total.toLocaleString() + ' G</td>';
-                h += '<td style="color:var(--gold)">' + d.comm.toLocaleString() + ' G</td>';
-                h += '<td style="color:var(--green)">' + d.net.toLocaleString() + ' G</td>';
-                h += '<td style="color:var(--blue)">N/A</td>';
-                h += '</tr>';
-            });
+        if (!commByFL[name]) {
+            commByFL[name] = {
+                count: 0,
+                total: 0,
+                comm: 0,
+                net: 0
+            };
+        }
 
-            tb.innerHTML = h;
-        });
+        commByFL[name].count++;
+        commByFL[name].total += price;
+        commByFL[name].comm += Math.round(price * 0.10);
+        commByFL[name].net += Math.round(price * 0.90);
+    });
+
+    var keys = Object.keys(commByFL);
+    if (!keys.length) {
+        tb.innerHTML = emptyRow(6, "Pa gen done komisyon anko");
+        return;
+    }
+
+    var h = "";
+    keys.forEach(function(name) {
+        var d = commByFL[name];
+        h += '<tr>';
+        h += '<td><strong>' + name + '</strong></td>';
+        h += '<td>' + d.count + '</td>';
+        h += '<td>' + d.total.toLocaleString() + ' G</td>';
+        h += '<td style="color:var(--gold)">' + d.comm.toLocaleString() + ' G</td>';
+        h += '<td style="color:var(--green)">' + d.net.toLocaleString() + ' G</td>';
+        h += '<td>N/A</td>';
+        h += '</tr>';
+    });
+
+    tb.innerHTML = h;
 }
 
 /* ====================================
@@ -2305,7 +2433,6 @@ function admAction(action, uid) {
         db.collection("users").doc(uid).delete()
             .then(function() {
                 toast("Kont efase!", true);
-                loadAll();
             });
         return;
     }
@@ -2329,15 +2456,7 @@ function admAction(action, uid) {
 
     db.collection("users").doc(uid).update(updates)
         .then(function() {
-            var succMsgs = {
-                premium: "Premium aktive!",
-                unpremium: "Premium retire!",
-                approve: "Kont apwouve!",
-                freeze: "Kont jele!",
-                unfreeze: "Kont debloke!"
-            };
-            toast(succMsgs[action] || "Fini!", true);
-            loadAll();
+            toast("Aksyon fini!", true);
         })
         .catch(function(err) {
             toast("Ere: " + err.message, false);
@@ -2350,11 +2469,11 @@ function admAction(action, uid) {
 function resAction(action, id) {
     if (!db) return;
     var status = action === "confirm" ? "confirmed" : "cancelled";
-    if (!confirm(action === "confirm" ? "Konfime rezevasyon?" : "Anile rezevasyon?")) return;
+    var msg = action === "confirm" ? "Konfime rezevasyon sa a?" : "Anile rezevasyon sa a?";
+    if (!confirm(msg)) return;
     db.collection("reservations").doc(id).update({ status: status })
         .then(function() {
             toast(action === "confirm" ? "Konfime!" : "Anile!", true);
-            loadReservations();
         });
 }
 
@@ -2377,8 +2496,6 @@ function payAction(action, id, userId) {
             })
             .then(function() {
                 toast("Konfime! Premium aktive!", true);
-                loadPayments();
-                loadAll();
             });
     }
 
@@ -2387,7 +2504,6 @@ function payAction(action, id, userId) {
         db.collection("payments").doc(id).delete()
             .then(function() {
                 toast("Peman efase!", true);
-                loadPayments();
             });
     }
 }
@@ -2399,7 +2515,8 @@ function srchTbl(tableId, query) {
     var rows = document.querySelectorAll("#" + tableId + " tr");
     var q = query.toLowerCase();
     rows.forEach(function(r) {
-        r.style.display = r.textContent.toLowerCase().includes(q) ? "" : "none";
+        r.style.display =
+            r.textContent.toLowerCase().includes(q) ? "" : "none";
     });
 }
 
@@ -2466,314 +2583,6 @@ function toast(msg, isGood) {
     el.innerHTML = '<i class="fas ' + ic + '" style="color:' + cl + '"></i> <span>' + msg + '</span>';
     el.classList.add("on");
     setTimeout(function() { el.classList.remove("on"); }, 3500);
-}
-/* ====================================
-   VIEW ACCOUNT DETAIL
-   ==================================== */
-function viewAccountDetail(uid) {
-    if (!db) return;
-
-    db.collection("users")
-        .doc(uid)
-        .get()
-        .then(function(doc) {
-            if (!doc.exists) {
-                showAdminToast(
-                    "Kont pa jwenn.",
-                    false
-                );
-                return;
-            }
-
-            var d = doc.data();
-
-            var title =
-                ((d.prenom || d.kreyName || "") +
-                " " +
-                (d.nom || "")).trim();
-
-            if (!title) title = "Detail Kont";
-
-            document.getElementById(
-                "detailTitle"
-            ).textContent = title;
-
-            var html = "";
-
-            html += detailRow("ID", uid);
-            html += detailRow("Type", d.type);
-            html += detailRow("Non", title);
-            html += detailRow("Email", d.email);
-            html += detailRow("Telefon", d.telephone);
-            html += detailRow("Status", d.status);
-            html += detailRow(
-                "Premium",
-                d.isPremium ? "Wi" : "Non"
-            );
-
-            if (d.type === "freelancer") {
-                html += detailRow(
-                    "Genre", d.genre
-                );
-                html += detailRow(
-                    "Lokasyon",
-                    d.localisation
-                );
-                html += detailRow(
-                    "Pri/Moman",
-                    d.prixMoment
-                        ? d.prixMoment +
-                          " Gdes"
-                        : "N/A"
-                );
-                html += detailRow(
-                    "Solde",
-                    d.solde
-                        ? d.solde +
-                          " Gdes"
-                        : "0 Gdes"
-                );
-                html += detailRow(
-                    "Deskripsyon",
-                    d.description
-                );
-            }
-
-            if (d.type === "krey") {
-                html += detailRow(
-                    "Non Krey",
-                    d.kreyName
-                );
-                html += detailRow(
-                    "Zon",
-                    d.kreyZone
-                );
-                html += detailRow(
-                    "Manm",
-                    d.kreyMemberCount
-                );
-                html += detailRow(
-                    "Pri Krey",
-                    d.kreyPrice
-                        ? d.kreyPrice +
-                          " Gdes"
-                        : "N/A"
-                );
-                html += detailRow(
-                    "Deskripsyon",
-                    d.kreyDescription
-                );
-            }
-
-            html += buildAdminMediaSection(
-                uid, d
-            );
-
-            document.getElementById(
-                "detailContent"
-            ).innerHTML = html;
-
-            var acts = "";
-            acts += '<button class="ab ab-del" ' +
-                'onclick="admAction(' +
-                '\'delete\',\'' +
-                uid +
-                '\');closeDetailModal()">' +
-                '<i class="fas fa-trash"></i> ' +
-                'Efase Kont</button>';
-
-            document.getElementById(
-                "detailActions"
-            ).innerHTML = acts;
-
-            document.getElementById(
-                "detailModal"
-            ).classList.add("show");
-        })
-        .catch(function(err) {
-            console.error(err);
-            showAdminToast(
-                "Ere pandan chajman detay.",
-                false
-            );
-        });
-}
-
-function detailRow(label, value) {
-    if (
-        value === undefined ||
-        value === null ||
-        value === ""
-    ) {
-        value = "N/A";
-    }
-
-    return '<div class="detail-row">' +
-        '<span>' + label + '</span>' +
-        '<span>' + value + '</span>' +
-        '</div>';
-}
-
-function buildAdminMediaSection(uid, data) {
-    var media = data.media || {};
-    var photos = media.photos || [];
-    var videos = media.videos || [];
-
-    var html = "";
-
-    html += '<div class="admin-media-section">';
-    html += '<div class="admin-media-title">';
-    html += '<i class="fas fa-images" ' +
-            'style="color:var(--primary);' +
-            'margin-right:8px"></i>';
-    html += 'Medias Uploades';
-    html += '</div>';
-
-    /* Photos */
-    html += '<h4 style="font-size:0.9rem;' +
-            'margin-bottom:10px">' +
-            'Photos (' + photos.length + ')' +
-            '</h4>';
-
-    if (photos.length === 0) {
-        html += '<p style="font-size:0.8rem;' +
-                'color:var(--text-muted);' +
-                'margin-bottom:15px">' +
-                'Pa gen foto.</p>';
-    } else {
-        html += '<div class="admin-media-grid">';
-        photos.forEach(function(p, index) {
-            html += '<div class="admin-media-item">';
-            html += '<img src="' + p.url + '">';
-            html += '<button class="admin-media-delete" ' +
-                    'onclick="deleteAdminMedia(' +
-                    '\'' + uid + '\',' +
-                    '\'photo\',' +
-                    '\'' + p.path + '\',' +
-                    index + ')">';
-            html += '<i class="fas fa-times"></i>';
-            html += '</button>';
-            html += '<a class="admin-media-open" ' +
-                    'href="' + p.url + '" ' +
-                    'target="_blank">Ouvri</a>';
-            html += '</div>';
-        });
-        html += '</div>';
-    }
-
-    /* Videos */
-    html += '<h4 style="font-size:0.9rem;' +
-            'margin:20px 0 10px">' +
-            'Videos (' + videos.length + ')' +
-            '</h4>';
-
-    if (videos.length === 0) {
-        html += '<p style="font-size:0.8rem;' +
-                'color:var(--text-muted)">' +
-                'Pa gen videyo.</p>';
-    } else {
-        html += '<div class="admin-media-grid">';
-        videos.forEach(function(v, index) {
-            html += '<div class="admin-media-item">';
-            html += '<div class="admin-media-video">';
-            html += '<i class="fas fa-video"></i>';
-            html += '</div>';
-            html += '<button class="admin-media-delete" ' +
-                    'onclick="deleteAdminMedia(' +
-                    '\'' + uid + '\',' +
-                    '\'video\',' +
-                    '\'' + v.path + '\',' +
-                    index + ')">';
-            html += '<i class="fas fa-times"></i>';
-            html += '</button>';
-            html += '<a class="admin-media-open" ' +
-                    'href="' + v.url + '" ' +
-                    'target="_blank">Ouvri</a>';
-            html += '</div>';
-        });
-        html += '</div>';
-    }
-
-    html += '</div>';
-    return html;
-}
-
-function closeDetailModal() {
-    var m = document.getElementById(
-        "detailModal"
-    );
-    if (m) {
-        m.classList.remove("show");
-    }
-}
-
-/* ====================================
-   DELETE MEDIA ADMIN
-   ==================================== */
-async function deleteAdminMedia(
-    uid,
-    mediaType,
-    path,
-    index
-) {
-    if (!confirm(
-        "Efase media sa a?"
-    )) {
-        return;
-    }
-
-    try {
-        if (storage && path) {
-            await storage.ref(path).delete();
-        }
-
-        var doc = await db.collection("users")
-            .doc(uid)
-            .get();
-
-        if (!doc.exists) {
-            showAdminToast(
-                "Kont pa jwenn.",
-                false
-            );
-            return;
-        }
-
-        var data = doc.data();
-        var media = data.media || {};
-        var arrName =
-            mediaType === "photo"
-            ? "photos"
-            : "videos";
-
-        var list = media[arrName] || [];
-        list.splice(index, 1);
-
-        var updateObj = {};
-        updateObj["media." + arrName] = list;
-
-        await db.collection("users")
-            .doc(uid)
-            .update(updateObj);
-
-        showAdminToast(
-            "Media efase!",
-            true
-        );
-
-        /* Reload modal detail */
-        viewAccountDetail(uid);
-
-        /* Reload main data */
-        loadAll();
-
-    } catch (err) {
-        console.error(err);
-        showAdminToast(
-            "Ere pandan efasman media.",
-            false
-        );
-    }
 }
 </script>
 </body>
