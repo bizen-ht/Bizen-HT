@@ -2806,33 +2806,83 @@ var fbCfg = {
     appId: "1:248857953518:web:f85b1b37abd849add01fff"
 };
 
-var db = null;
-var auth = null;
-var storage = null;
-
+var db, auth, storage;
 try {
-    if (!firebase.apps.length) {
-        firebase.initializeApp(fbCfg);
-    }
-    db = firebase.firestore();
-    auth = firebase.auth();
-    storage = firebase.storage();
+    firebase.initializeApp(fbCfg);
+db = firebase.firestore();
+auth = firebase.auth();
+storage = firebase.storage();
 } catch (e) {
-    console.warn("Firebase init error:", e);
+    console.warn("Firebase:", e.message);
 }
 
 /* ====================================
-   GLOBAL STATE
+   ENSURE FIRESTORE USER DOC EXISTS
    ==================================== */
-var currentOrderId = null;
-var paymentCheckInterval = null;
-var tempUserForVerif = null;
-var resendCooldown = false;
-var uploadedPhotos = [];
-var uploadedKreyPhotos = [];
-var currentResCard = null;
-var kreySlidePositions = {};
-var ADMIN_EMAIL = "bizenht@gmail.com";
+function ensureUserDoc(user, forcedType) {
+    if (!db || !user) return Promise.resolve();
+
+    return db.collection("users")
+        .doc(user.uid)
+        .get()
+        .then(function(doc) {
+            if (doc.exists) {
+                return Promise.resolve(doc.data());
+            }
+
+            var type = forcedType || "user";
+
+            var prenom = "";
+            var nom = "";
+
+            if (user.displayName) {
+                var parts = user.displayName
+                    .split(" ");
+                prenom = parts[0] || "";
+                nom = parts.slice(1)
+                    .join(" ") || "";
+            } else {
+                prenom = user.email
+                    ? user.email.split("@")[0]
+                    : "User";
+            }
+
+            var data = {
+                prenom: prenom,
+                nom: nom,
+                email: user.email || "",
+                telephone: "",
+                type: type,
+                status:
+                    type === "user"
+                    ? "active"
+                    : "en_attente",
+                isPremium: false,
+                emailVerified:
+                    user.emailVerified || false,
+                favorites: [],
+                solde: 0,
+                totalEarnings: 0,
+                reservations: 0,
+                photoURL: user.photoURL || "",
+                createdAt: firebase
+                    .firestore
+                    .FieldValue
+                    .serverTimestamp(),
+                lastLogin: firebase
+                    .firestore
+                    .FieldValue
+                    .serverTimestamp()
+            };
+
+            return db.collection("users")
+                .doc(user.uid)
+                .set(data)
+                .then(function() {
+                    return data;
+                });
+        });
+}
 
 /* ====================================
    HOTELS
@@ -2994,7 +3044,10 @@ var kreyData = [
     {
         name: "One Fire Team",
         zone: "Petion-Ville, Delmas",
-        desc: "Yon gwoup 3 bel fanm ki espesyalize nan moman romantik ak sensyel. Yo vini kote ou vle.",
+        desc: "Yon gwoup 3 bel fanm ki " +
+              "espesyalize nan moman " +
+              "romantik ak sensyel. " +
+              "Yo vini kote ou vle.",
         price: "15,000",
         memberCount: 3,
         photos: [
@@ -3002,13 +3055,19 @@ var kreyData = [
             "/images/krey1-2.jpg",
             "/images/krey1-3.jpg"
         ],
-        tags: ["Romantik", "Gwoup", "3 Manm"],
+        tags: [
+            "Romantik", "Gwoup", "3 Manm"
+        ],
         badge: "Popile"
     },
     {
         name: "Mama Groupe",
         zone: "Potoprens, Tabarre",
-        desc: "Yon eksperyans entans ak 4 moun ki konnen kijan pou fe yon nwit inoubliab. Yo disponib pou vini kote ou ye.",
+        desc: "Yon eksperyans entans ak " +
+              "4 moun ki konnen kijan pou " +
+              "fe yon nwit inoubliab. " +
+              "Yo disponib pou vini " +
+              "kote ou ye.",
         price: "20,000",
         memberCount: 4,
         photos: [
@@ -3017,26 +3076,36 @@ var kreyData = [
             "/images/krey2-3.jpg",
             "/images/krey2-4.jpg"
         ],
-        tags: ["Entans", "Gwoup", "4 Manm"],
+        tags: [
+            "Entans", "Gwoup", "4 Manm"
+        ],
         badge: "VIP"
     },
     {
         name: "Krey Grimel",
         zone: "Delmas, Carrefour",
-        desc: "Gwoup 3 fanm byen grimel pou yon trio pafe. Ou chwazi kote ak le.",
+        desc: "Gwoup 3 fanm byen grimel " +
+              "pou yon trio pafe. " +
+              "Ou chwazi kote ak le.",
         price: "12,000",
         memberCount: 3,
         photos: [
             "https://ei.phncdn.com/(m=bJ4hdaaecac)(mh=UR0NNhClRK7wmH5b)13608f4c-64de-4afd-bded-e104fba84142.jpg",
             "/images/krey3-2.jpg"
         ],
-        tags: ["Trio", "Gwoup", "3 Manm"],
+        tags: [
+            "Trio", "Gwoup", "3 Manm"
+        ],
         badge: "Nouvo"
     },
     {
         name: "Baz Black la",
         zone: "Petion-Ville",
-        desc: "Eksperyans VIP ultime ak 5 prestate seleksyone. Pou moun ki vle pi gwo kalite. Yo vini kote ou chwazi.",
+        desc: "Eksperyans VIP ultime ak " +
+              "5 prestate seleksyone. " +
+              "Pou moun ki vle pi gwo " +
+              "kalite. Yo vini kote " +
+              "ou chwazi.",
         price: "35,000",
         memberCount: 5,
         photos: [
@@ -3046,13 +3115,15 @@ var kreyData = [
             "/images/krey4-4.jpg",
             "/images/krey4-5.jpg"
         ],
-        tags: ["VIP", "Eksklizif", "5 Manm"],
+        tags: [
+            "VIP", "Eksklizif", "5 Manm"
+        ],
         badge: "VIP"
     }
 ];
 
 /* ====================================
-   EMAIL FILTER
+   BLOCKED EMAIL DOMAINS
    ==================================== */
 var blockedDomains = [
     "mailinator.com",
@@ -3080,424 +3151,31 @@ function isDisposableEmail(email) {
 }
 
 /* ====================================
-   PRELOADER
+   STOP PRELOADER
    ==================================== */
 function stopPre() {
     var p = document.getElementById("preloader");
     if (p) {
+        p.style.opacity = "0";
+        p.style.visibility = "hidden";
+        p.style.pointerEvents = "none";
         p.style.display = "none";
         p.classList.add("done");
     }
 }
+
 window.onerror = function () {
     stopPre();
     return false;
 };
-window.onload = function () { stopPre(); };
-setTimeout(stopPre, 1000);
-setTimeout(stopPre, 2000);
+
+window.onload = function () {
+    stopPre();
+};
+
+setTimeout(stopPre, 1500);
 setTimeout(stopPre, 3000);
-
-/* ====================================
-   FIRESTORE USER ENSURE
-   ==================================== */
-function ensureUserDoc(user, forcedType) {
-    if (!db || !user) return Promise.resolve();
-    return db.collection("users")
-        .doc(user.uid)
-        .get()
-        .then(function(doc) {
-            if (doc.exists) {
-                return doc.data();
-            }
-
-            var type = forcedType || "user";
-            var prenom = "";
-            var nom = "";
-
-            if (user.displayName) {
-                var parts = user.displayName.split(" ");
-                prenom = parts[0] || "";
-                nom = parts.slice(1).join(" ") || "";
-            } else {
-                prenom = user.email
-                    ? user.email.split("@")[0]
-                    : "User";
-            }
-
-            var data = {
-                prenom: prenom,
-                nom: nom,
-                email: user.email || "",
-                telephone: "",
-                type: type,
-                status: type === "user"
-                    ? "active"
-                    : "en_attente",
-                isPremium: false,
-                emailVerified:
-                    user.emailVerified || false,
-                favorites: [],
-                solde: 0,
-                totalEarnings: 0,
-                reservations: 0,
-                photoURL: user.photoURL || "",
-                createdAt:
-                    firebase.firestore
-                    .FieldValue
-                    .serverTimestamp(),
-                lastLogin:
-                    firebase.firestore
-                    .FieldValue
-                    .serverTimestamp()
-            };
-
-            return db.collection("users")
-                .doc(user.uid)
-                .set(data)
-                .then(function() {
-                    return data;
-                });
-        });
-}
-
-/* ====================================
-   HELPERS
-   ==================================== */
-function safeText(val, fallback) {
-    return val || fallback || "";
-}
-
-function showOk(t, m) {
-    var ot = document.getElementById("okT");
-    var op = document.getElementById("okP");
-    if (ot) ot.textContent = t;
-    if (op) op.textContent = m;
-    setTimeout(function() { oM("okM"); }, 300);
-}
-
-function toast(msg, type) {
-    var old = document.getElementById("toastEl");
-    if (old) old.remove();
-
-    var cl = type === "err"
-        ? "#f44336"
-        : "#4caf50";
-    var ic = type === "err"
-        ? "fa-times-circle"
-        : "fa-check-circle";
-
-    var t = document.createElement("div");
-    t.id = "toastEl";
-    t.style.cssText =
-        "position:fixed;bottom:100px;right:30px;" +
-        "background:#15151f;border:1px solid " + cl + ";" +
-        "color:white;padding:14px 20px;border-radius:12px;" +
-        "font-family:Montserrat,sans-serif;font-size:0.85rem;" +
-        "z-index:99999;max-width:320px;line-height:1.5;" +
-        "box-shadow:0 5px 25px rgba(0,0,0,0.5);" +
-        "display:flex;align-items:flex-start;gap:10px";
-    t.innerHTML =
-        '<i class="fas ' + ic + '" style="color:' +
-        cl + ';margin-top:2px;flex-shrink:0"></i>' +
-        '<span>' + msg + '</span>';
-    document.body.appendChild(t);
-
-    setTimeout(function() {
-        if (t.parentNode) {
-            t.style.opacity = "0";
-            t.style.transition = "opacity 0.3s";
-            setTimeout(function() {
-                if (t.parentNode) t.remove();
-            }, 300);
-        }
-    }, 4000);
-}
-
-function oM(id) {
-    var m = document.getElementById(id);
-    if (m) {
-        m.classList.add("show");
-        document.body.classList.add("no-scroll");
-    }
-}
-
-function cM(id) {
-    var m = document.getElementById(id);
-    if (m) {
-        m.classList.remove("show");
-        document.body.classList.remove("no-scroll");
-    }
-}
-
-function swM(a, b) {
-    cM(a);
-    setTimeout(function() {
-        oM(b);
-    }, 200);
-}
-
-/* ====================================
-   AGE GATE
-   ==================================== */
-function aY() {
-    try {
-        sessionStorage.setItem("age", "1");
-        localStorage.setItem("age", "1");
-    } catch (e) {}
-    var m = document.getElementById("agM");
-    if (m) {
-        m.classList.remove("show");
-        m.style.display = "none";
-        m.style.opacity = "0";
-        m.style.visibility = "hidden";
-        m.style.pointerEvents = "none";
-    }
-    document.body.classList.remove("no-scroll");
-}
-
-function aN() {
-    window.location.href = "https://www.google.com";
-}
-
-function checkAge() {
-    var ok = false;
-    try {
-        if (sessionStorage.getItem("age") === "1") ok = true;
-        if (localStorage.getItem("age") === "1") ok = true;
-    } catch (e) {}
-
-    var m = document.getElementById("agM");
-    if (!m) return;
-
-    if (ok) {
-        m.classList.remove("show");
-        m.style.display = "none";
-        document.body.classList.remove("no-scroll");
-    } else {
-        m.classList.add("show");
-        m.style.display = "flex";
-        document.body.classList.add("no-scroll");
-    }
-}
-
-setInterval(function() {
-    try {
-        var ageOk =
-            sessionStorage.getItem("age") === "1" ||
-            localStorage.getItem("age") === "1";
-        if (ageOk) {
-            var m = document.getElementById("agM");
-            if (m && m.classList.contains("show")) {
-                m.classList.remove("show");
-                m.style.display = "none";
-                document.body.classList.remove("no-scroll");
-            }
-        }
-    } catch (e) {}
-}, 500);
-
-/* ====================================
-   HEARTS
-   ==================================== */
-function initHearts() {
-    var c = document.getElementById("fhw");
-    if (!c) return;
-    var h = ["&#9829;", "&#9825;", "&#10084;"];
-    function mk() {
-        var s = document.createElement("span");
-        s.className = "fh";
-        s.innerHTML = h[Math.floor(Math.random() * h.length)];
-        s.style.left = Math.random() * 100 + "%";
-        s.style.fontSize = (Math.random() * 1.5 + 0.5) + "rem";
-        s.style.animationDuration = (Math.random() * 15 + 15) + "s";
-        s.style.animationDelay = Math.random() * 5 + "s";
-        c.appendChild(s);
-        setTimeout(function() {
-            if (s.parentNode) s.parentNode.removeChild(s);
-        }, 30000);
-    }
-    for (var i = 0; i < 8; i++) setTimeout(mk, i * 500);
-    setInterval(mk, 3000);
-}
-
-/* ====================================
-   NAVBAR
-   ==================================== */
-function initNav() {
-    var nb = document.getElementById("navbar");
-    var hb = document.getElementById("hbg");
-    var nl = document.getElementById("navLinks");
-    if (!nb || !hb || !nl) return;
-
-    window.addEventListener("scroll", function() {
-        nb.classList.toggle("scrolled", window.scrollY > 50);
-    });
-
-    hb.addEventListener("click", function() {
-        hb.classList.toggle("open");
-        nl.classList.toggle("open");
-        document.body.classList.toggle("no-scroll");
-    });
-
-    var lks = document.querySelectorAll(".nav-link");
-    for (var i = 0; i < lks.length; i++) {
-        lks[i].addEventListener("click", function() {
-            hb.classList.remove("open");
-            nl.classList.remove("open");
-            document.body.classList.remove("no-scroll");
-        });
-    }
-}
-
-/* ====================================
-   SCROLL REVEAL
-   ==================================== */
-function initSR() {
-    if (!window.IntersectionObserver) {
-        var e = document.querySelectorAll(".sr");
-        for (var i = 0; i < e.length; i++) {
-            e[i].classList.add("on");
-        }
-        return;
-    }
-
-    var obs = new IntersectionObserver(
-        function(entries) {
-            for (var i = 0; i < entries.length; i++) {
-                if (entries[i].isIntersecting) {
-                    entries[i].target.classList.add("on");
-                }
-            }
-        },
-        {
-            threshold: 0.1,
-            rootMargin: "0px 0px -50px 0px"
-        }
-    );
-
-    var e = document.querySelectorAll(".sr");
-    for (var j = 0; j < e.length; j++) {
-        obs.observe(e[j]);
-    }
-}
-
-/* ====================================
-   COUNTERS
-   ==================================== */
-function initCounters() {
-    if (!window.IntersectionObserver) return;
-
-    var obs = new IntersectionObserver(
-        function(entries) {
-            for (var i = 0; i < entries.length; i++) {
-                if (entries[i].isIntersecting) {
-                    aC(entries[i].target);
-                    obs.unobserve(entries[i].target);
-                }
-            }
-        },
-        { threshold: 0.5 }
-    );
-
-    var e = document.querySelectorAll(".stat-n");
-    for (var j = 0; j < e.length; j++) {
-        obs.observe(e[j]);
-    }
-}
-
-function aC(el) {
-    var t = parseInt(el.getAttribute("data-c"));
-    var c = 0;
-    var inc = t / 100;
-    var iv = setInterval(function() {
-        c += inc;
-        if (c >= t) {
-            el.textContent = t.toLocaleString();
-            clearInterval(iv);
-        } else {
-            el.textContent = Math.floor(c).toLocaleString();
-        }
-    }, 20);
-}
-
-/* ====================================
-   FILTERS
-   ==================================== */
-function initFilters() {
-    var btns = document.querySelectorAll(".fbtn");
-    for (var i = 0; i < btns.length; i++) {
-        btns[i].addEventListener("click", function() {
-            var sib = this.parentElement.querySelectorAll(".fbtn");
-            for (var j = 0; j < sib.length; j++) {
-                sib[j].classList.remove("active");
-            }
-            this.classList.add("active");
-
-            var f = this.getAttribute("data-f");
-            var cards = this.closest(".section").querySelectorAll(".pc");
-            for (var k = 0; k < cards.length; k++) {
-                var show =
-                    f === "all" ||
-                    cards[k].getAttribute("data-f") === f;
-                cards[k].style.display = show ? "" : "none";
-            }
-        });
-    }
-}
-
-/* ====================================
-   ACCOUNT TYPE SELECTOR
-   ==================================== */
-function pT(t) {
-    var aT = document.getElementById("aT");
-    var sw = document.getElementById("sw");
-    var uF = document.getElementById("uF");
-    var fF = document.getElementById("fF");
-    var kF = document.getElementById("kF");
-
-    if (aT) aT.classList.add("hidden");
-    if (sw) sw.classList.add("hidden");
-    if (uF) uF.classList.add("hidden");
-    if (fF) fF.classList.add("hidden");
-    if (kF) kF.classList.add("hidden");
-
-    if (t === "user" && uF) uF.classList.remove("hidden");
-    if (t === "freelancer" && fF) fF.classList.remove("hidden");
-    if (t === "krey" && kF) kF.classList.remove("hidden");
-}
-
-function bT() {
-    var aT = document.getElementById("aT");
-    var sw = document.getElementById("sw");
-    var uF = document.getElementById("uF");
-    var fF = document.getElementById("fF");
-    var kF = document.getElementById("kF");
-
-    if (aT) aT.classList.remove("hidden");
-    if (sw) sw.classList.remove("hidden");
-    if (uF) uF.classList.add("hidden");
-    if (fF) fF.classList.add("hidden");
-    if (kF) kF.classList.add("hidden");
-}
-
-/* ====================================
-   PASSWORD TOGGLE
-   ==================================== */
-function tPw(id) {
-    var i = document.getElementById(id);
-    if (!i) return;
-    var b = i.parentElement.querySelector(".tpw i");
-    if (!b) return;
-
-    if (i.type === "password") {
-        i.type = "text";
-        b.className = "fas fa-eye-slash";
-    } else {
-        i.type = "password";
-        b.className = "fas fa-eye";
-    }
-}
+setTimeout(stopPre, 5000);
 
 /* ====================================
    BUILD PROFILE CARD
@@ -3507,13 +3185,10 @@ function mkCard(p, type, male) {
     var mt = male ? " mt" : "";
     var tg = "";
     for (var i = 0; i < p.t.length; i++) {
-        tg += '<span class="tag">' +
-              p.t[i] + '</span>';
+        tg += '<span class="tag">' + p.t[i] + '</span>';
     }
-
     var h = '';
-    h += '<div class="pc' + mc + ' sr"';
-    h += ' data-f="' + p.lk + '">';
+    h += '<div class="pc' + mc + ' sr" data-f="' + p.lk + '">';
     h += '<div class="pc-img">';
     h += '<div class="pc-bg" style="background:' + p.g + '">';
     h += '<div class="sil"><i class="fas fa-user"></i></div>';
@@ -3552,12 +3227,250 @@ function mkCard(p, type, male) {
 }
 
 /* ====================================
-   KREY SLIDESHOW
+   RENDER KREY
+   ==================================== */
+function renderKrey() {
+    var kg = document.getElementById(
+        "kreyGrid"
+    );
+    if (!kg) return;
+
+    var html = "";
+
+    for (var k = 0;
+         k < kreyData.length; k++) {
+        var kr = kreyData[k];
+        var kid = "krey-" + k;
+
+        /* Tags */
+        var tagHtml = "";
+        for (var t = 0;
+             t < kr.tags.length; t++) {
+            tagHtml +=
+                '<span class="tag">' +
+                kr.tags[t] + '</span>';
+        }
+
+        /* Slides */
+        var slidesHtml = "";
+        var dotsHtml = "";
+        var photoCount = kr.photos.length;
+
+        for (var p = 0;
+             p < photoCount; p++) {
+            var imgUrl = kr.photos[p];
+            slidesHtml +=
+                '<div class="krey-slide"';
+            if (imgUrl) {
+                slidesHtml +=
+                    ' style="background-image' +
+                    ':url(\'' + imgUrl +
+                    '\')"';
+            }
+            slidesHtml += '>';
+            if (!imgUrl) {
+                slidesHtml +=
+                    '<i class="fas ' +
+                    'fa-users"></i>';
+            }
+            slidesHtml += '</div>';
+
+            dotsHtml +=
+                '<button class="krey-dot';
+            if (p === 0) {
+                dotsHtml += ' active';
+            }
+            dotsHtml += '" onclick="' +
+                'goKreySlide(\'' + kid +
+                '\',' + p + ')"></button>';
+        }
+
+        /* Card HTML */
+        html += '<div class="krey-card sr">';
+
+        /* Slideshow */
+        html += '<div class="krey-slideshow"';
+        html += ' id="' + kid + '">';
+
+        /* Slides container */
+        html += '<div class="krey-slides"';
+        html += ' id="' + kid + '-slides">';
+        html += slidesHtml;
+        html += '</div>';
+
+        /* First photo visible, rest locked */
+        if (photoCount > 1) {
+            html +=
+                '<div class="' +
+                'krey-slide-locked"';
+            html += ' id="' + kid +
+                '-lock"';
+            html += ' onclick="pa()"';
+            html += ' style="display:none">';
+            html +=
+                '<i class="fas fa-lock">' +
+                '</i>';
+            html +=
+                '<p>Premium pou we tout ' +
+                'foto yo</p>';
+            html += '</div>';
+        }
+
+        /* Nav arrows (premium only) */
+        html += '<button class="' +
+                'krey-slide-nav prev"';
+        html += ' onclick="moveKreySlide(\'' +
+                kid + '\',-1)"';
+        html += ' id="' + kid + '-prev"';
+        html += ' style="display:none">';
+        html += '<i class="fas ' +
+                'fa-chevron-left"></i>';
+        html += '</button>';
+
+        html += '<button class="' +
+                'krey-slide-nav next"';
+        html += ' onclick="moveKreySlide(\'' +
+                kid + '\',1)"';
+        html += ' id="' + kid + '-next"';
+        html += ' style="display:none">';
+        html += '<i class="fas ' +
+                'fa-chevron-right"></i>';
+        html += '</button>';
+
+        /* Dots */
+        html += '<div class="krey-dots"';
+        html += ' id="' + kid + '-dots">';
+        html += dotsHtml;
+        html += '</div>';
+
+        /* Photo count */
+        html += '<div class="' +
+                'krey-photo-count">';
+        html += '<i class="fas fa-images">' +
+                '</i> ';
+        html += photoCount + ' foto';
+        html += '</div>';
+
+        /* Badge */
+        if (kr.badge) {
+            html += '<div class="krey-badge">';
+            html += kr.badge;
+            html += '</div>';
+        }
+
+        html += '</div>';
+
+        /* Body */
+        html += '<div class="krey-body">';
+
+        /* Count */
+        html += '<div class="krey-count">';
+        html += '<i class="fas ' +
+                'fa-user-friends"></i> ';
+        html += kr.memberCount;
+        html += ' Manm nan Krey sa a';
+        html += '</div>';
+
+        /* Name */
+        html += '<h3 class="krey-name">';
+        html += '<i class="fas ' +
+                'fa-users"></i> ';
+        html += kr.name;
+        html += '</h3>';
+
+        /* Zone */
+        html += '<div class="krey-zone">';
+        html += '<i class="fas ' +
+                'fa-map-marker-alt"></i> ';
+        html += kr.zone;
+        html += '</div>';
+
+        /* Description */
+        html += '<p class="krey-desc">';
+        html += kr.desc;
+        html += '</p>';
+
+        /* Blur text */
+        html += '<p class="pc-blur">';
+        html += '<span class="blt">';
+        html += 'Detay konple disponib ';
+        html += 'selman pou Premium...';
+        html += '</span></p>';
+
+        /* Location notice */
+        html += '<div class="krey-loc-notice">';
+        html += '<i class="fas ';
+        html += 'fa-map-marker-alt"></i>';
+        html += ' Ou chwazi kote Krey la ';
+        html += 'ap vini</div>';
+
+        /* Price */
+        html += '<div class="krey-price">';
+        html += '<i class="fas fa-tag"></i>';
+        html += '<span class="';
+        html += 'krey-price-amount">';
+        html += kr.price + ' Gdes</span>';
+        html += '<span class="';
+        html += 'krey-price-per">';
+        html += '/ Moman Krey ';
+        html += '(Ou chwazi kote)</span>';
+        html += '</div>';
+
+        /* Tags */
+        html += '<div class="pc-tags">';
+        html += tagHtml;
+        html += '</div>';
+
+        /* Button */
+        html += '<button class="btn-res"';
+        html += ' onclick="pa()">';
+        html += '<i class="fas fa-lock"></i>';
+        html += ' Rezeve Krey - Premium';
+        html += '</button>';
+
+        html += '</div></div>';
+    }
+
+    kg.innerHTML = html;
+
+    /* Lock all slides except first
+       for non-premium users */
+    lockKreySlides();
+}
+
+/* ====================================
+   RENDER ALL CARDS
+   ==================================== */
+function renderCards() {
+    var fG = document.getElementById("fG");
+    var hG = document.getElementById("hG");
+    if (fG) {
+        var fH = "";
+        for (var i = 0; i < fd.length; i++) {
+            fH += mkCard(fd[i], "Fanm", false);
+        }
+        fG.innerHTML = fH;
+    }
+    if (hG) {
+        var hH = "";
+        for (var j = 0; j < hd.length; j++) {
+            hH += mkCard(hd[j], "Gason", true);
+        }
+        hG.innerHTML = hH;
+    }
+    try { renderKrey(); } catch (e) {
+        console.warn("Krey:", e);
+    }
+}
+/* ====================================
+   KREY SLIDE FUNCTIONS
    ==================================== */
 var kreySlidePositions = {};
 
 function moveKreySlide(id, direction) {
-    var slides = document.getElementById(id + '-slides');
+    var slides = document.getElementById(
+        id + '-slides'
+    );
     if (!slides) return;
 
     var total = slides.children.length;
@@ -3578,11 +3491,14 @@ function moveKreySlide(id, direction) {
     slides.style.transform =
         'translateX(-' + (pos * 100) + '%)';
 
+    /* Update dots */
     updateKreyDots(id, pos);
 }
 
 function goKreySlide(id, index) {
-    var slides = document.getElementById(id + '-slides');
+    var slides = document.getElementById(
+        id + '-slides'
+    );
     if (!slides) return;
 
     kreySlidePositions[id] = index;
@@ -3593,10 +3509,15 @@ function goKreySlide(id, index) {
 }
 
 function updateKreyDots(id, activeIndex) {
-    var dotsContainer = document.getElementById(id + '-dots');
+    var dotsContainer =
+        document.getElementById(
+            id + '-dots'
+        );
     if (!dotsContainer) return;
 
-    var dots = dotsContainer.querySelectorAll('.krey-dot');
+    var dots = dotsContainer.querySelectorAll(
+        '.krey-dot'
+    );
     for (var i = 0; i < dots.length; i++) {
         dots[i].classList.remove('active');
         if (i === activeIndex) {
@@ -3606,25 +3527,121 @@ function updateKreyDots(id, activeIndex) {
 }
 
 function lockKreySlides() {
-    for (var k = 0; k < kreyData.length; k++) {
+    for (var k = 0;
+         k < kreyData.length; k++) {
         var kid = "krey-" + k;
-        var prev = document.getElementById(kid + '-prev');
-        var next = document.getElementById(kid + '-next');
-        var slides = document.getElementById(kid + '-slides');
-        var dots = document.getElementById(kid + '-dots');
+        var lock = document.getElementById(
+            kid + '-lock'
+        );
+        var prev = document.getElementById(
+            kid + '-prev'
+        );
+        var next = document.getElementById(
+            kid + '-next'
+        );
+        var slides = document.getElementById(
+            kid + '-slides'
+        );
+        var dots = document.getElementById(
+            kid + '-dots'
+        );
 
         if (kreyData[k].photos.length > 1) {
-            if (prev) prev.style.display = "none";
-            if (next) next.style.display = "none";
-            if (slides) slides.style.transform = 'translateX(0)';
+            /* Show lock overlay on
+               second photo onward */
+            if (lock) {
+                lock.style.display = "none";
+            }
+
+            /* Hide navigation arrows */
+            if (prev) {
+                prev.style.display = "none";
+            }
+            if (next) {
+                next.style.display = "none";
+            }
+
+            /* Force first photo only */
+            if (slides) {
+                slides.style.transform =
+                    'translateX(0)';
+                /* Prevent scrolling */
+                slides.style.overflow =
+                    'hidden';
+            }
+
+            /* Grey out dots except first */
             if (dots) {
-                var allDots = dots.querySelectorAll('.krey-dot');
-                for (var d = 0; d < allDots.length; d++) {
+                var allDots =
+                    dots.querySelectorAll(
+                        '.krey-dot'
+                    );
+                for (var d = 0;
+                     d < allDots.length;
+                     d++) {
                     if (d > 0) {
-                        allDots[d].style.opacity = '0.3';
-                        allDots[d].style.cursor = 'not-allowed';
-                        allDots[d].onclick = function() { pa(); };
+                        allDots[d]
+                            .style.opacity =
+                            '0.3';
+                        allDots[d]
+                            .style.cursor =
+                            'not-allowed';
+                        allDots[d]
+                            .onclick =
+                            function () {
+                                pa();
+                            };
                     }
+                }
+            }
+
+            /* Add lock overlay for
+               premium upsell */
+            var slideshow =
+                document.getElementById(kid);
+            if (slideshow) {
+                var existingLock =
+                    slideshow.querySelector(
+                        '.krey-premium-lock'
+                    );
+                if (!existingLock) {
+                    var lockDiv =
+                        document.createElement(
+                            'div'
+                        );
+                    lockDiv.className =
+                        'krey-premium-lock';
+                    lockDiv.style.cssText =
+                        'position:absolute;' +
+                        'bottom:0;left:0;' +
+                        'width:100%;' +
+                        'padding:10px;' +
+                        'background:' +
+                        'linear-gradient(' +
+                        'transparent,' +
+                        'rgba(0,0,0,0.8));' +
+                        'display:flex;' +
+                        'align-items:center;' +
+                        'justify-content:' +
+                        'center;gap:8px;' +
+                        'cursor:pointer;' +
+                        'z-index:5;' +
+                        'font-size:0.75rem;' +
+                        'color:#ffd700';
+                    lockDiv.innerHTML =
+                        '<i class="fas ' +
+                        'fa-lock"></i> ' +
+                        'Premium pou we ' +
+                        (kreyData[k].photos
+                            .length - 1) +
+                        ' lòt foto';
+                    lockDiv.onclick =
+                        function () {
+                            pa();
+                        };
+                    slideshow.appendChild(
+                        lockDiv
+                    );
                 }
             }
         }
@@ -3632,337 +3649,661 @@ function lockKreySlides() {
 }
 
 function unlockKreySlides() {
-    for (var k = 0; k < kreyData.length; k++) {
+    for (var k = 0;
+         k < kreyData.length; k++) {
         var kid = "krey-" + k;
-        var prev = document.getElementById(kid + '-prev');
-        var next = document.getElementById(kid + '-next');
-        var dots = document.getElementById(kid + '-dots');
+        var lock = document.getElementById(
+            kid + '-lock'
+        );
+        var prev = document.getElementById(
+            kid + '-prev'
+        );
+        var next = document.getElementById(
+            kid + '-next'
+        );
+        var dots = document.getElementById(
+            kid + '-dots'
+        );
+        var slides = document.getElementById(
+            kid + '-slides'
+        );
+        var slideshow =
+            document.getElementById(kid);
 
-        if (kreyData[k].photos.length > 1) {
-            if (prev) prev.style.display = '';
-            if (next) next.style.display = '';
-        }
+        /* Remove lock overlay */
+        if (lock) lock.style.display = 'none';
 
-        if (dots) {
-            var allDots = dots.querySelectorAll('.krey-dot');
-            for (var d = 0; d < allDots.length; d++) {
-                allDots[d].style.opacity = '1';
-                allDots[d].style.cursor = 'pointer';
+        /* Remove premium lock bar */
+        if (slideshow) {
+            var premLock =
+                slideshow.querySelector(
+                    '.krey-premium-lock'
+                );
+            if (premLock) {
+                premLock.remove();
             }
         }
 
+        /* Enable navigation */
+        if (kreyData[k].photos.length > 1) {
+            if (prev) {
+                prev.style.display = '';
+            }
+            if (next) {
+                next.style.display = '';
+            }
+        }
+
+        /* Enable slides scrolling */
+        if (slides) {
+            slides.style.overflow = '';
+        }
+
+        /* Enable all dots */
+        if (dots) {
+            var allDots =
+                dots.querySelectorAll(
+                    '.krey-dot'
+                );
+            for (var d = 0;
+                 d < allDots.length;
+                 d++) {
+                allDots[d].style.opacity =
+                    '1';
+                allDots[d].style.cursor =
+                    'pointer';
+                (function (dotIdx) {
+                    allDots[dotIdx].onclick =
+                        function () {
+                            goKreySlide(
+                                kid, dotIdx
+                            );
+                        };
+                })(d);
+            }
+        }
+
+        /* Start auto slide */
         startAutoSlide(kid);
     }
 }
 
 function startAutoSlide(id) {
-    setInterval(function() {
+    setInterval(function () {
         moveKreySlide(id, 1);
     }, 4000);
 }
 
 /* ====================================
-   RENDER KREY
+   INIT
    ==================================== */
-function renderKrey() {
-    var kg = document.getElementById("kreyGrid");
-    if (!kg) return;
+document.addEventListener("DOMContentLoaded", function () {
+    /* ====================================
+       PAYMENT RETURN CHECK
+       ==================================== */
+    try {
+        var params = new URLSearchParams(
+            window.location.search
+        );
+        var payStatus = params.get("payment");
+        var payRef = params.get("ref");
 
-    var html = "";
-
-    for (var k = 0; k < kreyData.length; k++) {
-        var kr = kreyData[k];
-        var kid = "krey-" + k;
-        var tagHtml = "";
-        var slidesHtml = "";
-        var dotsHtml = "";
-        var photoCount = kr.photos.length;
-
-        for (var t = 0; t < kr.tags.length; t++) {
-            tagHtml += '<span class="tag">' +
-                       kr.tags[t] + '</span>';
+        if (payStatus === "success") {
+            handlePaymentSuccess(payRef);
         }
 
-        for (var p = 0; p < photoCount; p++) {
-            var imgUrl = kr.photos[p];
-            slidesHtml += '<div class="krey-slide"';
-            if (imgUrl) {
-                slidesHtml += ' style="background-image:url(\'' + imgUrl + '\')"';
-            }
-            slidesHtml += '>';
-            if (!imgUrl) {
-                slidesHtml += '<i class="fas fa-users"></i>';
-            }
-            slidesHtml += '</div>';
-
-            dotsHtml += '<button class="krey-dot';
-            if (p === 0) dotsHtml += ' active';
-            dotsHtml += '" onclick="goKreySlide(\'' + kid + '\',' + p + ')"></button>';
+        if (payStatus === "error") {
+            setTimeout(function () {
+                toast(
+                    "Peman an pa te " +
+                    "konplete. Eseye ankò.",
+                    "err"
+                );
+                oM("pM");
+            }, 800);
         }
-
-        html += '<div class="krey-card sr">';
-        html += '<div class="krey-slideshow" id="' + kid + '">';
-        html += '<div class="krey-slides" id="' + kid + '-slides">';
-        html += slidesHtml;
-        html += '</div>';
-
-        html += '<button class="krey-slide-nav prev" onclick="moveKreySlide(\'' + kid + '\',-1)" id="' + kid + '-prev" style="display:none">';
-        html += '<i class="fas fa-chevron-left"></i></button>';
-
-        html += '<button class="krey-slide-nav next" onclick="moveKreySlide(\'' + kid + '\',1)" id="' + kid + '-next" style="display:none">';
-        html += '<i class="fas fa-chevron-right"></i></button>';
-
-        html += '<div class="krey-dots" id="' + kid + '-dots">';
-        html += dotsHtml;
-        html += '</div>';
-
-        html += '<div class="krey-photo-count"><i class="fas fa-images"></i> ' + photoCount + ' foto</div>';
-
-        if (kr.badge) {
-            html += '<div class="krey-badge">' + kr.badge + '</div>';
-        }
-
-        html += '</div>'; /* end slideshow */
-
-        html += '<div class="krey-body">';
-        html += '<div class="krey-count"><i class="fas fa-user-friends"></i> ' + kr.memberCount + ' Manm nan Krey sa a</div>';
-        html += '<h3 class="krey-name"><i class="fas fa-users"></i> ' + kr.name + '</h3>';
-        html += '<div class="krey-zone"><i class="fas fa-map-marker-alt"></i> ' + kr.zone + '</div>';
-        html += '<p class="krey-desc">' + kr.desc + '</p>';
-        html += '<p class="pc-blur"><span class="blt">Detay konple disponib selman pou Premium...</span></p>';
-        html += '<div class="krey-loc-notice"><i class="fas fa-map-marker-alt"></i> Ou chwazi kote Krey la ap vini</div>';
-        html += '<div class="krey-price"><i class="fas fa-tag"></i><span class="krey-price-amount">' + kr.price + ' Gdes</span><span class="krey-price-per">/ Moman Krey (Ou chwazi kote)</span></div>';
-        html += '<div class="pc-tags">' + tagHtml + '</div>';
-        html += '<button class="btn-res" onclick="pa()"><i class="fas fa-lock"></i> Rezeve Krey - Premium</button>';
-        html += '</div></div>';
+    } catch (e) {
+        console.warn(
+            "payment return parse error:",
+            e
+        );
     }
+    stopPre();
 
-    kg.innerHTML = html;
-    lockKreySlides();
-}
+    try { renderCards(); } catch (e) { console.warn(e); }
+    try { initHearts(); } catch (e) { console.warn(e); }
+    try { initNav(); } catch (e) { console.warn(e); }
+    try { initSR(); } catch (e) { console.warn(e); }
+    try { initCounters(); } catch (e) { console.warn(e); }
+    try { initFilters(); } catch (e) { console.warn(e); }
+    try { checkAge(); } catch (e) { console.warn(e); }
+
+    try {
+        var srch = window.location.search;
+        if (srch && srch.indexOf("notverified=1") !== -1) {
+            setTimeout(function () {
+                showOk(
+                    "Verifye Imel Ou!",
+                    "Ou dwe verifye imel ou anvan ou ka konekte. Tcheke bwat imel ou!"
+                );
+            }, 1500);
+            try {
+                window.history.replaceState({}, "", window.location.pathname);
+            } catch (e2) {}
+        }
+    } catch (e) {}
 
 /* ====================================
-   RENDER ALL CARDS
+   AUTH STATE - NAVBAR
    ==================================== */
-function renderCards() {
-    var fG = document.getElementById("fG");
-    var hG = document.getElementById("hG");
-
-    if (fG) {
-        var fH = "";
-        for (var i = 0; i < fd.length; i++) {
-            fH += mkCard(fd[i], "Fanm", false);
+if (auth) {
+    auth.onAuthStateChanged(
+        function(user) {
+            if (user) {
+                console.log(
+                    "User connected:",
+                    user.email
+                );
+                renderNavIn(user);
+                try {
+                    chkPrem(user.uid);
+                } catch (e) {
+                    console.warn(
+                        "chkPrem:", e
+                    );
+                }
+            } else {
+                console.log(
+                    "User disconnected"
+                );
+                renderNavOut();
+            }
         }
-        fG.innerHTML = fH;
-    }
-
-    if (hG) {
-        var hH = "";
-        for (var j = 0; j < hd.length; j++) {
-            hH += mkCard(hd[j], "Gason", true);
-        }
-        hG.innerHTML = hH;
-    }
-
-    try { renderKrey(); }
-    catch (e) {
-        console.warn("Krey:", e);
-    }
+    );
 }
 
-/* ====================================
-   MULTI PHOTO UPLOAD HELPERS
-   ==================================== */
-async function uploadFilesToStorage(files, userId, type, folderRoot) {
-    if (!storage || !files || files.length === 0) return [];
-    var uploaded = [];
-    for (var i = 0; i < files.length; i++) {
-        var file = files[i];
-        var safeName = Date.now() + "_" + file.name.replace(/\s+/g, "_");
-        var path = folderRoot + "/" + userId + "/" + type + "/" + safeName;
-        var ref = storage.ref(path);
-        await ref.put(file);
-        var url = await ref.getDownloadURL();
-        uploaded.push({
-            name: file.name,
-            url: url,
-            path: path,
-            type: type,
-            size: file.size,
-            createdAt: new Date().toISOString()
+    var cf = document.getElementById("cForm");
+    if (cf) {
+        cf.addEventListener("submit", function (e) {
+            e.preventDefault();
+            showOk("Mesaj Voye!", "Mesi! Nou pral reponn byento.");
+            cf.reset();
         });
     }
-    return uploaded;
-}
 
-async function saveUserMedia(userId, photos, videos, profilePhoto) {
-    if (!db || !userId) return;
+    try {
+        var today = new Date().toISOString().split("T")[0];
+        var rd = document.getElementById("resDate");
+        if (rd) rd.setAttribute("min", today);
+    } catch (e) {}
+});
+/* Handle payment return */
+try {
+    var urlParams =
+        window.location.search;
 
-    var docRef = db.collection("users").doc(userId);
-    var doc = await docRef.get();
-    var data = doc.exists ? doc.data() : {};
-
-    var existingMedia = data.media || {};
-    var existingPhotos = existingMedia.photos || [];
-    var existingVideos = existingMedia.videos || [];
-
-    await docRef.set({
-        profilePhoto: profilePhoto || "",
-        media: {
-            photos: existingPhotos.concat(photos),
-            videos: existingVideos.concat(videos)
+    if (urlParams.indexOf(
+        "payment=success"
+    ) !== -1) {
+        /* Activate premium for
+           logged in user */
+        if (auth) {
+            auth.onAuthStateChanged(
+                function(u) {
+                    if (u && db) {
+                        db.collection("users")
+                            .doc(u.uid)
+                            .update({
+                                isPremium: true,
+                                premiumActivatedAt:
+                                    firebase
+                                    .firestore
+                                    .FieldValue
+                                    .serverTimestamp(),
+                                premiumSource:
+                                    "success_redirect"
+                            })
+                            .then(function() {
+                                showOk(
+                                    "Premium Aktive!",
+                                    "Peman konfime! " +
+                                    "Kont ou " +
+                                    "Premium kounye a!"
+                                );
+                                try {
+                                    unlockUI();
+                                } catch(e) {}
+                            })
+                            .catch(function() {
+                                showOk(
+                                    "Peman Resevwa!",
+                                    "Ekip nou pral " +
+                                    "aktive Premium " +
+                                    "ou toutsuit."
+                                );
+                            });
+                    }
+                }
+            );
         }
-    }, { merge: true });
+        /* Clean URL */
+        try {
+            window.history.replaceState(
+                {}, "",
+                window.location.pathname
+            );
+        } catch(e) {}
+    }
+
+    if (urlParams.indexOf(
+        "payment=error"
+    ) !== -1) {
+        setTimeout(function() {
+            toast(
+                "Peman an pa te siksese. " +
+                "Eseye ankò.",
+                "err"
+            );
+            oM("pM");
+        }, 1000);
+        try {
+            window.history.replaceState(
+                {}, "",
+                window.location.pathname
+            );
+        } catch(e) {}
+    }
+} catch(e) {
+    console.warn(e);
+}
+/* ====================================
+   FLOATING HEARTS
+   ==================================== */
+function initHearts() {
+    var c = document.getElementById("fhw");
+    if (!c) return;
+    var h = ["&#9829;", "&#9825;", "&#10084;"];
+    function mk() {
+        var s = document.createElement("span");
+        s.className = "fh";
+        s.innerHTML = h[Math.floor(Math.random() * h.length)];
+        s.style.left = Math.random() * 100 + "%";
+        s.style.fontSize = (Math.random() * 1.5 + 0.5) + "rem";
+        s.style.animationDuration = (Math.random() * 15 + 15) + "s";
+        s.style.animationDelay = Math.random() * 5 + "s";
+        c.appendChild(s);
+        setTimeout(function () {
+            if (s.parentNode) s.parentNode.removeChild(s);
+        }, 30000);
+    }
+    for (var i = 0; i < 8; i++) setTimeout(mk, i * 500);
+    setInterval(mk, 3000);
 }
 
-var uploadedPhotos = [];
-var uploadedKreyPhotos = [];
-
-function handlePhotos(input) {
-    var files = input.files;
-    if (!files || !files.length) return;
-    for (var i = 0; i < files.length; i++) {
-        var file = files[i];
-        if (!file.type.startsWith("image/")) continue;
-        if (file.size > 5 * 1024 * 1024) {
-            toast("Foto " + file.name + " two gwo.", "err");
-            continue;
-        }
-        uploadedPhotos.push(file);
-    }
-    input.value = "";
-    updatePhotoPreview();
-}
-
-function updatePhotoPreview() {
-    var container = document.getElementById("photoPreview");
-    var countEl = document.getElementById("photoCount");
-    if (!container) return;
-    container.innerHTML = "";
-
-    for (var i = 0; i < uploadedPhotos.length; i++) {
-        (function(file, idx) {
-            var item = document.createElement("div");
-            item.className = "photo-preview-item";
-            var img = document.createElement("img");
-            var reader = new FileReader();
-            reader.onload = function(ev) {
-                img.src = ev.target.result;
-            };
-            reader.readAsDataURL(file);
-            var rb = document.createElement("button");
-            rb.className = "remove-photo";
-            rb.innerHTML = '<i class="fas fa-times"></i>';
-            rb.onclick = function() {
-                uploadedPhotos.splice(idx, 1);
-                updatePhotoPreview();
-            };
-            item.appendChild(img);
-            item.appendChild(rb);
-            container.appendChild(item);
-        })(uploadedPhotos[i], i);
-    }
-
-    if (countEl) {
-        countEl.style.display =
-            uploadedPhotos.length > 0
-            ? "block" : "none";
-        countEl.innerHTML =
-            '<i class="fas fa-camera"></i> ' +
-            uploadedPhotos.length +
-            ' foto seleksyone';
-    }
-}
-
-function handleKreyPhotos(input) {
-    var files = input.files;
-    if (!files || !files.length) return;
-    for (var i = 0; i < files.length; i++) {
-        var file = files[i];
-        if (!file.type.startsWith("image/")) continue;
-        if (file.size > 5 * 1024 * 1024) {
-            toast("Foto " + file.name + " two gwo.", "err");
-            continue;
-        }
-        uploadedKreyPhotos.push(file);
-    }
-    input.value = "";
-    updateKreyPhotoPreview();
-}
-
-function updateKreyPhotoPreview() {
-    var container = document.getElementById("kreyPhotoPreview");
-    var countEl = document.getElementById("kreyPhotoCount");
-    if (!container) return;
-    container.innerHTML = "";
-
-    for (var i = 0; i < uploadedKreyPhotos.length; i++) {
-        (function(file, idx) {
-            var item = document.createElement("div");
-            item.className = "photo-preview-item";
-            var img = document.createElement("img");
-            var reader = new FileReader();
-            reader.onload = function(ev) {
-                img.src = ev.target.result;
-            };
-            reader.readAsDataURL(file);
-            var rb = document.createElement("button");
-            rb.className = "remove-photo";
-            rb.innerHTML = '<i class="fas fa-times"></i>';
-            rb.onclick = function() {
-                uploadedKreyPhotos.splice(idx, 1);
-                updateKreyPhotoPreview();
-            };
-            item.appendChild(img);
-            item.appendChild(rb);
-            container.appendChild(item);
-        })(uploadedKreyPhotos[i], i);
-    }
-
-    if (countEl) {
-        countEl.style.display =
-            uploadedKreyPhotos.length > 0
-            ? "block" : "none";
-        countEl.innerHTML =
-            '<i class="fas fa-camera"></i> ' +
-            uploadedKreyPhotos.length +
-            ' foto seleksyone';
+/* ====================================
+   NAVBAR
+   ==================================== */
+function initNav() {
+    var nb = document.getElementById("navbar");
+    var hb = document.getElementById("hbg");
+    var nl = document.getElementById("navLinks");
+    if (!nb || !hb || !nl) return;
+    window.addEventListener("scroll", function () {
+        nb.classList.toggle("scrolled", window.scrollY > 50);
+    });
+    hb.addEventListener("click", function () {
+        hb.classList.toggle("open");
+        nl.classList.toggle("open");
+        document.body.classList.toggle("no-scroll");
+    });
+    var lks = document.querySelectorAll(".nav-link");
+    for (var i = 0; i < lks.length; i++) {
+        lks[i].addEventListener("click", function () {
+            hb.classList.remove("open");
+            nl.classList.remove("open");
+            document.body.classList.remove("no-scroll");
+        });
     }
 }
 
 /* ====================================
-   GOOGLE AUTH
+   SCROLL REVEAL
+   ==================================== */
+function initSR() {
+    if (!window.IntersectionObserver) {
+        var e = document.querySelectorAll(".sr");
+        for (var i = 0; i < e.length; i++) e[i].classList.add("on");
+        return;
+    }
+    var o = new IntersectionObserver(function (en) {
+        for (var i = 0; i < en.length; i++) {
+            if (en[i].isIntersecting) en[i].target.classList.add("on");
+        }
+    }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+    var e = document.querySelectorAll(".sr");
+    for (var i = 0; i < e.length; i++) o.observe(e[i]);
+}
+
+/* ====================================
+   COUNTERS
+   ==================================== */
+function initCounters() {
+    if (!window.IntersectionObserver) return;
+    var o = new IntersectionObserver(function (en) {
+        for (var i = 0; i < en.length; i++) {
+            if (en[i].isIntersecting) {
+                aC(en[i].target);
+                o.unobserve(en[i].target);
+            }
+        }
+    }, { threshold: 0.5 });
+    var e = document.querySelectorAll(".stat-n");
+    for (var i = 0; i < e.length; i++) o.observe(e[i]);
+}
+
+function aC(el) {
+    var t = parseInt(el.getAttribute("data-c"));
+    var c = 0;
+    var inc = t / 100;
+    var iv = setInterval(function () {
+        c += inc;
+        if (c >= t) {
+            el.textContent = t.toLocaleString();
+            clearInterval(iv);
+        } else {
+            el.textContent = Math.floor(c).toLocaleString();
+        }
+    }, 20);
+}
+
+/* ====================================
+   FAVORITES
+   ==================================== */
+function tFav(btn, e) {
+    e.stopPropagation();
+    var i = btn.querySelector("i");
+    var card = btn.closest(".pc");
+    var name = "";
+    if (card) {
+        var nm = card.querySelector(".pc-name");
+        if (nm) name = nm.textContent;
+    }
+    if (i.classList.contains("far")) {
+        i.classList.replace("far", "fas");
+        i.style.color = "#e91e63";
+        if (auth && auth.currentUser && db && name) {
+            db.collection("users").doc(auth.currentUser.uid).update({
+                favorites: firebase.firestore.FieldValue.arrayUnion(name)
+            }).catch(function () {});
+        }
+    } else {
+        i.classList.replace("fas", "far");
+        i.style.color = "";
+        if (auth && auth.currentUser && db && name) {
+            db.collection("users").doc(auth.currentUser.uid).update({
+                favorites: firebase.firestore.FieldValue.arrayRemove(name)
+            }).catch(function () {});
+        }
+    }
+}
+
+/* ====================================
+   FILTERS
+   ==================================== */
+function initFilters() {
+    var btns = document.querySelectorAll(".fbtn");
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].addEventListener("click", function () {
+            var sib = this.parentElement.querySelectorAll(".fbtn");
+            for (var j = 0; j < sib.length; j++) sib[j].classList.remove("active");
+            this.classList.add("active");
+            var f = this.getAttribute("data-f");
+            var cards = this.closest(".section").querySelectorAll(".pc");
+            for (var k = 0; k < cards.length; k++) {
+                var show = (f === "all" || cards[k].getAttribute("data-f") === f);
+                cards[k].style.display = show ? "" : "none";
+            }
+        });
+    }
+}
+
+/* ====================================
+   MODALS
+   ==================================== */
+function oM(id) {
+    var m = document.getElementById(id);
+    if (m) {
+        m.classList.add("show");
+        document.body.classList.add("no-scroll");
+    }
+}
+
+function cM(id) {
+    var m = document.getElementById(id);
+    if (m) {
+        m.classList.remove("show");
+        document.body.classList.remove("no-scroll");
+    }
+}
+
+function swM(a, b) {
+    cM(a);
+    setTimeout(function () { oM(b); }, 200);
+}
+
+var ols = document.querySelectorAll(".mbg");
+for (var oi = 0; oi < ols.length; oi++) {
+    ols[oi].addEventListener("click", function (e) {
+        if (e.target === this && this.id !== "agM") {
+            this.classList.remove("show");
+            document.body.classList.remove("no-scroll");
+        }
+    });
+}
+
+document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+        var ac = document.querySelectorAll(".mbg.show");
+        for (var i = 0; i < ac.length; i++) {
+            if (ac[i].id !== "agM") ac[i].classList.remove("show");
+        }
+        document.body.classList.remove("no-scroll");
+    }
+});
+
+/* ====================================
+   AGE
+   ==================================== */
+function aY() {
+    cM("agM");
+    sessionStorage.setItem("age", "1");
+}
+
+function aN() {
+    window.location.href = "https://www.google.com";
+}
+
+function checkAge() {
+    if (sessionStorage.getItem("age") === "1") cM("agM");
+}
+
+/* ====================================
+   ACCOUNT TYPES
+   ==================================== */
+function pT(t) {
+    var aT = document.getElementById("aT");
+    var sw = document.getElementById("sw");
+    var uF = document.getElementById("uF");
+    var fF = document.getElementById("fF");
+    var kF = document.getElementById("kF");
+    if (aT) aT.classList.add("hidden");
+    if (sw) sw.classList.add("hidden");
+    if (uF) uF.classList.add("hidden");
+    if (fF) fF.classList.add("hidden");
+    if (kF) kF.classList.add("hidden");
+    if (t === "user" && uF) uF.classList.remove("hidden");
+    if (t === "freelancer" && fF) fF.classList.remove("hidden");
+    if (t === "krey" && kF) kF.classList.remove("hidden");
+}
+
+function bT() {
+    var aT = document.getElementById("aT");
+    var sw = document.getElementById("sw");
+    var uF = document.getElementById("uF");
+    var fF = document.getElementById("fF");
+    var kF = document.getElementById("kF");
+    if (aT) aT.classList.remove("hidden");
+    if (sw) sw.classList.remove("hidden");
+    if (uF) uF.classList.add("hidden");
+    if (fF) fF.classList.add("hidden");
+    if (kF) kF.classList.add("hidden");
+}
+
+/* ====================================
+   PASSWORD TOGGLE
+   ==================================== */
+function tPw(id) {
+    var i = document.getElementById(id);
+    if (!i) return;
+    var b = i.parentElement.querySelector(".tpw i");
+    if (!b) return;
+    if (i.type === "password") {
+        i.type = "text";
+        b.className = "fas fa-eye-slash";
+    } else {
+        i.type = "password";
+        b.className = "fas fa-eye";
+    }
+}
+
+/* ====================================
+   COMMISSION CALCULATOR
+   ==================================== */
+function calcCommission() {
+    var pi = document.getElementById("priceInput");
+    var cd = document.getElementById("commCalc");
+    var ne = document.getElementById("netAmount");
+    var ce = document.getElementById("commAmount");
+    if (!pi || !cd) return;
+    var price = parseInt(pi.value) || 0;
+    if (price > 0) {
+        var comm = Math.round(price * 0.10);
+        var net = price - comm;
+        if (ne) ne.textContent = net.toLocaleString();
+        if (ce) ce.textContent = comm.toLocaleString();
+        cd.style.display = "block";
+    } else {
+        cd.style.display = "none";
+    }
+}
+
+function calcKreyComm() {
+    var pi = document.getElementById("kreyGroupPrice");
+    var cd = document.getElementById("kreyCommCalc");
+    var ne = document.getElementById("kreyNetAmount");
+    var ce = document.getElementById("kreyCommAmount");
+    if (!pi || !cd) return;
+    var price = parseInt(pi.value) || 0;
+    if (price > 0) {
+        var comm = Math.round(price * 0.10);
+        var net = price - comm;
+        if (ne) ne.textContent = net.toLocaleString();
+        if (ce) ce.textContent = comm.toLocaleString();
+        cd.style.display = "block";
+    } else {
+        cd.style.display = "none";
+    }
+}
+
+/* ====================================
+   SHOW HOTEL
+   ==================================== */
+function showHotel() {
+    var cityEl = document.getElementById("resCity");
+    var wrapEl = document.getElementById("hotelChoiceWrap");
+    var pNameEl = document.getElementById("partnerHotelName");
+    var pAddrEl = document.getElementById("partnerHotelAddr");
+    if (!cityEl || !wrapEl) return;
+    var val = cityEl.value;
+    if (!val || !hotels[val]) {
+        wrapEl.style.display = "none";
+        return;
+    }
+    var h = hotels[val];
+    if (pNameEl) pNameEl.textContent = h.name;
+    if (pAddrEl) pAddrEl.textContent = h.addr + " - " + h.dist;
+    wrapEl.style.display = "block";
+    selectHotel("partner");
+}
+
+function selectHotel(type) {
+    var opt1 = document.getElementById("hotelOpt1");
+    var opt2 = document.getElementById("hotelOpt2");
+    var cf = document.getElementById("customHotelFields");
+    var note = document.getElementById("resHotelNote");
+    if (!opt1 || !opt2) return;
+    opt1.classList.remove("selected");
+    opt2.classList.remove("selected");
+    if (type === "partner") {
+        var hp = document.getElementById("hotelPartner");
+        if (hp) hp.checked = true;
+        opt1.classList.add("selected");
+        if (cf) cf.classList.remove("show");
+        if (note) { note.innerHTML = '<i class="fas fa-hotel"></i> Hotel patne inclus - GRATIS'; note.style.color = "#4caf50"; }
+    } else {
+        var hc = document.getElementById("hotelCustom");
+        if (hc) hc.checked = true;
+        opt2.classList.add("selected");
+        if (cf) cf.classList.add("show");
+        if (note) { note.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Hotel pesonel - Fre sou kont ou'; note.style.color = "#ff9800"; }
+    }
+}
+
+
+/* ====================================
+   GOOGLE AUTH - DEBUG VERSION
    ==================================== */
 function loginWithGoogle() {
     if (!auth) {
-        toast("Firebase pa disponib.", "err");
+        toast(
+            "Firebase pa disponib.",
+            "err"
+        );
         return;
     }
 
-    var provider = new firebase.auth.GoogleAuthProvider();
+    var provider =
+        new firebase.auth
+            .GoogleAuthProvider();
     provider.addScope("email");
     provider.addScope("profile");
 
     auth.signInWithPopup(provider)
         .then(function(result) {
             var user = result.user;
-            var isNew = result.additionalUserInfo
-                ? result.additionalUserInfo.isNewUser
+            var isNew =
+                result.additionalUserInfo
+                ? result.additionalUserInfo
+                    .isNewUser
                 : false;
 
             if (db) {
                 if (isNew) {
-                    var nm = "";
                     var pr = "";
+                    var nm = "";
                     if (user.displayName) {
-                        var parts = user.displayName.split(" ");
+                        var parts =
+                            user.displayName
+                            .split(" ");
                         pr = parts[0] || "";
-                        nm = parts.slice(1).join(" ") || "";
+                        nm = parts.slice(1)
+                            .join(" ") || "";
                     } else {
-                        pr = user.email.split("@")[0];
+                        pr = user.email
+                            .split("@")[0];
                     }
-
-                    db.collection("users").doc(user.uid)
+                    db.collection("users")
+                        .doc(user.uid)
                         .set({
                             prenom: pr,
                             nom: nm,
@@ -3972,51 +4313,81 @@ function loginWithGoogle() {
                             type: "user",
                             status: "active",
                             emailVerified: true,
-                            loginMethod: "google",
-                            photoURL: user.photoURL || "",
+                            loginMethod:
+                                "google",
+                            photoURL:
+                                user.photoURL
+                                || "",
                             favorites: [],
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                            createdAt:
+                                firebase.firestore
+                                .FieldValue
+                                .serverTimestamp(),
+                            lastLogin:
+                                firebase.firestore
+                                .FieldValue
+                                .serverTimestamp()
                         })
-                        .catch(function() {});
+                        .catch(
+                            function() {}
+                        );
                 } else {
-                    db.collection("users").doc(user.uid)
+                    db.collection("users")
+                        .doc(user.uid)
                         .update({
-                            emailVerified: true,
-                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                            lastLogin:
+                                firebase.firestore
+                                .FieldValue
+                                .serverTimestamp()
                         })
-                        .catch(function() {});
+                        .catch(
+                            function() {}
+                        );
                 }
             }
 
             cM("lM");
             cM("sM");
+
             var name = user.displayName
-                ? user.displayName.split(" ")[0]
+                ? user.displayName
+                    .split(" ")[0]
                 : "Ou";
             showOk(
                 isNew
-                    ? "Byenveni sou Bizen HT!"
+                    ? "Byenveni sou " +
+                      "Bizen HT!"
                     : "Koneksyon Reyisi!",
                 "Byenveni " + name + "!"
             );
         })
         .catch(function(error) {
-            if (error.code === "auth/popup-closed-by-user") return;
-            if (error.code === "auth/popup-blocked") {
-                toast("Popup Google a bloke.", "err");
+            if (
+                error.code ===
+                "auth/popup-closed-by-user"
+            ) {
                 return;
             }
-            if (error.code === "auth/unauthorized-domain") {
-                toast("Domaine sa a poko otorize nan Firebase.", "err");
+            if (
+                error.code ===
+                "auth/popup-blocked"
+            ) {
+                toast(
+                    "Popup bloke. " +
+                    "Eseye ankò.",
+                    "err"
+                );
                 return;
             }
-            toast("Ere Google: " + error.message, "err");
+            toast(
+                "Ere Google: " +
+                error.message,
+                "err"
+            );
         });
 }
-
 /* ====================================
-   EMAIL VERIFICATION
+   EMAIL VERIFICATION FUNCTIONS
    ==================================== */
 var tempUserForVerif = null;
 var resendCooldown = false;
@@ -4035,20 +4406,20 @@ function showNotVerifiedModal(email, user) {
 
 function resendVerifEmail() {
     if (resendCooldown) {
-        toast("Tann 60 segonn.", "err");
+        toast("Tann 60 segonn anvan ou voye anko.", "err");
         return;
     }
     var btn = document.getElementById("resendBtn");
     if (auth && auth.currentUser) {
         sendVerifAndCooldown(auth.currentUser, btn);
     } else {
-        toast("Konekte dabo pou voye email la.", "err");
+        toast("Konekte ou dabo pou voye imel anko.", "err");
     }
 }
 
 function resendFromNotVerif() {
     if (resendCooldown) {
-        toast("Tann 60 segonn.", "err");
+        toast("Tann 60 segonn anvan ou voye anko.", "err");
         return;
     }
     var btn = document.getElementById("resendBtn2");
@@ -4057,7 +4428,7 @@ function resendFromNotVerif() {
     } else {
         cM("notVerifM");
         oM("lM");
-        toast("Konekte pou voye email la.", "err");
+        toast("Konekte pou voye imel anko.", "err");
     }
 }
 
@@ -4067,34 +4438,26 @@ function sendVerifAndCooldown(user, btn) {
         btn.disabled = true;
     }
     user.sendEmailVerification()
-        .then(function() {
-            toast("Imel voye!", "success");
+        .then(function () {
+            toast("Imel voye! Tcheke bwat imel ou.", "success");
             resendCooldown = true;
             var countdown = 60;
-            var timer = setInterval(function() {
+            var timer = setInterval(function () {
                 countdown--;
-                if (btn) {
-                    btn.innerHTML =
-                        '<i class="fas fa-clock"></i> ' +
-                        countdown + 's';
-                }
+                if (btn) btn.innerHTML = '<i class="fas fa-clock"></i> Tann ' + countdown + "s";
                 if (countdown <= 0) {
                     clearInterval(timer);
                     resendCooldown = false;
                     if (btn) {
-                        btn.innerHTML =
-                            '<i class="fas fa-paper-plane"></i> ' +
-                            'Voye Imel Anko';
+                        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Voye Imel Anko';
                         btn.disabled = false;
                     }
                 }
             }, 1000);
         })
-        .catch(function() {
+        .catch(function () {
             if (btn) {
-                btn.innerHTML =
-                    '<i class="fas fa-paper-plane"></i> ' +
-                    'Voye Imel Anko';
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Voye Imel Anko';
                 btn.disabled = false;
             }
             toast("Ere. Eseye anko pita.", "err");
@@ -4106,120 +4469,57 @@ function sendVerifAndCooldown(user, btn) {
    ==================================== */
 function doLogin(e) {
     e.preventDefault();
-
     var emInput = document.querySelector("#lM input[type='text']");
     var em = emInput ? emInput.value.trim() : "";
     var pwEl = document.getElementById("lpw");
     var pw = pwEl ? pwEl.value : "";
-
-    if (!em || !pw) {
-        toast("Tanpri antre imel ak modpas.", "err");
-        return false;
-    }
-
-    if (!auth) {
-        cM("lM");
-        showOk("Koneksyon Reyisi!", "Byenveni!");
-        return false;
-    }
-
-    var btn = document.querySelector(
-        "#lM button[type='submit']"
-    );
-    if (btn) {
-        btn.innerHTML =
-            '<i class="fas fa-spinner fa-spin"></i> Chaje...';
-        btn.disabled = true;
-    }
-
+    if (!em || !pw) { toast("Tanpri antre imel ak modpas.", "err"); return false; }
+    if (!auth) { cM("lM"); showOk("Koneksyon Reyisi!", "Byenveni!"); return false; }
+    var btn = document.querySelector("#lM button[type='submit']");
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chaje...'; btn.disabled = true; }
     auth.signInWithEmailAndPassword(em, pw)
-        .then(function(result) {
+        .then(function (result) {
             var user = result.user;
-            return ensureUserDoc(user)
-                .then(function() {
-                    return user;
-                });
-        })
-        .then(function(user) {
-            if (
-                !user.emailVerified &&
-                user.providerData &&
-                user.providerData[0] &&
-                user.providerData[0].providerId !== "google.com"
-            ) {
+                    return ensureUserDoc(user)
+            .then(function() {
+                return user;
+            });
+    })
+    .then(function(user) {
+            if (!user.emailVerified) {
                 auth.signOut();
-                if (btn) {
-                    btn.innerHTML =
-                        '<i class="fas fa-sign-in-alt"></i> Konekte';
-                    btn.disabled = false;
-                }
+                if (btn) { btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Konekte'; btn.disabled = false; }
                 showNotVerifiedModal(user.email, user);
                 return;
             }
-
             if (db) {
-                db.collection("users").doc(user.uid)
-                    .update({
-                        emailVerified: true,
-                        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                    })
-                    .catch(function() {});
+                db.collection("users").doc(user.uid).update({
+                    emailVerified: true,
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(function () {});
             }
-
-            if (btn) {
-                btn.innerHTML =
-                    '<i class="fas fa-sign-in-alt"></i> Konekte';
-                btn.disabled = false;
-            }
-
+            if (btn) { btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Konekte'; btn.disabled = false; }
             cM("lM");
-
             var name = "Ou";
             if (db) {
-                db.collection("users").doc(user.uid)
-                    .get()
-                    .then(function(doc) {
-                        if (
-                            doc.exists &&
-                            doc.data().prenom
-                        ) {
-                            name = doc.data().prenom;
-                        }
-                        showOk(
-                            "Koneksyon Reyisi!",
-                            "Byenveni " + name + "!"
-                        );
+                db.collection("users").doc(user.uid).get()
+                    .then(function (doc) {
+                        if (doc.exists && doc.data().prenom) name = doc.data().prenom;
+                        showOk("Koneksyon Reyisi!", "Byenveni " + name + "!");
                     })
-                    .catch(function() {
-                        showOk(
-                            "Koneksyon Reyisi!",
-                            "Byenveni!"
-                        );
-                    });
+                    .catch(function () { showOk("Koneksyon Reyisi!", "Byenveni!"); });
             } else {
                 showOk("Koneksyon Reyisi!", "Byenveni!");
             }
         })
-        .catch(function(error) {
-            if (btn) {
-                btn.innerHTML =
-                    '<i class="fas fa-sign-in-alt"></i> Konekte';
-                btn.disabled = false;
-            }
-
+        .catch(function (error) {
+            if (btn) { btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Konekte'; btn.disabled = false; }
             var msg = "Imel oswa modpas pa korek.";
-            if (error.code === "auth/user-not-found")
-                msg = "Okenn kont pa trouve.";
-            if (
-                error.code === "auth/wrong-password" ||
-                error.code === "auth/invalid-credential"
-            ) msg = "Modpas la pa korek.";
-            if (error.code === "auth/too-many-requests")
-                msg = "Two eseye. Tann yon moman.";
-
+            if (error.code === "auth/user-not-found") msg = "Okenn kont pa trouve.";
+            if (error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") msg = "Modpas la pa korek.";
+            if (error.code === "auth/too-many-requests") msg = "Two eseye. Tann yon moman.";
             toast(msg, "err");
         });
-
     return false;
 }
 
@@ -4228,7 +4528,6 @@ function doLogin(e) {
    ==================================== */
 function doUR(e) {
     e.preventDefault();
-
     var f = document.getElementById("uF");
     var ti = f.querySelectorAll("input[type='text']");
     var pr = ti[0].value.trim();
@@ -4239,68 +4538,51 @@ function doUR(e) {
     var pw = pws[0].value;
     var pw2 = pws[1].value;
     var dt = f.querySelector("input[type='date']").value;
-
-    if (!pr || !nm || !em || !tel || !pw || !dt) {
-        toast("Ranpli tout chan yo.", "err");
-        return false;
-    }
-    if (pw !== pw2) {
-        toast("Modpas yo pa menm!", "err");
-        return false;
-    }
-    if (pw.length < 6) {
-        toast("Modpas dwe gen omwen 6 karakte.", "err");
-        return false;
-    }
-    if (isDisposableEmail(em)) {
-        toast("Imel tanpore pa aksepte.", "err");
-        return false;
-    }
-
+    if (!pr || !nm || !em || !tel || !pw || !dt) { toast("Ranpli tout chan yo.", "err"); return false; }
+    if (pw !== pw2) { toast("Modpas yo pa menm!", "err"); return false; }
+    if (pw.length < 6) { toast("Modpas dwe gen omwen 6 karakte.", "err"); return false; }
+    if (isDisposableEmail(em)) { toast("Imel tanpore pa aksepte. Itilize yon imel reyel.", "err"); return false; }
     var btn = f.querySelector("button[type='submit']");
     var btnOrig = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chaje...';
     btn.disabled = true;
-
+    if (!auth || !db) {
+        btn.innerHTML = btnOrig; btn.disabled = false;
+        cM("sM"); bT();
+        showOk("Kont Kreye!", "Byenveni " + pr + "!");
+        return false;
+    }
+    var authOk = false;
     auth.createUserWithEmailAndPassword(em, pw)
-        .then(function(result) {
+        .then(function (result) {
+            authOk = true;
             var user = result.user;
+            user.sendEmailVerification().catch(function () {});
             return db.collection("users").doc(user.uid).set({
-                prenom: pr,
-                nom: nm,
-                email: em,
-                telephone: tel,
-                dateNesans: dt,
-                isPremium: false,
-                type: "user",
-                status: "active",
-                emailVerified: false,
-                favorites: [],
+                prenom: pr, nom: nm, email: em, telephone: tel,
+                dateNesans: dt, isPremium: false, type: "user",
+                status: "active", emailVerified: false, favorites: [],
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(function() {
-                return user.sendEmailVerification();
             });
         })
-        .then(function() {
-            btn.innerHTML = btnOrig;
-            btn.disabled = false;
-            cM("sM");
-            bT();
-            f.reset();
+        .then(function () {
+            btn.innerHTML = btnOrig; btn.disabled = false;
+            cM("sM"); bT(); f.reset();
             auth.signOut();
             showEmailVerifModal(em);
         })
-        .catch(function(error) {
-            btn.innerHTML = btnOrig;
-            btn.disabled = false;
-            var msg =
-                error.code === "auth/email-already-in-use"
-                ? "Imel sa a deja itilize."
-                : "Ere: " + error.message;
+        .catch(function (error) {
+            btn.innerHTML = btnOrig; btn.disabled = false;
+            if (authOk) {
+                cM("sM"); bT(); f.reset();
+                auth.signOut();
+                showEmailVerifModal(em);
+                return;
+            }
+            var msg = error.code === "auth/email-already-in-use" ? "Imel sa a deja itilize." : "Ere: " + error.message;
             toast(msg, "err");
         });
-
     return false;
 }
 
@@ -4309,7 +4591,6 @@ function doUR(e) {
    ==================================== */
 function doFR(e) {
     e.preventDefault();
-
     var f = document.getElementById("fF");
     var ti = f.querySelectorAll("input[type='text']");
     var sel = f.querySelectorAll("select");
@@ -4323,126 +4604,176 @@ function doFR(e) {
     var px = f.querySelector("input[type='number']").value;
     var ds = f.querySelector("textarea").value.trim();
     var pw = f.querySelector("input[type='password']").value;
-
-    if (!pr || !nm || !gn || !em || !tel || !vil || !px || !ds || !pw) {
-        toast("Ranpli tout chan yo.", "err");
-        return false;
-    }
-    if (pw.length < 6) {
-        toast("Modpas dwe gen omwen 6 karakte.", "err");
-        return false;
-    }
-    if (isDisposableEmail(em)) {
-        toast("Imel tanpore pa aksepte.", "err");
-        return false;
-    }
-
+    if (!pr || !nm || !gn || !em || !tel || !vil || !px || !ds || !pw) { toast("Ranpli tout chan yo.", "err"); return false; }
+    if (pw.length < 6) { toast("Modpas dwe gen omwen 6 karakte.", "err"); return false; }
+    if (isDisposableEmail(em)) { toast("Imel tanpore pa aksepte.", "err"); return false; }
     var commission = Math.round(parseInt(px) * 0.10);
     var netPay = parseInt(px) - commission;
-
     var btn = f.querySelector("button[type='submit']");
     var btnOrig = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chaje...';
     btn.disabled = true;
-
+    if (!auth || !db) {
+        btn.innerHTML = btnOrig; btn.disabled = false;
+        cM("sM"); bT();
+        showOk("Demann Voye!", "Mesi " + pr + "!");
+        return false;
+    }
+    var authOk = false;
     auth.createUserWithEmailAndPassword(em, pw)
-        .then(function(result) {
+        .then(function (result) {
+            authOk = true;
             var user = result.user;
+            user.sendEmailVerification().catch(function () {});
             return db.collection("users").doc(user.uid).set({
-                prenom: pr,
-                nom: nm,
-                email: em,
-                telephone: tel,
-                genre: gn,
-                localisation: vil,
-                dateNesans: dt,
-                prixMoment: parseInt(px),
-                prixNet: netPay,
-                commissionBizen: commission,
-                commissionPct: 10,
-                description: ds,
-                isPremium: false,
-                type: "freelancer",
-                status: "en_attente",
+                prenom: pr, nom: nm, email: em, telephone: tel,
+                genre: gn, localisation: vil, dateNesans: dt,
+                prixMoment: parseInt(px), prixNet: netPay,
+                commissionBizen: commission, commissionPct: 10,
+                description: ds, isPremium: false,
+                type: "freelancer", status: "en_attente",
                 emailVerified: false,
-                solde: 0,
-                totalEarnings: 0,
-                reservations: 0,
+                solde: 0, totalEarnings: 0, reservations: 0,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(function() {
-                return user.sendEmailVerification();
-            }).then(function() {
-                return user;
             });
         })
-        .then(async function(user) {
-            var uid = user.uid;
+        .then(async function () {
+    var createdUser = auth.currentUser;
+    var uid = createdUser
+        ? createdUser.uid
+        : null;
 
-            var uploadedPhotoData = [];
-            if (uid && uploadedPhotos.length > 0) {
-                uploadedPhotoData = await uploadFilesToStorage(
-                    uploadedPhotos,
-                    uid,
-                    "photos",
-                    "prestataires"
-                );
+    /* Upload photos */
+    var uploadedPhotoData = [];
+    if (uid && uploadedPhotos.length > 0) {
+        uploadedPhotoData =
+            await uploadFilesToStorage(
+                uploadedPhotos,
+                uid,
+                "photos",
+                "prestataires"
+            );
+    }
+
+    /* Upload video */
+    var uploadedVideoData = [];
+    var vidInput = f.querySelector(
+        "input[type='file'][accept='video/*']"
+    );
+
+    if (
+        uid &&
+        vidInput &&
+        vidInput.files &&
+        vidInput.files.length > 0
+    ) {
+        uploadedVideoData =
+            await uploadFilesToStorage(
+                vidInput.files,
+                uid,
+                "videos",
+                "prestataires"
+            );
+    }
+
+    /* First photo = profile photo */
+    var profilePhoto = "";
+    if (uploadedPhotoData.length > 0) {
+        profilePhoto =
+            uploadedPhotoData[0].url;
+    }
+
+    /* Save media refs in Firestore */
+    if (uid) {
+        await saveUserMedia(
+            uid,
+            uploadedPhotoData,
+            uploadedVideoData,
+            profilePhoto
+        );
+    }
+
+    btn.innerHTML = btnOrig;
+    btn.disabled = false;
+    cM("sM");
+    bT();
+    f.reset();
+    uploadedPhotos = [];
+    updatePhotoPreview();
+    auth.signOut();
+    showEmailVerifModal(em);
+})
+        .catch(function (error) {
+            btn.innerHTML = btnOrig; btn.disabled = false;
+            if (authOk) {
+                cM("sM"); bT(); f.reset();
+                auth.signOut();
+                showEmailVerifModal(em);
+                return;
             }
-
-            var uploadedVideoData = [];
-            var vidInput = f.querySelector("input[type='file'][accept='video/*']");
-            if (uid && vidInput && vidInput.files && vidInput.files.length > 0) {
-                uploadedVideoData = await uploadFilesToStorage(
-                    vidInput.files,
-                    uid,
-                    "videos",
-                    "prestataires"
-                );
-            }
-
-            var profilePhoto = "";
-            if (uploadedPhotoData.length > 0) {
-                profilePhoto = uploadedPhotoData[0].url;
-            }
-
-            if (uid) {
-                await saveUserMedia(
-                    uid,
-                    uploadedPhotoData,
-                    uploadedVideoData,
-                    profilePhoto
-                );
-            }
-
-            btn.innerHTML = btnOrig;
-            btn.disabled = false;
-            cM("sM");
-            bT();
-            f.reset();
-            uploadedPhotos = [];
-            updatePhotoPreview();
-            auth.signOut();
-            showEmailVerifModal(em);
-        })
-        .catch(function(error) {
-            btn.innerHTML = btnOrig;
-            btn.disabled = false;
-            var msg =
-                error.code === "auth/email-already-in-use"
-                ? "Imel sa a deja itilize."
-                : "Ere: " + error.message;
+            var msg = error.code === "auth/email-already-in-use" ? "Imel sa a deja itilize." : "Ere: " + error.message;
             toast(msg, "err");
         });
-
     return false;
 }
 
 /* ====================================
    KREY REGISTER
    ==================================== */
+var uploadedKreyPhotos = [];
+
+function calcKreyCommission() {
+    calcKreyComm();
+}
+
+function handleKreyPhotos(input) {
+    var files = input.files;
+    if (!files || files.length === 0) return;
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        if (!file.type.startsWith("image/")) continue;
+        if (file.size > 5 * 1024 * 1024) { toast("Foto " + file.name + " two gwo.", "err"); continue; }
+        uploadedKreyPhotos.push(file);
+    }
+    input.value = "";
+    updateKreyPhotoPreview();
+}
+
+function updateKreyPhotoPreview() {
+    var container = document.getElementById("kreyPhotoPreview");
+    var countEl = document.getElementById("kreyPhotoCount");
+    if (!container) return;
+    container.innerHTML = "";
+    for (var i = 0; i < uploadedKreyPhotos.length; i++) {
+        (function (file, idx) {
+            var item = document.createElement("div");
+            item.className = "photo-preview-item";
+            var img = document.createElement("img");
+            var reader = new FileReader();
+            reader.onload = function (ev) { img.src = ev.target.result; };
+            reader.readAsDataURL(file);
+            var rb = document.createElement("button");
+            rb.className = "remove-photo";
+            rb.innerHTML = '<i class="fas fa-times"></i>';
+            rb.setAttribute("data-index", idx);
+            rb.onclick = function () {
+                uploadedKreyPhotos.splice(parseInt(this.getAttribute("data-index")), 1);
+                updateKreyPhotoPreview();
+            };
+            item.appendChild(img);
+            item.appendChild(rb);
+            container.appendChild(item);
+        })(uploadedKreyPhotos[i], i);
+    }
+    if (countEl) {
+        countEl.style.display = uploadedKreyPhotos.length > 0 ? "block" : "none";
+        countEl.innerHTML = '<i class="fas fa-camera"></i> ' + uploadedKreyPhotos.length + " foto seleksyone";
+    }
+}
+
 function doKR(e) {
     e.preventDefault();
-
     var groupName = document.getElementById("kreyGroupName") ? document.getElementById("kreyGroupName").value.trim() : "";
     var zone = document.getElementById("kreyGroupZone") ? document.getElementById("kreyGroupZone").value.trim() : "";
     var count = document.getElementById("kreyGroupCount") ? document.getElementById("kreyGroupCount").value : "";
@@ -4452,324 +4783,1233 @@ function doKR(e) {
     var contactTel = document.getElementById("kreyContactTel") ? document.getElementById("kreyContactTel").value.trim() : "";
     var contactEmail = document.getElementById("kreyContactEmail") ? document.getElementById("kreyContactEmail").value.trim() : "";
     var pw = document.getElementById("kreyPw") ? document.getElementById("kreyPw").value : "";
-
-    if (!groupName || !zone || !count || !desc || !price || !contactName || !contactTel || !contactEmail || !pw) {
-        toast("Ranpli tout chan yo.", "err");
-        return false;
-    }
-    if (pw.length < 6) {
-        toast("Modpas dwe gen omwen 6 karakte.", "err");
-        return false;
-    }
-    if (isDisposableEmail(contactEmail)) {
-        toast("Imel tanpore pa aksepte.", "err");
-        return false;
-    }
-
+    if (!groupName || !zone || !count || !desc || !price || !contactName || !contactTel || !contactEmail || !pw) { toast("Ranpli tout chan yo.", "err"); return false; }
+    if (pw.length < 6) { toast("Modpas dwe gen omwen 6 karakte.", "err"); return false; }
+    if (isDisposableEmail(contactEmail)) { toast("Imel tanpore pa aksepte.", "err"); return false; }
     var priceNum = parseInt(price);
     var commission = Math.round(priceNum * 0.10);
     var netPay = priceNum - commission;
-
     var btn = document.querySelector("#kF button[type='submit']");
     var btnOrig = btn ? btn.innerHTML : "";
-
-    if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chaje...';
-        btn.disabled = true;
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chaje...'; btn.disabled = true; }
+    if (!auth || !db) {
+        if (btn) { btn.innerHTML = btnOrig; btn.disabled = false; }
+        cM("sM"); bT();
+        showOk("Demann Krey Voye!", "Mesi! Gwoup " + groupName + " ap pase nan validasyon.");
+        return false;
     }
-
+    var authOk = false;
     auth.createUserWithEmailAndPassword(contactEmail, pw)
-        .then(function(result) {
+        .then(function (result) {
+            authOk = true;
             var user = result.user;
+            user.sendEmailVerification().catch(function () {});
             return db.collection("users").doc(user.uid).set({
-                prenom: groupName,
-                nom: "(Krey)",
-                email: contactEmail,
-                telephone: contactTel,
-                contactName: contactName,
-                type: "krey",
-                status: "en_attente",
-                isPremium: false,
+                prenom: groupName, nom: "(Krey)", email: contactEmail,
+                telephone: contactTel, contactName: contactName,
+                type: "krey", status: "en_attente", isPremium: false,
                 emailVerified: false,
-                kreyName: groupName,
-                kreyZone: zone,
-                kreyMemberCount: parseInt(count),
-                kreyDescription: desc,
-                kreyPrice: priceNum,
-                kreyPriceNet: netPay,
-                kreyCommission: commission,
-                commissionPct: 10,
+                kreyName: groupName, kreyZone: zone,
+                kreyMemberCount: parseInt(count), kreyDescription: desc,
+                kreyPrice: priceNum, kreyPriceNet: netPay,
+                kreyCommission: commission, commissionPct: 10,
                 photoCount: uploadedKreyPhotos.length,
-                solde: 0,
-                totalEarnings: 0,
-                reservations: 0,
+                solde: 0, totalEarnings: 0, reservations: 0,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(function() {
-                return user.sendEmailVerification();
-            }).then(function() {
-                return user;
             });
         })
-        .then(async function(user) {
-            var uid = user.uid;
+                .then(async function () {
+            var createdUser = auth.currentUser;
+            var uid = createdUser ? createdUser.uid : null;
 
-            var photoInput = document.getElementById("kreyPhotoInput");
-            var vidInput = document.getElementById("kreyVideoInput");
+            var photoInput = document.getElementById("kreyNewPhotos");
+            var vidInput = document.getElementById("kreyNewVideos");
             var uploadedPhotoData = [];
             var uploadedVideoData = [];
 
-            if (uid && photoInput && photoInput.files && photoInput.files.length > 0) {
+            /* Upload photos Krey */
+            if (uid && photoInput && photoInput.files.length > 0) {
                 uploadedPhotoData = await uploadFilesToStorage(
-                    photoInput.files,
-                    uid,
-                    "photos",
-                    "krey"
+                    photoInput.files, uid, "photos", "krey"
                 );
             }
 
+            /* Upload video Krey */
             if (uid && vidInput && vidInput.files && vidInput.files.length > 0) {
                 uploadedVideoData = await uploadFilesToStorage(
-                    vidInput.files,
-                    uid,
-                    "videos",
-                    "krey"
+                    vidInput.files, uid, "videos", "krey"
                 );
             }
 
+            /* Premiere photo = photo de profil */
             var profilePhoto = "";
             if (uploadedPhotoData.length > 0) {
                 profilePhoto = uploadedPhotoData[0].url;
             }
 
+            /* Sauvegarder dans Firestore */
             if (uid) {
-                await saveUserMedia(
-                    uid,
-                    uploadedPhotoData,
-                    uploadedVideoData,
-                    profilePhoto
-                );
+                await saveUserMedia(uid, uploadedPhotoData, uploadedVideoData, profilePhoto);
             }
 
-            if (btn) {
-                btn.innerHTML = btnOrig;
-                btn.disabled = false;
-            }
-
-            cM("sM");
-            bT();
+            if (btn) { btn.innerHTML = btnOrig; btn.disabled = false; }
+            cM("sM"); bT();
             var kf = document.getElementById("kF");
             if (kf) kf.reset();
-            uploadedKreyPhotos = [];
-            updateKreyPhotoPreview();
             auth.signOut();
             showEmailVerifModal(contactEmail);
         })
-        .catch(function(error) {
-            if (btn) {
-                btn.innerHTML = btnOrig;
-                btn.disabled = false;
+        .catch(function (error) {
+            if (btn) { btn.innerHTML = btnOrig; btn.disabled = false; }
+            if (authOk) {
+                cM("sM"); bT();
+                auth.signOut();
+                showEmailVerifModal(contactEmail);
+                return;
             }
-            var msg =
-                error.code === "auth/email-already-in-use"
-                ? "Imel sa a deja itilize."
-                : "Ere: " + error.message;
+            var msg = error.code === "auth/email-already-in-use" ? "Imel sa a deja itilize." : "Ere: " + error.message;
             toast(msg, "err");
         });
-
     return false;
 }
 
 /* ====================================
-   INIT PAGE
+   LOGOUT
    ==================================== */
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-        /* Stop loader */
-        try {
-            stopPre();
-        } catch (e) {
-            console.warn(
-                "stopPre error:", e
-            );
-        }
-
-        /* Render static cards */
-        try {
-            renderCards();
-        } catch (e) {
-            console.error(
-                "renderCards error:", e
-            );
-        }
-
-        /* Init visual functions */
-        try {
-            initHearts();
-        } catch (e) {
-            console.warn(
-                "initHearts error:", e
-            );
-        }
-
-        try {
-            initNav();
-        } catch (e) {
-            console.warn(
-                "initNav error:", e
-            );
-        }
-
-        try {
-            initSR();
-        } catch (e) {
-            console.warn(
-                "initSR error:", e
-            );
-        }
-
-        try {
-            initCounters();
-        } catch (e) {
-            console.warn(
-                "initCounters error:", e
-            );
-        }
-
-        try {
-            initFilters();
-        } catch (e) {
-            console.warn(
-                "initFilters error:", e
-            );
-        }
-
-        /* Age gate */
-        try {
-            checkAge();
-        } catch (e) {
-            console.warn(
-                "checkAge error:", e
-            );
-        }
-
-        /* Payment return */
-        try {
-            var params =
-                new URLSearchParams(
-                    window.location.search
-                );
-            var payStatus =
-                params.get("payment");
-            var payRef =
-                params.get("ref");
-
-            if (payStatus === "success") {
-                handlePaymentSuccess(
-                    payRef
-                );
-            }
-
-            if (payStatus === "error") {
-                setTimeout(function () {
-                    toast(
-                        "Peman an pa te " +
-                        "konplete. Eseye ankò.",
-                        "err"
-                    );
-                    oM("pM");
-                }, 800);
-            }
-        } catch (e) {
-            console.warn(
-                "payment return parse error:",
-                e
-            );
-        }
-
-        /* Contact form */
-        try {
-            var cf = document.getElementById(
-                "cForm"
-            );
-            if (cf) {
-                cf.addEventListener(
-                    "submit",
-                    function (e) {
-                        e.preventDefault();
-                        showOk(
-                            "Mesaj Voye!",
-                            "Mesi! Nou pral " +
-                            "reponn byento."
-                        );
-                        cf.reset();
-                    }
-                );
-            }
-        } catch (e) {
-            console.warn(
-                "contact form error:", e
-            );
-        }
-
-        /* Set min date for reservation */
-        try {
-            var today =
-                new Date()
-                .toISOString()
-                .split("T")[0];
-            var rd =
-                document.getElementById(
-                    "resDate"
-                );
-            if (rd) {
-                rd.setAttribute(
-                    "min",
-                    today
-                );
-            }
-        } catch (e) {
-            console.warn(
-                "resDate init error:", e
-            );
-        }
-
-        /* Default navbar state */
-        if (!auth) {
-            try {
-                renderNavOut();
-            } catch (e) {
-                console.warn(
-                    "renderNavOut error:", e
-                );
-            }
-        }
+function doOut() {
+    if (auth) {
+        auth.signOut().then(function () {
+            showOk("Dekonekte", "Abyo!");
+        });
     }
-);
+}
+
 /* ====================================
-   NAVBAR AUTH STATE
+   PREMIUM CHECK & UNLOCK
    ==================================== */
-if (auth) {
-    auth.onAuthStateChanged(function(u) {
-        if (u) {
-            ensureUserDoc(u)
-                .then(function() {
-                    renderNavIn(u);
-                    try { chkPrem(u.uid); }
-                    catch(e) { console.warn(e); }
-                })
-                .catch(function(err) {
-                    console.error(
-                        "ensureUserDoc error:",
-                        err
-                    );
-                    renderNavIn(u);
-                });
+function chkPrem(uid) {
+    if (!db) return;
+    db.collection("users").doc(uid).get()
+        .then(function (d) {
+            if (d.exists && d.data().isPremium === true) unlockUI();
+        });
+}
+
+async function unlockUI() {
+    // 1. Débloquer les boutons et enlever le flou visuel
+    document.querySelectorAll(".blur-ov").forEach(el => el.style.display = "none");
+    document.querySelectorAll(".blt").forEach(el => {
+        el.style.filter = "none";
+        el.style.color = "#b0b0c0";
+    });
+
+    // 2. Changer les boutons de réservation
+    document.querySelectorAll(".btn-res").forEach(btn => {
+        btn.innerHTML = '<i class="fas fa-calendar-check"></i> Rezève Kounye a';
+        btn.style.cssText = "background:linear-gradient(135deg,#e91e63,#9c27b0);color:white;border:none;";
+        
+        // Identifier si c'est un Krey ou un individuel
+        if (btn.closest(".krey-card")) {
+            btn.setAttribute("onclick", "openKreyRes(this)");
         } else {
-            renderNavOut();
+            btn.setAttribute("onclick", "openResModal(this)");
         }
     });
+
+    // 3. Charger et afficher les médias réels des prestataires
+    const pcElements = document.querySelectorAll(".pc, .krey-card");
+    
+    for (let el of pcElements) {
+        const id = el.getAttribute("data-f"); // On utilise le locationKey ou ID
+        if (!id) continue;
+
+        // Note: Pour un système réel, on ferait une requête par ID. 
+        // Ici on va chercher dans une collection "users" filtrée par localisation ou ID
+        try {
+            const snap = await db.collection("users")
+                .where("status", "==", "active")
+                .where("localisation", "==", id) // Ou un autre identifiant unique
+                .limit(1).get();
+
+            if (!snap.empty) {
+                const pData = snap.docs[0].data();
+                if (pData.media) {
+                    renderPrivateMedia(el, pData.media);
+                }
+            }
+        } catch (e) { console.warn("Erreur chargement média:", e); }
+    }
+}
+
+// Fonction pour injecter les miniatures dans la carte
+function renderPrivateMedia(cardEl, media) {
+    const body = cardEl.querySelector(".pc-body, .krey-body");
+    if (!body) return;
+
+    let mediaHtml = '<div class="p-media-grid">';
+    
+    // Afficher les 3 premières photos
+    const photos = media.photos || [];
+    photos.slice(0, 3).forEach(photo => {
+        mediaHtml += `
+            <div class="p-media-item" onclick="window.open('${photo.url}', '_blank')">
+                <img src="${photo.url}">
+            </div>`;
+    });
+
+    // Afficher la première vidéo si elle existe
+    const videos = media.videos || [];
+    if (videos.length > 0) {
+        mediaHtml += `
+            <div class="p-media-item" onclick="window.open('${videos[0].url}', '_blank')">
+                <div class="p-media-video-icon"><i class="fas fa-play-circle"></i></div>
+                <video src="${videos[0].url}" style="width:100%; height:100%; object-fit:cover;"></video>
+            </div>`;
+    }
+
+    mediaHtml += '</div>';
+    body.insertAdjacentHTML('beforeend', mediaHtml);
+}
+/* ====================================
+   RESERVATION MODAL
+   ==================================== */
+var currentResCard = null;
+
+function openResModal(btn) {
+    if (!auth || !auth.currentUser) { oM("lM"); return; }
+    currentResCard = btn.closest(".pc");
+    if (!currentResCard) return;
+    var nm = currentResCard.querySelector(".pc-name");
+    var pr = currentResCard.querySelector(".pv");
+    var rn = document.getElementById("resName");
+    var rt = document.getElementById("resTotalPrice");
+    var hw = document.getElementById("hotelChoiceWrap");
+    if (rn && nm) rn.textContent = nm.textContent + " (Hotel Inclus)";
+    if (rt && pr) rt.textContent = pr.textContent;
+    if (hw) hw.style.display = "none";
+    var rc = document.getElementById("resCity");
+    var rd = document.getElementById("resDate");
+    var rtm = document.getElementById("resTime");
+    if (rc) rc.value = "";
+    if (rd) rd.value = "";
+    if (rtm) rtm.value = "";
+    oM("resM");
+}
+
+function confirmRes() {
+    if (!auth || !auth.currentUser) { toast("Ou dwe konekte.", "err"); return; }
+    var date = document.getElementById("resDate");
+    var time = document.getElementById("resTime");
+    var city = document.getElementById("resCity");
+    if (!date || !date.value || !time || !time.value || !city || !city.value) { toast("Tanpri ranpli tout chan yo.", "err"); return; }
+    var hotelType = "partner";
+    var hc = document.getElementById("hotelCustom");
+    if (hc && hc.checked) hotelType = "custom";
+    var hotelName = "";
+    var hotelAddr = "";
+    var hotelIncluded = true;
+    if (hotelType === "partner") {
+        var hi = hotels[city.value] || { name: "Hotel Patne", addr: city.value };
+        hotelName = hi.name; hotelAddr = hi.addr; hotelIncluded = true;
+    } else {
+        var cName = document.getElementById("customHotelName");
+        if (!cName || !cName.value.trim()) { toast("Antre non hotel ou chwazi a.", "err"); return; }
+        hotelName = cName.value.trim();
+        var cAddr = document.getElementById("customHotelAddr");
+        hotelAddr = cAddr ? cAddr.value.trim() : "";
+        hotelIncluded = false;
+    }
+    var nm = currentResCard ? currentResCard.querySelector(".pc-name").textContent : "";
+    var pr = currentResCard ? currentResCard.querySelector(".pv").textContent : "";
+    var notes = "";
+    var notesEl = document.getElementById("resNotes");
+    if (notesEl) notes = notesEl.value.trim();
+    if (db) {
+        db.collection("reservations").add({
+            userId: auth.currentUser.uid, userEmail: auth.currentUser.email,
+            prestateName: nm, price: pr, date: date.value, time: time.value,
+            city: city.value, hotelName: hotelName, hotelAddress: hotelAddr,
+            hotelType: hotelType, hotelIncluded: hotelIncluded, notes: notes,
+            status: "en_attente",
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function () {
+            cM("resM");
+            showOk("Rezevasyon Konfime!", "Rezevasyon ou pou " + nm + " le " + date.value + " konfime! Hotel: " + hotelName + ".");
+        });
+    } else {
+        cM("resM");
+        showOk("Rezevasyon Konfime!", "Hotel: " + hotelName);
+    }
+}
+
+/* ====================================
+   KREY RESERVATION
+   ==================================== */
+function openKreyRes(btn) {
+    if (!auth || !auth.currentUser) { oM("lM"); return; }
+    var card = btn.closest(".krey-card");
+    if (!card) return;
+    var nm = card.querySelector(".krey-name").textContent.trim();
+    var pr = card.querySelector(".krey-price-amount").textContent.trim();
+    var old = document.getElementById("kreyResM");
+    if (old) old.remove();
+    var h = '<div class="mbg show" id="kreyResM" style="z-index:10002">';
+    h += '<div class="modal" style="max-width:520px;max-height:95vh;overflow-y:auto">';
+    h += '<button class="mx" onclick="cM(\'kreyResM\')"><i class="fas fa-times"></i></button>';
+    h += '<div class="mhead"><h2>Rezeve Krey</h2><p style="color:#f48fb1">' + nm + '</p>';
+    h += '<p style="color:#ffd700;font-size:1.2rem;font-weight:700;margin-top:8px">' + pr + ' Gdes</p></div>';
+    h += '<div class="mform">';
+    h += '<div class="fg"><label>Dat ou vle</label><input type="date" id="kreyDate" required min="' + new Date().toISOString().split("T")[0] + '"></div>';
+    h += '<div class="fg"><label>Le ou prefere</label><select id="kreyTime" required>';
+    h += '<option value="">Chwazi...</option><option value="Maten">Maten (8h-12h)</option>';
+    h += '<option value="Apremidi">Apremidi (12h-17h)</option>';
+    h += '<option value="Aswe">Aswe (17h-22h)</option>';
+    h += '<option value="Nwit">Nwit (22h+)</option></select></div>';
+    h += '<div class="fg"><label>Ki kote ou vle resevwa gwoup la?</label>';
+    h += '<select id="kreyLocType" onchange="toggleKreyLoc()" required>';
+    h += '<option value="">Chwazi...</option><option value="lakay">Lakay mwen</option>';
+    h += '<option value="hotel">Nan yon Hotel</option><option value="lot">Yon lot kote</option></select></div>';
+    h += '<div id="kreyLocDetails" style="display:none">';
+    h += '<div class="fg"><label>Non kote a</label><input type="text" id="kreyLocName" placeholder="Ex: Hotel Montana..."></div>';
+    h += '<div class="fg" style="margin-top:10px"><label>Adres</label><input type="text" id="kreyLocAddr" placeholder="Ex: Rue X, Delmas..."></div></div>';
+    h += '<div class="fg"><label>Not (opsyonel)</label><textarea id="kreyNotes" rows="2" placeholder="Enstriksyon espesyal..."></textarea></div>';
+    h += '<div style="padding:15px;background:rgba(233,30,99,0.1);border-radius:12px;text-align:center;margin:15px 0">';
+    h += '<p style="color:#ffd700;font-size:1.5rem;font-weight:700">' + pr + ' Gdes</p>';
+    h += '<p style="color:#6a6a80;font-size:0.75rem">Ou chwazi kote gwoup la ap vini</p></div>';
+    h += '<button class="btn btn-primary fw btn-glow" onclick="submitKreyRes(\'' + nm.replace(/'/g, "\\'") + '\',\'' + pr + '\')">';
+    h += '<i class="fas fa-check-circle"></i> Konfime Rezevasyon Krey</button>';
+    h += '</div></div></div>';
+    var wrapper = document.createElement("div");
+    wrapper.innerHTML = h;
+    var modalEl = wrapper.firstChild;
+    modalEl.addEventListener("click", function (ev) { if (ev.target === modalEl) cM("kreyResM"); });
+    document.body.appendChild(modalEl);
+}
+
+function toggleKreyLoc() {
+    var sel = document.getElementById("kreyLocType");
+    var det = document.getElementById("kreyLocDetails");
+    if (!sel || !det) return;
+    det.style.display = sel.value ? "block" : "none";
+}
+
+function submitKreyRes(kreyName, price) {
+    if (!auth || !auth.currentUser) { toast("Ou dwe konekte.", "err"); return; }
+    var date = document.getElementById("kreyDate");
+    var time = document.getElementById("kreyTime");
+    var locType = document.getElementById("kreyLocType");
+    var locName = document.getElementById("kreyLocName");
+    var locAddr = document.getElementById("kreyLocAddr");
+    var notes = document.getElementById("kreyNotes");
+    if (!date || !date.value) { toast("Chwazi yon dat.", "err"); return; }
+    if (!time || !time.value) { toast("Chwazi yon le.", "err"); return; }
+    if (!locType || !locType.value) { toast("Chwazi ki kote.", "err"); return; }
+    if (!locName || !locName.value.trim()) { toast("Antre non kote a.", "err"); return; }
+    var locTypeText = locType.value === "lakay" ? "Lakay kliyan" : locType.value === "hotel" ? "Hotel" : "Lot kote";
+    var btn = document.querySelector("#kreyResM .btn-primary");
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chaje...'; btn.disabled = true; }
+    if (!db) {
+        cM("kreyResM");
+        showOk("Rezevasyon Krey Konfime!", "Gwoup " + kreyName + " rezeve pou " + date.value + "!");
+        return;
+    }
+    db.collection("reservations").add({
+        userId: auth.currentUser.uid, userEmail: auth.currentUser.email,
+        prestateName: kreyName, price: price + " Gdes", type: "krey",
+        date: date.value, time: time.value, locationType: locType.value,
+        locationTypeText: locTypeText, locationName: locName.value.trim(),
+        locationAddress: locAddr ? locAddr.value.trim() : "",
+        notes: notes ? notes.value.trim() : "",
+        hotelIncluded: false, status: "en_attente",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function () {
+        cM("kreyResM");
+        var locMsg = locType.value === "lakay" ? "Gwoup la ap vini lakay ou nan: " + locName.value.trim()
+            : locType.value === "hotel" ? "Randevou nan hotel: " + locName.value.trim()
+            : "Randevou nan: " + locName.value.trim();
+        showOk("Rezevasyon Krey Konfime!", "Gwoup " + kreyName + " rezeve pou " + date.value + " a " + time.value + ". " + locMsg + ".");
+    }).catch(function (err) {
+        console.error(err);
+        if (btn) { btn.innerHTML = '<i class="fas fa-check-circle"></i> Konfime Rezevasyon Krey'; btn.disabled = false; }
+        toast("Ere. Eseye anko.", "err");
+    });
+}
+
+/* ====================================
+   MONCASH PAYMENT
+   ==================================== */
+var currentOrderId = null;
+var paymentCheckInterval = null;
+
+function initMonCashPayment() {
+    if (!auth || !auth.currentUser) {
+        cM("pM");
+        toast(
+            "Ou dwe konekte dabo.",
+            "err"
+        );
+        setTimeout(function() {
+            oM("lM");
+        }, 1500);
+        return;
+    }
+
+    var btn = document.getElementById(
+        "mcAutoPayBtn"
+    );
+    var statusEl = document.getElementById(
+        "mcStatus"
+    );
+
+    if (btn) {
+        btn.innerHTML =
+            '<i class="fas fa-spinner ' +
+            'fa-spin"></i>' +
+            ' Prepare peman...';
+        btn.disabled = true;
+    }
+
+    if (statusEl) {
+        statusEl.style.display = "block";
+        statusEl.style.color = "#ffcc00";
+        statusEl.innerHTML =
+            '<i class="fas fa-spinner ' +
+            'fa-spin"></i>' +
+            ' Koneksyon ak MonCash...';
+    }
+
+    var uid = auth.currentUser.uid;
+    var email =
+        auth.currentUser.email || "";
+    var firstName = "Client";
+    var lastName = "Bizen";
+
+    /* Get user name from Firestore */
+    if (db) {
+        db.collection("users")
+            .doc(uid)
+            .get()
+            .then(function(doc) {
+                if (doc.exists) {
+                    var d = doc.data();
+                    firstName =
+                        d.prenom || "Client";
+                    lastName =
+                        d.nom || "Bizen";
+                }
+                createMonCashPayment(
+                    uid, email,
+                    firstName, lastName,
+                    btn, statusEl
+                );
+            })
+            .catch(function() {
+                createMonCashPayment(
+                    uid, email,
+                    firstName, lastName,
+                    btn, statusEl
+                );
+            });
+    } else {
+        createMonCashPayment(
+            uid, email,
+            firstName, lastName,
+            btn, statusEl
+        );
+    }
+}
+
+function createMonCashPayment(
+    userId, email,
+    firstName, lastName,
+    btn, statusEl
+) {
+    fetch(
+        "/.netlify/functions/moncash",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type":
+                    "application/json"
+            },
+            body: JSON.stringify({
+                action: "create",
+                amount: 1000,
+                userId: userId,
+                userEmail: email,
+                firstName: firstName,
+                lastName: lastName
+            })
+        }
+    )
+    .then(function(res) {
+        return res.json();
+    })
+    .then(function(data) {
+        console.log(
+            "Payment response:",
+            data
+        );
+
+        if (btn) {
+            btn.innerHTML =
+                '<i class="fas ' +
+                'fa-mobile-alt"></i>' +
+                ' Peye 1,000 Gdes' +
+                ' via MonCash';
+            btn.disabled = false;
+        }
+
+        var finalUrl = null;
+
+        if (data.paymentUrl) {
+            finalUrl = data.paymentUrl;
+        } else if (
+            data.rawResponse &&
+            data.rawResponse.redirectUrl
+        ) {
+            finalUrl =
+                data.rawResponse
+                    .redirectUrl;
+        }
+
+        if (data.success && finalUrl) {
+            currentOrderId =
+                data.referenceId || null;
+
+            /* Save payment to Firestore */
+            if (db) {
+                db.collection("payments")
+                    .add({
+                        userId: userId,
+                        email: email,
+                        method: "moncash",
+                        referenceId:
+                            data.referenceId,
+                        amount: 1000,
+                        status: "en_attente",
+                        provider: "bazik",
+                        createdAt:
+                            firebase.firestore
+                            .FieldValue
+                            .serverTimestamp()
+                    })
+                    .catch(function() {});
+            }
+
+            if (statusEl) {
+                statusEl.innerHTML =
+                    '<i class="fas ' +
+                    'fa-external-link-alt">' +
+                    '</i>' +
+                    ' Redirecte nan ' +
+                    'MonCash...';
+                statusEl.style.color =
+                    "#4caf50";
+            }
+
+            /* Open MonCash page */
+            setTimeout(function() {
+                window.location.href =
+                    finalUrl;
+            }, 1000);
+
+        } else {
+            if (statusEl) {
+                statusEl.innerHTML =
+                    '<i class="fas ' +
+                    'fa-exclamation-triangle">' +
+                    '</i>' +
+                    ' Pa jwenn lyen peman.';
+                statusEl.style.color =
+                    "#ff9800";
+            }
+            toast(
+                "Lyen peman pa disponib.",
+                "err"
+            );
+        }
+    })
+    .catch(function(err) {
+        console.error(
+            "Payment error:", err
+        );
+        if (btn) {
+            btn.innerHTML =
+                '<i class="fas ' +
+                'fa-mobile-alt"></i>' +
+                ' Peye 1,000 Gdes' +
+                ' via MonCash';
+            btn.disabled = false;
+        }
+        if (statusEl) {
+            statusEl.innerHTML =
+                '<i class="fas ' +
+                'fa-times-circle"></i>' +
+                ' Koneksyon echwe.';
+            statusEl.style.color =
+                "#f44336";
+        }
+        toast(
+            "Ere koneksyon MonCash.",
+            "err"
+        );
+    });
+}
+
+function dPay() {
+    if (!auth || !auth.currentUser) {
+        cM("pM");
+        toast(
+            "Konekte dabo.",
+            "err"
+        );
+        setTimeout(function() {
+            oM("lM");
+        }, 1500);
+        return;
+    }
+
+    var ref = document.getElementById(
+        "mcRef"
+    );
+    if (!ref || !ref.value.trim()) {
+        toast(
+            "Antre referans MonCash.",
+            "err"
+        );
+        return;
+    }
+
+    var refValue = ref.value.trim();
+
+    if (db) {
+        db.collection("payments").add({
+            userId: auth.currentUser.uid,
+            email: auth.currentUser.email,
+            method: "moncash",
+            reference: refValue,
+            amount: 1000,
+            status: "en_attente",
+            provider: "manual",
+            createdAt:
+                firebase.firestore
+                .FieldValue
+                .serverTimestamp()
+        }).then(function() {
+            cM("pM");
+            showOk(
+                "Demann Resevwa!",
+                "Ekip nou pral verifye " +
+                "referans " + refValue +
+                " epi aktive Premium."
+            );
+        }).catch(function() {
+            toast(
+                "Ere. Eseye anko.",
+                "err"
+            );
+        });
+    } else {
+        cM("pM");
+        showOk(
+            "Demann Resevwa!",
+            "Mesi!"
+        );
+    }
+}
+
+/* ====================================
+   CHECK PAYMENT STATUS
+   ==================================== */
+function startPaymentCheck(
+    referenceId, userId
+) {
+    if (paymentCheckInterval) {
+        clearInterval(paymentCheckInterval);
+    }
+
+    var checks = 0;
+    var maxChecks = 18; /* 3 minutes */
+
+    paymentCheckInterval = setInterval(
+        function() {
+            checks++;
+            if (checks >= maxChecks) {
+                clearInterval(
+                    paymentCheckInterval
+                );
+                return;
+            }
+
+            fetch(
+                "/.netlify/functions/moncash",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body: JSON.stringify({
+                        action: "verify",
+                        referenceId: referenceId,
+                        orderId: referenceId
+                    })
+                }
+            )
+                .then(function(r) {
+                    return r.json();
+                })
+                .then(function(data) {
+                    console.log(
+                        "[CHECK]",
+                        referenceId,
+                        "->",
+                        data.verified,
+                        data.status
+                    );
+
+                    if (data.verified) {
+                        clearInterval(
+                            paymentCheckInterval
+                        );
+                        activatePremium(
+                            userId,
+                            referenceId
+                        );
+                    }
+                })
+                .catch(function() {});
+        },
+        10000 /* Check every 10 seconds */
+    );
+}
+/* ====================================
+   HANDLE PAYMENT SUCCESS
+   ==================================== */
+function handlePaymentSuccess(ref) {
+    if (!auth || !db) {
+        showOk(
+            "Peman Resevwa!",
+            "Nou resevwa notifikasyon " +
+            "peman an. Konekte sou kont " +
+            "ou pou aktivasyon an."
+        );
+        return;
+    }
+
+    auth.onAuthStateChanged(function (user) {
+        if (!user) {
+            showOk(
+                "Peman Resevwa!",
+                "Konekte sou kont ou " +
+                "pou aktivasyon Premium la."
+            );
+            return;
+        }
+
+        db.collection("users")
+            .doc(user.uid)
+            .update({
+                isPremium: true,
+                premiumActivatedAt:
+                    firebase.firestore
+                    .FieldValue
+                    .serverTimestamp(),
+                premiumSource:
+                    "bazik_success_return"
+            })
+            .then(function () {
+                /* Si paiement existe,
+                   on le marque confirmed */
+                if (ref) {
+                    db.collection("payments")
+                        .where(
+                            "referenceId",
+                            "==",
+                            ref
+                        )
+                        .get()
+                        .then(function (snap) {
+                            snap.forEach(function (doc) {
+                                doc.ref.update({
+                                    status: "confirmed"
+                                });
+                            });
+                        })
+                        .catch(function () {});
+                }
+
+                try {
+                    unlockUI();
+                } catch (e) {}
+
+                showOk(
+                    "Premium Aktive!",
+                    "Peman ou resevwa " +
+                    "ak sikse. Kont ou " +
+                    "Premium kounye a!"
+                );
+
+                /* Nettoyer l’URL */
+                try {
+                    window.history.replaceState(
+                        {},
+                        document.title,
+                        window.location.pathname
+                    );
+                } catch (e) {}
+            })
+            .catch(function (err) {
+                console.error(
+                    "Premium update error:",
+                    err
+                );
+                showOk(
+                    "Peman Resevwa!",
+                    "Nou resevwa peman ou " +
+                    "men aktivasyon an pran " +
+                    "reta. Ekip nou ap tcheke."
+                );
+            });
+    });
+}
+/* ====================================
+   ACTIVATE PREMIUM
+   ==================================== */
+function activatePremium(
+    userId, referenceId
+) {
+    if (!db) return;
+
+    db.collection("users")
+        .doc(userId)
+        .update({
+            isPremium: true,
+            premiumActivatedAt: firebase
+                .firestore.FieldValue
+                .serverTimestamp(),
+            premiumSource:
+                "moncash_bazik"
+        })
+        .then(function() {
+            /* Update payment record */
+            db.collection("payments")
+                .where(
+                    "referenceId",
+                    "==", referenceId
+                )
+                .get()
+                .then(function(snap) {
+                    snap.forEach(
+                        function(doc) {
+                            doc.ref.update({
+                                status:
+                                    "confirmed"
+                            });
+                        }
+                    );
+                });
+
+            cM("pM");
+            showOk(
+                "Premium Aktive!",
+                "Peman konfime! Ou ka " +
+                "jwenn tout prestatè yo " +
+                "kounye a!"
+            );
+
+            try { unlockUI(); }
+            catch(e) {}
+        })
+        .catch(function(err) {
+            console.error(
+                "[ACTIVATE ERROR]",
+                err
+            );
+        });
+}
+
+
+function startPaymentCheck(orderId, userId) {
+    if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+    var checkCount = 0;
+    paymentCheckInterval = setInterval(function () {
+        checkCount++;
+        if (checkCount >= 12) { clearInterval(paymentCheckInterval); return; }
+        fetch("/.netlify/functions/moncash", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "verify", orderId: orderId })
+        }).then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data.success && data.verified) {
+                    clearInterval(paymentCheckInterval);
+                    activatePremium(userId, orderId);
+                }
+            }).catch(function () {});
+    }, 10000);
+}
+
+function activatePremium(userId, orderId) {
+    if (!db) return;
+    db.collection("users").doc(userId).update({
+        isPremium: true,
+        premiumActivatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function () {
+        db.collection("payments").where("orderId", "==", orderId).get()
+            .then(function (snap) { snap.forEach(function (doc) { doc.ref.update({ status: "confirmed" }); }); });
+        cM("pM");
+        showOk("Premium Aktive!", "Peman konfime! Ou ka jwenn tout prestate yo kounye a!");
+        try { unlockUI(); } catch (e) {}
+    }).catch(function () {});
+}
+
+function dPay() {
+    if (!auth || !auth.currentUser) {
+        cM("pM"); toast("Konekte dabo.", "err");
+        setTimeout(function () { oM("lM"); }, 1500);
+        return;
+    }
+    var ref = document.getElementById("mcRef");
+    if (!ref || !ref.value.trim()) { toast("Antre referans tranzaksyon MonCash ou a.", "err"); return; }
+    var refValue = ref.value.trim();
+    if (db) {
+        db.collection("payments").add({
+            userId: auth.currentUser.uid, email: auth.currentUser.email,
+            method: "moncash", reference: refValue, amount: 1000,
+            status: "en_attente", provider: "manual",
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function () {
+            cM("pM");
+            showOk("Demann Resevwa!", "Mesi! Ekip nou pral verifye referans " + refValue + " epi aktive Premium ou nan kek minit.");
+        }).catch(function () { toast("Ere. Eseye anko.", "err"); });
+    } else {
+        cM("pM");
+        showOk("Demann Resevwa!", "Mesi! Ekip nou pral verifye peman ou.");
+    }
+}
+
+function pa() { oM("paM"); }
+
+/* ====================================
+   NAVBAR CONNECTED
+   ==================================== */
+function renderNavIn(user) {
+    var nb = document.getElementById("navBtns");
+    if (!nb) return;
+    var nm = user.email.split("@")[0];
+    nb.innerHTML = "";
+    var dashBtn = document.createElement("button");
+    dashBtn.className = "btn-nl";
+    dashBtn.onclick = function () { window.location.href = "dashboard.html"; };
+    dashBtn.innerHTML = '<i class="fas fa-tachometer-alt"></i> Dashboard';
+    nb.appendChild(dashBtn);
+    var nameSpan = document.createElement("span");
+    nameSpan.style.cssText = "color:var(--primary-light);font-size:0.85rem;padding:8px 5px";
+    nameSpan.innerHTML = '<i class="fas fa-circle" style="color:#4caf50;font-size:0.5rem;vertical-align:middle;margin-right:4px"></i>' + nm;
+    nb.appendChild(nameSpan);
+    var logBtn = document.createElement("button");
+    logBtn.className = "btn-nl";
+    logBtn.onclick = doOut;
+    logBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i>';
+    nb.appendChild(logBtn);
+    var ma = document.getElementById("mobileAuth");
+    if (ma) {
+        ma.innerHTML = "";
+        var mDash = document.createElement("button");
+        mDash.className = "btn btn-primary";
+        mDash.style.cssText = "width:100%;margin-top:15px;padding:12px;justify-content:center";
+        mDash.onclick = function () { window.location.href = "dashboard.html"; };
+        mDash.innerHTML = '<i class="fas fa-tachometer-alt"></i> Dashboard Mwen';
+        ma.appendChild(mDash);
+        var mLog = document.createElement("button");
+        mLog.className = "btn btn-outline";
+        mLog.style.cssText = "width:100%;margin-top:10px;padding:12px;justify-content:center";
+        mLog.onclick = doOut;
+        mLog.innerHTML = '<i class="fas fa-sign-out-alt"></i> Dekonekte';
+        ma.appendChild(mLog);
+    }
+}
+
+/* ====================================
+   NAVBAR DISCONNECTED
+   ==================================== */
+function renderNavOut() {
+    var nb = document.getElementById("navBtns");
+    if (!nb) return;
+    nb.innerHTML = '<button class="btn-nl" onclick="oM(\'lM\')"><i class="fas fa-sign-in-alt"></i> Konekte</button>' +
+        '<button class="btn-ns" onclick="oM(\'sM\')"><i class="fas fa-user-plus"></i> Enskri</button>';
+    var ma = document.getElementById("mobileAuth");
+    if (ma) {
+        ma.innerHTML = '<button class="btn btn-primary" style="width:100%;margin-top:15px;padding:12px;justify-content:center" onclick="oM(\'lM\')"><i class="fas fa-sign-in-alt"></i> Konekte</button>' +
+            '<button class="btn btn-secondary" style="width:100%;margin-top:10px;padding:12px;justify-content:center" onclick="oM(\'sM\')"><i class="fas fa-user-plus"></i> Enskri</button>';
+    }
+}
+
+/* ====================================
+   SUCCESS & TOAST
+   ==================================== */
+function showOk(t, m) {
+    var ot = document.getElementById("okT");
+    var op = document.getElementById("okP");
+    if (ot) ot.textContent = t;
+    if (op) op.textContent = m;
+    setTimeout(function () { oM("okM"); }, 300);
+}
+
+function toast(msg, type) {
+    var old = document.getElementById("toastEl");
+    if (old) old.remove();
+    var cl = type === "err" ? "#f44336" : "#4caf50";
+    var ic = type === "err" ? "fa-times-circle" : "fa-check-circle";
+    var t = document.createElement("div");
+    t.id = "toastEl";
+    t.style.cssText = "position:fixed;bottom:100px;right:30px;background:#15151f;border:1px solid " + cl + ";color:white;padding:14px 20px;border-radius:12px;font-family:Montserrat,sans-serif;font-size:0.85rem;z-index:99999;max-width:300px;line-height:1.5;box-shadow:0 5px 25px rgba(0,0,0,0.5);display:flex;align-items:flex-start;gap:10px";
+    t.innerHTML = '<i class="fas ' + ic + '" style="color:' + cl + ';margin-top:2px;flex-shrink:0"></i><span>' + msg + '</span>';
+    document.body.appendChild(t);
+    setTimeout(function () {
+        if (t.parentNode) { t.style.opacity = "0"; t.style.transition = "opacity 0.3s"; setTimeout(function () { if (t.parentNode) t.remove(); }, 300); }
+    }, 4000);
+}
+
+/* ====================================
+   MULTI PHOTO UPLOAD
+   ==================================== */
+var uploadedPhotos = [];
+
+function handlePhotos(input) {
+    var files = input.files;
+    if (!files || files.length === 0) return;
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        if (!file.type.startsWith("image/")) continue;
+        if (file.size > 5 * 1024 * 1024) { toast("Foto " + file.name + " two gwo (maks 5MB).", "err"); continue; }
+        uploadedPhotos.push(file);
+    }
+    input.value = "";
+    updatePhotoPreview();
+}
+
+function updatePhotoPreview() {
+    var container = document.getElementById("photoPreview");
+    var countEl = document.getElementById("photoCount");
+    if (!container) return;
+    container.innerHTML = "";
+    for (var i = 0; i < uploadedPhotos.length; i++) {
+        (function (file, idx) {
+            var item = document.createElement("div");
+            item.className = "photo-preview-item";
+            var img = document.createElement("img");
+            var reader = new FileReader();
+            reader.onload = function (ev) { img.src = ev.target.result; };
+            reader.readAsDataURL(file);
+            var rb = document.createElement("button");
+            rb.className = "remove-photo";
+            rb.innerHTML = '<i class="fas fa-times"></i>';
+            rb.setAttribute("data-index", idx);
+            rb.onclick = function () { uploadedPhotos.splice(parseInt(this.getAttribute("data-index")), 1); updatePhotoPreview(); };
+            item.appendChild(img); item.appendChild(rb); container.appendChild(item);
+        })(uploadedPhotos[i], i);
+    }
+    if (countEl) {
+        countEl.style.display = uploadedPhotos.length > 0 ? "block" : "none";
+        countEl.innerHTML = '<i class="fas fa-camera"></i> ' + uploadedPhotos.length + " foto seleksyone";
+    }
+}
+
+function removePhoto(index) {
+    uploadedPhotos.splice(index, 1);
+    updatePhotoPreview();
+}
+
+/* ====================================
+   WHATSAPP
+   ==================================== */
+var waOp = false;
+
+function tWa() {
+    waOp = !waOp;
+    var tt = document.getElementById("waT");
+    var ic = document.getElementById("waI");
+    var nt = document.getElementById("waN");
+    var bb = document.getElementById("waB2");
+    if (!tt || !ic || !bb) return;
+    if (waOp) {
+        tt.classList.add("open"); ic.className = "fas fa-times";
+        bb.style.background = "#20ba5a"; if (nt) nt.style.display = "none";
+    } else {
+        tt.classList.remove("open"); ic.className = "fab fa-whatsapp"; bb.style.background = "#25D366";
+    }
+}
+
+function cWa() {
+    waOp = false;
+    var tt = document.getElementById("waT"); if (tt) tt.classList.remove("open");
+    var ic = document.getElementById("waI"); if (ic) ic.className = "fab fa-whatsapp";
+    var bb = document.getElementById("waB2"); if (bb) bb.style.background = "#25D366";
+}
+
+setTimeout(function () { if (!waOp) tWa(); }, 5000);
+document.addEventListener("click", function (e) {
+    var wb = document.getElementById("waB");
+    if (wb && !wb.contains(e.target) && waOp) cWa();
+});
+
+/* ====================================
+   SMOOTH SCROLL
+   ==================================== */
+var anc = document.querySelectorAll("a[href^='#']");
+for (var ai = 0; ai < anc.length; ai++) {
+    anc[ai].addEventListener("click", function (e) {
+        var h = this.getAttribute("href");
+        if (h && h.length > 1) {
+            var tg = document.querySelector(h);
+            if (tg) { e.preventDefault(); window.scrollTo({ top: tg.offsetTop - 70, behavior: "smooth" }); }
+        }
+    });
+}
+
+/* ====================================
+   ADMIN
+   ==================================== */
+var ADMIN_EMAIL = "admin@bizenht.com";
+
+function showAdminLogin() { oM("admM"); }
+
+function doAdminLogin(e) {
+    e.preventDefault();
+    var em = document.getElementById("admEmail") ? document.getElementById("admEmail").value.trim() : "";
+    var pw = document.getElementById("admPw") ? document.getElementById("admPw").value : "";
+    if (!em || !pw) { toast("Antre imel ak modpas.", "err"); return false; }
+    if (!auth) { toast("Firebase pa disponib.", "err"); return false; }
+    var sbtn = document.querySelector("#admM button[type='submit']");
+    if (sbtn) { sbtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chaje...'; sbtn.disabled = true; }
+    var adminApp;
+    try { adminApp = firebase.app("admChk"); }
+    catch (ex) {
+        try { adminApp = firebase.initializeApp({ apiKey: "AIzaSyADWklo0scZNWkhudRn_VBhrapXl4AZL_E", authDomain: "bizen-ht.firebaseapp.com", projectId: "bizen-ht" }, "admChk"); }
+        catch (ex2) { adminApp = firebase.app("admChk"); }
+    }
+    adminApp.auth().signInWithEmailAndPassword(em, pw)
+        .then(function (r) {
+            adminApp.auth().signOut();
+            if (sbtn) { sbtn.innerHTML = '<i class="fas fa-lock"></i> Konekte Admin'; sbtn.disabled = false; }
+            if (r.user.email === ADMIN_EMAIL) { cM("admM"); window.location.href = "vye.html"; }
+            else toast("Kont sa a pa admin!", "err");
+        })
+        .catch(function () {
+            if (sbtn) { sbtn.innerHTML = '<i class="fas fa-lock"></i> Konekte Admin'; sbtn.disabled = false; }
+            toast("Imel oswa modpas pa korek.", "err");
+        });
+    return false;
+}
+
+/* ====================================
+   DASHBOARD HELPERS
+   ==================================== */
+function mkDashTab(id, ico, label, active) {
+    var bg = active ? "rgba(233,30,99,0.15)" : "transparent";
+    var col = active ? "#e91e63" : "#6a6a80";
+    return '<button onclick="switchDTab(\'' + id + '\',this)" style="padding:7px 18px;border-radius:50px;border:1px solid #2a2a3a;background:' + bg + ';color:' + col + ';cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.78rem;display:flex;align-items:center;gap:5px;transition:all 0.2s"><i class="fas ' + ico + '"></i> ' + label + '</button>';
+}
+
+function mkStatBox(val, col, label) {
+    return '<div style="background:#12121a;border:1px solid #2a2a3a;border-radius:12px;padding:18px;text-align:center"><div style="font-size:1.5rem;font-weight:700;color:' + col + '">' + val + '</div><div style="font-size:0.72rem;color:#6a6a80;margin-top:5px">' + label + '</div></div>';
+}
+
+function switchDTab(id, btn) {
+    var allTabs = document.querySelectorAll("[id^='dtab-']");
+    for (var i = 0; i < allTabs.length; i++) allTabs[i].style.display = "none";
+    var tab = document.getElementById("dtab-" + id);
+    if (tab) tab.style.display = "block";
+    if (btn && btn.parentElement) {
+        var sibs = btn.parentElement.querySelectorAll("button");
+        for (var j = 0; j < sibs.length; j++) { sibs[j].style.background = "transparent"; sibs[j].style.color = "#6a6a80"; }
+        btn.style.background = "rgba(233,30,99,0.15)";
+        btn.style.color = "#e91e63";
+    }
+}
+/* ====================================
+   FIREBASE STORAGE HELPERS
+   ==================================== */
+async function uploadFilesToStorage(
+    files,
+    userId,
+    type,
+    folderRoot
+) {
+    if (!storage || !files || files.length === 0) {
+        return [];
+    }
+
+    var uploaded = [];
+
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+
+        var safeName =
+            Date.now() + "_" +
+            file.name.replace(/\s+/g, "_");
+
+        var path =
+            folderRoot + "/" +
+            userId + "/" +
+            type + "/" +
+            safeName;
+
+        var ref = storage.ref(path);
+
+        await ref.put(file);
+
+        var url = await ref.getDownloadURL();
+
+        uploaded.push({
+            name: file.name,
+            url: url,
+            path: path,
+            type: type,
+            size: file.size,
+            createdAt:
+                new Date().toISOString()
+        });
+    }
+
+    return uploaded;
+}
+
+async function saveUserMedia(
+    userId,
+    photos,
+    videos,
+    profilePhoto
+) {
+    if (!db || !userId) return;
+
+    var docRef = db.collection("users")
+        .doc(userId);
+
+    var doc = await docRef.get();
+    var data = doc.exists
+        ? doc.data()
+        : {};
+
+    var existingMedia = data.media || {};
+    var existingPhotos =
+        existingMedia.photos || [];
+    var existingVideos =
+        existingMedia.videos || [];
+
+    await docRef.set({
+        profilePhoto: profilePhoto || "",
+        media: {
+            photos:
+                existingPhotos.concat(photos),
+            videos:
+                existingVideos.concat(videos)
+        }
+    }, { merge: true });
 }
 </script>
 <!-- EMAIL VERIFICATION MODAL -->
