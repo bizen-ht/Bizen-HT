@@ -2,18 +2,16 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width,
-                   initial-scale=1.0">
-    <title>Bizen HT - Admin</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet">
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Bizen HT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+
     <style>
         :root {
             --primary: #e91e63;
@@ -33,1550 +31,286 @@
             --purple: #9c27b0;
             --radius: 12px;
             --radius-lg: 20px;
-            --radius-full: 50px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-        }
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
-        /* LOGIN */
-        #loginScreen {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: var(--bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
+        /* LOGIN SCREEN */
+        #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .login-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 40px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .login-box h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 5px; color: var(--primary); }
+        .login-box p { color: var(--text-muted); margin-bottom: 25px; font-size: 0.9rem; }
+        .login-box input { width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: var(--radius); color: white; margin-bottom: 15px; outline: none; font-family: inherit; }
+        .login-box input:focus { border-color: var(--primary); }
+        .login-box button { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; border-radius: 50px; color: white; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .login-box button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(233,30,99,0.3); }
 
-        .login-box {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 50px 40px;
-            max-width: 420px;
-            width: 90%;
-            text-align: center;
-        }
-
-        .login-logo {
-            width: 70px; height: 70px;
-            background: var(--red);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 1.8rem;
-            color: white;
-        }
-
-        .login-box h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.6rem;
-            margin-bottom: 8px;
-        }
-
-        .login-box > p {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-bottom: 30px;
-        }
-
-        .lg-input {
-            width: 100%;
-            padding: 14px 18px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            color: white;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.9rem;
-            outline: none;
-            margin-bottom: 15px;
-        }
-
-        .lg-input:focus {
-            border-color: var(--red);
-        }
-
-        .lg-btn {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, var(--red), #b71c1c);
-            border: none;
-            border-radius: var(--radius-full);
-            color: white;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 12px;
-        }
-
-        .lg-error {
-            color: var(--red);
-            font-size: 0.8rem;
-            margin-top: 10px;
-            display: none;
-        }
-
-        /* ADMIN PANEL */
-        #adminPanel {
-            display: none;
-            min-height: 100vh;
-        }
-
+        /* ADMIN LAYOUT */
+        #adminPanel { display: none; display: flex; min-height: 100vh; }
+        
         /* SIDEBAR */
-        .sidebar {
-            width: 260px;
-            background: var(--bg-side);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            height: 100vh;
-            top: 0; left: 0;
-            z-index: 100;
-        }
+        .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; height: 100vh; top: 0; left: 0; z-index: 100; transition: left 0.3s; }
+        .sb-top { padding: 20px; border-bottom: 1px solid var(--border); text-align: center; }
+        .sb-top h2 { font-family: 'Playfair Display', serif; color: var(--primary); }
+        .sb-nav { flex: 1; overflow-y: auto; padding: 15px 0; }
+        .sb-cat { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); padding: 10px 20px; font-weight: 700; letter-spacing: 1px; }
+        .sb-link { width: 100%; text-align: left; padding: 12px 20px; background: none; border: none; color: var(--text-sec); font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; font-family: inherit; }
+        .sb-link:hover { color: white; background: rgba(255,255,255,0.05); }
+        .sb-link.active { color: var(--primary); border-right: 3px solid var(--primary); background: rgba(233,30,99,0.05); }
+        .sb-bdg { margin-left: auto; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
+        .sb-footer { padding: 15px; border-top: 1px solid var(--border); }
+        .sb-footer button { width: 100%; padding: 10px; border: 1px solid var(--red); color: var(--red); background: transparent; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .sb-footer button:hover { background: var(--red); color: white; }
 
-        .sb-top {
-            padding: 22px 20px;
-            border-bottom: 1px solid var(--border);
-        }
+        /* MAIN CONTENT */
+        .main { flex: 1; margin-left: 260px; padding: 30px; background: var(--bg); }
+        .ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .ph h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; }
+        .pg { display: none; }
+        .pg.on { display: block; }
 
-        .sb-logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
+        /* STATS GRID */
+        .sg { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .sc { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; display: flex; align-items: center; gap: 15px; }
+        .sc i { font-size: 2rem; }
+        .sc h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 2px; }
+        .sc p { font-size: 0.8rem; color: var(--text-muted); }
 
-        .sb-logo-ico {
-            width: 36px; height: 36px;
-            background: var(--red);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            color: white;
-        }
+        /* TABLES */
+        .tc { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+        .tc-head { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .srch { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: white; outline: none; }
+        .tscroll { overflow-x: auto; max-height: 600px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 15px; text-align: left; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; position: sticky; top: 0; background: var(--bg-card); z-index: 10; border-bottom: 1px solid var(--border); }
+        td { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 0.85rem; vertical-align: middle; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
 
-        .sb-logo-txt {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.1rem;
-            font-weight: 700;
-        }
+        /* BADGES & BUTTONS */
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; display: inline-block; }
+        .b-green { background: rgba(76,175,80,0.1); color: var(--green); border: 1px solid rgba(76,175,80,0.3); }
+        .b-red { background: rgba(244,67,54,0.1); color: var(--red); border: 1px solid rgba(244,67,54,0.3); }
+        .b-orange { background: rgba(255,152,0,0.1); color: var(--orange); border: 1px solid rgba(255,152,0,0.3); }
+        .b-gold { background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid rgba(255,215,0,0.3); }
 
-        .sb-logo-sub {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-        }
+        .ab { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.75rem; margin: 2px; color: white; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .ab:hover { opacity: 0.8; transform: translateY(-1px); }
+        .ab-v { background: var(--blue); }
+        .ab-a { background: var(--green); }
+        .ab-d { background: var(--red); }
+        .ab-f { background: var(--orange); }
+        .ab-p { background: var(--gold); color: black; font-weight: bold; }
 
-        .sb-user {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            background: rgba(244,67,54,0.08);
-            border-radius: var(--radius);
-        }
-
-        .sb-avatar {
-            width: 32px; height: 32px;
-            background: linear-gradient(135deg, var(--red), #b71c1c);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            flex-shrink: 0;
-        }
-
-        .sb-uname {
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .sb-urole {
-            font-size: 0.6rem;
-            color: var(--red);
-            font-weight: 600;
-        }
-
-        .sb-nav {
-            flex: 1;
-            padding: 15px 0;
-            overflow-y: auto;
-        }
-
-        .sb-cat {
-            font-size: 0.62rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--text-muted);
-            padding: 8px 20px;
-            font-weight: 600;
-        }
-
-        .sb-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 20px;
-            color: var(--text-sec);
-            font-size: 0.83rem;
-            cursor: pointer;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-            font-family: 'Montserrat', sans-serif;
-            transition: all 0.2s ease;
-        }
-
-        .sb-link:hover {
-            background: rgba(244,67,54,0.08);
-            color: white;
-        }
-
-        .sb-link.active {
-            background: rgba(244,67,54,0.12);
-            color: var(--red);
-            border-right: 3px solid var(--red);
-        }
-
-        .sb-link i {
-            width: 18px;
-            text-align: center;
-        }
-
-        .sb-bdg {
-            margin-left: auto;
-            padding: 2px 8px;
-            border-radius: var(--radius-full);
-            font-size: 0.6rem;
-            font-weight: 700;
-            min-width: 20px;
-            text-align: center;
-        }
-
-        .bdg-r { background: var(--red); color: white; }
-        .bdg-o { background: var(--orange); color: white; }
-        .bdg-g { background: var(--green); color: white; }
-        .bdg-b { background: var(--blue); color: white; }
-        .bdg-p { background: var(--gold); color: #000; }
-
-        .sb-footer {
-            padding: 12px 0;
-            border-top: 1px solid var(--border);
-        }
-
-        .sb-logout {
-            color: var(--red) !important;
-        }
-
-        /* MAIN */
-        .main {
-            flex: 1;
-            margin-left: 260px;
-            padding: 30px;
-            min-height: 100vh;
-        }
-
-        /* PAGE HEADER */
-        .ph {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 28px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .ph-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.7rem;
-        }
-
-        .ph-title span { color: var(--red); }
-
-        /* SECTIONS - CORRIGE */
-        .pg {
-            display: none;
-        }
-
-        .pg.on {
-            display: block;
-        }
-
-        /* STATS */
-        .sg {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-            gap: 18px;
-            margin-bottom: 28px;
-        }
-
-        .sc {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 22px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .sc::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 4px; height: 100%;
-        }
-
-        .sc.bl::before { background: var(--blue); }
-        .sc.rd::before { background: var(--red); }
-        .sc.gn::before { background: var(--green); }
-        .sc.gd::before { background: var(--gold); }
-        .sc.og::before { background: var(--orange); }
-        .sc.pp::before { background: var(--purple); }
-
-        .sc-ico {
-            width: 42px; height: 42px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            margin-bottom: 14px;
-        }
-
-        .sc-ico.bl { background: rgba(33,150,243,0.15); color: var(--blue); }
-        .sc-ico.rd { background: rgba(244,67,54,0.15); color: var(--red); }
-        .sc-ico.gn { background: rgba(76,175,80,0.15); color: var(--green); }
-        .sc-ico.gd { background: rgba(255,215,0,0.15); color: var(--gold); }
-        .sc-ico.og { background: rgba(255,152,0,0.15); color: var(--orange); }
-        .sc-ico.pp { background: rgba(156,39,176,0.15); color: var(--purple); }
-
-        .sc-val {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.9rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .sc-lbl {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        /* TABLE */
-        .tc {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            margin-bottom: 22px;
-        }
-
-        .tc-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .tc-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .tc-title i { color: var(--red); }
-
-        .tc-filters {
-            display: flex;
-            gap: 7px;
-            flex-wrap: wrap;
-        }
-
-        .tf {
-            padding: 5px 13px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-full);
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 0.72rem;
-            font-family: 'Montserrat', sans-serif;
-        }
-
-        .tf.active, .tf:hover {
-            background: rgba(244,67,54,0.12);
-            color: var(--red);
-            border-color: var(--red);
-        }
-
-        .srch {
-            padding: 7px 14px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-full);
-            color: white;
-            font-size: 0.78rem;
-            outline: none;
-            min-width: 180px;
-            font-family: 'Montserrat', sans-serif;
-        }
-
-        .srch:focus { border-color: var(--red); }
-
-        .tscroll {
-            overflow-x: auto;
-            max-height: 480px;
-            overflow-y: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        thead {
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-
-        th {
-            padding: 11px 16px;
-            text-align: left;
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            background: rgba(255,255,255,0.02);
-            border-bottom: 1px solid var(--border);
-            white-space: nowrap;
-        }
-
-        td {
-            padding: 11px 16px;
-            font-size: 0.8rem;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-            color: var(--text-sec);
-            vertical-align: middle;
-        }
-
-        tr:hover td {
-            background: rgba(244,67,54,0.03);
-        }
-
-        /* BADGES */
-        .sbadge {
-            padding: 3px 9px;
-            border-radius: var(--radius-full);
-            font-size: 0.62rem;
-            font-weight: 600;
-            white-space: nowrap;
-            display: inline-block;
-        }
-
-        .sbadge.green { background: rgba(76,175,80,0.15); color: var(--green); }
-        .sbadge.red { background: rgba(244,67,54,0.15); color: var(--red); }
-        .sbadge.orange { background: rgba(255,152,0,0.15); color: var(--orange); }
-        .sbadge.blue { background: rgba(33,150,243,0.15); color: var(--blue); }
-        .sbadge.gold { background: rgba(255,215,0,0.15); color: var(--gold); }
-        .sbadge.purple { background: rgba(156,39,176,0.15); color: var(--purple); }
-        .sbadge { background: rgba(255,255,255,0.07); color: var(--text-muted); }
-
-        /* ACTION BUTTONS */
-        .ab {
-            padding: 4px 9px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.67rem;
-            font-weight: 600;
-            margin: 2px;
-            white-space: nowrap;
-            font-family: 'Montserrat', sans-serif;
-            transition: all 0.2s ease;
-        }
-
-        .ab:hover {
-            opacity: 0.8;
-            transform: translateY(-1px);
-        }
-
-        .ab-app { background: rgba(76,175,80,0.18); color: var(--green); }
-        .ab-pre { background: rgba(255,215,0,0.18); color: var(--gold); }
-        .ab-con { background: rgba(33,150,243,0.18); color: var(--blue); }
-        .ab-frz { background: rgba(255,152,0,0.18); color: var(--orange); }
-        .ab-ufrz { background: rgba(76,175,80,0.18); color: var(--green); }
-        .ab-del { background: rgba(244,67,54,0.18); color: var(--red); }
-        .ab-rpr { background: rgba(255,152,0,0.18); color: var(--orange); }
-
-        /* FINANCE */
-        .fg {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-            gap: 18px;
-            margin-bottom: 25px;
-        }
-
-        .fc {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 28px;
-            text-align: center;
-        }
-
-        .fc h4 {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 14px;
-        }
-
-        .fv {
-            font-family: 'Playfair Display', serif;
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .fs {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-        }
+        /* MODAL DETAIL (Crucial pour voir photos/videos) */
+        .mbg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 10000; opacity: 0; visibility: hidden; transition: 0.3s; padding: 20px; }
+        .mbg.show { opacity: 1; visibility: visible; }
+        .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; position: relative; padding: 30px; }
+        .mx { position: absolute; top: 15px; right: 15px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        
+        .m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .m-item { background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
+        .m-item span { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 5px; }
+        .m-item strong { font-size: 0.95rem; color: white; }
+        
+        .m-gallery { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; }
+        .m-photo { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); cursor: pointer; }
+        .m-video { width: 120px; height: 120px; background: #000; border-radius: 8px; border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
+        .m-video i { font-size: 2rem; color: white; }
 
         /* TOAST */
-        #adTst {
-            position: fixed;
-            bottom: 25px; right: 25px;
-            padding: 13px 20px;
-            border-radius: var(--radius);
-            font-size: 0.83rem;
-            z-index: 99999;
-            display: none;
-            align-items: center;
-            gap: 10px;
-            max-width: 300px;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
-        }
+        #toast { position: fixed; bottom: 20px; right: 20px; background: var(--green); color: white; padding: 15px 25px; border-radius: 8px; transform: translateY(100px); opacity: 0; transition: 0.3s; z-index: 99999; }
+        #toast.show { transform: translateY(0); opacity: 1; }
 
-        #adTst.on { display: flex; }
-
-        /* MOBILE */
-        .mob-tog {
-            display: none;
-            position: fixed;
-            top: 14px; left: 14px;
-            z-index: 200;
-            width: 36px; height: 36px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .sb-ov {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 90;
-        }
-
+        /* RESPONSIVE */
+        .mob-btn { display: none; position: fixed; top: 15px; left: 15px; z-index: 101; background: var(--bg-card); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 8px; }
         @media (max-width: 900px) {
-            .sidebar {
-                left: -270px;
-                transition: left 0.3s ease;
-            }
+            .sidebar { left: -260px; }
             .sidebar.open { left: 0; }
-            .main {
-                margin-left: 0;
-                padding: 20px;
-                padding-top: 55px;
-            }
-            .mob-tog { display: flex; }
-            .sb-ov.on { display: block; }
-            .sg { grid-template-columns: 1fr 1fr; }
+            .main { margin-left: 0; padding: 20px; padding-top: 60px; }
+            .mob-btn { display: block; }
+            .m-grid { grid-template-columns: 1fr; }
         }
-
-        @media (max-width: 480px) {
-            .sg { grid-template-columns: 1fr; }
-        }
-    /* ADMIN DETAIL MODAL */
-.adm-modal-bg {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(5px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    padding: 20px;
-}
-
-.adm-modal-bg.show {
-    opacity: 1;
-    visibility: visible;
-}
-
-.adm-modal {
-    background: #15151f;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 35px;
-    max-width: 700px;
-    width: 100%;
-    position: relative;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.adm-modal-close {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    cursor: pointer;
-}
-
-.adm-modal h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.4rem;
-    margin-bottom: 20px;
-}
-
-.detail-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 15px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.85rem;
-}
-
-.detail-row span:first-child {
-    color: var(--text-muted);
-    min-width: 120px;
-}
-
-.detail-row span:last-child {
-    color: var(--text-sec);
-    text-align: right;
-    word-break: break-word;
-}
-
-.admin-media-section {
-    margin-top: 25px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-}
-
-.admin-media-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    margin-bottom: 15px;
-}
-
-.admin-media-grid {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.admin-media-item {
-    width: 100px;
-    height: 100px;
-    border-radius: 10px;
-    overflow: hidden;
-    position: relative;
-    border: 1px solid var(--border);
-    background: #000;
-}
-
-.admin-media-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.admin-media-video {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--gold);
-    font-size: 1.6rem;
-    background: rgba(0,0,0,0.8);
-}
-
-.admin-media-delete {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(244,67,54,0.95);
-    color: white;
-    cursor: pointer;
-    font-size: 0.7rem;
-}
-
-.admin-media-open {
-    position: absolute;
-    bottom: 4px;
-    left: 4px;
-    right: 4px;
-    padding: 3px;
-    border-radius: 6px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-    font-size: 0.65rem;
-    text-align: center;
-    text-decoration: none;
-}
-
-.ab-viw {
-    background: rgba(156,39,176,0.18);
-    color: var(--purple);
-}
     </style>
 </head>
 <body>
 
-<!-- TOAST -->
-<div id="adTst"></div>
+<div id="toast">Message</div>
+<button class="mob-btn" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="fas fa-bars"></i></button>
 
 <!-- LOGIN -->
 <div id="loginScreen">
     <div class="login-box">
-        <div class="login-logo">
-            <i class="fas fa-shield-alt"></i>
-        </div>
-        <h2>Bizen HT Admin</h2>
-        <p>Konekte ak kont administratè</p>
-        <input class="lg-input"
-               type="email"
-               id="lgEm"
-               placeholder="Email admin">
-        <input class="lg-input"
-               type="password"
-               id="lgPw"
-               placeholder="Modpas"
-               onkeydown="if(event.key==='Enter')doAdmLogin()">
-        <button class="lg-btn"
-                onclick="doAdmLogin()">
-            <i class="fas fa-lock"></i>
-            Konekte
-        </button>
-        <p class="lg-error" id="lgErr"></p>
+        <h2>Bizen HT</h2>
+        <p>Aksè Administratè</p>
+        <input type="email" id="lgEmail" placeholder="Email Admin">
+        <input type="password" id="lgPw" placeholder="Modpas">
+        <button onclick="doLogin()">Konekte <i class="fas fa-arrow-right"></i></button>
+        <p id="lgErr" style="color:var(--red); margin-top:15px; display:none;"></p>
     </div>
 </div>
 
-<!-- MOBILE TOGGLE -->
-<button class="mob-tog"
-        id="mobTog"
-        onclick="togSB()">
-    <i class="fas fa-bars"></i>
-</button>
-
-<!-- SIDEBAR OVERLAY -->
-<div class="sb-ov"
-     id="sbOv"
-     onclick="closeSB()">
-</div>
-
 <!-- ADMIN PANEL -->
-<div id="adminPanel"
-     style="display:none;min-height:100vh">
-
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
+<div id="adminPanel">
+    <div class="sidebar" id="sidebar">
         <div class="sb-top">
-            <div class="sb-logo">
-                <div class="sb-logo-ico">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
-                <div>
-                    <div class="sb-logo-txt">
-                        Bizen HT
-                    </div>
-                    <div class="sb-logo-sub">
-                        Admin Panel
-                    </div>
-                </div>
-            </div>
-            <div class="sb-user">
-                <div class="sb-avatar">
-                    <i class="fas fa-user-shield"></i>
-                </div>
-                <div>
-                    <div class="sb-uname"
-                         id="sbName">
-                        Admin
-                    </div>
-                    <div class="sb-urole">
-                        Administratè
-                    </div>
-                </div>
-            </div>
+            <h2>Bizen HT</h2>
+            <span style="font-size:0.7rem; color:var(--primary)">Admin Dashboard</span>
         </div>
-
-        <nav class="sb-nav">
-            <div class="sb-cat">Jeneral</div>
-            <button class="sb-link active"
-                    onclick="goPage('dash',this)">
-                <i class="fas fa-home"></i>
-                Dashboard
-            </button>
-
-            <div class="sb-cat">
-                Jesyon Kont
-            </div>
-            <button class="sb-link"
-                    onclick="goPage('users',this)">
-                <i class="fas fa-users"></i>
-                Itilizate
-                <span class="sb-bdg bdg-b"
-                      id="bdgU">0</span>
-            </button>
-            <button class="sb-link"
-                    onclick="goPage('fl',this)">
-                <i class="fas fa-star"></i>
-                Prestate
-                <span class="sb-bdg bdg-r"
-                      id="bdgF">0</span>
-            </button>
-            <button class="sb-link"
-                    onclick="goPage('pend',this)">
-                <i class="fas fa-clock"></i>
-                An Atant
-                <span class="sb-bdg bdg-o"
-                      id="bdgPe">0</span>
-            </button>
-            <button class="sb-link"
-                    onclick="goPage('prem',this)">
-                <i class="fas fa-crown"></i>
-                Manm Premium
-                <span class="sb-bdg bdg-p"
-                      id="bdgPr">0</span>
-            </button>
-            <button class="sb-link"
-                    onclick="goPage('krey',this)">
-                <i class="fas fa-users"></i>
-                Gwoup Krey
-                <span class="sb-bdg bdg-r"
-                      id="bdgKrey">0</span>
-            </button>
-
+        <div class="sb-nav">
+            <div class="sb-cat">Sistèm</div>
+            <button class="sb-link active" onclick="goP('dash', this)"><i class="fas fa-home"></i> Dashboard</button>
+            
+            <div class="sb-cat">Itilizatè</div>
+            <button class="sb-link" onclick="goP('pend', this)"><i class="fas fa-clock"></i> An Atant <span class="sb-bdg" style="background:var(--orange);color:white" id="b-pend">0</span></button>
+            <button class="sb-link" onclick="goP('fl', this)"><i class="fas fa-star"></i> Prestatè <span class="sb-bdg" style="background:var(--primary);color:white" id="b-fl">0</span></button>
+            <button class="sb-link" onclick="goP('krey', this)"><i class="fas fa-users"></i> Krèy <span class="sb-bdg" style="background:var(--purple);color:white" id="b-krey">0</span></button>
+            <button class="sb-link" onclick="goP('users', this)"><i class="fas fa-user"></i> Kliyan (Users)</button>
+            
             <div class="sb-cat">Aktivite</div>
-            <button class="sb-link"
-                    onclick="goPage('res',this)">
-                <i class="fas fa-calendar-check"></i>
-                Rezevasyon
-                <span class="sb-bdg bdg-g"
-                      id="bdgR">0</span>
-            </button>
-            <button class="sb-link"
-                    onclick="goPage('pay',this)">
-                <i class="fas fa-credit-card"></i>
-                Peman
-                <span class="sb-bdg bdg-o"
-                      id="bdgPy">0</span>
-            </button>
-
-            <div class="sb-cat">Finans</div>
-            <button class="sb-link"
-                    onclick="goPage('fin',this)">
-                <i class="fas fa-chart-pie"></i>
-                Rapò Finansye
-            </button>
-            <button class="sb-link"
-                    onclick="goPage('comm',this)">
-                <i class="fas fa-percentage"></i>
-                Komisyon
-            </button>
-        </nav>
-
+            <button class="sb-link" onclick="goP('res', this)"><i class="fas fa-calendar-check"></i> Rezèvasyon <span class="sb-bdg" style="background:var(--green);color:white" id="b-res">0</span></button>
+            <button class="sb-link" onclick="goP('pay', this)"><i class="fas fa-money-bill"></i> Pèman (MonCash) <span class="sb-bdg" style="background:var(--gold);color:black" id="b-pay">0</span></button>
+            <button class="sb-link" onclick="goP('fin', this)"><i class="fas fa-chart-line"></i> Finans & Komisyon</button>
+        </div>
         <div class="sb-footer">
-            <a href="index.html"
-               class="sb-link">
-                <i class="fas fa-globe"></i>
-                Sit la
-            </a>
-            <button class="sb-link sb-logout"
-                    onclick="doLogout()">
-                <i class="fas fa-sign-out-alt"></i>
-                Dekonekte
-            </button>
+            <button onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Dekonekte</button>
         </div>
-    </aside>
+    </div>
 
-    <!-- MAIN -->
-    <main class="main">
-
+    <div class="main">
         <!-- DASHBOARD -->
-        <div class="pg on" id="pg-dash">
-            <div class="ph">
-                <h1 class="ph-title">
-                    Dashboard
-                    <span>Admin</span>
-                </h1>
-                <button class="tf"
-                        onclick="loadAll()">
-                    <i class="fas fa-sync"></i>
-                    Rafraichi
-                </button>
-            </div>
+        <div class="pg on" id="p-dash">
+            <div class="ph"><h1>Dashboard</h1><button class="ab ab-v" onclick="loadData()"><i class="fas fa-sync"></i> Rafraichi</button></div>
             <div class="sg">
-                <div class="sc bl">
-                    <div class="sc-ico bl">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="sc-val"
-                         id="stU">0</div>
-                    <div class="sc-lbl">
-                        Itilizate
-                    </div>
-                </div>
-                <div class="sc rd">
-                    <div class="sc-ico rd">
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <div class="sc-val"
-                         id="stF">0</div>
-                    <div class="sc-lbl">
-                        Prestate
-                    </div>
-                </div>
-                <div class="sc gd">
-                    <div class="sc-ico gd">
-                        <i class="fas fa-crown"></i>
-                    </div>
-                    <div class="sc-val"
-                         id="stP">0</div>
-                    <div class="sc-lbl">
-                        Premium
-                    </div>
-                </div>
-                <div class="sc og">
-                    <div class="sc-ico og">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="sc-val"
-                         id="stPe">0</div>
-                    <div class="sc-lbl">
-                        An Atant
-                    </div>
-                </div>
-                <div class="sc gn">
-                    <div class="sc-ico gn">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div class="sc-val"
-                         id="stR">0</div>
-                    <div class="sc-lbl">
-                        Rezevasyon
-                    </div>
-                </div>
-                <div class="sc pp">
-                    <div class="sc-ico pp">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </div>
-                    <div class="sc-val"
-                         id="stRev">0 G</div>
-                    <div class="sc-lbl">
-                        Revni Bizen HT
-                    </div>
-                </div>
-            </div>
-            <div class="tc">
-                <div class="tc-head">
-                    <div class="tc-title">
-                        <i class="fas fa-clock"></i>
-                        Denye Aktivite
-                    </div>
-                </div>
-                <div id="recent">
-                    <div style="text-align:center;padding:40px;color:var(--text-muted)">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        Chaje...
-                    </div>
-                </div>
+                <div class="sc"><i class="fas fa-clock" style="color:var(--orange)"></i><div><h3 id="st-pend">0</h3><p>An Atant Validasyon</p></div></div>
+                <div class="sc"><i class="fas fa-star" style="color:var(--primary)"></i><div><h3 id="st-fl">0</h3><p>Prestatè Aktif</p></div></div>
+                <div class="sc"><i class="fas fa-users" style="color:var(--purple)"></i><div><h3 id="st-krey">0</h3><p>Krèy Aktif</p></div></div>
+                <div class="sc"><i class="fas fa-user" style="color:var(--blue)"></i><div><h3 id="st-user">0</h3><p>Kliyan</p></div></div>
+                <div class="sc"><i class="fas fa-crown" style="color:var(--gold)"></i><div><h3 id="st-prem">0</h3><p>Manm Premium</p></div></div>
+                <div class="sc"><i class="fas fa-calendar-check" style="color:var(--green)"></i><div><h3 id="st-res">0</h3><p>Rezèvasyon Total</p></div></div>
             </div>
         </div>
 
-        <!-- USERS -->
-        <div class="pg" id="pg-users">
-            <div class="ph">
-                <h1 class="ph-title">
-                    <i class="fas fa-users"
-                       style="color:var(--blue)"></i>
-                    Itilizate
-                </h1>
-                <input class="srch"
-                       placeholder="Chache..."
-                       oninput="srchTbl('tbU',this.value)">
-            </div>
-            <div class="tc">
-                <div class="tc-head">
-                    <div class="tc-title">
-                        <i class="fas fa-users"></i>
-                        Tout Itilizate
-                    </div>
-                    <div class="tc-filters">
-                        <button class="tf active"
-                                onclick="fltTbl('tbU','all',this)">
-                            Tout
-                        </button>
-                        <button class="tf"
-                                onclick="fltTbl('tbU','premium',this)">
-                            Premium
-                        </button>
-                        <button class="tf"
-                                onclick="fltTbl('tbU','free',this)">
-                            Gratis
-                        </button>
-                    </div>
-                </div>
+        <!-- PENDING (En Attente) -->
+        <div class="pg" id="p-pend">
+            <div class="ph"><h1>Kont An Atant</h1></div>
+            <div class="tc"><div class="tc-head"><h3>Demann Validasyon</h3></div>
                 <div class="tscroll">
                     <table>
-                        <thead>
-                            <tr>
-                                <th>Non</th>
-                                <th>Imel</th>
-                                <th>Telefon</th>
-                                <th>Plan</th>
-                                <th>Estati</th>
-                                <th>Dat</th>
-                                <th>Aksyon</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbU">
-                            <tr>
-                                <td colspan="7"
-                                    style="text-align:center;padding:30px;color:var(--text-muted)">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    Chaje...
-                                </td>
-                            </tr>
-                        </tbody>
+                        <thead><tr><th>Tip</th><th>Non</th><th>Telefon</th><th>Pri</th><th>Dat</th><th>Aksyon</th></tr></thead>
+                        <tbody id="tb-pend"><tr><td colspan="6" style="text-align:center">Chaje...</td></tr></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
         <!-- FREELANCERS -->
-        <div class="pg" id="pg-fl">
-            <div class="ph">
-                <h1 class="ph-title">
-                    <i class="fas fa-star"
-                       style="color:var(--red)"></i>
-                    Prestate
-                </h1>
-                <input class="srch"
-                       placeholder="Chache..."
-                       oninput="srchTbl('tbF',this.value)">
-            </div>
-            <div class="tc">
-                <div class="tc-head">
-                    <div class="tc-title">
-                        <i class="fas fa-star"></i>
-                        Tout Prestate
-                    </div>
-                    <div class="tc-filters">
-                        <button class="tf active"
-                                onclick="fltTbl('tbF','all',this)">
-                            Tout
-                        </button>
-                        <button class="tf"
-                                onclick="fltTbl('tbF','active',this)">
-                            Aktif
-                        </button>
-                        <button class="tf"
-                                onclick="fltTbl('tbF','en_attente',this)">
-                            An Atant
-                        </button>
-                        <button class="tf"
-                                onclick="fltTbl('tbF','frozen',this)">
-                            Jele
-                        </button>
-                    </div>
-                </div>
-                <div class="tscroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Non</th>
-                                <th>Seks</th>
-                                <th>Lokasyon</th>
-                                <th>Pri/Moman</th>
-                                <th>Solde</th>
-                                <th>Estati</th>
-                                <th>Aksyon</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbF">
-                            <tr>
-                                <td colspan="7"
-                                    style="text-align:center;padding:30px;color:var(--text-muted)">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    Chaje...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- PENDING -->
-        <div class="pg" id="pg-pend">
-            <div class="ph">
-                <h1 class="ph-title">
-                    <i class="fas fa-clock"
-                       style="color:var(--orange)"></i>
-                    Kont An Atant
-                </h1>
-            </div>
-            <div class="tc">
-                <div class="tc-head">
-                    <div class="tc-title">
-                        <i class="fas fa-clock"></i>
-                        Demann an atant validasyon
-                    </div>
-                </div>
-                <div class="tscroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Non</th>
-                                <th>Lokasyon</th>
-                                <th>Tip</th>
-                                <th>Pri</th>
-                                <th>Dat</th>
-                                <th>Aksyon</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbPe">
-                            <tr>
-                                <td colspan="6"
-                                    style="text-align:center;padding:30px;color:var(--text-muted)">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    Chaje...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- PREMIUM -->
-        <div class="pg" id="pg-prem">
-            <div class="ph">
-                <h1 class="ph-title">
-                    <i class="fas fa-crown"
-                       style="color:var(--gold)"></i>
-                    Manm Premium
-                </h1>
-            </div>
-            <div class="tc">
-                <div class="tc-head">
-                    <div class="tc-title">
-                        <i class="fas fa-crown"></i>
-                        Tout Manm Premium
-                    </div>
-                </div>
-                <div class="tscroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Non</th>
-                                <th>Imel</th>
-                                <th>Telefon</th>
-                                <th>Dat</th>
-                                <th>Aksyon</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbPr">
-                            <tr>
-                                <td colspan="5"
-                                    style="text-align:center;padding:30px;color:var(--text-muted)">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    Chaje...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="pg" id="p-fl">
+            <div class="ph"><h1>Prestatè</h1><input type="text" class="srch" placeholder="Chache..." oninput="srch('tb-fl', this.value)"></div>
+            <div class="tc"><div class="tscroll">
+                <table>
+                    <thead><tr><th>Non</th><th>Sèks</th><th>Vil</th><th>Pri/Mom</th><th>Estati</th><th>Aksyon</th></tr></thead>
+                    <tbody id="tb-fl"></tbody>
+                </table>
+            </div></div>
         </div>
 
         <!-- KREY -->
-        <div class="pg" id="pg-krey">
-            <div class="ph">
-                <h1 class="ph-title">
-                    <i class="fas fa-users"
-                       style="color:var(--purple)"></i>
-                    Gwoup Krey
-                </h1>
-            </div>
-            <div class="tc">
-                <div class="tc-head">
-                    <div class="tc-title">
-                        <i class="fas fa-users"></i>
-                        Tout Gwoup Krey
-                    </div>
-                    <div class="tc-filters">
-                        <button class="tf active"
-                                onclick="fltTbl('tbKrey','all',this)">
-                            Tout
-                        </button>
-                        <button class="tf"
-                                onclick="fltTbl('tbKrey','active',this)">
-                            Aktif
-                        </button>
-                        <button class="tf"
-                                onclick="fltTbl('tbKrey','en_attente',this)">
-                            An Atant
-                        </button>
-                    </div>
-                </div>
-                <div class="tscroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Non Gwoup</th>
-                                <th>Zon</th>
-                                <th>Manm</th>
-                                <th>Pri</th>
-                                <th>Solde</th>
-                                <th>Estati</th>
-                                <th>Aksyon</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbKrey">
-                            <tr>
-                                <td colspan="7"
-                                    style="text-align:center;padding:30px;color:var(--text-muted)">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    Chaje...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="pg" id="p-krey">
+            <div class="ph"><h1>Gwoup Krèy</h1><input type="text" class="srch" placeholder="Chache..." oninput="srch('tb-krey', this.value)"></div>
+            <div class="tc"><div class="tscroll">
+                <table>
+                    <thead><tr><th>Non Gwoup</th><th>Zòn</th><th>Manm</th><th>Pri Total</th><th>Estati</th><th>Aksyon</th></tr></thead>
+                    <tbody id="tb-krey"></tbody>
+                </table>
+            </div></div>
+        </div>
+
+        <!-- USERS -->
+        <div class="pg" id="p-users">
+            <div class="ph"><h1>Kliyan (Users)</h1><input type="text" class="srch" placeholder="Chache..." oninput="srch('tb-users', this.value)"></div>
+            <div class="tc"><div class="tscroll">
+                <table>
+                    <thead><tr><th>Non</th><th>Email</th><th>Telefon</th><th>Plan</th><th>Estati</th><th>Aksyon</th></tr></thead>
+                    <tbody id="tb-users"></tbody>
+                </table>
+            </div></div>
         </div>
 
         <!-- RESERVATIONS -->
-        <div class="pg" id="pg-res">
-            <div class="ph">
-                <h1 class="ph-title">
-                    <i class="fas fa-calendar-check"
-                       style="color:var(--green)"></i>
-                    Rezevasyon
-                </h1>
-            </div>
-            <div class="tc">
-                <div class="tc-head">
-                    <div class="tc-title">
-                        <i class="fas fa-calendar"></i>
-                        Tout Rezevasyon
-                    </div>
-                    <div class="tc-filters">
-                        <button class="tf active"
-                                onclick="fltTbl('tbR','all',this)">
-                            Tout
-                        </button>
-                        <button class="tf"
-                                onclick="fltTbl('tbR','en_attente',this)">
-                            An Atant
-                        </button>
-                        <button class="tf"
-                                onclick="fltTbl('tbR','confirmed',this)">
-                            Konfime
-                        </button>
-                    </div>
-                </div>
-                <div class="tscroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Kliyan</th>
-                                <th>Prestate</th>
-                                <th>Dat</th>
-                                <th>Kote</th>
-                                <th>Pri</th>
-                                <th>Tip</th>
-                                <th>Estati</th>
-                                <th>Aksyon</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbR">
-                            <tr>
-                                <td colspan="8"
-                                    style="text-align:center;padding:30px;color:var(--text-muted)">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    Chaje...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="pg" id="p-res">
+            <div class="ph"><h1>Rezèvasyon</h1></div>
+            <div class="tc"><div class="tscroll">
+                <table>
+                    <thead><tr><th>Kliyan</th><th>Prestatè/Krey</th><th>Dat/Lè</th><th>Kote/Hotel</th><th>Pri</th><th>Estati</th><th>Aksyon</th></tr></thead>
+                    <tbody id="tb-res"></tbody>
+                </table>
+            </div></div>
         </div>
 
         <!-- PAYMENTS -->
-        <div class="pg" id="pg-pay">
-            <div class="ph">
-                <h1 class="ph-title">
-                    <i class="fas fa-credit-card"
-                       style="color:var(--blue)"></i>
-                    Peman
-                </h1>
-            </div>
-            <div class="tc">
-                <div class="tc-head">
-                    <div class="tc-title">
-                        <i class="fas fa-credit-card"></i>
-                        Tout Peman Premium
-                    </div>
-                    <div class="tc-filters">
-                        <button class="tf active"
-                                onclick="fltTbl('tbPy','all',this)">
-                            Tout
-                        </button>
-                        <button class="tf"
-                                onclick="fltTbl('tbPy','en_attente',this)">
-                            An Atant
-                        </button>
-                        <button class="tf"
-                                onclick="fltTbl('tbPy','confirmed',this)">
-                            Konfime
-                        </button>
-                    </div>
-                </div>
-                <div class="tscroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Itilizate</th>
-                                <th>Metod</th>
-                                <th>Referans</th>
-                                <th>Montan</th>
-                                <th>Estati</th>
-                                <th>Dat</th>
-                                <th>Aksyon</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbPy">
-                            <tr>
-                                <td colspan="7"
-                                    style="text-align:center;padding:30px;color:var(--text-muted)">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    Chaje...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="pg" id="p-pay">
+            <div class="ph"><h1>Pèman Premium</h1></div>
+            <div class="tc"><div class="tscroll">
+                <table>
+                    <thead><tr><th>Kliyan Email</th><th>Metòd</th><th>Referans</th><th>Montan</th><th>Estati</th><th>Aksyon</th></tr></thead>
+                    <tbody id="tb-pay"></tbody>
+                </table>
+            </div></div>
         </div>
 
         <!-- FINANCE -->
-        <div class="pg" id="pg-fin">
-            <div class="ph">
-                <h1 class="ph-title">
-                    <i class="fas fa-chart-pie"
-                       style="color:var(--green)"></i>
-                    Rapò Finansye
-                </h1>
-                <div class="tc-filters">
-                    <button class="tf active"
-                            onclick="loadFin('all',this)">
-                        Tout
-                    </button>
-                    <button class="tf"
-                            onclick="loadFin('week',this)">
-                        Semèn
-                    </button>
-                    <button class="tf"
-                            onclick="loadFin('month',this)">
-                        Mwa
-                    </button>
-                </div>
+        <div class="pg" id="p-fin">
+            <div class="ph"><h1>Finans & Komisyon</h1></div>
+            <div class="sg">
+                <div class="sc"><i class="fas fa-crown" style="color:var(--gold)"></i><div><h3 id="f-prem" style="color:var(--gold)">0 G</h3><p>Total Pèman Premium</p></div></div>
+                <div class="sc"><i class="fas fa-percentage" style="color:var(--primary)"></i><div><h3 id="f-comm" style="color:var(--primary)">0 G</h3><p>10% Komisyon Bizen (Estime)</p></div></div>
+                <div class="sc"><i class="fas fa-wallet" style="color:var(--green)"></i><div><h3 id="f-total" style="color:var(--green)">0 G</h3><p>Revni Total Bizen HT</p></div></div>
             </div>
-            <div class="fg">
-                <div class="fc">
-                    <h4>
-                        <i class="fas fa-money-bill"></i>
-                        Total Rezevasyon
-                    </h4>
-                    <div class="fv"
-                         style="color:var(--green)"
-                         id="finR">0 G</div>
-                    <div class="fs">
-                        Montan total rezevasyon
-                    </div>
-                </div>
-                <div class="fc">
-                    <h4>
-                        <i class="fas fa-percentage"></i>
-                        Komisyon Bizen (10%)
-                    </h4>
-                    <div class="fv"
-                         style="color:var(--gold)"
-                         id="finC">0 G</div>
-                    <div class="fs">
-                        10% sou chak rezevasyon
-                    </div>
-                </div>
-                <div class="fc">
-                    <h4>
-                        <i class="fas fa-crown"></i>
-                        Revni Membership
-                    </h4>
-                    <div class="fv"
-                         style="color:var(--blue)"
-                         id="finP">0 G</div>
-                    <div class="fs">
-                        1,000 G x manm Premium
-                    </div>
-                </div>
-                <div class="fc">
-                    <h4>
-                        <i class="fas fa-chart-line"></i>
-                        Revni Net Total
-                    </h4>
-                    <div class="fv"
-                         style="color:var(--red)"
-                         id="finT">0 G</div>
-                    <div class="fs">
-                        Komisyon + Membership
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- COMMISSIONS -->
-        <div class="pg" id="pg-comm">
-            <div class="ph">
-                <h1 class="ph-title">
-                    <i class="fas fa-percentage"
-                       style="color:var(--purple)"></i>
-                    Komisyon Prestate
-                </h1>
-            </div>
-            <div class="tc">
-                <div class="tc-head">
-                    <div class="tc-title">
-                        <i class="fas fa-percentage"></i>
-                        Komisyon pa Prestate
-                    </div>
-                </div>
+            <div class="tc"><div class="tc-head"><h3>10% Komisyon pa Prestatè/Krey (Baze sou rezevasyon konfime)</h3></div>
                 <div class="tscroll">
                     <table>
-                        <thead>
-                            <tr>
-                                <th>Prestate</th>
-                                <th>Rezevasyon</th>
-                                <th>Total Touche</th>
-                                <th>Komisyon (10%)</th>
-                                <th>Net Prestate</th>
-                                <th>Solde</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbComm">
-                            <tr>
-                                <td colspan="6"
-                                    style="text-align:center;padding:30px;color:var(--text-muted)">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    Chaje...
-                                </td>
-                            </tr>
-                        </tbody>
+                        <thead><tr><th>Non</th><th>Tip</th><th>Rezèvasyon Konfime</th><th>Pri Jeneré</th><th>10% Bizen HT</th><th>Net Prestatè</th></tr></thead>
+                        <tbody id="tb-comm"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-    </main>
+    </div>
 </div>
-<!-- DETAIL MODAL -->
-<div class="adm-modal-bg" id="detailModal">
-    <div class="adm-modal">
-        <button class="adm-modal-close"
-                onclick="closeDetailModal()">
-            <i class="fas fa-times"></i>
-        </button>
 
-        <h3 id="detailTitle">
-            Detail Kont
-        </h3>
-
-        <div id="detailContent">
+<!-- MODAL DETAILS -->
+<div class="mbg" id="detailM">
+    <div class="modal">
+        <button class="mx" onclick="document.getElementById('detailM').classList.remove('show')"><i class="fas fa-times"></i></button>
+        <h2 style="font-family:'Playfair Display',serif; color:var(--primary); margin-bottom:20px" id="md-title">Detay</h2>
+        
+        <div class="m-grid" id="md-grid">
+            <!-- Dynamique -->
         </div>
 
-        <div id="detailActions"
-             style="margin-top:20px;
-                    display:flex;
-                    gap:10px;
-                    flex-wrap:wrap">
+        <h3 style="margin-top:20px; font-size:1rem; border-bottom:1px solid var(--border); padding-bottom:10px">Medya (Foto & Videyo)</h3>
+        <div class="m-gallery" id="md-media">
+            <!-- Dynamique -->
+        </div>
+
+        <div style="margin-top:30px; display:flex; gap:10px; flex-wrap:wrap" id="md-actions">
+            <!-- Dynamique -->
         </div>
     </div>
 </div>
 
 <script>
-/* ====================================
-   FIREBASE CONFIG
-   ==================================== */
-var fbCfg = {
+/* =======================================================
+   1. FIREBASE CONFIGURATION (Exactement celle de ton index)
+   ======================================================= */
+const firebaseConfig = {
     apiKey: "AIzaSyADWklo0scZNWkhudRn_VBhrapXl4AZL_E",
     authDomain: "bizen-ht.firebaseapp.com",
     projectId: "bizen-ht",
@@ -1585,1004 +319,422 @@ var fbCfg = {
     appId: "1:248857953518:web:f85b1b37abd849add01fff"
 };
 
-var ADMIN_EMAIL = "bizenht@gmail.com";
-var db, auth, storage;
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
 
-try {
-    firebase.initializeApp(fbCfg);
-    db = firebase.firestore();
-    auth = firebase.auth();
-    storage = firebase.storage();
-} catch(e) {
-    console.warn("Firebase error:", e);
-}
+const ADMIN_EMAIL = "admin@bizenht.com"; // Change ça avec ton vrai email admin
 
-var adminUsers = [];
-var adminFL = [];
-var adminKrey = [];
-var adminRes = [];
-var adminPay = [];
+// Variables Globales
+let allUsers = [];
+let allRes = [];
+let allPay = [];
 
-var unsubUsers = null;
-var unsubRes = null;
-var unsubPay = null;
-
-/* ====================================
-   AUTH CHECK
-   ==================================== */
-if (auth) {
-    auth.onAuthStateChanged(function(user) {
-        if (user && user.email === ADMIN_EMAIL) {
-            showPanel(user.email);
-            startRealtimeSync();
-        } else if (user) {
-            auth.signOut();
-            showLoginError("Ou pa gen akse admin!");
-        }
-    });
-}
-
-/* ====================================
-   LOGIN
-   ==================================== */
-function doAdmLogin() {
-    var em = document.getElementById("lgEm")
-        ? document.getElementById("lgEm").value.trim()
-        : "";
-    var pw = document.getElementById("lgPw")
-        ? document.getElementById("lgPw").value
-        : "";
-
-    if (!em || !pw) {
-        showLoginError("Antre imel ak modpas.");
-        return;
+/* =======================================================
+   2. AUTHENTIFICATION & NAVIGATION
+   ======================================================= */
+auth.onAuthStateChanged(user => {
+    if (user && user.email === ADMIN_EMAIL) {
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("adminPanel").style.display = "flex";
+        loadData(); // Lancer l'écoute en temps réel
+    } else {
+        document.getElementById("loginScreen").style.display = "flex";
+        document.getElementById("adminPanel").style.display = "none";
     }
+});
 
-    if (!auth) {
-        showLoginError("Firebase pa disponib.");
-        return;
-    }
-
-    auth.signInWithEmailAndPassword(em, pw)
-        .then(function(r) {
-            if (r.user.email === ADMIN_EMAIL) {
-                showPanel(r.user.email);
-                startRealtimeSync();
-            } else {
-                auth.signOut();
-                showLoginError("Ou pa gen akse admin!");
-            }
-        })
-        .catch(function(error) {
-            console.error(error);
-            var msg = "Imel oswa modpas pa korek.";
-            if (error.code === "auth/user-not-found") {
-                msg = "Kont pa trouve.";
-            }
-            if (error.code === "auth/wrong-password" ||
-                error.code === "auth/invalid-credential") {
-                msg = "Modpas pa korek.";
-            }
-            showLoginError(msg);
-        });
-}
-
-function showLoginError(msg) {
-    var err = document.getElementById("lgErr");
-    if (err) {
-        err.textContent = msg;
+function doLogin() {
+    const em = document.getElementById("lgEmail").value.trim();
+    const pw = document.getElementById("lgPw").value;
+    const err = document.getElementById("lgErr");
+    
+    if(em !== ADMIN_EMAIL) {
+        err.textContent = "Email pa gen aksè admin.";
         err.style.display = "block";
+        return;
     }
+
+    auth.signInWithEmailAndPassword(em, pw).catch(e => {
+        err.textContent = "Erè: " + e.message;
+        err.style.display = "block";
+    });
 }
 
-/* ====================================
-   SHOW PANEL
-   ==================================== */
-function showPanel(email) {
-    var ls = document.getElementById("loginScreen");
-    if (ls) ls.style.display = "none";
-
-    var ap = document.getElementById("adminPanel");
-    if (ap) {
-        ap.style.display = "flex";
-        ap.style.flexDirection = "row";
-        ap.style.minHeight = "100vh";
-        ap.style.width = "100%";
-    }
-
-    var sbName = document.getElementById("sbName");
-    if (sbName) {
-        sbName.textContent = email.split("@")[0];
-    }
+function doLogout() {
+    auth.signOut();
 }
 
-/* ====================================
-   REALTIME SYNC
-   ==================================== */
-function startRealtimeSync() {
-    if (!db) return;
+function goP(id, btn) {
+    document.querySelectorAll(".pg").forEach(p => p.classList.remove("on"));
+    document.getElementById("p-" + id).classList.add("on");
+    document.querySelectorAll(".sb-link").forEach(l => l.classList.remove("active"));
+    btn.classList.add("active");
+    if(window.innerWidth <= 900) document.getElementById('sidebar').classList.remove('open');
+}
 
-    if (unsubUsers) unsubUsers();
-    if (unsubRes) unsubRes();
-    if (unsubPay) unsubPay();
+function showToast(msg, isErr = false) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.style.background = isErr ? "var(--red)" : "var(--green)";
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 3000);
+}
 
-    /* USERS */
-    unsubUsers = db.collection("users")
-        .onSnapshot(function(snap) {
-            adminUsers = [];
-            adminFL = [];
-            adminKrey = [];
+function srch(tbId, val) {
+    const q = val.toLowerCase();
+    document.querySelectorAll(`#${tbId} tr`).forEach(tr => {
+        tr.style.display = tr.innerText.toLowerCase().includes(q) ? "" : "none";
+    });
+}
 
-            snap.forEach(function(doc) {
-                var d = doc.data();
-                d.id = doc.id;
+/* =======================================================
+   3. CHARGEMENT TEMPS RÉEL (REALTIME LISTENERS)
+   ======================================================= */
+function loadData() {
+    // 3.1 Écoute des Utilisateurs (Users, FL, Krey)
+    db.collection("users").onSnapshot(snap => {
+        allUsers = [];
+        snap.forEach(doc => {
+            let data = doc.data();
+            data.id = doc.id;
+            allUsers.push(data);
+        });
+        distributeUsers();
+    });
 
-                if (d.type === "freelancer") {
-                    adminFL.push(d);
-                } else if (d.type === "krey") {
-                    adminKrey.push(d);
-                } else if (d.type !== "admin") {
-                    adminUsers.push(d);
-                }
-            });
+    // 3.2 Écoute des Réservations
+    db.collection("reservations").orderBy("createdAt", "desc").onSnapshot(snap => {
+        allRes = [];
+        snap.forEach(doc => { let d = doc.data(); d.id = doc.id; allRes.push(d); });
+        renderRes();
+        calcFinance();
+    });
 
-            renderUsersTable(adminUsers);
-            renderFLTable(adminFL);
-            renderKreyTable(adminKrey);
+    // 3.3 Écoute des Paiements
+    db.collection("payments").orderBy("createdAt", "desc").onSnapshot(snap => {
+        allPay = [];
+        snap.forEach(doc => { let d = doc.data(); d.id = doc.id; allPay.push(d); });
+        renderPay();
+        calcFinance();
+    });
+}
 
-            var pending =
-                adminFL.filter(function(f) {
-                    return f.status === "en_attente";
-                }).concat(
-                    adminKrey.filter(function(k) {
-                        return k.status === "en_attente";
-                    })
-                );
+/* =======================================================
+   4. DISTRIBUTION ET RENDU DES TABLES
+   ======================================================= */
+function distributeUsers() {
+    const clients = allUsers.filter(u => u.type === "user" || !u.type);
+    const fls = allUsers.filter(u => u.type === "freelancer");
+    const kreys = allUsers.filter(u => u.type === "krey");
+    
+    const pendings = allUsers.filter(u => u.status === "en_attente");
+    const premiums = allUsers.filter(u => u.isPremium === true);
 
-            renderPendingTable(pending);
+    // Update Badges & Dashboard Stats
+    document.getElementById("st-pend").innerText = pendings.length;
+    document.getElementById("st-fl").innerText = fls.filter(f=>f.status==="active").length;
+    document.getElementById("st-krey").innerText = kreys.filter(k=>k.status==="active").length;
+    document.getElementById("st-user").innerText = clients.length;
+    document.getElementById("st-prem").innerText = premiums.length;
 
-            var premiumUsers =
-                adminUsers.filter(function(u) {
-                    return u.isPremium === true;
+    document.getElementById("b-pend").innerText = pendings.length;
+    document.getElementById("b-fl").innerText = fls.length;
+    document.getElementById("b-krey").innerText = kreys.length;
+
+    // Render Pending
+    let pHTML = "";
+    pendings.forEach(u => {
+        let name = u.type === "krey" ? u.kreyName : `${u.prenom} ${u.nom}`;
+        let pri = u.type === "krey" ? u.kreyPrice : u.prixMoment;
+        pHTML += `<tr>
+            <td><span class="badge ${u.type==='krey'?'b-purple':'b-blue'}">${u.type.toUpperCase()}</span></td>
+            <td><strong>${name}</strong><br><small>${u.email}</small></td>
+            <td>${u.telephone || u.contactTel || "N/A"}</td>
+            <td>${pri || "N/A"} G</td>
+            <td>${u.createdAt ? u.createdAt.toDate().toLocaleDateString() : "N/A"}</td>
+            <td>
+                <button class="ab ab-v" onclick="viewDetail('${u.id}')"><i class="fas fa-eye"></i> Gade</button>
+                <button class="ab ab-a" onclick="actUser('${u.id}', 'approve')"><i class="fas fa-check"></i> Valide</button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById("tb-pend").innerHTML = pHTML || "<tr><td colspan='6' align='center'>Pa gen demann.</td></tr>";
+
+    // Render Freelancers
+    let fHTML = "";
+    fls.forEach(u => {
+        let stCls = u.status === "active" ? "b-green" : (u.status === "frozen" ? "b-red" : "b-orange");
+        fHTML += `<tr>
+            <td><strong>${u.prenom} ${u.nom}</strong><br><small>${u.email}</small></td>
+            <td>${u.genre === "femme" ? "Fanm" : "Gason"}</td>
+            <td>${u.localisation || "N/A"}</td>
+            <td>${u.prixMoment || 0} G</td>
+            <td><span class="badge ${stCls}">${u.status.toUpperCase()}</span></td>
+            <td>
+                <button class="ab ab-v" onclick="viewDetail('${u.id}')"><i class="fas fa-eye"></i></button>
+                ${u.status !== 'frozen' ? `<button class="ab ab-f" onclick="actUser('${u.id}', 'freeze')"><i class="fas fa-ban"></i></button>` : `<button class="ab ab-a" onclick="actUser('${u.id}', 'unfreeze')"><i class="fas fa-check"></i></button>`}
+                <button class="ab ab-d" onclick="actUser('${u.id}', 'delete')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById("tb-fl").innerHTML = fHTML;
+
+    // Render Kreys
+    let kHTML = "";
+    kreys.forEach(u => {
+        let stCls = u.status === "active" ? "b-green" : (u.status === "frozen" ? "b-red" : "b-orange");
+        kHTML += `<tr>
+            <td><strong>${u.kreyName}</strong><br><small>${u.email}</small></td>
+            <td>${u.kreyZone}</td>
+            <td>${u.kreyMemberCount} manm</td>
+            <td>${u.kreyPrice} G</td>
+            <td><span class="badge ${stCls}">${u.status.toUpperCase()}</span></td>
+            <td>
+                <button class="ab ab-v" onclick="viewDetail('${u.id}')"><i class="fas fa-eye"></i></button>
+                ${u.status !== 'frozen' ? `<button class="ab ab-f" onclick="actUser('${u.id}', 'freeze')"><i class="fas fa-ban"></i></button>` : `<button class="ab ab-a" onclick="actUser('${u.id}', 'unfreeze')"><i class="fas fa-check"></i></button>`}
+                <button class="ab ab-d" onclick="actUser('${u.id}', 'delete')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById("tb-krey").innerHTML = kHTML;
+
+    // Render Users
+    let uHTML = "";
+    clients.forEach(u => {
+        let stCls = u.status === "active" ? "b-green" : "b-red";
+        uHTML += `<tr>
+            <td><strong>${u.prenom} ${u.nom}</strong></td>
+            <td>${u.email}</td>
+            <td>${u.telephone || "N/A"}</td>
+            <td>${u.isPremium ? '<span class="badge b-gold"><i class="fas fa-crown"></i> Premium</span>' : '<span class="badge">Gratis</span>'}</td>
+            <td><span class="badge ${stCls}">${(u.status||"active").toUpperCase()}</span></td>
+            <td>
+                <button class="ab ab-v" onclick="viewDetail('${u.id}')"><i class="fas fa-eye"></i></button>
+                ${!u.isPremium ? `<button class="ab ab-p" onclick="actUser('${u.id}', 'premium')"><i class="fas fa-crown"></i></button>` : `<button class="ab ab-d" onclick="actUser('${u.id}', 'unpremium')"><i class="fas fa-times"></i></button>`}
+                <button class="ab ab-d" onclick="actUser('${u.id}', 'delete')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById("tb-users").innerHTML = uHTML;
+}
+
+function renderRes() {
+    document.getElementById("st-res").innerText = allRes.length;
+    document.getElementById("b-res").innerText = allRes.filter(r=>r.status==="en_attente").length;
+    
+    let h = "";
+    allRes.forEach(r => {
+        let stCls = r.status === "confirmed" ? "b-green" : (r.status === "cancelled" ? "b-red" : "b-orange");
+        h += `<tr>
+            <td>${r.userEmail || "Kliyan"}</td>
+            <td><strong>${r.prestateName}</strong> <span class="badge ${r.type==='krey'?'b-purple':'b-blue'}">${r.type||'Solo'}</span></td>
+            <td>${r.date} ${r.time}</td>
+            <td><small>${r.locationName || r.hotelName || "N/A"}</small></td>
+            <td>${r.price}</td>
+            <td><span class="badge ${stCls}">${r.status.toUpperCase()}</span></td>
+            <td>
+                ${r.status === 'en_attente' ? `<button class="ab ab-a" onclick="actRes('${r.id}', 'confirm')"><i class="fas fa-check"></i> Konfime</button>` : ''}
+                ${r.status !== 'cancelled' ? `<button class="ab ab-d" onclick="actRes('${r.id}', 'cancel')"><i class="fas fa-times"></i> Anile</button>` : ''}
+            </td>
+        </tr>`;
+    });
+    document.getElementById("tb-res").innerHTML = h;
+}
+
+function renderPay() {
+    let pendingPay = allPay.filter(p=>p.status==="en_attente").length;
+    document.getElementById("b-pay").innerText = pendingPay;
+    
+    let h = "";
+    allPay.forEach(p => {
+        let stCls = p.status === "confirmed" ? "b-green" : "b-orange";
+        h += `<tr>
+            <td>${p.email}</td>
+            <td><span class="badge b-gold">${p.method.toUpperCase()}</span></td>
+            <td><code>${p.reference || p.referenceId || "N/A"}</code></td>
+            <td><strong>${p.amount} G</strong></td>
+            <td><span class="badge ${stCls}">${p.status.toUpperCase()}</span></td>
+            <td>
+                ${p.status === 'en_attente' ? `<button class="ab ab-a" onclick="actPay('${p.id}', '${p.userId}', 'confirm')"><i class="fas fa-check"></i> Valide + Premium</button>` : ''}
+                <button class="ab ab-d" onclick="actPay('${p.id}', null, 'delete')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById("tb-pay").innerHTML = h;
+}
+
+function calcFinance() {
+    let premTotal = allPay.filter(p=>p.status==="confirmed").reduce((sum, p) => sum + (p.amount||0), 0);
+    
+    let commTotal = 0;
+    let byUser = {};
+
+    allRes.forEach(r => {
+        if(r.status === "confirmed") {
+            let p = parseInt(String(r.price).replace(/[^0-9]/g, '')) || 0;
+            let cut = Math.round(p * 0.10);
+            commTotal += cut;
+            
+            let nm = r.prestateName || "Unknown";
+            if(!byUser[nm]) byUser[nm] = { count: 0, gen: 0, bizen: 0, net: 0, type: r.type||'Solo' };
+            byUser[nm].count++;
+            byUser[nm].gen += p;
+            byUser[nm].bizen += cut;
+            byUser[nm].net += (p - cut);
+        }
+    });
+
+    document.getElementById("f-prem").innerText = premTotal.toLocaleString() + " G";
+    document.getElementById("f-comm").innerText = commTotal.toLocaleString() + " G";
+    document.getElementById("f-total").innerText = (premTotal + commTotal).toLocaleString() + " G";
+
+    let h = "";
+    Object.keys(byUser).forEach(k => {
+        let b = byUser[k];
+        h += `<tr>
+            <td><strong>${k}</strong></td>
+            <td><span class="badge ${b.type==='krey'?'b-purple':'b-blue'}">${b.type}</span></td>
+            <td>${b.count}</td>
+            <td>${b.gen.toLocaleString()} G</td>
+            <td style="color:var(--primary);font-weight:bold">${b.bizen.toLocaleString()} G</td>
+            <td style="color:var(--green)">${b.net.toLocaleString()} G</td>
+        </tr>`;
+    });
+    document.getElementById("tb-comm").innerHTML = h;
+}
+
+/* =======================================================
+   5. ACTIONS (CRUD)
+   ======================================================= */
+function actUser(id, action) {
+    if(!confirm("Ou sèten ou vle fè aksyon sa?")) return;
+    
+    let updates = {};
+    if(action === 'approve') updates = { status: 'active' };
+    if(action === 'freeze') updates = { status: 'frozen' };
+    if(action === 'unfreeze') updates = { status: 'active' };
+    if(action === 'premium') updates = { isPremium: true, premiumActivatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    if(action === 'unpremium') updates = { isPremium: false };
+
+    if(action === 'delete') {
+        db.collection("users").doc(id).delete().then(()=>showToast("Kont efase."));
+    } else {
+        db.collection("users").doc(id).update(updates).then(()=>showToast("Aksyon reyisi."));
+    }
+    document.getElementById('detailM').classList.remove('show');
+}
+
+function actRes(id, action) {
+    if(!confirm("Konfime aksyon sou rezevasyon?")) return;
+    db.collection("reservations").doc(id).update({
+        status: action === 'confirm' ? 'confirmed' : 'cancelled'
+    }).then(() => showToast("Rezevasyon mete a jou."));
+}
+
+function actPay(payId, userId, action) {
+    if(!confirm("Sèten? Konfime pèman sa ap aktive Premium otomatikman.")) return;
+    
+    if(action === 'confirm') {
+        db.collection("payments").doc(payId).update({ status: "confirmed" }).then(() => {
+            if(userId) {
+                db.collection("users").doc(userId).update({ 
+                    isPremium: true, 
+                    premiumActivatedAt: firebase.firestore.FieldValue.serverTimestamp() 
                 });
-
-            renderPremiumTable(premiumUsers);
-
-            /* Stats */
-            setVal("stU", adminUsers.length);
-            setVal("stF", adminFL.length);
-            setVal("stP", premiumUsers.length);
-            setVal("stPe", pending.length);
-
-            setBdg("bdgU", adminUsers.length);
-            setBdg("bdgF", adminFL.length);
-            setBdg("bdgPr", premiumUsers.length);
-            setBdg("bdgPe", pending.length);
-            setBdg("bdgKrey", adminKrey.length);
+            }
+            showToast("Pèman konfime, Premium aktive!");
         });
-
-    /* RESERVATIONS */
-    unsubRes = db.collection("reservations")
-        .onSnapshot(function(snap) {
-            adminRes = [];
-            snap.forEach(function(doc) {
-                var d = doc.data();
-                d.id = doc.id;
-                adminRes.push(d);
-            });
-
-            renderResTable(adminRes);
-            setVal("stR", adminRes.length);
-            setBdg("bdgR", adminRes.length);
-
-            renderRecent();
-            renderFinance();
-            renderCommissions();
-        });
-
-    /* PAYMENTS */
-    unsubPay = db.collection("payments")
-        .onSnapshot(function(snap) {
-            adminPay = [];
-            snap.forEach(function(doc) {
-                var d = doc.data();
-                d.id = doc.id;
-                adminPay.push(d);
-            });
-
-            renderPayTable(adminPay);
-
-            var pendingPay =
-                adminPay.filter(function(p) {
-                    return p.status === "en_attente";
-                }).length;
-
-            setBdg("bdgPy", pendingPay);
-
-            renderFinance();
-            renderRecent();
-        });
-}
-
-/* ====================================
-   TABLE RENDERS
-   ==================================== */
-function renderUsersTable(list) {
-    var tb = document.getElementById("tbU");
-    if (!tb) return;
-
-    if (!list.length) {
-        tb.innerHTML = emptyRow(7,
-            "Pa gen itilizate anko");
-        return;
-    }
-
-    var h = "";
-    list.forEach(function(u) {
-        var planB = u.isPremium
-            ? '<span class="sbadge gold">Premium</span>'
-            : '<span class="sbadge">Gratis</span>';
-
-        var statB = u.status === "frozen"
-            ? '<span class="sbadge red">Jele</span>'
-            : '<span class="sbadge green">Aktif</span>';
-
-        var date = fmtDate(
-            u.createdAt && u.createdAt.toDate
-                ? u.createdAt.toDate()
-                : null
-        );
-
-        h += '<tr data-filter="' +
-            (u.isPremium ? "premium" : "free") +
-            '">';
-        h += '<td><strong>' +
-            (u.prenom || '') + ' ' +
-            (u.nom || '') +
-            '</strong><br><small style="color:#6a6a80">' +
-            (u.email || '') + '</small></td>';
-        h += '<td>' + (u.telephone || 'N/A') + '</td>';
-        h += '<td>' + planB + '</td>';
-        h += '<td>' + statB + '</td>';
-        h += '<td>' + date + '</td>';
-        h += '<td>';
-        h += actBtn("ab-viw",
-            "viewAccountDetail('" + u.id + "')",
-            "fa-eye", "Voir");
-
-        if (!u.isPremium) {
-            h += actBtn("ab-pre",
-                "admAction('premium','" +
-                u.id + "')",
-                "fa-crown", "Premium");
-        } else {
-            h += actBtn("ab-rpr",
-                "admAction('unpremium','" +
-                u.id + "')",
-                "fa-times", "-Premium");
-        }
-
-        if (u.status !== "frozen") {
-            h += actBtn("ab-frz",
-                "admAction('freeze','" +
-                u.id + "')",
-                "fa-ban", "Jele");
-        } else {
-            h += actBtn("ab-ufrz",
-                "admAction('unfreeze','" +
-                u.id + "')",
-                "fa-check", "Debloke");
-        }
-
-        h += actBtn("ab-del",
-            "admAction('delete','" +
-            u.id + "')",
-            "fa-trash", "Efase");
-        h += '</td></tr>';
-    });
-
-    tb.innerHTML = h;
-}
-
-function renderFLTable(list) {
-    var tb = document.getElementById("tbF");
-    if (!tb) return;
-
-    if (!list.length) {
-        tb.innerHTML = emptyRow(7,
-            "Pa gen prestate anko");
-        return;
-    }
-
-    var h = "";
-    list.forEach(function(f) {
-        var stCl = f.status === "active"
-            ? "green"
-            : f.status === "en_attente"
-                ? "orange"
-                : "red";
-        var stTxt = f.status === "active"
-            ? "Aktif"
-            : f.status === "en_attente"
-                ? "An Atant"
-                : "Jele";
-
-        h += '<tr data-filter="' +
-            (f.status || '') + '">';
-        h += '<td><strong>' +
-            (f.prenom || '') + ' ' +
-            (f.nom || '') +
-            '</strong><br><small style="color:#6a6a80">' +
-            (f.email || '') + '</small></td>';
-        h += '<td>' +
-            (f.genre === "femme"
-                ? "Fanm"
-                : "Gason") + '</td>';
-        h += '<td>' +
-            (f.localisation || 'N/A') + '</td>';
-        h += '<td>' +
-            ((f.prixMoment || 0)
-                .toLocaleString()) +
-            ' G</td>';
-        h += '<td>' +
-            ((f.solde || 0)
-                .toLocaleString()) +
-            ' G</td>';
-        h += '<td><span class="sbadge ' +
-            stCl + '">' +
-            stTxt + '</span></td>';
-        h += '<td>';
-
-        h += actBtn("ab-viw",
-            "viewAccountDetail('" +
-            f.id + "')",
-            "fa-eye", "Voir");
-
-        if (f.status === "en_attente") {
-            h += actBtn("ab-app",
-                "admAction('approve','" +
-                f.id + "')",
-                "fa-check", "Apwouve");
-        }
-
-        if (f.status === "active") {
-            h += actBtn("ab-frz",
-                "admAction('freeze','" +
-                f.id + "')",
-                "fa-ban", "Jele");
-        }
-
-        if (f.status === "frozen") {
-            h += actBtn("ab-ufrz",
-                "admAction('unfreeze','" +
-                f.id + "')",
-                "fa-check", "Debloke");
-        }
-
-        h += actBtn("ab-del",
-            "admAction('delete','" +
-            f.id + "')",
-            "fa-trash", "Efase");
-
-        h += '</td></tr>';
-    });
-
-    tb.innerHTML = h;
-}
-
-function renderKreyTable(list) {
-    var tb = document.getElementById("tbKrey");
-    if (!tb) return;
-
-    if (!list.length) {
-        tb.innerHTML = emptyRow(7,
-            "Pa gen gwoup Krey anko");
-        return;
-    }
-
-    var h = "";
-    list.forEach(function(k) {
-        var stCl = k.status === "active"
-            ? "green"
-            : k.status === "en_attente"
-                ? "orange"
-                : "red";
-        var stTxt = k.status === "active"
-            ? "Aktif"
-            : k.status === "en_attente"
-                ? "An Atant"
-                : "Jele";
-
-        h += '<tr data-filter="' +
-            (k.status || '') + '">';
-        h += '<td><strong>' +
-            (k.kreyName || k.prenom || '') +
-            '</strong><br><small style="color:#6a6a80">' +
-            (k.email || '') +
-            '</small></td>';
-        h += '<td>' +
-            (k.kreyZone || 'N/A') + '</td>';
-        h += '<td>' +
-            (k.kreyMemberCount || 0) +
-            ' manm</td>';
-        h += '<td>' +
-            ((k.kreyPrice || 0)
-                .toLocaleString()) +
-            ' G</td>';
-        h += '<td>' +
-            ((k.solde || 0)
-                .toLocaleString()) +
-            ' G</td>';
-        h += '<td><span class="sbadge ' +
-            stCl + '">' +
-            stTxt + '</span></td>';
-        h += '<td>';
-
-        h += actBtn("ab-viw",
-            "viewAccountDetail('" +
-            k.id + "')",
-            "fa-eye", "Voir");
-
-        if (k.status === "en_attente") {
-            h += actBtn("ab-app",
-                "admAction('approve','" +
-                k.id + "')",
-                "fa-check", "Apwouve");
-        }
-
-        if (k.status === "active") {
-            h += actBtn("ab-frz",
-                "admAction('freeze','" +
-                k.id + "')",
-                "fa-ban", "Jele");
-        }
-
-        if (k.status === "frozen") {
-            h += actBtn("ab-ufrz",
-                "admAction('unfreeze','" +
-                k.id + "')",
-                "fa-check", "Debloke");
-        }
-
-        h += actBtn("ab-del",
-            "admAction('delete','" +
-            k.id + "')",
-            "fa-trash", "Efase");
-
-        h += '</td></tr>';
-    });
-
-    tb.innerHTML = h;
-}
-
-function renderPendingTable(list) {
-    var tb = document.getElementById("tbPe");
-    if (!tb) return;
-
-    if (!list.length) {
-        tb.innerHTML = emptyRow(6,
-            "Pa gen demann an atant!");
-        return;
-    }
-
-    var h = "";
-    list.forEach(function(f) {
-        var typeTxt = f.type === "krey"
-            ? "Gwoup Krey"
-            : "Prestate";
-
-        var date = fmtDate(
-            f.createdAt && f.createdAt.toDate
-                ? f.createdAt.toDate()
-                : null
-        );
-
-        h += '<tr>';
-        h += '<td><strong>' +
-            ((f.kreyName || f.prenom || '') +
-            ' ' + (f.nom || '')).trim() +
-            '</strong><br><small style="color:#6a6a80">' +
-            (f.email || '') + '</small></td>';
-        h += '<td>' +
-            (f.localisation || f.kreyZone || 'N/A') +
-            '</td>';
-        h += '<td>' + typeTxt + '</td>';
-        h += '<td>' +
-            ((f.prixMoment || f.kreyPrice || 0)
-                .toLocaleString()) +
-            ' G</td>';
-        h += '<td>' + date + '</td>';
-        h += '<td>';
-        h += actBtn("ab-app",
-            "admAction('approve','" +
-            f.id + "')",
-            "fa-check", "Apwouve");
-        h += actBtn("ab-del",
-            "admAction('delete','" +
-            f.id + "')",
-            "fa-times", "Refize");
-        h += '</td></tr>';
-    });
-
-    tb.innerHTML = h;
-}
-
-function renderPremiumTable(list) {
-    var tb = document.getElementById("tbPr");
-    if (!tb) return;
-
-    if (!list.length) {
-        tb.innerHTML = emptyRow(5,
-            "Pa gen manm Premium anko");
-        return;
-    }
-
-    var h = "";
-    list.forEach(function(u) {
-        var date = fmtDate(
-            u.premiumActivatedAt &&
-            u.premiumActivatedAt.toDate
-                ? u.premiumActivatedAt.toDate()
-                : u.createdAt &&
-                  u.createdAt.toDate
-                    ? u.createdAt.toDate()
-                    : null
-        );
-
-        h += '<tr>';
-        h += '<td><strong>' +
-            (u.prenom || '') + ' ' +
-            (u.nom || '') +
-            '</strong></td>';
-        h += '<td>' + (u.email || 'N/A') + '</td>';
-        h += '<td>' + (u.telephone || 'N/A') + '</td>';
-        h += '<td>' + date + '</td>';
-        h += '<td>' +
-            actBtn("ab-rpr",
-                "admAction('unpremium','" +
-                u.id + "')",
-                "fa-times", "Retire Premium") +
-            '</td></tr>';
-    });
-
-    tb.innerHTML = h;
-}
-
-/* ====================================
-   LOAD RESERVATIONS
-   ==================================== */
-function loadReservations() {
-    if (!db) return;
-
-    db.collection("reservations")
-        .get()
-        .then(function(snap) {
-            adminRes = [];
-            snap.forEach(function(doc) {
-                var d = doc.data();
-                d.id = doc.id;
-                adminRes.push(d);
-            });
-
-            adminRes.sort(function(a, b) {
-                var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
-                var tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
-                return tb - ta;
-            });
-
-            setVal("stR", adminRes.length);
-            setBdg("bdgR", adminRes.length);
-            renderResTable(adminRes);
-        });
-}
-
-function renderResTable(list) {
-    var tb = document.getElementById("tbR");
-    if (!tb) return;
-
-    if (!list.length) {
-        tb.innerHTML = emptyRow(8,
-            "Pa gen rezevasyon anko");
-        return;
-    }
-
-    var h = "";
-    list.forEach(function(r) {
-        var stCl = r.status === "confirmed" ? "green" : r.status === "cancelled" ? "red" : "orange";
-        var stTxt = r.status === "confirmed" ? "Konfime" : r.status === "cancelled" ? "Anile" : "An Atant";
-        var typTxt = r.type === "krey" ? "Krey" : "Endividyel";
-        var typCl = r.type === "krey" ? "purple" : "blue";
-        var kote = r.type === "krey" ? (r.locationName || "Prive") : (r.hotelName || "Hotel");
-
-        h += '<tr data-filter="' + (r.status || '') + '" data-type="' + (r.type || 'individual') + '">';
-        h += '<td><small>' + (r.userEmail || 'N/A') + '</small></td>';
-        h += '<td>' + (r.prestateName || 'N/A') + '</td>';
-        h += '<td>' + (r.date || 'N/A') + '</td>';
-        h += '<td><small>' + kote + '</small></td>';
-        h += '<td>' + (r.price || 'N/A') + '</td>';
-        h += '<td><span class="sbadge ' + typCl + '">' + typTxt + '</span></td>';
-        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
-        h += '<td>';
-        if (r.status === "en_attente") {
-            h += actBtn("ab-app", "resAction('confirm','" + r.id + "')", "fa-check", "Konfime");
-        }
-        if (r.status !== "cancelled") {
-            h += actBtn("ab-del", "resAction('cancel','" + r.id + "')", "fa-times", "Anile");
-        }
-        h += '</td></tr>';
-    });
-
-    tb.innerHTML = h;
-}
-
-/* ====================================
-   LOAD PAYMENTS
-   ==================================== */
-function loadPayments() {
-    if (!db) return;
-
-    db.collection("payments")
-        .get()
-        .then(function(snap) {
-            adminPay = [];
-            snap.forEach(function(doc) {
-                var d = doc.data();
-                d.id = doc.id;
-                adminPay.push(d);
-            });
-
-            adminPay.sort(function(a, b) {
-                var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
-                var tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
-                return tb - ta;
-            });
-
-            var pending = adminPay.filter(function(p) {
-                return p.status === "en_attente";
-            });
-
-            setBdg("bdgPy", pending.length);
-            renderPayTable(adminPay);
-
-            var revenue = adminPay.filter(function(p) {
-                return p.status === "confirmed";
-            }).reduce(function(sum, p) {
-                return sum + (p.amount || 0);
-            }, 0);
-
-            setVal("stRev", revenue.toLocaleString() + " G");
-        });
-}
-
-function renderPayTable(list) {
-    var tb = document.getElementById("tbPy");
-    if (!tb) return;
-
-    if (!list.length) {
-        tb.innerHTML = emptyRow(7,
-            "Pa gen peman anko");
-        return;
-    }
-
-    var h = "";
-    list.forEach(function(p) {
-        var stCl = p.status === "confirmed" ? "green" : "orange";
-        var stTxt = p.status === "confirmed" ? "Konfime" : "An Atant";
-        var methCl = p.method === "natcash" ? "orange" : "gold";
-        var date = fmtDate(p.createdAt && p.createdAt.toDate ? p.createdAt.toDate() : null);
-
-        h += '<tr data-filter="' + (p.status || '') + '">';
-        h += '<td><small>' + (p.email || 'N/A') + '</small></td>';
-        h += '<td><span class="sbadge ' + methCl + '">' + (p.method === "natcash" ? "NatCash" : "MonCash") + '</span></td>';
-        h += '<td><code style="font-size:0.72rem">' + (p.reference || p.referenceId || 'N/A') + '</code></td>';
-        h += '<td><strong>' + ((p.amount || 1000).toLocaleString()) + ' G</strong></td>';
-        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
-        h += '<td>' + date + '</td>';
-        h += '<td>';
-        if (p.status === "en_attente") {
-            h += actBtn("ab-app", "payAction('confirm','" + p.id + "','" + (p.userId || '') + "')", "fa-check", "Konfime+Premium");
-        }
-        h += actBtn("ab-del", "payAction('delete','" + p.id + "','')", "fa-trash", "Efase");
-        h += '</td></tr>';
-    });
-
-    tb.innerHTML = h;
-}
-
-/* ====================================
-   LOAD FINANCE
-   ==================================== */
-function loadFinance() {
-    if (!db) return;
-
-    var totalRes = 0;
-    var totalComm = 0;
-
-    adminRes.forEach(function(r) {
-        if (r.status === "cancelled") return;
-        var p = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
-        totalRes += p;
-        totalComm += Math.round(p * 0.10);
-    });
-
-    var prem = adminPay.filter(function(p) {
-        return p.status === "confirmed";
-    }).reduce(function(sum, p) {
-        return sum + (p.amount || 0);
-    }, 0);
-
-    setVal("finR", totalRes.toLocaleString() + " G");
-    setVal("finC", totalComm.toLocaleString() + " G");
-    setVal("finP", prem.toLocaleString() + " G");
-    setVal("finT", (totalComm + prem).toLocaleString() + " G");
-}
-
-/* ====================================
-   LOAD RECENT ACTIVITY
-   ==================================== */
-function loadRecent() {
-    var recentEl = document.getElementById("recent");
-    if (!recentEl) return;
-
-    var items = [];
-
-    adminRes.slice(0, 5).forEach(function(r) {
-        items.push({
-            ico: "fa-calendar-check",
-            cl: "#4caf50",
-            txt: "Rezevasyon: " + (r.prestateName || "N/A"),
-            sub: (r.userEmail || "N/A") + " | " + (r.date || "N/A"),
-            st: r.status === "confirmed" ? "Konfime" : "An Atant",
-            sc: r.status === "confirmed" ? "green" : "orange"
-        });
-    });
-
-    adminPay.slice(0, 3).forEach(function(p) {
-        items.push({
-            ico: "fa-credit-card",
-            cl: "#2196f3",
-            txt: "Peman: " + ((p.amount || 1000).toLocaleString()) + " Gdes",
-            sub: (p.email || "N/A") + " | " + (p.method || "N/A"),
-            st: p.status === "confirmed" ? "Konfime" : "An Atant",
-            sc: p.status === "confirmed" ? "green" : "orange"
-        });
-    });
-
-    if (!items.length) {
-        recentEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Pa gen aktivite anko</div>';
-        return;
-    }
-
-    var h = "";
-    items.forEach(function(it) {
-        h += '<div style="display:flex;align-items:center;gap:15px;padding:14px 20px;border-bottom:1px solid #2a2a3a">';
-        h += '<div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;color:' + it.cl + ';flex-shrink:0">';
-        h += '<i class="fas ' + it.ico + '"></i>';
-        h += '</div>';
-        h += '<div style="flex:1">';
-        h += '<strong style="font-size:0.85rem">' + it.txt + '</strong><br>';
-        h += '<small style="color:#6a6a80">' + it.sub + '</small>';
-        h += '</div>';
-        h += '<span class="sbadge ' + it.sc + '">' + it.st + '</span>';
-        h += '</div>';
-    });
-
-    recentEl.innerHTML = h;
-}
-
-/* ====================================
-   LOAD COMMISSIONS
-   ==================================== */
-function loadCommissions() {
-    var tb = document.getElementById("tbComm");
-    if (!tb) return;
-
-    var commByFL = {};
-
-    adminRes.forEach(function(r) {
-        if (r.status === "cancelled") return;
-        var name = r.prestateName || "Unknown";
-        var price = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
-
-        if (!commByFL[name]) {
-            commByFL[name] = {
-                count: 0,
-                total: 0,
-                comm: 0,
-                net: 0
-            };
-        }
-
-        commByFL[name].count++;
-        commByFL[name].total += price;
-        commByFL[name].comm += Math.round(price * 0.10);
-        commByFL[name].net += Math.round(price * 0.90);
-    });
-
-    var keys = Object.keys(commByFL);
-    if (!keys.length) {
-        tb.innerHTML = emptyRow(6, "Pa gen done komisyon anko");
-        return;
-    }
-
-    var h = "";
-    keys.forEach(function(name) {
-        var d = commByFL[name];
-        h += '<tr>';
-        h += '<td><strong>' + name + '</strong></td>';
-        h += '<td>' + d.count + '</td>';
-        h += '<td>' + d.total.toLocaleString() + ' G</td>';
-        h += '<td style="color:var(--gold)">' + d.comm.toLocaleString() + ' G</td>';
-        h += '<td style="color:var(--green)">' + d.net.toLocaleString() + ' G</td>';
-        h += '<td>N/A</td>';
-        h += '</tr>';
-    });
-
-    tb.innerHTML = h;
-}
-
-/* ====================================
-   ADMIN ACTIONS
-   ==================================== */
-function admAction(action, uid) {
-    if (!db) return;
-
-    if (action === "delete") {
-        if (!confirm("ATANSYON: Efase kont sa a?")) return;
-        if (!confirm("Ou seten?")) return;
-        db.collection("users").doc(uid).delete()
-            .then(function() {
-                toast("Kont efase!", true);
-            });
-        return;
-    }
-
-    var updates = {};
-    var msgs = {
-        premium: "Aktive Premium?",
-        unpremium: "Retire Premium?",
-        approve: "Apwouve kont sa a?",
-        freeze: "Jele kont sa a?",
-        unfreeze: "Debloke kont sa a?"
-    };
-
-    if (!confirm(msgs[action] || "Kontinye?")) return;
-
-    if (action === "premium") updates = { isPremium: true };
-    else if (action === "unpremium") updates = { isPremium: false };
-    else if (action === "approve") updates = { status: "active" };
-    else if (action === "freeze") updates = { status: "frozen" };
-    else if (action === "unfreeze") updates = { status: "active" };
-
-    db.collection("users").doc(uid).update(updates)
-        .then(function() {
-            toast("Aksyon fini!", true);
-        })
-        .catch(function(err) {
-            toast("Ere: " + err.message, false);
-        });
-}
-
-/* ====================================
-   RESERVATION ACTIONS
-   ==================================== */
-function resAction(action, id) {
-    if (!db) return;
-    var status = action === "confirm" ? "confirmed" : "cancelled";
-    var msg = action === "confirm" ? "Konfime rezevasyon sa a?" : "Anile rezevasyon sa a?";
-    if (!confirm(msg)) return;
-    db.collection("reservations").doc(id).update({ status: status })
-        .then(function() {
-            toast(action === "confirm" ? "Konfime!" : "Anile!", true);
-        });
-}
-
-/* ====================================
-   PAYMENT ACTIONS
-   ==================================== */
-function payAction(action, id, userId) {
-    if (!db) return;
-
-    if (action === "confirm") {
-        if (!confirm("Konfime peman ak aktive Premium?")) return;
-        db.collection("payments").doc(id).update({ status: "confirmed" })
-            .then(function() {
-                if (userId) {
-                    return db.collection("users").doc(userId).update({
-                        isPremium: true,
-                        premiumActivatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                }
-            })
-            .then(function() {
-                toast("Konfime! Premium aktive!", true);
-            });
-    }
-
-    if (action === "delete") {
-        if (!confirm("Efase peman?")) return;
-        db.collection("payments").doc(id).delete()
-            .then(function() {
-                toast("Peman efase!", true);
-            });
+    } else {
+        db.collection("payments").doc(payId).delete().then(()=>showToast("Pèman efase."));
     }
 }
 
-/* ====================================
-   SEARCH
-   ==================================== */
-function srchTbl(tableId, query) {
-    var rows = document.querySelectorAll("#" + tableId + " tr");
-    var q = query.toLowerCase();
-    rows.forEach(function(r) {
-        r.style.display =
-            r.textContent.toLowerCase().includes(q) ? "" : "none";
-    });
-}
+/* =======================================================
+   6. MODAL DETAILS (Profile Viewer avec Photos/Videos)
+   ======================================================= */
+function viewDetail(uid) {
+    const user = allUsers.find(u => u.id === uid);
+    if(!user) return;
 
-/* ====================================
-   FILTER
-   ==================================== */
-function fltTbl(tableId, filter, btn) {
-    if (btn) {
-        var sibs = btn.parentElement.querySelectorAll(".tf");
-        sibs.forEach(function(s) { s.classList.remove("active"); });
-        btn.classList.add("active");
+    let tTitle = user.type === "krey" ? "Détails Krèy" : (user.type === "freelancer" ? "Détails Prestatè" : "Détails Kliyan");
+    document.getElementById("md-title").innerText = tTitle;
+
+    // 1. Grid Details
+    let g = "";
+    const addI = (lbl, val) => { g += `<div class="m-item"><span>${lbl}</span><strong>${val || "N/A"}</strong></div>`; };
+    
+    addI("ID", user.id);
+    addI("Imel", user.email);
+    addI("Telefon", user.telephone || user.contactTel);
+    addI("Estati", user.status);
+    
+    if(user.type === "freelancer") {
+        addI("Non", `${user.prenom} ${user.nom}`);
+        addI("Sèks", user.genre);
+        addI("Vil", user.localisation);
+        addI("Pri", `${user.prixMoment} Gdes`);
+        addI("Net", `${user.prixNet} Gdes`);
+        addI("Komisyon (10%)", `${user.commissionBizen} Gdes`);
+        addI("Deskripsyon", user.description);
+    } else if(user.type === "krey") {
+        addI("Non Gwoup", user.kreyName);
+        addI("Responsab", user.contactName);
+        addI("Zòn", user.kreyZone);
+        addI("Konbyen Manm", user.kreyMemberCount);
+        addI("Pri Total", `${user.kreyPrice} Gdes`);
+        addI("Net Gwoup", `${user.kreyPriceNet} Gdes`);
+        addI("Komisyon (10%)", `${user.kreyCommission} Gdes`);
+        addI("Deskripsyon", user.kreyDescription);
+    } else {
+        addI("Non", `${user.prenom} ${user.nom}`);
+        addI("Premium", user.isPremium ? "Wi" : "Non");
     }
 
-    var rows = document.querySelectorAll("#" + tableId + " tr");
-    rows.forEach(function(r) {
-        if (filter === "all") {
-            r.style.display = "";
-        } else {
-            var rf = r.getAttribute("data-filter");
-            r.style.display = (rf === filter) ? "" : "none";
-        }
+    document.getElementById("md-grid").innerHTML = g;
+
+    // 2. Media (Photos et Vidéos)
+    let mHTML = "";
+    
+    // Gérer l'ancien format (array de strings) et le nouveau format (objet media.photos / media.videos)
+    let photos = [];
+    let videos = [];
+    
+    if(user.media && user.media.photos) photos = user.media.photos;
+    else if(user.photos) photos = user.photos; // Fallback vieux format
+    
+    if(user.media && user.media.videos) videos = user.media.videos;
+    else if(user.videos) videos = user.videos;
+
+    photos.forEach(p => {
+        let url = typeof p === 'object' ? p.url : p;
+        mHTML += `<img src="${url}" class="m-photo" onclick="window.open('${url}', '_blank')">`;
     });
-}
 
-/* ====================================
-   HELPERS
-   ==================================== */
-function setVal(id, val) {
-    var el = document.getElementById(id);
-    if (el) el.textContent = val;
-}
-
-function setBdg(id, val) {
-    var el = document.getElementById(id);
-    if (el) el.textContent = val;
-}
-
-function fmtDate(date) {
-    if (!date) return "N/A";
-    return date.toLocaleDateString("fr-FR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric"
+    videos.forEach(v => {
+        let url = typeof v === 'object' ? v.url : v;
+        mHTML += `<div class="m-video" onclick="window.open('${url}', '_blank')"><i class="fas fa-play-circle"></i></div>`;
     });
-}
 
-function btn(cls, action, ico, lbl) {
-    return '<button class="ab ' + cls + '" onclick="' + action + '">' +
-        '<i class="fas ' + ico + '"></i> ' + lbl + '</button>';
-}
+    if(mHTML === "") mHTML = "<p style='color:var(--text-muted);font-size:0.8rem'>Pa gen medya disponib.</p>";
+    document.getElementById("md-media").innerHTML = mHTML;
 
-function emptyRow(cols, msg) {
-    return '<tr><td colspan="' + cols + '" style="text-align:center;padding:40px;color:var(--text-muted)">' +
-        '<i class="fas fa-inbox" style="font-size:2rem;margin-bottom:10px;display:block;opacity:0.3"></i>' +
-        msg + '</td></tr>';
-}
+    // 3. Actions Button
+    let aHTML = "";
+    if(user.type === "freelancer" || user.type === "krey") {
+        if(user.status === "en_attente") aHTML += `<button class="ab ab-a" style="padding:10px 20px" onclick="actUser('${user.id}', 'approve')"><i class="fas fa-check"></i> Valide Kont la</button>`;
+        if(user.status === "active") aHTML += `<button class="ab ab-f" style="padding:10px 20px" onclick="actUser('${user.id}', 'freeze')"><i class="fas fa-ban"></i> Jele Kont la</button>`;
+        if(user.status === "frozen") aHTML += `<button class="ab ab-a" style="padding:10px 20px" onclick="actUser('${user.id}', 'unfreeze')"><i class="fas fa-check"></i> Debloke</button>`;
+    } else {
+        if(!user.isPremium) aHTML += `<button class="ab ab-p" style="padding:10px 20px" onclick="actUser('${user.id}', 'premium')"><i class="fas fa-crown"></i> Aktive Premium</button>`;
+        else aHTML += `<button class="ab ab-d" style="padding:10px 20px" onclick="actUser('${user.id}', 'unpremium')"><i class="fas fa-times"></i> Retire Premium</button>`;
+    }
+    aHTML += `<button class="ab ab-d" style="padding:10px 20px" onclick="actUser('${user.id}', 'delete')"><i class="fas fa-trash"></i> Efase</button>`;
+    
+    document.getElementById("md-actions").innerHTML = aHTML;
 
-function toast(msg, isGood) {
-    var el = document.getElementById("adTst");
-    if (!el) return;
-    var cl = isGood ? "#4caf50" : "#f44336";
-    var ic = isGood ? "fa-check-circle" : "fa-times-circle";
-    el.style.cssText = "background:#15151f;border:1px solid " + cl + ";color:white;padding:14px 20px;";
-    el.innerHTML = '<i class="fas ' + ic + '" style="color:' + cl + '"></i> <span>' + msg + '</span>';
-    el.classList.add("on");
-    setTimeout(function() { el.classList.remove("on"); }, 3500);
+    // Show Modal
+    document.getElementById("detailM").classList.add("show");
 }
 </script>
 </body>
