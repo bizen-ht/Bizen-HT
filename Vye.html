@@ -1726,29 +1726,12 @@ function startRealtimeSync() {
                 }
             });
 
-            renderUsersTable(adminUsers);
-            renderFLTable(adminFL);
-            renderKreyTable(adminKrey);
+            var pending = adminFL.filter(f => f.status === "en_attente")
+                .concat(adminKrey.filter(k => k.status === "en_attente"));
 
-            var pending =
-                adminFL.filter(function(f) {
-                    return f.status === "en_attente";
-                }).concat(
-                    adminKrey.filter(function(k) {
-                        return k.status === "en_attente";
-                    })
-                );
+            var premiumUsers = adminUsers.filter(u => u.isPremium === true);
 
-            renderPendingTable(pending);
-
-            var premiumUsers =
-                adminUsers.filter(function(u) {
-                    return u.isPremium === true;
-                });
-
-            renderPremiumTable(premiumUsers);
-
-            /* Stats */
+            /* DASHBOARD STATS */
             setVal("stU", adminUsers.length);
             setVal("stF", adminFL.length);
             setVal("stP", premiumUsers.length);
@@ -1759,6 +1742,16 @@ function startRealtimeSync() {
             setBdg("bdgPr", premiumUsers.length);
             setBdg("bdgPe", pending.length);
             setBdg("bdgKrey", adminKrey.length);
+
+            renderUsersTable(adminUsers);
+            renderFLTable(adminFL);
+            renderKreyTable(adminKrey);
+            renderPendingTable(pending);
+            renderPremiumTable(premiumUsers);
+
+            /* IMPORTANT ✅ */
+            loadFinance();
+            renderCommissions();
         });
 
     /* RESERVATIONS */
@@ -1771,13 +1764,15 @@ function startRealtimeSync() {
                 adminRes.push(d);
             });
 
-            renderResTable(adminRes);
             setVal("stR", adminRes.length);
             setBdg("bdgR", adminRes.length);
 
-            renderRecent();
-            renderFinance();
+            renderResTable(adminRes);
+
+            /* IMPORTANT ✅ */
+            loadFinance();
             renderCommissions();
+            renderRecent();
         });
 
     /* PAYMENTS */
@@ -1792,18 +1787,14 @@ function startRealtimeSync() {
 
             renderPayTable(adminPay);
 
-            var pendingPay =
-                adminPay.filter(function(p) {
-                    return p.status === "en_attente";
-                }).length;
-
+            var pendingPay = adminPay.filter(p => p.status === "en_attente").length;
             setBdg("bdgPy", pendingPay);
 
-            renderFinance();
+            /* IMPORTANT ✅ */
+            loadFinance();
             renderRecent();
         });
 }
-
 /* ====================================
    TABLE RENDERS
    ==================================== */
@@ -2292,29 +2283,43 @@ function renderPayTable(list) {
 /* ====================================
    LOAD FINANCE
    ==================================== */
+/* ====================================
+   LOAD FINANCE
+   ==================================== */
 function loadFinance() {
-    if (!db) return;
+    var totalReservations = 0;
+    var totalCommission = 0;
 
-    var totalRes = 0;
-    var totalComm = 0;
+    if (!adminRes) adminRes = [];
+    if (!adminPay) adminPay = [];
 
     adminRes.forEach(function(r) {
-        if (r.status === "cancelled") return;
-        var p = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
-        totalRes += p;
-        totalComm += Math.round(p * 0.10);
+        /* On ne compte que les réservations confirmées */
+        if (r.status !== "confirmed") return;
+
+        var price = parseInt(
+            String(r.price || "0").replace(/[^0-9]/g, "")
+        ) || 0;
+
+        totalReservations += price;
+        totalCommission += Math.round(price * 0.10);
     });
 
-    var prem = adminPay.filter(function(p) {
-        return p.status === "confirmed";
-    }).reduce(function(sum, p) {
-        return sum + (p.amount || 0);
-    }, 0);
+    var totalPremium = 0;
 
-    setVal("finR", totalRes.toLocaleString() + " G");
-    setVal("finC", totalComm.toLocaleString() + " G");
-    setVal("finP", prem.toLocaleString() + " G");
-    setVal("finT", (totalComm + prem).toLocaleString() + " G");
+    adminPay.forEach(function(p) {
+        if (p.status === "confirmed") {
+            totalPremium += (p.amount || 0);
+        }
+    });
+
+    var totalNet = totalCommission + totalPremium;
+
+    setVal("finR", totalReservations.toLocaleString() + " G");
+    setVal("finC", totalCommission.toLocaleString() + " G");
+    setVal("finP", totalPremium.toLocaleString() + " G");
+    setVal("finT", totalNet.toLocaleString() + " G");
+    setVal("stRev", totalNet.toLocaleString() + " G");
 }
 
 /* ====================================
