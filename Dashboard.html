@@ -580,7 +580,7 @@
                     <a href="index.html#femmes"
                        class="top-btn primary">
                         <i class="fas fa-search"></i>
-                        Jwenn Prestate
+                        Jwenn Elu
                     </a>
                 </div>
             </div>
@@ -621,7 +621,7 @@
                     <div class="empty-state">
                         <i class="fas fa-calendar-times"></i>
                         <h4>Pa gen rezevasyon anko</h4>
-                        <p>Ale sou sit la pou jwenn yon prestate!</p>
+                        <p>Ale sou sit la pou jwenn yon elu!</p>
                     </div>
                 </div>
             </div>
@@ -729,7 +729,7 @@
         <!-- FL OVERVIEW -->
         <div class="dash-section" id="sec-fl-overview">
             <div class="dash-top">
-                <h1>Dashboard <span>Prestate</span></h1>
+                <h1>Dashboard <span>Elu</span></h1>
                 <div class="top-actions">
                     <span id="flStatus"
                           style="padding:6px 15px;border-radius:var(--radius-full);font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.1);color:var(--text-muted)">
@@ -1352,7 +1352,7 @@ function setupFreelancer() {
 
     /* Sidebar info */
     var fullName = ((userData.prenom || "") + " " + (userData.nom || "")).trim();
-    if (!fullName) fullName = userData.email ? userData.email.split("@")[0] : "Prestate";
+    if (!fullName) fullName = userData.email ? userData.email.split("@")[0] : "Elu";
 
     setEl("sbName", fullName);
     setEl("sbEmail", userData.email || "");
@@ -1365,12 +1365,12 @@ function setupFreelancer() {
         if (userData.status === "active") { stCl = "sb-badge-active"; stTxt = "Aktif"; }
         else if (userData.status === "frozen") { stCl = "sb-badge-frozen"; stTxt = "Jele"; }
         badges.innerHTML =
-            '<span class="sb-badge sb-badge-fl"><i class="fas fa-star"></i> Prestate</span> ' +
+            '<span class="sb-badge sb-badge-fl"><i class="fas fa-star"></i> Elu</span> ' +
             '<span class="sb-badge ' + stCl + '">' + stTxt + '</span>';
     }
 
     /* Dashboard title */
-    setEl("dashUserName", "Dashboard Prestate");
+    setEl("dashUserName", "Dashboard Elu");
 
     /* Stats */
     var solde = userData.solde || 0;
@@ -1574,7 +1574,7 @@ function loadUserReservations() {
             setEl("uResCount", count);
 
             if (count === 0) {
-                var emptyH = emptyHtml("fa-calendar-times", "Pa gen rezevasyon anko", "Rezeve yon prestate pou kòmanse!");
+                var emptyH = emptyHtml("fa-calendar-times", "Pa gen rezevasyon anko", "Rezeve yon Elu pou kòmanse!");
                 listEl.innerHTML = emptyH;
                 if (fullListEl) fullListEl.innerHTML = emptyH;
                 return;
@@ -1614,7 +1614,7 @@ function loadUserFavorites() {
         h += '<div style="width:45px;height:45px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;flex-shrink:0">';
         h += '<i class="fas fa-user" style="color:white"></i></div>';
         h += '<div style="flex:1"><strong style="font-size:0.9rem">' + name + '</strong>';
-        h += '<br><span style="font-size:0.75rem;color:#6a6a80">Prestate</span></div>';
+        h += '<br><span style="font-size:0.75rem;color:#6a6a80">Elu</span></div>';
         h += '<i class="fas fa-heart" style="color:#e91e63;font-size:1.2rem"></i></div>';
     });
     listEl.innerHTML = h;

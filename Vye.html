@@ -887,7 +887,7 @@
             <button class="sb-link"
                     onclick="goPage('fl',this)">
                 <i class="fas fa-star"></i>
-                Prestate
+                Elu
                 <span class="sb-bdg bdg-r"
                       id="bdgF">0</span>
             </button>
@@ -990,7 +990,7 @@
                     <div class="sc-val"
                          id="stF">0</div>
                     <div class="sc-lbl">
-                        Prestate
+                        Elu
                     </div>
                 </div>
                 <div class="sc gd">
@@ -1116,7 +1116,7 @@
                 <h1 class="ph-title">
                     <i class="fas fa-star"
                        style="color:var(--red)"></i>
-                    Prestate
+                    Elu
                 </h1>
                 <input class="srch"
                        placeholder="Chache..."
@@ -1126,7 +1126,7 @@
                 <div class="tc-head">
                     <div class="tc-title">
                         <i class="fas fa-star"></i>
-                        Tout Prestate
+                        Tout Elu
                     </div>
                     <div class="tc-filters">
                         <button class="tf active"
@@ -1349,7 +1349,7 @@
                         <thead>
                             <tr>
                                 <th>Kliyan</th>
-                                <th>Prestate</th>
+                                <th>Elu</th>
                                 <th>Dat</th>
                                 <th>Kote</th>
                                 <th>Pri</th>
@@ -1510,25 +1510,25 @@
                 <h1 class="ph-title">
                     <i class="fas fa-percentage"
                        style="color:var(--purple)"></i>
-                    Komisyon Prestate
+                    Komisyon Elu
                 </h1>
             </div>
             <div class="tc">
                 <div class="tc-head">
                     <div class="tc-title">
                         <i class="fas fa-percentage"></i>
-                        Komisyon pa Prestate
+                        Komisyon pa Elu
                     </div>
                 </div>
                 <div class="tscroll">
                     <table>
                         <thead>
                             <tr>
-                                <th>Prestate</th>
+                                <th>Elu</th>
                                 <th>Rezevasyon</th>
                                 <th>Total Touche</th>
                                 <th>Komisyon (10%)</th>
-                                <th>Net Prestate</th>
+                                <th>Net Elu</th>
                                 <th>Solde</th>
                             </tr>
                         </thead>
@@ -1881,7 +1881,7 @@ function renderFLTable(list) {
 
     if (!list.length) {
         tb.innerHTML = emptyRow(7,
-            "Pa gen prestate anko");
+            "Pa gen Elu anko");
         return;
     }
 
@@ -2060,7 +2060,7 @@ function renderPendingTable(list) {
     list.forEach(function(f) {
         var typeTxt = f.type === "krey"
             ? "Gwoup Krey"
-            : "Prestate";
+            : "Elu";
 
         var date = fmtDate(
             f.createdAt && f.createdAt.toDate
