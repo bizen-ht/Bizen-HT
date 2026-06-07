@@ -43,7 +43,7 @@
             min-height: 100vh;
         }
 
-        /* LOGIN SCREEN */
+        /* LOGIN */
         #loginScreen {
             position: fixed;
             top: 0; left: 0;
@@ -749,14 +749,11 @@
         </div>
         <h2>Bizen HT Admin</h2>
         <p>Konekte ak kont administratè</p>
-
         <input class="lg-input" type="email" id="lgEm" placeholder="Email admin">
         <input class="lg-input" type="password" id="lgPw" placeholder="Modpas" onkeydown="if(event.key==='Enter')doAdmLogin()">
-
         <button class="lg-btn" onclick="doAdmLogin()">
             <i class="fas fa-lock"></i> Konekte
         </button>
-
         <p class="lg-error" id="lgErr"></p>
     </div>
 </div>
@@ -807,7 +804,7 @@
                 <span class="sb-bdg bdg-b" id="bdgU">0</span>
             </button>
             <button class="sb-link" onclick="goPage('fl',this)">
-                <i class="fas fa-star"></i> Elu
+                <i class="fas fa-star"></i> Prestate
                 <span class="sb-bdg bdg-r" id="bdgF">0</span>
             </button>
             <button class="sb-link" onclick="goPage('krey',this)">
@@ -872,7 +869,7 @@
                 <div class="sc rd">
                     <div class="sc-ico rd"><i class="fas fa-star"></i></div>
                     <div class="sc-val" id="stF">0</div>
-                    <div class="sc-lbl">Elu</div>
+                    <div class="sc-lbl">Prestate</div>
                 </div>
                 <div class="sc gd">
                     <div class="sc-ico gd"><i class="fas fa-crown"></i></div>
@@ -944,12 +941,12 @@
         <!-- PRESTATEURS -->
         <div class="pg" id="pg-fl">
             <div class="ph">
-                <h1 class="ph-title"><i class="fas fa-star" style="color:var(--red)"></i> Elu</h1>
+                <h1 class="ph-title"><i class="fas fa-star" style="color:var(--red)"></i> Prestate</h1>
                 <input class="srch" placeholder="Chache..." oninput="srchTbl('tbF',this.value)">
             </div>
             <div class="tc">
                 <div class="tc-head">
-                    <div class="tc-title"><i class="fas fa-star"></i> Tout Elu</div>
+                    <div class="tc-title"><i class="fas fa-star"></i> Tout Prestate</div>
                     <div class="tc-filters">
                         <button class="tf active" onclick="fltTbl('tbF','all',this)">Tout</button>
                         <button class="tf" onclick="fltTbl('tbF','active',this)">Aktif</button>
@@ -1081,7 +1078,7 @@
                         <thead>
                             <tr>
                                 <th>Kliyan</th>
-                                <th>Elu</th>
+                                <th>Prestate</th>
                                 <th>Dat</th>
                                 <th>Kote</th>
                                 <th>Pri</th>
@@ -1166,21 +1163,21 @@
         <!-- COMMISSIONS -->
         <div class="pg" id="pg-comm">
             <div class="ph">
-                <h1 class="ph-title"><i class="fas fa-percentage" style="color:var(--purple)"></i> Komisyon Elu</h1>
+                <h1 class="ph-title"><i class="fas fa-percentage" style="color:var(--purple)"></i> Komisyon Prestate</h1>
             </div>
             <div class="tc">
                 <div class="tc-head">
-                    <div class="tc-title"><i class="fas fa-percentage"></i> Komisyon pa Elu</div>
+                    <div class="tc-title"><i class="fas fa-percentage"></i> Komisyon pa Prestate</div>
                 </div>
                 <div class="tscroll">
                     <table>
                         <thead>
                             <tr>
-                                <th>Elu</th>
+                                <th>Prestate</th>
                                 <th>Rezevasyon</th>
                                 <th>Total Touche</th>
                                 <th>Komisyon (10%)</th>
-                                <th>Net Elu</th>
+                                <th>Net Prestate</th>
                                 <th>Solde</th>
                             </tr>
                         </thead>
@@ -1437,7 +1434,11 @@ function renderUsersTable(list) {
             ? '<span class="sbadge red">Jele</span>'
             : '<span class="sbadge green">Aktif</span>';
 
-        var date = fmtDate(u.createdAt && u.createdAt.toDate ? u.createdAt.toDate() : null);
+        var date = fmtDate(
+            u.createdAt && u.createdAt.toDate
+                ? u.createdAt.toDate()
+                : null
+        );
 
         h += '<tr data-filter="' + (u.isPremium ? "premium" : "free") + '">';
         h += '<td><strong>' + (u.prenom || '') + ' ' + (u.nom || '') + '</strong><br><small style="color:#6a6a80">' + (u.email || '') + '</small></td>';
@@ -1472,7 +1473,7 @@ function renderFLTable(list) {
     if (!tb) return;
 
     if (!list.length) {
-        tb.innerHTML = emptyRow(7, "Pa gen Elu anko");
+        tb.innerHTML = emptyRow(7, "Pa gen prestate anko");
         return;
     }
 
@@ -1564,7 +1565,7 @@ function renderPendingTable(list) {
 
     var h = "";
     list.forEach(function(f) {
-        var typeTxt = f.type === "krey" ? "Gwoup Krey" : "Elu";
+        var typeTxt = f.type === "krey" ? "Gwoup Krey" : "Prestate";
         var date = fmtDate(f.createdAt && f.createdAt.toDate ? f.createdAt.toDate() : null);
 
         h += '<tr>';
@@ -1981,7 +1982,7 @@ function payAction(action, id, userId) {
 }
 
 /* ====================================
-   SEARCH & FILTER
+   SEARCH
    ==================================== */
 function srchTbl(tableId, query) {
     var rows = document.querySelectorAll("#" + tableId + " tr");
@@ -1991,6 +1992,9 @@ function srchTbl(tableId, query) {
     });
 }
 
+/* ====================================
+   FILTER
+   ==================================== */
 function fltTbl(tableId, filter, btn) {
     if (btn) {
         var sibs = btn.parentElement.querySelectorAll(".tf");
