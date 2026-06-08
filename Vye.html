@@ -1331,7 +1331,6 @@ function startRealtimeSync() {
     if (unsubRes) unsubRes();
     if (unsubPay) unsubPay();
 
-    /* USERS */
     unsubUsers = db.collection("users").onSnapshot(function(snap) {
         adminUsers = [];
         adminFL = [];
@@ -1375,7 +1374,6 @@ function startRealtimeSync() {
         renderCommissions();
     });
 
-    /* RESERVATIONS */
     unsubRes = db.collection("reservations").onSnapshot(function(snap) {
         adminRes = [];
         snap.forEach(function(doc) {
@@ -1393,7 +1391,6 @@ function startRealtimeSync() {
         renderRecent();
     });
 
-    /* PAYMENTS */
     unsubPay = db.collection("payments").onSnapshot(function(snap) {
         adminPay = [];
         snap.forEach(function(doc) {
@@ -1982,7 +1979,7 @@ function payAction(action, id, userId) {
 }
 
 /* ====================================
-   SEARCH
+   SEARCH & FILTER
    ==================================== */
 function srchTbl(tableId, query) {
     var rows = document.querySelectorAll("#" + tableId + " tr");
@@ -1992,9 +1989,6 @@ function srchTbl(tableId, query) {
     });
 }
 
-/* ====================================
-   FILTER
-   ==================================== */
 function fltTbl(tableId, filter, btn) {
     if (btn) {
         var sibs = btn.parentElement.querySelectorAll(".tf");
