@@ -182,6 +182,7 @@
         .hotel-notice{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(156,39,176,0.1);border:1px solid rgba(156,39,176,0.3);border-radius:var(--radius);margin-bottom:12px;font-size:0.78rem;color:var(--primary-light)}
         .hotel-notice i{color:var(--gold);font-size:1rem;flex-shrink:0}
 
+        @keyframes pulse-dot{0%,100%{box-shadow:0 0 4px #4caf50}50%{box-shadow:0 0 10px #4caf50,0 0 20px rgba(76,175,80,0.4)}}
         .pc-price{display:flex;align-items:center;gap:8px;padding:12px 15px;background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.2);border-radius:var(--radius);margin-bottom:15px}
         .pc-price i{color:var(--gold)}
         .pv{font-weight:700;font-size:1.2rem;color:var(--gold)}
@@ -1772,6 +1773,7 @@ body.no-screenshot * {
             <h2 class="sec-title">Fanm <span class="hl">Disponib</span> yo</h2>
             <div class="ubar"></div>
             <p class="sec-desc">Dekouvri bel fanm ki disponib pou akonpaye w. Hotel inclus nan chak rezevasyon!</p>
+            <div id="onlineCount" style="display:inline-flex;align-items:center;gap:8px;margin-top:12px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:50px;padding:6px 16px;font-size:0.78rem;color:#4caf50;font-weight:600"><span style="width:8px;height:8px;background:#4caf50;border-radius:50%;display:inline-block;animation:pulse-dot 1.5s infinite"></span> Chaje...</div>
         </div>
         <div class="filter-bar">
             <button class="fbtn active" data-f="all">Tout</button>
@@ -1976,6 +1978,79 @@ body.no-screenshot * {
         </div>
     </div>
 </section>
+
+<!-- HOTEL PARTNERS SECTION -->
+<section class="section" id="hotels-partenaires" style="background:#050510;padding:60px 0;overflow:hidden">
+    <div class="container">
+        <div style="text-align:center;margin-bottom:40px">
+            <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(156,39,176,0.1);border:1px solid rgba(156,39,176,0.3);border-radius:50px;padding:6px 16px;font-size:0.78rem;color:#9c27b0;font-weight:600;margin-bottom:16px">
+                <i class="fas fa-hotel"></i> HOTEL PATNÈ
+            </div>
+            <h2 style="font-family:'Playfair Display',serif;font-size:2rem;margin-bottom:12px">Nos <span style="color:#e91e63">Hôtels</span> en Promotion</h2>
+            <p style="color:#b0b0c0;font-size:0.9rem">Chaque réservation inclut un hôtel partenaire. Discrétion totale garantie.</p>
+        </div>
+        <!-- SLIDER -->
+        <div style="position:relative;overflow:hidden">
+            <div id="hotelSlider" style="display:flex;gap:24px;animation:hotelScroll 30s linear infinite;width:max-content">
+                <!-- Hotel cards repeated twice for seamless loop -->
+                <div class="hotel-slide-card">
+                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#1a1a2e,#16213e)"><i class="fas fa-hotel" style="font-size:2.5rem;color:#ffd700"></i></div>
+                    <div class="hotel-slide-info"><div class="hotel-slide-name">Hotel Montana</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Pétion-Ville</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
+                </div>
+                <div class="hotel-slide-card">
+                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#2d1b69,#11998e)"><i class="fas fa-building" style="font-size:2.5rem;color:#ffd700"></i></div>
+                    <div class="hotel-slide-info"><div class="hotel-slide-name">Karibe Convention</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Tabarre</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
+                </div>
+                <div class="hotel-slide-card">
+                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#c94b4b,#4b134f)"><i class="fas fa-umbrella-beach" style="font-size:2.5rem;color:#ffd700"></i></div>
+                    <div class="hotel-slide-info"><div class="hotel-slide-name">Royal Oasis</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Port-au-Prince</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
+                </div>
+                <div class="hotel-slide-card">
+                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#134e5e,#71b280)"><i class="fas fa-swimming-pool" style="font-size:2.5rem;color:#ffd700"></i></div>
+                    <div class="hotel-slide-info"><div class="hotel-slide-name">Wahoo Bay Beach</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Arcahaie</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
+                </div>
+                <div class="hotel-slide-card">
+                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#8e0e00,#1f1c18)"><i class="fas fa-concierge-bell" style="font-size:2.5rem;color:#ffd700"></i></div>
+                    <div class="hotel-slide-info"><div class="hotel-slide-name">Villa Creole</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Pétion-Ville</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
+                </div>
+                <div class="hotel-slide-card">
+                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#4776e6,#8e54e9)"><i class="fas fa-gem" style="font-size:2.5rem;color:#ffd700"></i></div>
+                    <div class="hotel-slide-info"><div class="hotel-slide-name">El Rancho</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Pétion-Ville</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
+                </div>
+                <!-- Duplicate for seamless loop -->
+                <div class="hotel-slide-card">
+                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#1a1a2e,#16213e)"><i class="fas fa-hotel" style="font-size:2.5rem;color:#ffd700"></i></div>
+                    <div class="hotel-slide-info"><div class="hotel-slide-name">Hotel Montana</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Pétion-Ville</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
+                </div>
+                <div class="hotel-slide-card">
+                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#2d1b69,#11998e)"><i class="fas fa-building" style="font-size:2.5rem;color:#ffd700"></i></div>
+                    <div class="hotel-slide-info"><div class="hotel-slide-name">Karibe Convention</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Tabarre</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
+                </div>
+                <div class="hotel-slide-card">
+                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#c94b4b,#4b134f)"><i class="fas fa-umbrella-beach" style="font-size:2.5rem;color:#ffd700"></i></div>
+                    <div class="hotel-slide-info"><div class="hotel-slide-name">Royal Oasis</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Port-au-Prince</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
+                </div>
+                <div class="hotel-slide-card">
+                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#134e5e,#71b280)"><i class="fas fa-swimming-pool" style="font-size:2.5rem;color:#ffd700"></i></div>
+                    <div class="hotel-slide-info"><div class="hotel-slide-name">Wahoo Bay Beach</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Arcahaie</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.hotel-slide-card{background:#12121a;border:1px solid #2a2a3a;border-radius:16px;overflow:hidden;width:220px;flex-shrink:0;transition:transform 0.3s}
+.hotel-slide-card:hover{transform:translateY(-5px);border-color:#e91e63}
+.hotel-slide-img{height:120px;display:flex;align-items:center;justify-content:center}
+.hotel-slide-info{padding:15px}
+.hotel-slide-name{font-weight:700;font-size:0.95rem;margin-bottom:6px}
+.hotel-slide-loc{font-size:0.78rem;color:#6a6a80;margin-bottom:8px}
+.hotel-slide-loc i{color:#e91e63;margin-right:4px}
+.hotel-slide-badge{display:inline-block;background:rgba(255,215,0,0.1);color:#ffd700;border:1px solid rgba(255,215,0,0.3);border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:600}
+@keyframes hotelScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+#hotelSlider:hover{animation-play-state:paused}
+</style>
 
 <!-- FOOTER -->
 <footer class="footer">
@@ -3187,17 +3262,32 @@ function mkCard(p, type, male) {
     for (var i = 0; i < p.t.length; i++) {
         tg += '<span class="tag">' + p.t[i] + '</span>';
     }
+    /* Online indicator */
+    var onlineDot = p.online
+        ? '<span style="display:inline-block;width:8px;height:8px;background:#4caf50;border-radius:50%;margin-right:5px;box-shadow:0 0 6px #4caf50;animation:pulse-dot 1.5s infinite"></span>En Liy'
+        : (p.lastSeen ? '<span style="display:inline-block;width:8px;height:8px;background:#6a6a80;border-radius:50%;margin-right:5px"></span>' + p.b : p.b);
+
+    /* p.demo === false => vrai profil Firebase ; sinon => profil démo statique */
+    var isDemo = (p.demo === false) ? false : true;
+
     var h = '';
-    h += '<div class="pc' + mc + ' sr" data-f="' + p.lk + '">';
+    h += '<div class="pc' + mc + ' sr" data-f="' + p.lk + '" data-uid="' + (p.uid || "") + '"'
+        + ' data-demo="' + (isDemo ? "1" : "0") + '"'
+        + ' data-name="' + (p.n || "").replace(/"/g, "&quot;") + '"'
+        + ' data-price="' + (p.p || "") + '">';
     h += '<div class="pc-img">';
     h += '<div class="pc-bg" style="background:' + p.g + '">';
-    h += '<div class="sil"><i class="fas fa-user"></i></div>';
+    if (p.photoUrl) {
+        h += '<img src="' + p.photoUrl + '" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">';
+    } else {
+        h += '<div class="sil"><i class="fas fa-user"></i></div>';
+    }
     h += '</div>';
     h += '<div class="blur-ov" onclick="pa()">';
     h += '<i class="fas fa-lock"></i>';
     h += '<p>Peye pou we foto</p>';
     h += '</div>';
-    h += '<div class="pc-badge">' + p.b + '</div>';
+    h += '<div class="pc-badge">' + onlineDot + '</div>';
     h += '<div class="pc-type' + mt + '">' + type + '</div>';
     h += '<button class="pc-fav" onclick="tFav(this,event)">';
     h += '<i class="far fa-heart"></i>';
@@ -3461,6 +3551,114 @@ function renderCards() {
     try { renderKrey(); } catch (e) {
         console.warn("Krey:", e);
     }
+    /* Charge les VRAIS prestataires Firebase (mode hybride) */
+    try { renderRealFreelancers(); } catch(e) { console.warn("RealFL:", e); }
+    /* Load real-time online status from Firebase */
+    try { loadOnlineFromFirebase(); } catch(e) {}
+}
+
+/* ====================================
+   RENDER REAL FREELANCERS (Mode Hybride)
+   Ajoute les vrais prestataires actifs
+   de Firebase à côté des profils démo.
+   ==================================== */
+var realFreelancersLoaded = false;
+
+function renderRealFreelancers() {
+    if (!db || realFreelancersLoaded) return;
+    realFreelancersLoaded = true;
+
+    var fG = document.getElementById("fG");
+    var hG = document.getElementById("hG");
+
+    /* Lit la collection PUBLIQUE (sans email/téléphone).
+       Filtre status côté serveur, type côté client => pas d'index composite requis. */
+    db.collection("publicProfiles")
+        .where("status", "==", "active")
+        .onSnapshot(function(snap) {
+            /* Retire les anciennes vraies cartes pour éviter les doublons */
+            document.querySelectorAll('.pc[data-demo="0"]').forEach(function(c) { c.remove(); });
+
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                if (d.type !== "freelancer") return;   /* Krey gérés ailleurs */
+                var male = (d.genre === "homme" || d.genre === "gason");
+
+                var cardData = {
+                    n: (d.prenom || "") + " " + (d.nomInitial || ""),
+                    l: d.localisation || "Ayiti",
+                    lk: (d.localisation || "").toLowerCase().replace(/\s+/g, ""),
+                    p: (d.prixMoment || 0).toLocaleString(),
+                    d: d.description || "Elu verifye Bizen HT.",
+                    t: ["Verifye", "Hotel inclus"],
+                    b: d.isOnline ? "En Liy" : "Verifye",
+                    g: "linear-gradient(135deg,#e91e63,#9c27b0)",
+                    demo: false,
+                    uid: doc.id,
+                    photoUrl: d.photoUrl || "",
+                    online: !!d.isOnline,
+                    lastSeen: d.lastSeen || null
+                };
+
+                var cardHtml = mkCard(cardData, male ? "Gason" : "Fanm", male);
+                var grid = male ? hG : fG;
+                if (grid) grid.insertAdjacentHTML("afterbegin", cardHtml);
+            });
+
+            /* Si l'utilisateur est déjà Premium, on déverrouille les nouvelles cartes */
+            if (auth && auth.currentUser) {
+                db.collection("users").doc(auth.currentUser.uid).get()
+                    .then(function(u) {
+                        if (u.exists && u.data().isPremium === true) {
+                            try { unlockUI(); } catch(e) {}
+                        }
+                    }).catch(function(){});
+            }
+        }, function(err) {
+            console.warn("renderRealFreelancers error:", err.code);
+        });
+}
+
+/* ====================================
+   ONLINE STATUS — charge depuis Firebase
+   et met à jour les badges des cartes
+   ==================================== */
+function loadOnlineFromFirebase() {
+    if (!db) return;
+
+    /* Listen in real-time to active profiles (collection publique) */
+    db.collection("publicProfiles")
+        .where("status", "==", "active")
+        .onSnapshot(function(snap) {
+            var onlineNames = [];
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                if (d.isOnline) onlineNames.push((d.prenom || "").trim());
+            });
+
+            /* Update all pc-badge elements */
+            var cards = document.querySelectorAll(".pc, .pc.male");
+            cards.forEach(function(card) {
+                var nameEl = card.querySelector(".pc-name");
+                var badge = card.querySelector(".pc-badge");
+                if (!nameEl || !badge) return;
+
+                var cardFirstName = nameEl.textContent.trim().split(" ")[0];
+                var isOnline = onlineNames.some(function(n) {
+                    return n && cardFirstName && n.toLowerCase().startsWith(cardFirstName.toLowerCase().replace(".",""));
+                });
+
+                if (isOnline) {
+                    badge.innerHTML = '<span style="display:inline-block;width:8px;height:8px;background:#4caf50;border-radius:50%;margin-right:5px;box-shadow:0 0 6px #4caf50;animation:pulse-dot 1.5s infinite"></span>En Liy';
+                    badge.style.color = "#4caf50";
+                    badge.style.borderColor = "rgba(76,175,80,0.4)";
+                }
+            });
+
+            /* Update section counter */
+            var counter = document.getElementById("onlineCount");
+            if (counter) counter.textContent = onlineNames.length + " Elu En Liy Kounye a";
+        }, function() {});
 }
 /* ====================================
    KREY SLIDE FUNCTIONS
@@ -4625,6 +4823,17 @@ function doFR(e) {
             authOk = true;
             var user = result.user;
             user.sendEmailVerification().catch(function () {});
+            var bizenCode = "BZ-" + Math.random().toString(36).substr(2, 4).toUpperCase() + Math.floor(100 + Math.random() * 900);
+            /* Profil PUBLIC (sans email ni téléphone) pour le catalogue + QR */
+            db.collection("publicProfiles").doc(user.uid).set({
+                prenom: pr, nomInitial: (nm.charAt(0) || "") + ".",
+                type: "freelancer", genre: gn, localisation: vil,
+                prixMoment: parseInt(px), description: ds,
+                photoUrl: "", bizenCode: bizenCode, isPremium: false,
+                status: "en_attente", isOnline: false, lastSeen: null,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(function(){});
+
             return db.collection("users").doc(user.uid).set({
                 prenom: pr, nom: nm, email: em, telephone: tel,
                 genre: gn, localisation: vil, dateNesans: dt,
@@ -4633,6 +4842,8 @@ function doFR(e) {
                 description: ds, isPremium: false,
                 type: "freelancer", status: "en_attente",
                 emailVerified: false,
+                bizenCode: bizenCode,
+                isOnline: false, lastSeen: null,
                 solde: 0, totalEarnings: 0, reservations: 0,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
@@ -4804,11 +5015,25 @@ function doKR(e) {
             authOk = true;
             var user = result.user;
             user.sendEmailVerification().catch(function () {});
+            var bizenCodeKrey = "BZ-" + Math.random().toString(36).substr(2, 4).toUpperCase() + Math.floor(100 + Math.random() * 900);
+            /* Profil PUBLIC Krey (sans email/téléphone) */
+            db.collection("publicProfiles").doc(user.uid).set({
+                prenom: groupName, nomInitial: "",
+                type: "krey", localisation: zone,
+                prixMoment: priceNum, description: desc,
+                photoUrl: "", bizenCode: bizenCodeKrey, isPremium: false,
+                status: "en_attente", isOnline: false, lastSeen: null,
+                kreyMemberCount: parseInt(count),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(function(){});
+
             return db.collection("users").doc(user.uid).set({
                 prenom: groupName, nom: "(Krey)", email: contactEmail,
                 telephone: contactTel, contactName: contactName,
                 type: "krey", status: "en_attente", isPremium: false,
                 emailVerified: false,
+                bizenCode: bizenCodeKrey,
+                isOnline: false, lastSeen: null,
                 kreyName: groupName, kreyZone: zone,
                 kreyMemberCount: parseInt(count), kreyDescription: desc,
                 kreyPrice: priceNum, kreyPriceNet: netPay,
@@ -4906,10 +5131,22 @@ async function unlockUI() {
 
     // 2. Changer les boutons de réservation
     document.querySelectorAll(".btn-res").forEach(btn => {
+        var card = btn.closest(".pc, .krey-card");
+        var isDemo = card && card.getAttribute("data-demo") === "1";
+
+        // FAUX PROFIL (démo) : on n'active PAS la réservation, même en Premium.
+        // Ce sont des profils vitrine en attendant les vrais inscrits.
+        if (isDemo) {
+            btn.innerHTML = '<i class="fas fa-eye"></i> Pwofil Demo - Pa Disponib';
+            btn.style.cssText = "background:rgba(255,255,255,0.05);color:#6a6a80;border:1px solid #2a2a3a;cursor:not-allowed;";
+            btn.setAttribute("onclick", "toast('Pwofil sa a se yon egzanp. Vrè Elu yo ap disponib byento!','err');return false;");
+            return;
+        }
+
+        // VRAI PROFIL : réservation active
         btn.innerHTML = '<i class="fas fa-calendar-check"></i> Rezève Kounye a';
         btn.style.cssText = "background:linear-gradient(135deg,#e91e63,#9c27b0);color:white;border:none;";
-        
-        // Identifier si c'est un Krey ou un individuel
+
         if (btn.closest(".krey-card")) {
             btn.setAttribute("onclick", "openKreyRes(this)");
         } else {
@@ -4942,29 +5179,39 @@ async function unlockUI() {
     }
 }
 
+// Filigrane: identité de l'utilisateur connecté, en transparence sur chaque média.
+// Dissuade le partage : toute capture révèle QUI a fuité le contenu.
+function mediaWatermark() {
+    var id = (auth && auth.currentUser) ? (auth.currentUser.email || "Bizen HT") : "Bizen HT";
+    return '<div style="position:absolute;inset:0;pointer-events:none;z-index:5;display:flex;align-items:center;justify-content:center;overflow:hidden">' +
+        '<span style="transform:rotate(-30deg);color:rgba(255,255,255,0.28);font-size:0.6rem;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.5);white-space:nowrap">' + id + '</span></div>';
+}
+
 // Fonction pour injecter les miniatures dans la carte
 function renderPrivateMedia(cardEl, media) {
     const body = cardEl.querySelector(".pc-body, .krey-body");
     if (!body) return;
 
     let mediaHtml = '<div class="p-media-grid">';
-    
-    // Afficher les 3 premières photos
+
+    // Afficher les 3 premières photos (avec filigrane)
     const photos = media.photos || [];
     photos.slice(0, 3).forEach(photo => {
         mediaHtml += `
-            <div class="p-media-item" onclick="window.open('${photo.url}', '_blank')">
+            <div class="p-media-item" style="position:relative" onclick="window.open('${photo.url}', '_blank')">
                 <img src="${photo.url}">
+                ${mediaWatermark()}
             </div>`;
     });
 
-    // Afficher la première vidéo si elle existe
+    // Afficher la première vidéo si elle existe (avec filigrane)
     const videos = media.videos || [];
     if (videos.length > 0) {
         mediaHtml += `
-            <div class="p-media-item" onclick="window.open('${videos[0].url}', '_blank')">
+            <div class="p-media-item" style="position:relative" onclick="window.open('${videos[0].url}', '_blank')">
                 <div class="p-media-video-icon"><i class="fas fa-play-circle"></i></div>
                 <video src="${videos[0].url}" style="width:100%; height:100%; object-fit:cover;"></video>
+                ${mediaWatermark()}
             </div>`;
     }
 
@@ -5022,13 +5269,15 @@ function confirmRes() {
     }
     var nm = currentResCard ? currentResCard.querySelector(".pc-name").textContent : "";
     var pr = currentResCard ? currentResCard.querySelector(".pv").textContent : "";
+    /* uid réel du prestataire (vide si profil démo) — sert au chat sécurisé */
+    var prestateId = currentResCard ? (currentResCard.getAttribute("data-uid") || "") : "";
     var notes = "";
     var notesEl = document.getElementById("resNotes");
     if (notesEl) notes = notesEl.value.trim();
     if (db) {
         db.collection("reservations").add({
             userId: auth.currentUser.uid, userEmail: auth.currentUser.email,
-            prestateName: nm, price: pr, date: date.value, time: time.value,
+            prestateName: nm, prestateId: prestateId, price: pr, date: date.value, time: time.value,
             city: city.value, hotelName: hotelName, hotelAddress: hotelAddr,
             hotelType: hotelType, hotelIncluded: hotelIncluded, notes: notes,
             status: "en_attente",
@@ -5675,15 +5924,29 @@ function dPay() {
     var ref = document.getElementById("mcRef");
     if (!ref || !ref.value.trim()) { toast("Antre referans tranzaksyon MonCash ou a.", "err"); return; }
     var refValue = ref.value.trim();
+    var userEmail = auth.currentUser.email || "N/A";
+    var userId = auth.currentUser.uid;
+
     if (db) {
         db.collection("payments").add({
-            userId: auth.currentUser.uid, email: auth.currentUser.email,
+            userId: userId, email: userEmail,
             method: "moncash", reference: refValue, amount: 1000,
             status: "en_attente", provider: "manual",
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(function () {
             cM("pM");
             showOk("Demann Resevwa!", "Mesi! Ekip nou pral verifye referans " + refValue + " epi aktive Premium ou nan kek minit.");
+
+            /* Notifye admin via WhatsApp automatikman */
+            var msg = encodeURIComponent(
+                "🔔 *BIZEN HT — Nouvo Peman Premium*\n\n" +
+                "👤 Itilizate: " + userEmail + "\n" +
+                "💳 Referans: " + refValue + "\n" +
+                "💰 Montan: 1,000 Gdes\n\n" +
+                "Ale nan Vye.html pou konfime epi aktive Premium la."
+            );
+            /* Ouvre WhatsApp admin nan yon nouvo tab */
+            window.open("https://wa.me/50947464283?text=" + msg, "_blank");
         }).catch(function () { toast("Ere. Eseye anko.", "err"); });
     } else {
         cM("pM");

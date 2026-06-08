@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bizen HT - Pwofil Elu</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Montserrat',sans-serif;background:#0a0a0f;color:white;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px}
+        .card{background:#12121a;border:1px solid #2a2a3a;border-radius:24px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.6)}
+        .card-top{background:linear-gradient(135deg,#e91e63,#9c27b0);padding:40px 30px 60px;text-align:center;position:relative}
+        .avatar{width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.2);border:4px solid white;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:2.5rem;overflow:hidden}
+        .avatar img{width:100%;height:100%;object-fit:cover}
+        .name{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;margin-bottom:6px}
+        .type-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);padding:5px 14px;border-radius:50px;font-size:0.78rem;font-weight:600}
+        .online-badge{position:absolute;top:16px;right:16px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.4);backdrop-filter:blur(10px);padding:6px 14px;border-radius:50px;font-size:0.75rem;font-weight:600}
+        .online-dot{width:8px;height:8px;border-radius:50%;background:#6a6a80}
+        .online-dot.on{background:#4caf50;box-shadow:0 0 8px #4caf50;animation:pd 1.5s infinite}
+        @keyframes pd{0%,100%{box-shadow:0 0 4px #4caf50}50%{box-shadow:0 0 12px #4caf50}}
+        .card-body{padding:25px 25px 30px;margin-top:-20px;border-radius:20px 20px 0 0;background:#12121a;position:relative}
+        .code-box{background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:12px;padding:12px 16px;text-align:center;margin-bottom:20px}
+        .code-label{font-size:0.65rem;color:#6a6a80;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+        .code-val{font-size:1.3rem;font-weight:700;color:#ffd700;letter-spacing:3px}
+        .info-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+        .info-row:last-child{border-bottom:none}
+        .info-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem}
+        .info-lbl{font-size:0.7rem;color:#6a6a80;margin-bottom:2px}
+        .info-val{font-size:0.9rem;font-weight:600}
+        .tags{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+        .tag{background:rgba(255,255,255,0.05);border:1px solid #2a2a3a;border-radius:50px;padding:4px 12px;font-size:0.72rem;color:#b0b0c0}
+        .bizen-footer{text-align:center;padding:20px;border-top:1px solid #2a2a3a}
+        .bizen-logo{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;margin-bottom:6px}
+        .bizen-logo span{background:linear-gradient(135deg,#e91e63,#9c27b0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .btn-visit{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:white;border:none;padding:12px 28px;border-radius:50px;font-family:'Montserrat',sans-serif;font-weight:600;font-size:0.9rem;cursor:pointer;text-decoration:none;margin-top:10px;transition:transform 0.2s}
+        .btn-visit:hover{transform:translateY(-2px)}
+        .loading{text-align:center;padding:60px 20px}
+        .loading i{font-size:2.5rem;color:#e91e63;animation:pulse 1s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+        .not-found{text-align:center;padding:60px 20px}
+        .not-found i{font-size:3rem;color:#f44336;margin-bottom:16px;display:block}
+        .last-seen{font-size:0.72rem;color:#6a6a80;margin-top:4px}
+    </style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadState" class="loading">
+    <i class="fas fa-spinner fa-spin"></i>
+    <p style="margin-top:16px;color:#b0b0c0;font-size:0.9rem">Chaje pwofil...</p>
+</div>
+
+<!-- PROFILE CARD -->
+<div id="profileCard" class="card" style="display:none">
+    <div class="card-top">
+        <div id="onlineBadge" class="online-badge">
+            <div class="online-dot" id="onlineDotEl"></div>
+            <span id="onlineText">Dekonekte</span>
+        </div>
+        <div class="avatar" id="avatarEl"><i class="fas fa-user"></i></div>
+        <div class="name" id="profileName">---</div>
+        <div class="type-badge" id="typeBadge"><i class="fas fa-star"></i> Elu</div>
+    </div>
+
+    <div class="card-body">
+        <!-- Bizen Code -->
+        <div class="code-box">
+            <div class="code-label"><i class="fas fa-id-card"></i> Kòd Dosye Bizen HT</div>
+            <div class="code-val" id="profileCode">---</div>
+        </div>
+
+        <!-- Info rows -->
+        <div id="infoRows"></div>
+
+        <!-- Tags -->
+        <div id="profileTags" class="tags"></div>
+    </div>
+
+    <div class="bizen-footer">
+        <div class="bizen-logo">Bizen<span>HT</span></div>
+        <p style="font-size:0.75rem;color:#6a6a80;margin-bottom:10px">Platfom #1 an Ayiti pou moman plezi</p>
+        <a href="index.html" class="btn-visit"><i class="fas fa-heart"></i> Vizite Bizen HT</a>
+    </div>
+</div>
+
+<!-- NOT FOUND -->
+<div id="notFound" class="not-found" style="display:none">
+    <i class="fas fa-exclamation-circle"></i>
+    <h2 style="font-family:'Playfair Display',serif;margin-bottom:10px">Pwofil Pa Trouve</h2>
+    <p style="color:#b0b0c0;font-size:0.9rem;margin-bottom:20px">Kòd sa a pa valid oswa pwofil la pa egziste.</p>
+    <a href="index.html" class="btn-visit"><i class="fas fa-home"></i> Retounen Bizen HT</a>
+</div>
+
+<script>
+var fbCfg = {
+    apiKey: "AIzaSyADWklo0scZNWkhudRn_VBhrapXl4AZL_E",
+    authDomain: "bizen-ht.firebaseapp.com",
+    projectId: "bizen-ht",
+    storageBucket: "bizen-ht.firebasestorage.app",
+    messagingSenderId: "248857953518",
+    appId: "1:248857953518:web:f85b1b37abd849add01fff"
+};
+
+var db;
+try {
+    var app;
+    try { app = firebase.app(); } catch(e) { app = firebase.initializeApp(fbCfg); }
+    db = firebase.firestore();
+} catch(e) { console.warn("Firebase error:", e); }
+
+/* Read bizenCode from URL */
+var urlParams = new URLSearchParams(window.location.search);
+var bizenCode = urlParams.get("code") || "";
+
+function showLoading() {
+    document.getElementById("loadState").style.display = "block";
+    document.getElementById("profileCard").style.display = "none";
+    document.getElementById("notFound").style.display = "none";
+}
+
+function showProfile(data) {
+    document.getElementById("loadState").style.display = "none";
+    document.getElementById("profileCard").style.display = "block";
+    document.getElementById("notFound").style.display = "none";
+
+    /* Name (collection publique: prenom + nomInitial) */
+    var name = (data.prenom || data.kreyName || "") + " " + (data.nomInitial || "");
+    document.getElementById("profileName").textContent = name.trim() || "Elu";
+    document.getElementById("profileCode").textContent = data.bizenCode || bizenCode;
+
+    /* Avatar */
+    var avatarSrc = data.photoUrl || data.profilePhoto || "";
+    if (avatarSrc) {
+        document.getElementById("avatarEl").innerHTML = '<img src="' + avatarSrc + '" alt="Photo">';
+    }
+
+    /* Type badge */
+    var typeEl = document.getElementById("typeBadge");
+    if (data.type === "krey") {
+        typeEl.innerHTML = '<i class="fas fa-users"></i> Gwoup Krey';
+    } else {
+        typeEl.innerHTML = '<i class="fas fa-star"></i> Elu Bizen HT';
+    }
+
+    /* Online status */
+    var onlineDot = document.getElementById("onlineDotEl");
+    var onlineTxt = document.getElementById("onlineText");
+    if (data.isOnline) {
+        onlineDot.classList.add("on");
+        onlineTxt.textContent = "En Liy";
+        onlineTxt.style.color = "#4caf50";
+    } else {
+        var lastSeenStr = "";
+        if (data.lastSeen && data.lastSeen.toDate) {
+            var d = data.lastSeen.toDate();
+            lastSeenStr = d.toLocaleDateString("fr-FR") + " " + d.getHours() + "h" + String(d.getMinutes()).padStart(2,"0");
+        }
+        onlineTxt.textContent = lastSeenStr ? "Vu " + lastSeenStr : "Ofline";
+    }
+
+    /* Info rows */
+    var rows = "";
+    if (data.localisation || data.kreyZone) {
+        rows += mkRow("fa-map-marker-alt", "#e91e63", "Lokasyon", data.localisation || data.kreyZone);
+    }
+    if (data.genre) {
+        rows += mkRow("fa-venus-mars", "#9c27b0", "Seks", data.genre === "femme" ? "Fanm" : "Gason");
+    }
+    if (data.prixMoment || data.kreyPrice) {
+        var prix = (data.prixMoment || data.kreyPrice || 0).toLocaleString();
+        rows += mkRow("fa-tag", "#ffd700", "Pri pa Moman", prix + " Gdes (Hotel inclus)");
+    }
+    if (data.description || data.kreyDescription) {
+        rows += mkRow("fa-info-circle", "#2196f3", "Deskripsyon", (data.description || data.kreyDescription || "").substring(0, 80) + "...");
+    }
+    if (data.kreyMemberCount) {
+        rows += mkRow("fa-users", "#4caf50", "Manm", data.kreyMemberCount + " manm");
+    }
+    document.getElementById("infoRows").innerHTML = rows;
+
+    /* Premium badge */
+    if (data.isPremium) {
+        var codeBox = document.querySelector(".code-box");
+        if (codeBox) {
+            codeBox.insertAdjacentHTML("afterend", '<div style="text-align:center;margin-bottom:12px"><span style="background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;padding:4px 14px;border-radius:20px;font-size:0.72rem;font-weight:700"><i class="fas fa-crown"></i> Manm Premium Bizen HT</span></div>');
+        }
+    }
+}
+
+function mkRow(ico, col, label, val) {
+    return '<div class="info-row">' +
+        '<div class="info-ico" style="background:rgba(255,255,255,0.05)">' +
+        '<i class="fas ' + ico + '" style="color:' + col + '"></i></div>' +
+        '<div><div class="info-lbl">' + label + '</div><div class="info-val">' + val + '</div></div></div>';
+}
+
+function showNotFound() {
+    document.getElementById("loadState").style.display = "none";
+    document.getElementById("profileCard").style.display = "none";
+    document.getElementById("notFound").style.display = "block";
+}
+
+/* Load profile */
+if (!bizenCode) {
+    showNotFound();
+} else if (!db) {
+    showNotFound();
+} else {
+    /* Lit la collection PUBLIQUE (lisible sans connexion, sans données sensibles) */
+    db.collection("publicProfiles")
+        .where("bizenCode", "==", bizenCode.toUpperCase())
+        .limit(1)
+        .get()
+        .then(function(snap) {
+            if (snap.empty) {
+                showNotFound();
+            } else {
+                showProfile(snap.docs[0].data());
+            }
+        })
+        .catch(function(err) {
+            console.error(err);
+            showNotFound();
+        });
+}
+</script>
+</body>
+</html>

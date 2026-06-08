@@ -11,6 +11,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <style>
         :root {
             --primary: #e91e63;
@@ -903,6 +905,30 @@
                     <i class="fas fa-save"></i> Sove Pwofil
                 </button>
             </div>
+
+            <!-- BIZEN CODE + QR CARD -->
+            <div style="background:var(--bg-card);border:1px solid rgba(255,215,0,0.3);border-radius:var(--radius-lg);padding:30px;max-width:500px;margin-top:20px">
+                <h3 style="font-family:'Playfair Display',serif;margin-bottom:6px;display:flex;align-items:center;gap:10px"><i class="fas fa-id-card" style="color:#ffd700"></i> Kòd & Badge Bizen HT</h3>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:20px">Kòd inik ou pou badge Bizen HT ou. Scan QR code a pou wè pwofil ou.</p>
+
+                <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+                    <!-- QR Code box -->
+                    <div id="qrCodeBox" style="background:white;padding:10px;border-radius:12px;width:130px;height:130px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                        <div style="color:#ccc;font-size:0.75rem;text-align:center"><i class="fas fa-qrcode" style="font-size:2rem;display:block;margin-bottom:6px;color:#aaa"></i>Chaje...</div>
+                    </div>
+                    <!-- Code info -->
+                    <div>
+                        <div style="font-size:0.72rem;color:#6a6a80;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Kòd Dosye Bizen HT</div>
+                        <div id="displayBizenCode" style="font-size:1.8rem;font-weight:700;color:#ffd700;letter-spacing:4px;margin-bottom:10px">---</div>
+                        <div style="font-size:0.75rem;color:#b0b0c0;line-height:1.6">
+                            <i class="fas fa-check-circle" style="color:#4caf50"></i> Montre kòd sa a nan badge ou<br>
+                            <i class="fas fa-check-circle" style="color:#4caf50"></i> Admin ka tcheke pwofil ou ak kòd sa a<br>
+                            <i class="fas fa-qrcode" style="color:#e91e63"></i> Scan QR = pwofil ou anliy
+                        </div>
+                        <button onclick="downloadQR()" style="margin-top:12px;padding:8px 18px;border:none;border-radius:20px;background:rgba(255,215,0,0.15);color:#ffd700;font-size:0.78rem;cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600"><i class="fas fa-download"></i> Telechaje QR Code</button>
+                    </div>
+                </div>
+            </div>
         </div>
 <!-- ===== KREY OVERVIEW ===== -->
 <div class="dash-section" id="sec-krey-overview">
@@ -1253,6 +1279,52 @@ if (!auth) {
                 }
 
                 userData.uid = user.uid;
+
+                /* === ONLINE STATUS + PUBLIC PROFILE SYNC === */
+                if (userData.type === "freelancer" || userData.type === "krey") {
+                    /* Backfill: génère un bizenCode si le compte existant n'en a pas */
+                    if (!userData.bizenCode) {
+                        userData.bizenCode = "BZ-" + Math.random().toString(36).substr(2,4).toUpperCase() + Math.floor(100 + Math.random()*900);
+                        db.collection("users").doc(user.uid).update({ bizenCode: userData.bizenCode }).catch(function(){});
+                    }
+
+                    db.collection("users").doc(user.uid).update({
+                        isOnline: true,
+                        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(function(){});
+
+                    /* Synchronise / backfill le profil PUBLIC (sans imel ni telefòn) */
+                    syncPublicProfile(user.uid, userData, true);
+
+                    /* Mark offline on page close */
+                    window.addEventListener("beforeunload", function() {
+                        db.collection("users").doc(user.uid).update({
+                            isOnline: false,
+                            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                        }).catch(function(){});
+                        db.collection("publicProfiles").doc(user.uid).update({
+                            isOnline: false,
+                            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                        }).catch(function(){});
+                    });
+
+                    /* Heartbeat every 2 minutes */
+                    setInterval(function() {
+                        db.collection("users").doc(user.uid).update({
+                            isOnline: true,
+                            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                        }).catch(function(){});
+                        db.collection("publicProfiles").doc(user.uid).update({
+                            isOnline: true,
+                            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                        }).catch(function(){});
+                    }, 120000);
+
+                    /* Notifications temps réel: nouvelles réservations */
+                    initFreelancerNotifications(user.uid, userData);
+                }
+                /* === END ONLINE STATUS === */
+
                 stopLoader();
 
                 /* Route by account type */
@@ -1371,6 +1443,28 @@ function setupFreelancer() {
 
     /* Dashboard title */
     setEl("dashUserName", "Dashboard Elu");
+
+    /* Bizen Code + QR */
+    if (userData.bizenCode) {
+        setTimeout(function() { generateQRCode(userData.bizenCode); }, 500);
+    }
+
+    /* Bizen Code Display */
+    if (userData.bizenCode) {
+        var codeBox = document.getElementById("bizenCodeBox");
+        if (!codeBox) {
+            var sbBottom = document.getElementById("sbBadges");
+            if (sbBottom) {
+                var codeEl = document.createElement("div");
+                codeEl.id = "bizenCodeBox";
+                codeEl.style.cssText = "margin-top:12px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:10px 14px;text-align:center";
+                codeEl.innerHTML = '<div style="font-size:0.62rem;color:#6a6a80;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px"><i class="fas fa-qrcode" style="color:#ffd700"></i> Kòd Bizen HT</div><div style="font-size:1.1rem;font-weight:700;color:#ffd700;letter-spacing:3px">' + userData.bizenCode + '</div><div style="font-size:0.68rem;color:#6a6a80;margin-top:4px">Kòd dosye ou pou badge Bizen HT</div>';
+                sbBottom.parentNode.insertBefore(codeEl, sbBottom.nextSibling);
+            }
+        } else {
+            codeBox.querySelector("div:nth-child(2)").textContent = userData.bizenCode;
+        }
+    }
 
     /* Stats */
     var solde = userData.solde || 0;
@@ -1664,7 +1758,7 @@ function loadFlReservations() {
             var now = new Date();
 
             items.forEach(function (r) {
-                var p = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
+                var p = parseInt(String(r.price || "0").replace(/[^0-9]/g, "")) || 0;
                 var net = Math.round(p * 0.9);
                 total += net;
                 if (r.createdAt && r.createdAt.toDate) {
@@ -1716,7 +1810,7 @@ function loadFlSoldeByPeriod() {
             snap.forEach(function (doc) {
                 var r = doc.data();
                 if (r.status === "cancelled") return;
-                var p = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
+                var p = parseInt(String(r.price || "0").replace(/[^0-9]/g, "")) || 0;
                 var net = Math.round(p * 0.9);
                 if (r.createdAt && r.createdAt.toDate) {
                     var d = r.createdAt.toDate();
@@ -1743,9 +1837,11 @@ function buildResRow(r, isFL) {
     var mainText = isFL ? (r.userEmail || "Kliyan") : (r.prestateName || "N/A");
     var priceText = r.price || "N/A";
     if (isFL) {
-        var pNum = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
+        var pNum = parseInt(String(r.price || "0").replace(/[^0-9]/g, "")) || 0;
         priceText = Math.round(pNum * 0.9).toLocaleString() + " G (net)";
     }
+    /* Nom affiché dans le chat: pour l'Elu c'est le client, pour le client c'est l'Elu */
+    var chatPartner = (isFL ? (r.userEmail || "Kliyan") : (r.prestateName || "Elu"));
 
     var tipBadge = r.type === "krey"
         ? '<span style="padding:2px 8px;border-radius:20px;font-size:0.6rem;font-weight:600;background:rgba(156,39,176,0.15);color:#9c27b0;margin-left:6px">Krey</span>'
@@ -1753,11 +1849,17 @@ function buildResRow(r, isFL) {
 
     var loc = r.type === "krey" ? (r.locationName || "Kote prive") : (r.hotelName || "Hotel");
 
+    var chatBtn = "";
+    if (r.status === "confirmed") {
+        chatBtn = '<button onclick="openChat(\'' + r.id + '\',\'' + chatPartner.replace(/'/g,"") + '\')" style="margin-top:8px;padding:5px 14px;border:none;border-radius:20px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:white;font-size:0.72rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="fas fa-comment-dots"></i> Chat <span style="font-size:0.6rem;background:rgba(255,255,255,0.2);padding:1px 6px;border-radius:10px">24h</span></button>';
+    }
+
     return '<div class="res-item" data-status="' + (r.status || "en_attente") + '">' +
         '<div class="res-info">' +
         '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">' +
         '<strong>' + mainText + '</strong>' + tipBadge + '</div>' +
         '<span class="res-sub">' + (r.date || "N/A") + ' | ' + loc + '</span>' +
+        chatBtn +
         '</div>' +
         '<div class="res-right">' +
         '<span style="padding:3px 12px;border-radius:20px;font-size:0.68rem;font-weight:600;background:' + stBg + ';color:' + stCol + '">' + stTxt + '</span>' +
@@ -1824,6 +1926,10 @@ function saveFlProfile() {
             prixMoment: p, prixNet: net, commissionBizen: comm
         })
         .then(function () {
+            /* Reflète sur le profil public (catalogue) */
+            db.collection("publicProfiles").doc(currentUser.uid).set({
+                description: desc.value.trim(), prixMoment: p
+            }, { merge: true }).catch(function(){});
             showToast("Pwofil sove!", "success");
             setEl("flPrixEx", p.toLocaleString() + " Gdes");
             setEl("flNetEx", net.toLocaleString() + " Gdes");
@@ -2239,6 +2345,421 @@ async function deleteKreyMedia(
             "error"
         );
     }
+}
+</script>
+
+<!-- ====================================================
+     CHAT MODAL — Système éphémère 24h (Premium)
+     ==================================================== -->
+<div id="chatModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center">
+    <div style="background:#12121a;border:1px solid #2a2a3a;border-radius:20px;width:95%;max-width:480px;height:80vh;max-height:640px;display:flex;flex-direction:column;overflow:hidden;position:relative">
+        <!-- Anti-screenshot overlay for premium -->
+        <div id="chatAntiSS" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2;background:repeating-linear-gradient(45deg,rgba(233,30,99,0.02) 0px,rgba(233,30,99,0.02) 1px,transparent 1px,transparent 10px);user-select:none;-webkit-user-select:none"></div>
+
+        <!-- Header -->
+        <div style="padding:18px 20px;border-bottom:1px solid #2a2a3a;display:flex;align-items:center;gap:12px;background:#0d0d15">
+            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-user" style="color:white"></i></div>
+            <div style="flex:1">
+                <div style="font-weight:700;font-size:0.9rem" id="chatPartnerName">Chat</div>
+                <div style="font-size:0.7rem;color:#e91e63"><i class="fas fa-clock"></i> Mesaj yo disparèt aprè 24h · <i class="fas fa-lock"></i> Pwoteje</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+                <div id="chatOnlineDot" style="width:10px;height:10px;background:#6a6a80;border-radius:50%"></div>
+                <button onclick="closeChat()" style="background:none;border:none;color:#6a6a80;font-size:1.2rem;cursor:pointer"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+
+        <!-- Ephemeral warning -->
+        <div style="padding:8px 16px;background:rgba(255,152,0,0.08);border-bottom:1px solid rgba(255,152,0,0.2);font-size:0.68rem;color:#ff9800;text-align:center">
+            <i class="fas fa-exclamation-triangle"></i> Mesaj yo efase otomatikman apre 24 èdtan · Screenshot bloke pou pwoteksyon ou
+        </div>
+
+        <!-- Messages area -->
+        <div id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;-webkit-user-select:none;user-select:none">
+            <div style="text-align:center;padding:40px;color:#6a6a80;font-size:0.82rem"><i class="fas fa-comment-dots" style="font-size:2rem;margin-bottom:10px;display:block;opacity:0.3"></i>Kòmanse konvèsasyon an...</div>
+        </div>
+
+        <!-- Input -->
+        <div style="padding:14px 16px;border-top:1px solid #2a2a3a;display:flex;gap:10px;align-items:flex-end">
+            <textarea id="chatInput" placeholder="Ekri mesaj ou..." rows="2" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid #2a2a3a;border-radius:12px;color:white;padding:10px 14px;font-family:Montserrat,sans-serif;font-size:0.85rem;resize:none;outline:none;max-height:100px" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg();}"></textarea>
+            <button onclick="sendChatMsg()" style="width:44px;height:44px;border-radius:50%;border:none;background:linear-gradient(135deg,#e91e63,#9c27b0);color:white;cursor:pointer;flex-shrink:0"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+</div>
+
+<!-- Anti-screenshot CSS for premium -->
+<style>
+#chatMessages { -webkit-user-select: none; user-select: none; }
+#chatModal * { -webkit-user-select: none; user-select: none; }
+@media print { #chatModal { display: none !important; } }
+</style>
+
+<script>
+/* ====================================
+   CHAT SYSTEM — 24h Ephemeral + Chiffré
+   ==================================== */
+var currentChatResId = null;
+var chatUnsubscribe = null;
+var currentChatKey = null;        /* Clé AES dérivée pour CETTE conversation */
+
+/* Secret intégré à l'app. La clé réelle est dérivée (PBKDF2) à partir de:
+   secret + ID réservation + UID des 2 participants triés.
+   => Chaque conversation a une clé UNIQUE, non devinable depuis l'ID seul.
+   La protection d'accès reste les Firestore Rules (2 participants). */
+var CHAT_SECRET = "BizenHT#2026$Konfidansyalite$E2E";
+
+function deriveChatKey(resId, participants) {
+    try {
+        var sorted = (participants || []).slice().sort().join("|");
+        var salt = CryptoJS.SHA256(resId + "|" + sorted);
+        /* PBKDF2: 256-bit, 1000 itérations */
+        var key = CryptoJS.PBKDF2(CHAT_SECRET + ":" + resId + ":" + sorted, salt, {
+            keySize: 256 / 32,
+            iterations: 1000
+        });
+        return key.toString();
+    } catch (e) {
+        return CHAT_SECRET + ":" + resId;
+    }
+}
+
+function encryptMsg(text) {
+    try {
+        return CryptoJS.AES.encrypt(text, currentChatKey || CHAT_SECRET).toString();
+    } catch (e) {
+        return text;
+    }
+}
+
+function decryptMsg(cipher) {
+    try {
+        var bytes = CryptoJS.AES.decrypt(cipher, currentChatKey || CHAT_SECRET);
+        var plain = bytes.toString(CryptoJS.enc.Utf8);
+        return plain || "[mesaj]";
+    } catch (e) {
+        return "[mesaj chiffré]";
+    }
+}
+
+function openChat(reservationId, partnerName) {
+    currentChatResId = reservationId;
+    currentChatKey = null;
+
+    var modal = document.getElementById("chatModal");
+    var nameEl = document.getElementById("chatPartnerName");
+    if (nameEl) nameEl.textContent = partnerName || "Chat";
+    if (modal) modal.style.display = "flex";
+
+    /* Filigrane dynamique avec l'identité de l'utilisateur courant */
+    applyChatWatermark();
+
+    /* Récupère la réservation -> participants -> dérive la clé -> charge messages */
+    if (db && currentUser) {
+        db.collection("reservations").doc(reservationId).get()
+            .then(function(resDoc) {
+                var parts = [];
+                if (resDoc.exists) {
+                    var r = resDoc.data();
+                    if (r.userId) parts.push(r.userId);
+                    if (r.prestateId) parts.push(r.prestateId);
+                }
+                if (parts.indexOf(currentUser.uid) === -1) parts.push(currentUser.uid);
+
+                /* Dérive la clé de chiffrement de cette conversation */
+                currentChatKey = deriveChatKey(reservationId, parts);
+
+                /* Enregistre les participants (Firestore Rules) */
+                db.collection("chats").doc(reservationId).set({
+                    participants: parts,
+                    reservationId: reservationId,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true }).catch(function(){});
+
+                /* Charge les messages APRÈS avoir la clé */
+                loadChatMessages(reservationId);
+            })
+            .catch(function() {
+                currentChatKey = deriveChatKey(reservationId, [currentUser.uid]);
+                loadChatMessages(reservationId);
+            });
+    } else {
+        loadChatMessages(reservationId);
+    }
+
+    document.addEventListener("keydown", blockScreenshotKey);
+}
+
+/* Filigrane: superpose l'email/téléphone de l'utilisateur en transparence.
+   Si quelqu'un photographie l'écran, on voit QUI a fuité la conversation. */
+function applyChatWatermark() {
+    var ov = document.getElementById("chatAntiSS");
+    if (!ov || !currentUser) return;
+    var id = (userData && userData.telephone) ? userData.telephone : (currentUser.email || "Bizen HT");
+    var tile = '<span style="display:inline-block;transform:rotate(-30deg);color:rgba(233,30,99,0.06);font-size:0.7rem;white-space:nowrap;margin:18px 22px;font-weight:600">' + id + ' · Bizen HT</span>';
+    var grid = "";
+    for (var i = 0; i < 60; i++) grid += tile;
+    ov.innerHTML = '<div style="position:absolute;inset:0;overflow:hidden;display:flex;flex-wrap:wrap;align-content:center;justify-content:center">' + grid + '</div>';
+}
+
+function closeChat() {
+    if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+    var modal = document.getElementById("chatModal");
+    if (modal) modal.style.display = "none";
+    currentChatResId = null;
+    document.removeEventListener("keydown", blockScreenshotKey);
+}
+
+/* Block PrintScreen key */
+function blockScreenshotKey(e) {
+    if (e.key === "PrintScreen" || (e.ctrlKey && e.key === "p")) {
+        e.preventDefault();
+        showToast("Screenshot bloke pou pwoteksyon ou.", "error");
+    }
+}
+
+function loadChatMessages(resId) {
+    if (!db) return;
+    var msgBox = document.getElementById("chatMessages");
+    if (msgBox) msgBox.innerHTML = '<div style="text-align:center;padding:20px;color:#6a6a80"><i class="fas fa-spinner fa-spin"></i></div>';
+
+    var now = Date.now();
+    var limit24h = now - (24 * 60 * 60 * 1000);
+
+    /* Clean old messages on load */
+    db.collection("chats").doc(resId).collection("messages")
+        .where("createdAt", "<", new Date(limit24h))
+        .get()
+        .then(function(snap) {
+            snap.forEach(function(doc) { doc.ref.delete(); });
+        }).catch(function(){});
+
+    /* Listen to messages */
+    if (chatUnsubscribe) chatUnsubscribe();
+    chatUnsubscribe = db.collection("chats").doc(resId).collection("messages")
+        .orderBy("createdAt", "asc")
+        .onSnapshot(function(snap) {
+            var messages = [];
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                d.id = doc.id;
+                /* Only show messages < 24h old */
+                if (d.createdAt && d.createdAt.toMillis) {
+                    if (now - d.createdAt.toMillis() < 24 * 60 * 60 * 1000) {
+                        messages.push(d);
+                    }
+                } else {
+                    messages.push(d);
+                }
+            });
+
+            renderChatMessages(messages);
+        }, function(err) {
+            console.warn("Chat error:", err);
+            if (msgBox) msgBox.innerHTML = '<div style="text-align:center;padding:20px;color:#f44336;font-size:0.82rem"><i class="fas fa-exclamation-circle"></i> Pa kapab chaje mesaj yo.</div>';
+        });
+}
+
+function renderChatMessages(messages) {
+    var msgBox = document.getElementById("chatMessages");
+    if (!msgBox) return;
+
+    if (!messages.length) {
+        msgBox.innerHTML = '<div style="text-align:center;padding:40px;color:#6a6a80;font-size:0.82rem"><i class="fas fa-comment-dots" style="font-size:2rem;margin-bottom:10px;display:block;opacity:0.3"></i>Kòmanse konvèsasyon an...</div>';
+        return;
+    }
+
+    var myUid = currentUser ? currentUser.uid : "";
+    var h = "";
+    messages.forEach(function(m) {
+        var isMine = m.senderId === myUid;
+        var timeStr = "";
+        if (m.createdAt && m.createdAt.toDate) {
+            var d = m.createdAt.toDate();
+            timeStr = d.getHours() + ":" + String(d.getMinutes()).padStart(2,"0");
+        }
+
+        h += '<div style="display:flex;flex-direction:column;align-items:' + (isMine ? "flex-end" : "flex-start") + '">';
+        /* Déchiffre le message (chiffré AES en base) */
+        var plainText = m.text ? decryptMsg(m.text) : "";
+        h += '<div style="max-width:75%;background:' + (isMine ? "linear-gradient(135deg,#e91e63,#9c27b0)" : "#1e1e2e") + ';color:white;padding:10px 14px;border-radius:' + (isMine ? "16px 16px 4px 16px" : "16px 16px 16px 4px") + ';font-size:0.85rem;line-height:1.5;word-break:break-word">';
+        h += escapeHtml(plainText) + '</div>';
+        if (timeStr) h += '<div style="font-size:0.6rem;color:#6a6a80;margin-top:3px">' + timeStr + ' · Disparèt 24h</div>';
+        h += '</div>';
+    });
+
+    msgBox.innerHTML = h;
+    msgBox.scrollTop = msgBox.scrollHeight;
+}
+
+function sendChatMsg() {
+    if (!db || !currentUser || !currentChatResId) return;
+    var input = document.getElementById("chatInput");
+    if (!input || !input.value.trim()) return;
+
+    var text = input.value.trim();
+    input.value = "";
+
+    /* Chiffre le texte avant de l'envoyer à Firebase */
+    var cipher = encryptMsg(text);
+
+    db.collection("chats").doc(currentChatResId).collection("messages").add({
+        text: cipher,
+        senderId: currentUser.uid,
+        senderEmail: currentUser.email || "",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    }).catch(function(err) {
+        showToast("Ere voye mesaj: " + err.message, "error");
+    });
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* Close chat on click outside */
+document.getElementById("chatModal").addEventListener("click", function(e) {
+    if (e.target === this) closeChat();
+});
+
+/* ====================================
+   QR CODE GENERATION
+   ==================================== */
+function generateQRCode(bizenCode) {
+    var box = document.getElementById("qrCodeBox");
+    var codeEl = document.getElementById("displayBizenCode");
+
+    if (codeEl) codeEl.textContent = bizenCode || "---";
+    if (!box || !bizenCode) return;
+
+    /* Clear previous */
+    box.innerHTML = "";
+
+    var profileUrl = window.location.origin + "/profil.html?code=" + encodeURIComponent(bizenCode);
+
+    try {
+        new QRCode(box, {
+            text: profileUrl,
+            width: 110,
+            height: 110,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    } catch(e) {
+        box.innerHTML = '<div style="color:#6a6a80;font-size:0.7rem;text-align:center;padding:10px"><i class="fas fa-qrcode" style="font-size:2rem;display:block;margin-bottom:6px;color:#ffd700"></i>' + bizenCode + '</div>';
+    }
+}
+
+function downloadQR() {
+    var box = document.getElementById("qrCodeBox");
+    var canvas = box ? box.querySelector("canvas") : null;
+    var codeEl = document.getElementById("displayBizenCode");
+    var code = codeEl ? codeEl.textContent : "bizen-qr";
+
+    if (canvas) {
+        var link = document.createElement("a");
+        link.download = "bizen-badge-" + code + ".png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    } else {
+        showToast("QR code pa disponib. Eseye anko.", "error");
+    }
+}
+
+/* ====================================
+   PUBLIC PROFILE SYNC
+   Écrit une version PUBLIQUE du profil
+   (SANS email ni téléphone) lisible par
+   le catalogue et la page QR.
+   ==================================== */
+function syncPublicProfile(uid, data, isLogin) {
+    if (!db || !uid) return;
+
+    var photo = data.profilePhoto || (data.media && data.media.photos && data.media.photos[0] ? data.media.photos[0].url : "");
+
+    var pub = {
+        prenom: data.prenom || data.kreyName || "",
+        nomInitial: (data.nom && data.nom !== "(Krey)") ? (data.nom.charAt(0) + ".") : "",
+        type: data.type || "freelancer",
+        genre: data.genre || "",
+        localisation: data.localisation || data.kreyZone || "",
+        prixMoment: data.prixMoment || data.kreyPrice || 0,
+        description: data.description || data.kreyDescription || "",
+        photoUrl: photo,
+        bizenCode: data.bizenCode || "",
+        isPremium: data.isPremium === true,
+        status: data.status || "en_attente",
+        kreyMemberCount: data.kreyMemberCount || null,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if (isLogin) {
+        pub.isOnline = true;
+        pub.lastSeen = firebase.firestore.FieldValue.serverTimestamp();
+    }
+
+    db.collection("publicProfiles").doc(uid).set(pub, { merge: true }).catch(function(e){
+        console.warn("syncPublicProfile:", e.code);
+    });
+}
+
+/* ====================================
+   NOTIFICATIONS TEMPS RÉEL (Elu)
+   Alerte le prestataire quand une
+   nouvelle réservation arrive.
+   ==================================== */
+var notifFirstLoad = true;
+
+function initFreelancerNotifications(uid, data) {
+    if (!db) return;
+
+    /* Demande permission notifications navigateur */
+    try {
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+    } catch(e) {}
+
+    var searchName = (data.prenom || "") + " " + ((data.nom || "").charAt(0) || "") + ".";
+
+    /* Écoute les réservations adressées à ce prestataire */
+    db.collection("reservations")
+        .where("prestateId", "==", uid)
+        .onSnapshot(function(snap) {
+            snap.docChanges().forEach(function(change) {
+                if (change.type === "added" && !notifFirstLoad) {
+                    var r = change.doc.data();
+                    pushNotif("Nouvo Rezevasyon!", (r.userEmail || "Yon kliyan") + " rezève w pou " + (r.date || "byento"));
+                }
+            });
+            notifFirstLoad = false;
+        }, function(){});
+}
+
+function pushNotif(title, body) {
+    /* Toast visuel */
+    showToast(title + " — " + body, "success");
+
+    /* Son léger */
+    try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var o = ctx.createOscillator();
+        var g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = 880; g.gain.value = 0.05;
+        o.start(); o.stop(ctx.currentTime + 0.15);
+    } catch(e) {}
+
+    /* Notification navigateur */
+    try {
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, { body: body, icon: "https://cdn-icons-png.flaticon.com/512/833/833472.png" });
+        }
+    } catch(e) {}
+
+    /* Badge titre de page */
+    document.title = "🔔 " + title;
+    setTimeout(function(){ document.title = "Bizen HT - Dashboard"; }, 8000);
 }
 </script>
 </body>

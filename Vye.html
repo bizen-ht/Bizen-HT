@@ -856,9 +856,16 @@
         <div class="pg on" id="pg-dash">
             <div class="ph">
                 <h1 class="ph-title">Dashboard <span>Admin</span></h1>
-                <button class="tf" onclick="loadAll()">
-                    <i class="fas fa-sync"></i> Rafraichi
-                </button>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                    <div style="display:flex;gap:8px;align-items:center;background:#12121a;border:1px solid #2a2a3a;border-radius:50px;padding:6px 14px">
+                        <i class="fas fa-qrcode" style="color:#ffd700;font-size:0.9rem"></i>
+                        <input id="bizenCodeSearch" placeholder="Kòd Bizen (ex: BZ-1234)" style="background:none;border:none;color:white;outline:none;font-family:Montserrat,sans-serif;font-size:0.82rem;width:160px" onkeydown="if(event.key==='Enter')searchByBizenCode(this.value)">
+                        <button onclick="searchByBizenCode(document.getElementById('bizenCodeSearch').value)" style="background:linear-gradient(135deg,#ffd700,#ff9800);border:none;border-radius:20px;padding:4px 12px;color:#000;font-size:0.75rem;font-weight:700;cursor:pointer">Chache</button>
+                    </div>
+                    <button class="tf" onclick="loadAll()">
+                        <i class="fas fa-sync"></i> Rafraichi
+                    </button>
+                </div>
             </div>
             <div class="sg">
                 <div class="sc bl">
@@ -923,8 +930,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Non</th>
-                                <th>Imel</th>
+                                <th>Non / Imel</th>
                                 <th>Telefon</th>
                                 <th>Plan</th>
                                 <th>Estati</th>
@@ -1191,7 +1197,7 @@
 </div>
 
 <!-- DETAIL MODAL -->
-<div class="adm-modal-bg" id="detailModal">
+<div class="adm-modal-bg" id="detailModal" onclick="if(event.target===this)closeDetailModal()">
     <div class="adm-modal">
         <button class="adm-modal-close" onclick="closeDetailModal()">
             <i class="fas fa-times"></i>
@@ -1222,12 +1228,13 @@ var ADMIN_EMAIL = "bizenht@gmail.com";
 var db, auth, storage;
 
 try {
-    firebase.initializeApp(fbCfg);
+    /* Évite "already exists" si Firebase déjà initialisé */
+    try { firebase.initializeApp(fbCfg); } catch(ex) {}
     db = firebase.firestore();
     auth = firebase.auth();
     storage = firebase.storage();
 } catch(e) {
-    console.warn("Firebase error:", e);
+    console.error("Firebase init error:", e);
 }
 
 var adminUsers = [];
@@ -1335,6 +1342,9 @@ function startRealtimeSync() {
         adminUsers = [];
         adminFL = [];
         adminKrey = [];
+        /* Efase mesaj "Pa gen done" si Firebase reponn */
+        var noDataMsg = document.getElementById("noDataMsg");
+        if (noDataMsg) noDataMsg.remove();
 
         snap.forEach(function(doc) {
             var d = doc.data();
@@ -1372,6 +1382,13 @@ function startRealtimeSync() {
         renderPremiumTable(premiumUsers);
         loadFinance();
         renderCommissions();
+    }, function(err) {
+        console.error("USERS onSnapshot error:", err.code, err.message);
+        if (err.code === "permission-denied") {
+            showFirebaseRulesError();
+        } else {
+            toast("Ere Firebase (users): " + err.message, false);
+        }
     });
 
     unsubRes = db.collection("reservations").onSnapshot(function(snap) {
@@ -1389,6 +1406,9 @@ function startRealtimeSync() {
         loadFinance();
         renderCommissions();
         renderRecent();
+    }, function(err) {
+        console.error("RESERVATIONS error:", err.code);
+        if (err.code === "permission-denied") showFirebaseRulesError();
     });
 
     unsubPay = db.collection("payments").onSnapshot(function(snap) {
@@ -1406,7 +1426,53 @@ function startRealtimeSync() {
 
         loadFinance();
         renderRecent();
+    }, function(err) {
+        console.error("PAYMENTS error:", err.code);
+        if (err.code === "permission-denied") showFirebaseRulesError();
     });
+}
+
+/* ====================================
+   FIREBASE RULES ERROR — Guide rapide
+   ==================================== */
+function showFirebaseRulesError() {
+    /* Affiche un bandeau d'alerte visible avec les règles à copier */
+    var existing = document.getElementById("rulesAlert");
+    if (existing) return;
+
+    var alert = document.createElement("div");
+    alert.id = "rulesAlert";
+    alert.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a0a0a;border-bottom:2px solid #f44336;padding:20px 30px;font-family:Montserrat,sans-serif";
+    alert.innerHTML = [
+        '<div style="max-width:900px;margin:0 auto">',
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">',
+        '<i class="fas fa-lock" style="color:#f44336;font-size:1.4rem"></i>',
+        '<strong style="color:#f44336;font-size:1rem">FIREBASE PERMISSION DENIED — Firestore Rules bloke admin</strong>',
+        '<button onclick="document.getElementById(\'rulesAlert\').remove()" style="margin-left:auto;background:none;border:1px solid #555;color:#aaa;padding:4px 12px;border-radius:6px;cursor:pointer">Fèmen</button>',
+        '</div>',
+        '<p style="color:#b0b0c0;font-size:0.82rem;margin-bottom:12px">Ale nan <strong style="color:white">Firebase Console → Firestore Database → Rules</strong> epi ranplase tout teks la ak sa ki anba a, apre klike <strong style="color:#4caf50">Publish</strong> :</p>',
+        '<pre id="rulesTxt" style="background:#0a0a0a;border:1px solid #333;border-radius:8px;padding:14px;font-size:0.78rem;color:#4caf50;overflow-x:auto;line-height:1.6;white-space:pre">rules_version = \'2\';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n\n    // Admin: aksè total\n    match /{document=**} {\n      allow read, write: if request.auth != null\n        && request.auth.token.email == "bizenht@gmail.com";\n    }\n\n    // Pwofil: lekti piblik (katalòg + QR), ekriti pwòp tèt ou sèlman\n    match /users/{userId} {\n      allow read: if true;\n      allow create, update, delete: if request.auth != null\n        && request.auth.uid == userId;\n    }\n\n    // Rezevasyon — itilizatè konekte\n    match /reservations/{resId} {\n      allow read, write: if request.auth != null;\n    }\n\n    // Peman — itilizatè konekte\n    match /payments/{payId} {\n      allow read, write: if request.auth != null;\n    }\n\n    // Chat sekirize — SÈLMAN 2 patisipan yo\n    match /chats/{resId} {\n      allow create: if request.auth != null;\n      allow read, update: if request.auth != null\n        && request.auth.uid in resource.data.participants;\n\n      match /messages/{msgId} {\n        allow read, create, update, delete: if request.auth != null\n          && request.auth.uid in\n          get(/databases/$(database)/documents/chats/$(resId)).data.participants;\n      }\n    }\n  }\n}</pre>',
+        '<button onclick="copyRules()" style="margin-top:10px;padding:8px 20px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.8rem;font-weight:600"><i class="fas fa-copy"></i> Kopye Rules la</button>',
+        '</div>'
+    ].join("");
+
+    document.body.prepend(alert);
+}
+
+function copyRules() {
+    var txt = document.getElementById("rulesTxt");
+    if (!txt) return;
+    navigator.clipboard.writeText(txt.textContent)
+        .then(function() { toast("Kopye! Ale cole nan Firebase Console.", true); })
+        .catch(function() {
+            var ta = document.createElement("textarea");
+            ta.value = txt.textContent;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            toast("Kopye!", true);
+        });
 }
 
 /* ====================================
@@ -1850,7 +1916,7 @@ function loadCommissions() {
     adminRes.forEach(function(r) {
         if (r.status === "cancelled") return;
         var name = r.prestateName || "Unknown";
-        var price = parseInt((r.price || "0").replace(/[^0-9]/g, "")) || 0;
+        var price = parseInt(String(r.price || "0").replace(/[^0-9]/g, "")) || 0;
 
         if (!commByFL[name]) {
             commByFL[name] = {
@@ -1900,6 +1966,8 @@ function admAction(action, uid) {
         if (!confirm("Ou seten?")) return;
         db.collection("users").doc(uid).delete()
             .then(function() {
+                /* Retire aussi le profil public */
+                db.collection("publicProfiles").doc(uid).delete().catch(function(){});
                 toast("Kont efase!", true);
                 loadAll();
             });
@@ -1925,6 +1993,8 @@ function admAction(action, uid) {
 
     db.collection("users").doc(uid).update(updates)
         .then(function() {
+            /* Reflète le changement sur le profil PUBLIC (catalogue) */
+            db.collection("publicProfiles").doc(uid).set(updates, { merge: true }).catch(function(){});
             toast("Aksyon fini!", true);
             loadAll();
         })
@@ -2029,9 +2099,14 @@ function fmtDate(date) {
     });
 }
 
-function btn(cls, action, ico, lbl) {
+/* actBtn — alias utilisé partout dans le code */
+function actBtn(cls, action, ico, lbl) {
     return '<button class="ab ' + cls + '" onclick="' + action + '">' +
         '<i class="fas ' + ico + '"></i> ' + lbl + '</button>';
+}
+
+function btn(cls, action, ico, lbl) {
+    return actBtn(cls, action, ico, lbl);
 }
 
 function emptyRow(cols, msg) {
@@ -2049,6 +2124,162 @@ function toast(msg, isGood) {
     el.innerHTML = '<i class="fas ' + ic + '" style="color:' + cl + '"></i> <span>' + msg + '</span>';
     el.classList.add("on");
     setTimeout(function() { el.classList.remove("on"); }, 3500);
+}
+
+/* ====================================
+   NAVIGATION — goPage (CRITIQUE)
+   ==================================== */
+function goPage(id, btn) {
+    /* Cache toutes les pages */
+    var pages = document.querySelectorAll(".pg");
+    pages.forEach(function(p) { p.classList.remove("on"); });
+
+    /* Affiche la page cible */
+    var target = document.getElementById("pg-" + id);
+    if (target) target.classList.add("on");
+
+    /* Met à jour les liens actifs dans la sidebar */
+    var links = document.querySelectorAll(".sb-link");
+    links.forEach(function(l) { l.classList.remove("active"); });
+    if (btn) btn.classList.add("active");
+
+    /* Charge les données selon la page */
+    if (id === "res")   loadReservations();
+    if (id === "pay")   loadPayments();
+    if (id === "fin")   loadFinance();
+    if (id === "comm")  loadCommissions();
+    if (id === "dash")  loadRecent();
+}
+
+/* ====================================
+   MISSING FUNCTIONS — FIXES
+   ==================================== */
+
+/* renderRecent — alias de loadRecent */
+function renderRecent() { loadRecent(); }
+
+/* renderCommissions — alias de loadCommissions */
+function renderCommissions() { loadCommissions(); }
+
+/* loadAll — recharge toutes les données */
+function loadAll() {
+    startRealtimeSync();
+    toast("Done yo rafraichi!", true);
+}
+
+/* loadFin — filtre rapport financier par période */
+function loadFin(period, btn) {
+    if (btn) {
+        var sibs = btn.parentElement.querySelectorAll(".tf");
+        sibs.forEach(function(s) { s.classList.remove("active"); });
+        btn.classList.add("active");
+    }
+    loadFinance();
+}
+
+/* doLogout */
+function doLogout() {
+    if (auth) {
+        if (unsubUsers) unsubUsers();
+        if (unsubRes) unsubRes();
+        if (unsubPay) unsubPay();
+        auth.signOut().then(function() {
+            location.reload();
+        });
+    }
+}
+
+/* ====================================
+   VIEW ACCOUNT DETAIL (Modal)
+   ==================================== */
+function viewAccountDetail(uid) {
+    if (!db) return;
+
+    var allData = adminUsers.concat(adminFL).concat(adminKrey);
+    var user = allData.find(function(u) { return u.id === uid; });
+
+    if (!user) {
+        toast("Kont pa trouve!", false);
+        return;
+    }
+
+    var modal = document.getElementById("detailModal");
+    var title = document.getElementById("detailTitle");
+    var content = document.getElementById("detailContent");
+    var actions = document.getElementById("detailActions");
+
+    if (!modal) return;
+
+    title.textContent = (user.prenom || user.kreyName || "") + " " + (user.nom || "");
+
+    var typeLabel = user.type === "freelancer" ? "Prestate" : user.type === "krey" ? "Gwoup Krey" : "Itilizate";
+    var planBadge = user.isPremium ? '<span style="background:#ffd700;color:#000;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700">Premium</span>' : '<span style="background:#2a2a3a;color:#b0b0c0;padding:3px 10px;border-radius:20px;font-size:0.75rem">Gratis</span>';
+    var statusBadge = user.status === "active" ? '<span style="background:#4caf50;color:white;padding:3px 10px;border-radius:20px;font-size:0.75rem">Aktif</span>' : user.status === "frozen" ? '<span style="background:#f44336;color:white;padding:3px 10px;border-radius:20px;font-size:0.75rem">Jele</span>' : '<span style="background:#ff9800;color:white;padding:3px 10px;border-radius:20px;font-size:0.75rem">An Atant</span>';
+
+    var bizenCodeHtml = user.bizenCode ? '<div style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:12px;margin-bottom:12px;text-align:center"><div style="font-size:0.72rem;color:#6a6a80;margin-bottom:4px">Kòd Bizen HT</div><div style="font-size:1.3rem;font-weight:700;color:#ffd700;letter-spacing:2px">' + user.bizenCode + '</div></div>' : "";
+
+    var onlineHtml = "";
+    if (user.type === "freelancer" || user.type === "krey") {
+        var onlineDot = user.isOnline ? '<span style="display:inline-block;width:10px;height:10px;background:#4caf50;border-radius:50%;margin-right:6px"></span><span style="color:#4caf50">En Liy</span>' : '<span style="display:inline-block;width:10px;height:10px;background:#6a6a80;border-radius:50%;margin-right:6px"></span><span style="color:#6a6a80">Dekonekte</span>';
+        var lastSeenStr = "N/A";
+        if (user.lastSeen && user.lastSeen.toDate) {
+            lastSeenStr = fmtDate(user.lastSeen.toDate());
+        }
+        onlineHtml = '<div style="display:flex;align-items:center;gap:20px;margin-bottom:12px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px"><div>' + onlineDot + '</div><div style="font-size:0.78rem;color:#6a6a80">Dènye fwa: ' + lastSeenStr + '</div></div>';
+    }
+
+    var photoHtml = user.profilePhoto ? '<div style="margin-bottom:15px;text-align:center"><img src="' + user.profilePhoto + '" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #e91e63"></div>' : "";
+
+    content.innerHTML = photoHtml + bizenCodeHtml + onlineHtml +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.85rem">' +
+        '<div><span style="color:#6a6a80">Imel:</span><br><strong>' + (user.email || "N/A") + '</strong></div>' +
+        '<div><span style="color:#6a6a80">Telefon:</span><br><strong>' + (user.telephone || "N/A") + '</strong></div>' +
+        '<div><span style="color:#6a6a80">Tip:</span><br><strong>' + typeLabel + '</strong></div>' +
+        '<div><span style="color:#6a6a80">Lokasyon:</span><br><strong>' + (user.localisation || user.kreyZone || "N/A") + '</strong></div>' +
+        '<div><span style="color:#6a6a80">Plan:</span><br>' + planBadge + '</div>' +
+        '<div><span style="color:#6a6a80">Estati:</span><br>' + statusBadge + '</div>' +
+        (user.prixMoment ? '<div><span style="color:#6a6a80">Pri/Moman:</span><br><strong>' + user.prixMoment.toLocaleString() + ' G</strong></div>' : '') +
+        (user.solde !== undefined ? '<div><span style="color:#6a6a80">Solde:</span><br><strong style="color:#4caf50">' + (user.solde || 0).toLocaleString() + ' G</strong></div>' : '') +
+        '</div>';
+
+    actions.innerHTML = "";
+    if (!user.isPremium) {
+        actions.innerHTML += actBtn("ab-pre", "admAction('premium','" + uid + "');closeDetailModal()", "fa-crown", "Aktive Premium");
+    } else {
+        actions.innerHTML += actBtn("ab-rpr", "admAction('unpremium','" + uid + "');closeDetailModal()", "fa-times", "Retire Premium");
+    }
+    if (user.status === "active") {
+        actions.innerHTML += actBtn("ab-frz", "admAction('freeze','" + uid + "');closeDetailModal()", "fa-ban", "Jele Kont");
+    } else if (user.status === "frozen") {
+        actions.innerHTML += actBtn("ab-ufrz", "admAction('unfreeze','" + uid + "');closeDetailModal()", "fa-check", "Debloke Kont");
+    }
+    if (user.status === "en_attente") {
+        actions.innerHTML += actBtn("ab-app", "admAction('approve','" + uid + "');closeDetailModal()", "fa-check", "Apwouve");
+    }
+    actions.innerHTML += actBtn("ab-del", "admAction('delete','" + uid + "');closeDetailModal()", "fa-trash", "Efase Kont");
+
+    modal.classList.add("show");
+}
+
+function closeDetailModal() {
+    var modal = document.getElementById("detailModal");
+    if (modal) modal.classList.remove("show");
+}
+
+/* ====================================
+   SEARCH BY BIZEN CODE
+   ==================================== */
+function searchByBizenCode(code) {
+    if (!code || !code.trim()) return;
+    var q = code.trim().toUpperCase();
+    var allData = adminUsers.concat(adminFL).concat(adminKrey);
+    var found = allData.find(function(u) { return u.bizenCode && u.bizenCode.toUpperCase() === q; });
+    if (found) {
+        viewAccountDetail(found.id);
+        toast("Profil trouve: " + (found.prenom || found.kreyName || ""), true);
+    } else {
+        toast("Okenn profil jwenn ak kòd: " + q, false);
+    }
 }
 </script>
 </body>
