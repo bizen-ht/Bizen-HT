@@ -2862,6 +2862,10 @@ try {
 db = firebase.firestore();
 auth = firebase.auth();
 storage = firebase.storage();
+/* Garde la session connectée (évite les déconnexions automatiques) */
+try {
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+} catch (pe) { console.warn("persistence:", pe.message); }
 } catch (e) {
     console.warn("Firebase:", e.message);
 }
@@ -3258,10 +3262,14 @@ function mkCard(p, type, male) {
         h += '<div class="sil"><i class="fas fa-user"></i></div>';
     }
     h += '</div>';
-    h += '<div class="blur-ov" onclick="pa()">';
-    h += '<i class="fas fa-lock"></i>';
-    h += '<p>Peye pou we foto</p>';
-    h += '</div>';
+    /* La photo de PROFIL d'un vrai Elu est un teaser PUBLIC (pas de flou).
+       La galerie complète reste réservée aux Premium (dans la vue profil). */
+    if (!(isDemo === false && p.photoUrl)) {
+        h += '<div class="blur-ov" onclick="pa()">';
+        h += '<i class="fas fa-lock"></i>';
+        h += '<p>Peye pou we foto</p>';
+        h += '</div>';
+    }
     h += '<div class="pc-badge">' + onlineDot + '</div>';
     h += '<div class="pc-type' + mt + '">' + type + '</div>';
     h += '<button class="pc-fav" onclick="tFav(this,event)">';
@@ -5532,7 +5540,13 @@ function payReservationMonCash(amount, reservationId, prestateName) {
             }
             window.location.href = finalUrl;
         } else {
-            toast("Pa kapab louvri peman MonCash. Eseye ankò.", "err");
+            /* Affiche la VRAIE raison renvoyée par Bazik/Netlify */
+            console.error("MonCash create response:", data);
+            var reason = data.error
+                || (data.rawResponse && (data.rawResponse.message || data.rawResponse.error))
+                || "Bazik pa retounen lyen peman.";
+            toast("Peman echwe: " + reason, "err");
+            showOk("Pwoblèm Peman MonCash", "Detay teknik: " + reason + "\n\nVerifye nan Netlify > Functions > Logs (moncash) sa Bazik retounen.");
         }
     })
     .catch(function(err) {

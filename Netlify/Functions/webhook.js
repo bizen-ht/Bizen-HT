@@ -1,88 +1,48 @@
 /* ====================================
-   BAZIK.IO - MONCASH PRODUCTION
+   BAZIK.IO - WEBHOOK + MONCASH (corrigé)
    ==================================== */
 
 const https = require('https');
 
-var WEBHOOK_SECRET =
-    process.env.BAZIK_WEBHOOK_SECRET || "";
+var BAZIK_USER_ID = process.env.BAZIK_USER_ID || "";
+var BAZIK_SECRET  = process.env.BAZIK_SECRET || "";
+var BAZIK_HOST    = "api.bazik.io";
 
-var FIREBASE_PROJECT = "bizen-ht";
-
-var BAZIK_USER_ID =
-    process.env.BAZIK_USER_ID || "";
-
-var BAZIK_SECRET =
-    process.env.BAZIK_SECRET || "";
-
-var BAZIK_HOST = "api.bazik.io";
-
-var WEBHOOK_URL =
-    "https://bizenht.com" +
-    "/.netlify/functions/webhook";
-
-var SUCCESS_URL =
-    "https://bizenht.com/?payment=success";
-
-var ERROR_URL =
-    "https://bizenht.com/?payment=error";
+var SITE_URL    = "https://bizenht.com";
+var WEBHOOK_URL = SITE_URL + "/.netlify/functions/webhook";
 
 /* ====================================
    HTTP REQUEST
    ==================================== */
 function httpReq(options, body) {
-    return new Promise(
-        function(resolve, reject) {
-            var req = https.request(
-                options,
-                function(res) {
-                    var data = '';
-                    res.on('data',
-                        function(c) {
-                            data += c;
-                        }
-                    );
-                    res.on('end',
-                        function() {
-                            console.log(
-                                "HTTP",
-                                options.path,
-                                "->",
-                                res.statusCode
-                            );
-                            console.log(
-                                "Body:",
-                                data.substring(
-                                    0, 300
-                                )
-                            );
-                            try {
-                                resolve(
-                                    JSON.parse(data)
-                                );
-                            } catch(e) {
-                                resolve({
-                                    raw: data,
-                                    statusCode:
-                                        res.statusCode
-                                });
-                            }
-                        }
-                    );
-                }
-            );
-            req.on('error', reject);
-            if (body) req.write(body);
-            req.end();
-        }
-    );
+    return new Promise(function (resolve, reject) {
+        var req = https.request(options, function (res) {
+            var data = '';
+            res.on('data', function (c) { data += c; });
+            res.on('end', function () {
+                console.log("HTTP", options.path, "->", res.statusCode);
+                console.log("Body:", data.substring(0, 300));
+                try { resolve(JSON.parse(data)); }
+                catch (e) { resolve({ raw: data, statusCode: res.statusCode }); }
+            });
+        });
+        req.on('error', reject);
+        req.setTimeout(30000, function () {
+            req.destroy(new Error("Request timeout"));
+        });
+        if (body) req.write(body);
+        req.end();
+    });
 }
 
 /* ====================================
-   GET TOKEN
-   POST /token
+   GET TOKEN  (FIX: token || access_token)
    ==================================== */
 async function getToken() {
+    if (!BAZIK_USER_ID || !BAZIK_SECRET) {
+        throw new Error("Missing env vars BAZIK_USER_ID / BAZIK_SECRET");
+    }
+
     var body = JSON.stringify({
         userID: BAZIK_USER_ID,
         secretKey: BAZIK_SECRET
@@ -93,57 +53,57 @@ async function getToken() {
         path: '/token',
         method: 'POST',
         headers: {
-            'Content-Type':
-                'application/json',
-            'Content-Length':
-                Buffer.byteLength(body)
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body)
         }
     };
 
-    var result = await httpReq(
-        options, body
-    );
+    var result = await httpReq(options, body);
 
-    if (!result.access_token) {
-        throw new Error(
-            "Token failed: " +
-            JSON.stringify(result)
-        );
+    /* FIX: Bazik renvoie "token" (pas "access_token") */
+    var tok = result.token || result.access_token;
+    if (!tok) {
+        throw new Error("Token failed: " + JSON.stringify(result));
     }
 
     console.log("Token OK ✅");
-    return result.access_token;
+    return tok;
 }
 
 /* ====================================
    CREATE MONCASH PAYMENT
-   POST /moncash/token
    ==================================== */
-async function createPayment(
-    amount, orderId, email,
-    firstName, lastName, userId
-) {
+async function createPayment(p) {
     var token = await getToken();
 
+    var isReservation = p.purpose === "reservation";
+
+    var description = isReservation
+        ? "Bizen HT - Rezevasyon Elu"
+        : "Bizen HT - Membership Premium";
+
+    var successUrl =
+        SITE_URL + "/?payment=success&ref=" + p.orderId +
+        (isReservation ? "&resId=" + (p.reservationId || "") : "");
+
     var body = JSON.stringify({
-        gdes: amount,
+        gdes: parseFloat(p.amount),
         userID: BAZIK_USER_ID,
-        successUrl: SUCCESS_URL,
-        errorUrl: ERROR_URL,
-        description:
-            "Bizen HT - Membership Premium",
-        referenceId: orderId,
-        customerFirstName:
-            firstName || "Client",
-        customerLastName:
-            lastName || "BHT",
-        customerEmail: email || "",
+        successUrl: successUrl,
+        errorUrl: SITE_URL + "/?payment=error&ref=" + p.orderId,
+        description: description,
+        referenceId: p.orderId,
+        customerFirstName: p.firstName || "Client",
+        customerLastName: p.lastName || "BHT",
+        customerEmail: p.email || "",
         webhookUrl: WEBHOOK_URL,
         metadata: {
-            userId: userId || "",
-            email: email || "",
+            userId: p.userId || "",
+            email: p.email || "",
             site: "bizenht.com",
-            product: "premium"
+            product: isReservation ? "reservation" : "premium",
+            purpose: p.purpose || "premium",
+            reservationId: p.reservationId || ""
         }
     });
 
@@ -152,23 +112,14 @@ async function createPayment(
         path: '/moncash/token',
         method: 'POST',
         headers: {
-            'Content-Type':
-                'application/json',
-            'Content-Length':
-                Buffer.byteLength(body),
-            'Authorization':
-                'Bearer ' + token
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body),
+            'Authorization': 'Bearer ' + token
         }
     };
 
-    var result = await httpReq(
-        options, body
-    );
-
-    console.log(
-        "Create payment result:", result
-    );
-
+    var result = await httpReq(options, body);
+    console.log("Create payment result:", result);
     return result;
 }
 
@@ -190,39 +141,20 @@ async function verifyPayment(orderId) {
                 hostname: BAZIK_HOST,
                 path: paths[i],
                 method: 'GET',
-                headers: {
-                    'Authorization':
-                        'Bearer ' + token
-                }
+                headers: { 'Authorization': 'Bearer ' + token }
             };
-            var r = await httpReq(
-                options, null
-            );
-
-            var ok =
-                r.status === 'success' ||
-                r.status === 'completed' ||
-                r.paid === true;
-
+            var r = await httpReq(options, null);
+            var ok = r.status === 'success' ||
+                     r.status === 'completed' ||
+                     r.paid === true;
             if (ok || r.status) {
-                return {
-                    verified: ok,
-                    status: r.status ||
-                        'unknown'
-                };
+                return { verified: ok, status: r.status || 'unknown' };
             }
-        } catch(e) {
-            console.log(
-                "Verify", paths[i],
-                "failed:", e.message
-            );
+        } catch (e) {
+            console.log("Verify", paths[i], "failed:", e.message);
         }
     }
-
-    return {
-        verified: false,
-        status: 'unknown'
-    };
+    return { verified: false, status: 'unknown' };
 }
 
 /* ====================================
@@ -230,32 +162,35 @@ async function verifyPayment(orderId) {
    ==================================== */
 var CORS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers':
-        'Content-Type',
-    'Access-Control-Allow-Methods':
-        'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Content-Type': 'application/json'
 };
 
 /* ====================================
    HANDLER
    ==================================== */
-exports.handler = async function(
-    event, context
-) {
+exports.handler = async function (event, context) {
     if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers: CORS,
-            body: ''
-        };
+        return { statusCode: 200, headers: CORS, body: '' };
     }
 
     try {
-        var body = JSON.parse(
-            event.body || '{}'
-        );
+        var body = JSON.parse(event.body || '{}');
         var action = body.action;
+
+        /* === VRAIE NOTIFICATION BAZIK (pas d'action) ===
+           Bazik appelle ce webhook après paiement.
+           On journalise et on répond 200. */
+        if (!action) {
+            console.log("=== WEBHOOK BAZIK NOTIFICATION ===");
+            console.log(JSON.stringify(body));
+            return {
+                statusCode: 200,
+                headers: CORS,
+                body: JSON.stringify({ received: true })
+            };
+        }
 
         console.log("=== ACTION:", action);
 
@@ -264,47 +199,33 @@ exports.handler = async function(
             try {
                 await getToken();
                 return {
-                    statusCode: 200,
-                    headers: CORS,
-                    body: JSON.stringify({
-                        success: true,
-                        message:
-                            "Bazik.io OK! " +
-                            "Peman pret."
-                    })
+                    statusCode: 200, headers: CORS,
+                    body: JSON.stringify({ success: true, message: "Bazik.io OK! Peman pret." })
                 };
-            } catch(e) {
+            } catch (e) {
                 return {
-                    statusCode: 200,
-                    headers: CORS,
-                    body: JSON.stringify({
-                        success: false,
-                        message: e.message
-                    })
+                    statusCode: 200, headers: CORS,
+                    body: JSON.stringify({ success: false, message: e.message })
                 };
             }
         }
 
         /* CREATE */
         if (action === 'create') {
-            var amount = body.amount || 1000;
-            var orderId = 'BHT-' +
-                Date.now() + '-' +
-                Math.random()
-                    .toString(36)
-                    .substr(2, 6)
-                    .toUpperCase();
+            var orderId = 'BHT-' + Date.now() + '-' +
+                Math.random().toString(36).substr(2, 6).toUpperCase();
 
-            var payment = await createPayment(
-                amount,
-                orderId,
-                body.userEmail || "",
-                body.firstName || "Client",
-                body.lastName || "BHT",
-                body.userId || ""
-            );
+            var payment = await createPayment({
+                amount: body.amount || 1000,
+                orderId: orderId,
+                email: body.userEmail || "",
+                firstName: body.firstName || "Client",
+                lastName: body.lastName || "BHT",
+                userId: body.userId || "",
+                purpose: body.purpose || "premium",
+                reservationId: body.reservationId || ""
+            });
 
-            /* Find payment URL */
             var payUrl =
                 payment.paymentUrl ||
                 payment.payment_url ||
@@ -314,22 +235,19 @@ exports.handler = async function(
                 payment.link ||
                 null;
 
-            /* If MonCash token returned */
             if (!payUrl && payment.token) {
                 payUrl =
-                    'https://moncashbutton' +
-                    '.digicelgroup.com/' +
-                    'Moncash-middleware/' +
-                    'Payment/Redirect?token=' +
+                    'https://moncashbutton.digicelgroup.com/' +
+                    'Moncash-middleware/Payment/Redirect?token=' +
                     payment.token;
             }
 
             return {
-                statusCode: 200,
-                headers: CORS,
+                statusCode: 200, headers: CORS,
                 body: JSON.stringify({
                     success: !!payUrl,
                     orderId: orderId,
+                    referenceId: orderId,
                     paymentUrl: payUrl,
                     raw: payment
                 })
@@ -338,48 +256,30 @@ exports.handler = async function(
 
         /* VERIFY */
         if (action === 'verify') {
-            if (!body.orderId) {
+            var oid = body.orderId || body.referenceId;
+            if (!oid) {
                 return {
-                    statusCode: 400,
-                    headers: CORS,
-                    body: JSON.stringify({
-                        success: false,
-                        error: 'orderId requis'
-                    })
+                    statusCode: 400, headers: CORS,
+                    body: JSON.stringify({ success: false, error: 'orderId requis' })
                 };
             }
-
-            var result = await verifyPayment(
-                body.orderId
-            );
-
+            var result = await verifyPayment(oid);
             return {
-                statusCode: 200,
-                headers: CORS,
-                body: JSON.stringify({
-                    success: true,
-                    verified: result.verified,
-                    status: result.status
-                })
+                statusCode: 200, headers: CORS,
+                body: JSON.stringify({ success: true, verified: result.verified, status: result.status })
             };
         }
 
         return {
-            statusCode: 400,
-            headers: CORS,
-            body: JSON.stringify({
-                error: 'Action invalide'
-            })
+            statusCode: 400, headers: CORS,
+            body: JSON.stringify({ error: 'Action invalide' })
         };
 
-    } catch(error) {
+    } catch (error) {
         console.error("Error:", error);
         return {
-            statusCode: 500,
-            headers: CORS,
-            body: JSON.stringify({
-                error: error.message
-            })
+            statusCode: 200, headers: CORS,
+            body: JSON.stringify({ received: true, error: error.message })
         };
     }
 };
