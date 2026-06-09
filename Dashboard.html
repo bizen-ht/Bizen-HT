@@ -1798,11 +1798,9 @@ function loadFlReservations() {
     listEl.innerHTML = loadingHtml();
     if (earningsEl) earningsEl.innerHTML = loadingHtml();
 
-    var searchName = (userData.prenom || "") + " " + ((userData.nom || "").charAt(0) || "") + ".";
-    console.log("Searching reservations for:", searchName);
-
+    /* Recherche par prestateId (uid) = fiable. */
     db.collection("reservations")
-        .where("prestateName", "==", searchName)
+        .where("prestateId", "==", currentUser.uid)
         .get()
         .then(function (snap) {
             var items = [];
@@ -1869,10 +1867,8 @@ function loadFlReservations() {
 function loadFlSoldeByPeriod() {
     if (!db || !userData) return;
 
-    var searchName = (userData.prenom || "") + " " + ((userData.nom || "").charAt(0) || "") + ".";
-
     db.collection("reservations")
-        .where("prestateName", "==", searchName)
+        .where("prestateId", "==", currentUser.uid)
         .get()
         .then(function (snap) {
             var today = 0, week = 0, month = 0;
@@ -1902,7 +1898,10 @@ function loadFlSoldeByPeriod() {
 function buildResRow(r, isFL, ratedSet) {
     var stBg = r.status === "confirmed" ? "rgba(76,175,80,0.15)" : r.status === "cancelled" ? "rgba(244,67,54,0.15)" : "rgba(255,152,0,0.15)";
     var stCol = r.status === "confirmed" ? "#4caf50" : r.status === "cancelled" ? "#f44336" : "#ff9800";
-    var stTxt = r.status === "confirmed" ? "Konfime" : r.status === "cancelled" ? "Anile" : "An Atant";
+    var stTxt = r.status === "confirmed" ? "Konfime"
+        : r.status === "cancelled" ? "Refize/Anile"
+        : r.status === "en_attente_peman" ? "An Atant Peman"
+        : "An Atant Konfimasyon";
 
     var mainText = isFL ? (r.userEmail || "Kliyan") : (r.prestateName || "N/A");
     var priceText = r.price || "N/A";
@@ -1922,6 +1921,16 @@ function buildResRow(r, isFL, ratedSet) {
     var chatBtn = "";
     if (r.status === "confirmed") {
         chatBtn = '<button onclick="openChat(\'' + r.id + '\',\'' + chatPartner.replace(/'/g,"") + '\')" style="margin-top:8px;padding:5px 14px;border:none;border-radius:20px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:white;font-size:0.72rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="fas fa-comment-dots"></i> Chat <span style="font-size:0.6rem;background:rgba(255,255,255,0.2);padding:1px 6px;border-radius:10px">24h</span></button>';
+    }
+
+    /* === CONFIRMER / REFUSER (côté ELU uniquement) ===
+       Visible quand la réservation est payée et en attente (status "en_attente"). */
+    var confirmBlock = "";
+    if (isFL && r.status === "en_attente") {
+        confirmBlock = '<div style="display:flex;gap:8px;margin-top:8px">' +
+            '<button onclick="eluConfirmRes(\'' + r.id + '\',\'confirmed\')" style="padding:6px 16px;border:none;border-radius:20px;background:linear-gradient(135deg,#4caf50,#2e7d32);color:white;font-size:0.72rem;font-weight:600;cursor:pointer"><i class="fas fa-check"></i> Aksepte</button>' +
+            '<button onclick="eluConfirmRes(\'' + r.id + '\',\'cancelled\')" style="padding:6px 16px;border:none;border-radius:20px;background:rgba(244,67,54,0.15);color:#f44336;font-size:0.72rem;font-weight:600;cursor:pointer"><i class="fas fa-times"></i> Refize</button>' +
+            '</div>';
     }
 
     /* === NOTATION (côté CLIENT uniquement) ===
@@ -1955,12 +1964,34 @@ function buildResRow(r, isFL, ratedSet) {
         '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">' +
         '<strong>' + mainText + '</strong>' + tipBadge + '</div>' +
         '<span class="res-sub">' + (r.date || "N/A") + ' | ' + loc + '</span>' +
-        chatBtn + rateBlock +
+        confirmBlock + chatBtn + rateBlock +
         '</div>' +
         '<div class="res-right">' +
         '<span style="padding:3px 12px;border-radius:20px;font-size:0.68rem;font-weight:600;background:' + stBg + ';color:' + stCol + '">' + stTxt + '</span>' +
         '<div class="res-price">' + priceText + '</div>' +
         '</div></div>';
+}
+
+/* ====================================
+   ELU — CONFIRME / REFUSE UNE RÉSERVATION
+   ==================================== */
+function eluConfirmRes(reservationId, newStatus) {
+    if (!db) return;
+    var msg = newStatus === "confirmed"
+        ? "Aksepte rezevasyon sa a?"
+        : "Refize rezevasyon sa a? (Kliyan an ap ranbouse si sa nesesè)";
+    if (!confirm(msg)) return;
+
+    db.collection("reservations").doc(reservationId).update({
+        status: newStatus,
+        confirmedByElu: true,
+        confirmedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function() {
+        showToast(newStatus === "confirmed" ? "Rezevasyon aksepte! Ou ka chat ak kliyan an." : "Rezevasyon refize.", "success");
+        loadFlReservations();
+    }).catch(function(err) {
+        showToast("Ere: " + err.message, "error");
+    });
 }
 
 /* Étoiles pleines/vides pour affichage */
@@ -3025,14 +3056,19 @@ function initFreelancerNotifications(uid, data) {
 
     var searchName = (data.prenom || "") + " " + ((data.nom || "").charAt(0) || "") + ".";
 
-    /* Écoute les réservations adressées à ce prestataire */
+    /* Écoute les réservations adressées à ce prestataire.
+       On notifie quand une réservation PAYÉE arrive (status "en_attente"),
+       pas pour les "en_attente_peman" (pas encore payées). */
     db.collection("reservations")
         .where("prestateId", "==", uid)
         .onSnapshot(function(snap) {
             snap.docChanges().forEach(function(change) {
-                if (change.type === "added" && !notifFirstLoad) {
-                    var r = change.doc.data();
-                    pushNotif("Nouvo Rezevasyon!", (r.userEmail || "Yon kliyan") + " rezève w pou " + (r.date || "byento"));
+                if (notifFirstLoad) return;
+                var r = change.doc.data();
+                /* Nouvelle réservation payée OU passée en "en_attente" après paiement */
+                if ((change.type === "added" || change.type === "modified")
+                    && r.status === "en_attente" && r.paid === true) {
+                    pushNotif("Nouvo Rezevasyon Peye!", (r.userEmail || "Yon kliyan") + " rezève w pou " + (r.date || "byento") + ". Aksepte oswa refize.");
                 }
             });
             notifFirstLoad = false;

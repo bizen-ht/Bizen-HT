@@ -28,63 +28,57 @@ const CORS = {
 };
 
 /* ====================================
-   HTTP REQUEST HELPER
+   HTTP REQUEST HELPER (avec retry sur 503)
    ==================================== */
 function doRequest(options, body) {
-    return new Promise(function(resolve, reject) {
-        const req = https.request(
-            options,
-            function(res) {
+    return attempt(1);
+
+    function attempt(n) {
+        return new Promise(function (resolve, reject) {
+            const req = https.request(options, function (res) {
                 let raw = "";
+                res.on("data", function (chunk) { raw += chunk; });
+                res.on("end", function () {
+                    console.log("[HTTP]", options.method, options.path,
+                        "->", res.statusCode, "(eseye " + n + ")");
+                    console.log("[RAW]", raw.substring(0, 500));
 
-                res.on("data", function(chunk) {
-                    raw += chunk;
-                });
-
-                res.on("end", function() {
-                    console.log(
-                        "[HTTP]",
-                        options.method,
-                        options.path,
-                        "->",
-                        res.statusCode
-                    );
-                    console.log(
-                        "[RAW]",
-                        raw.substring(0, 500)
-                    );
+                    /* Erreurs serveur transitoires => on réessaie */
+                    if ([502, 503, 504].indexOf(res.statusCode) !== -1 && n < 3) {
+                        console.log("[RETRY] " + res.statusCode + " transitwa, re-eseye...");
+                        return setTimeout(function () {
+                            attempt(n + 1).then(resolve, reject);
+                        }, 800 * n);
+                    }
 
                     try {
-                        resolve({
-                            statusCode: res.statusCode,
-                            data: JSON.parse(raw)
-                        });
+                        resolve({ statusCode: res.statusCode, data: JSON.parse(raw) });
                     } catch (e) {
-                        resolve({
-                            statusCode: res.statusCode,
-                            data: raw
-                        });
+                        resolve({ statusCode: res.statusCode, data: raw });
                     }
                 });
-            }
-        );
+            });
 
-        req.on("error", function(err) {
-            reject(err);
+            req.on("error", function (err) {
+                /* Erreur réseau => on réessaie aussi */
+                if (n < 3) {
+                    console.log("[RETRY] erè rezo, re-eseye...", err.message);
+                    return setTimeout(function () {
+                        attempt(n + 1).then(resolve, reject);
+                    }, 800 * n);
+                }
+                reject(err);
+            });
+
+            req.setTimeout(8000, function () {
+                req.destroy(new Error("Request timeout"));
+
+            });
+
+            if (body) req.write(body);
+            req.end();
         });
-
-        req.setTimeout(30000, function() {
-            req.destroy(
-                new Error("Request timeout")
-            );
-        });
-
-        if (body) {
-            req.write(body);
-        }
-
-        req.end();
-    });
+    }
 }
 
 /* ====================================

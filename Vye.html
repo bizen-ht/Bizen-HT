@@ -2286,6 +2286,19 @@ function viewAccountDetail(uid) {
         content.innerHTML += '<div style="margin-top:16px;font-size:0.8rem;color:#6a6a80"><i class="fas fa-image"></i> Pa gen medya uploade.</div>';
     }
 
+    /* === ÉDITION DU PRIX (base Elu + prix hôtel ajouté par l'admin) === */
+    if (user.type === "freelancer" || user.type === "krey") {
+        var curPrice = user.type === "krey" ? (user.kreyPrice || 0) : (user.prixMoment || 0);
+        content.innerHTML += '<div style="margin-top:18px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.3);border-radius:12px;padding:16px">' +
+            '<div style="font-size:0.72rem;color:#ffd700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px"><i class="fas fa-tag"></i> Pri Final (baz Elu + hotel)</div>' +
+            '<div style="font-size:0.72rem;color:#6a6a80;margin-bottom:10px">Ajoute pri hotel la sou pri baz Elu a te chwazi a. Pri sa a ap parèt sou sit la.</div>' +
+            '<div style="display:flex;gap:8px;align-items:center">' +
+            '<input id="admPriceInput" type="number" min="0" value="' + curPrice + '" style="flex:1;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid #2a2a3a;border-radius:8px;color:white;font-family:Montserrat,sans-serif;font-size:0.95rem;outline:none">' +
+            '<span style="color:#ffd700;font-weight:700">Gdes</span>' +
+            '<button onclick="setEluPrice(\'' + uid + '\',\'' + user.type + '\')" style="padding:10px 18px;background:linear-gradient(135deg,#ffd700,#ff9800);color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.82rem"><i class="fas fa-save"></i> Sove Pri</button>' +
+            '</div></div>';
+    }
+
     actions.innerHTML = "";
     if (!user.isPremium) {
         actions.innerHTML += actBtn("ab-pre", "admAction('premium','" + uid + "');closeDetailModal()", "fa-crown", "Aktive Premium");
@@ -2308,6 +2321,41 @@ function viewAccountDetail(uid) {
 function closeDetailModal() {
     var modal = document.getElementById("detailModal");
     if (modal) modal.classList.remove("show");
+}
+
+/* ====================================
+   ADMIN — MODIFIE PRIX ELU
+   (prix base + prix hotel ajouté manuellement)
+   ==================================== */
+function setEluPrice(uid, type) {
+    if (!db) return;
+    var inp = document.getElementById("admPriceInput");
+    if (!inp) return;
+    var newPrice = parseInt(inp.value) || 0;
+    if (newPrice <= 0) { toast("Antre yon pri valab.", false); return; }
+
+    var commission = Math.round(newPrice * 0.10);
+    var net = newPrice - commission;
+
+    var updates = {};
+    if (type === "krey") {
+        updates = { kreyPrice: newPrice, kreyPriceNet: net, kreyCommission: commission };
+    } else {
+        updates = { prixMoment: newPrice, prixNet: net, commissionBizen: commission };
+    }
+
+    db.collection("users").doc(uid).update(updates)
+        .then(function() {
+            /* Reflète sur le profil PUBLIC (catalogue + vue profil) */
+            return db.collection("publicProfiles").doc(uid).set({ prixMoment: newPrice }, { merge: true });
+        })
+        .then(function() {
+            toast("Pri mete ajou: " + newPrice.toLocaleString() + " Gdes!", true);
+            loadAll();
+        })
+        .catch(function(err) {
+            toast("Ere: " + err.message, false);
+        });
 }
 
 /* ====================================

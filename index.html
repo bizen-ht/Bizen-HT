@@ -4053,16 +4053,17 @@ try {
                     if (!u || !db) return;
 
                     if (pendingBooking) {
-                        /* === PAIEMENT D'UNE RÉSERVATION === */
+                        /* === PAIEMENT D'UNE RÉSERVATION ===
+                           Payé => en attente de CONFIRMATION par l'Elu. */
                         db.collection("reservations").doc(pendingBooking).update({
-                            status: "confirmed",
+                            status: "en_attente",
                             paid: true,
                             paidAt: firebase.firestore.FieldValue.serverTimestamp()
                         }).then(function() {
                             try { localStorage.removeItem("bizenPendingBooking"); } catch(e) {}
-                            showOk("Rezevasyon Peye!", "Peman ou konfime! Rezevasyon ou aktive. Mèsi!");
+                            showOk("Peman Reyisi!", "Peman ou konfime! Elu a ap konfime rezevasyon w lan byento. W ap resevwa yon repons.");
                         }).catch(function() {
-                            showOk("Peman Resevwa!", "Nou pral konfime rezevasyon ou toutsuit.");
+                            showOk("Peman Resevwa!", "Nou pral trete rezevasyon ou toutsuit.");
                         });
                     } else {
                         /* === PAIEMENT DE L'ABONNEMENT PREMIUM === */
@@ -5558,12 +5559,16 @@ function payReservationMonCash(amount, reservationId, prestateName) {
 /* ====================================
    KREY RESERVATION
    ==================================== */
+var kreyBookingTarget = null;
+
 function openKreyRes(btn) {
     if (!auth || !auth.currentUser) { oM("lM"); return; }
     var card = btn.closest(".krey-card");
     if (!card) return;
     var nm = card.querySelector(".krey-name").textContent.trim();
     var pr = card.querySelector(".krey-price-amount").textContent.trim();
+    /* uid réel du Krey si disponible (sinon démo) */
+    kreyBookingTarget = { uid: card.getAttribute("data-uid") || "", name: nm };
     var old = document.getElementById("kreyResM");
     if (old) old.remove();
     var h = '<div class="mbg show" id="kreyResM" style="z-index:10002">';
@@ -5626,21 +5631,30 @@ function submitKreyRes(kreyName, price) {
         showOk("Rezevasyon Krey Konfime!", "Gwoup " + kreyName + " rezeve pou " + date.value + "!");
         return;
     }
+    var kreyAmount = parseInt(String(price).replace(/[^0-9]/g, "")) || 0;
+    var kreyPrestateId = (kreyBookingTarget && kreyBookingTarget.uid) ? kreyBookingTarget.uid : "";
+
     db.collection("reservations").add({
         userId: auth.currentUser.uid, userEmail: auth.currentUser.email,
-        prestateName: kreyName, price: price + " Gdes", type: "krey",
+        prestateName: kreyName, prestateId: kreyPrestateId,
+        price: price + " Gdes", amount: kreyAmount, type: "krey",
         date: date.value, time: time.value, locationType: locType.value,
         locationTypeText: locTypeText, locationName: locName.value.trim(),
         locationAddress: locAddr ? locAddr.value.trim() : "",
         notes: notes ? notes.value.trim() : "",
-        hotelIncluded: false, status: "en_attente",
+        hotelIncluded: false, paid: false,
+        status: kreyAmount > 0 ? "en_attente_peman" : "en_attente",
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function () {
+    }).then(function (ref) {
         cM("kreyResM");
-        var locMsg = locType.value === "lakay" ? "Gwoup la ap vini lakay ou nan: " + locName.value.trim()
-            : locType.value === "hotel" ? "Randevou nan hotel: " + locName.value.trim()
-            : "Randevou nan: " + locName.value.trim();
-        showOk("Rezevasyon Krey Konfime!", "Gwoup " + kreyName + " rezeve pou " + date.value + " a " + time.value + ". " + locMsg + ".");
+        if (kreyAmount > 0) {
+            /* Paiement MonCash obligatoire pour les Krey (comme les Elu) */
+            try { localStorage.setItem("bizenPendingBooking", ref.id); } catch(e) {}
+            showOk("Redireksyon Peman...", "Ou pral peye " + kreyAmount.toLocaleString() + " Gdes via MonCash pou konfime rezevasyon Krey " + kreyName + ".");
+            payReservationMonCash(kreyAmount, ref.id, kreyName);
+        } else {
+            showOk("Rezevasyon Krey Konfime!", "Gwoup " + kreyName + " rezeve pou " + date.value + " a " + time.value + ".");
+        }
     }).catch(function (err) {
         console.error(err);
         if (btn) { btn.innerHTML = '<i class="fas fa-check-circle"></i> Konfime Rezevasyon Krey'; btn.disabled = false; }
