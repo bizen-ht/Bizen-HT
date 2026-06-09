@@ -6,6 +6,14 @@
     <title>Bizen HT - Moman Plezi ak Lanmou</title>
     <link rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#e91e63">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bizen HT">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/833/833472.png">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -280,6 +288,9 @@
 
         /* COMMISSION NOTICE - NOUVEAU */
         .commission-notice{display:flex;align-items:flex-start;gap:12px;padding:15px;background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.3);border-radius:var(--radius);margin-bottom:15px}
+        .zchk{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:50px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer;transition:var(--transition)}
+        .zchk:hover{border-color:var(--primary)}
+        .zchk input{accent-color:var(--primary);cursor:pointer}
         .commission-notice i{color:var(--primary);font-size:1.2rem;margin-top:3px;flex-shrink:0}
         .commission-notice p{color:var(--primary-light);font-size:0.85rem;line-height:1.5}
         .commission-notice strong{color:var(--gold)}
@@ -2336,7 +2347,22 @@ body.no-screenshot * {
 <div class="pend"><i class="fas fa-info-circle"></i><p>Kont Elu yo pase nan validasyon manyel. Repons nan 24-48 edtan.</p></div>
 <!-- COMMISSION NOTICE -->
 <div class="commission-notice"><i class="fas fa-percentage"></i><p>Bizen HT pran <strong>10% komisyon</strong> sou chak moman/rezevasyon. Pa egzanp: Si pri ou se 5,000 Gdes, ou resevwa <strong>4,500 Gdes</strong> e Bizen HT kenbe 500 Gdes. Pri sa a pa negosyab e li afiche klè sou pwofil ou.</p></div>
-<div class="frow"><div class="fg"><label>Non</label><input type="text" placeholder="Non ou" required></div><div class="fg"><label>Siyati</label><input type="text" placeholder="Siyati ou" required></div></div><div class="fg"><label>Seks</label><select required><option value="">Chwazi...</option><option value="femme">Fanm</option><option value="homme">Gason</option><option value="biseksyel">Biseksyèl</option><option value="lot">Lòt</option></select></div><div class="fg"><label>Imel</label><input type="email" placeholder="email@gmail.com" required></div><div class="fg"><label>Telefon</label><input type="tel" placeholder="+509 XXXX-XXXX" required></div><div class="fg"><label>Lokasyon</label><select required><option value="">Chwazi vil ou...</option><option>Potoprens</option><option>Petion-Ville</option><option>Delmas</option><option>Kap-Ayisyen</option><option>Les Cayes</option><option>Gonaives</option><option>Jacmel</option><option>Lot</option></select></div><div class="fg"><label>Dat Nesans</label><input type="date" required></div><div class="fg"><label>Pri pou chak Moman (Gdes) - 10% komisyon ap retire</label><input type="number" placeholder="ex: 5000" min="1000" required id="priceInput" oninput="calcCommission()"></div>
+<div class="frow"><div class="fg"><label>Non</label><input type="text" placeholder="Non ou" required></div><div class="fg"><label>Siyati</label><input type="text" placeholder="Siyati ou" required></div></div><div class="fg"><label>Seks</label><select required><option value="">Chwazi...</option><option value="femme">Fanm</option><option value="homme">Gason</option><option value="biseksyel">Biseksyèl</option><option value="lot">Lòt</option></select></div><div class="fg"><label>Imel</label><input type="email" placeholder="email@gmail.com" required></div><div class="fg"><label>Telefon</label><input type="tel" placeholder="+509 XXXX-XXXX" required></div><div class="fg"><label>Lokasyon</label><select required><option value="">Chwazi vil ou...</option><option>Potoprens</option><option>Petion-Ville</option><option>Delmas</option><option>Kap-Ayisyen</option><option>Les Cayes</option><option>Gonaives</option><option>Jacmel</option><option>Lot</option></select></div><div class="fg"><label>Zòn ou ka ale (chwazi tout sa ki aplike)</label><div id="flZones" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
+<label class="zchk"><input type="checkbox" value="Potoprens"> Potoprens</label>
+<label class="zchk"><input type="checkbox" value="Petion-Ville"> Petion-Ville</label>
+<label class="zchk"><input type="checkbox" value="Delmas"> Delmas</label>
+<label class="zchk"><input type="checkbox" value="Tabarre"> Tabarre</label>
+<label class="zchk"><input type="checkbox" value="Carrefour"> Carrefour</label>
+<label class="zchk"><input type="checkbox" value="Kap-Ayisyen"> Kap-Ayisyen</label>
+<label class="zchk"><input type="checkbox" value="Les Cayes"> Les Cayes</label>
+<label class="zchk"><input type="checkbox" value="Gonaives"> Gonaives</label>
+<label class="zchk"><input type="checkbox" value="Jacmel"> Jacmel</label>
+</div>
+<div style="display:flex;gap:8px;margin-top:10px">
+<input type="text" id="flCustomZone" placeholder="Ajoute yon lòt zòn (ex: Kenscoff)..." style="flex:1;padding:9px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:50px;color:white;font-family:'Montserrat',sans-serif;font-size:0.8rem;outline:none" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomZone();}">
+<button type="button" onclick="addCustomZone()" style="padding:9px 16px;border:none;border-radius:50px;background:rgba(233,30,99,0.15);color:#e91e63;font-weight:600;font-size:0.78rem;cursor:pointer;font-family:'Montserrat',sans-serif;white-space:nowrap"><i class="fas fa-plus"></i> Ajoute</button>
+</div>
+<p style="font-size:0.72rem;color:#6a6a80;margin-top:5px"><i class="fas fa-info-circle"></i> Chwazi nan lis la oswa ajoute pwòp zòn ou. Kliyan yo p ap ka rezève w nan yon zòn ou pa chwazi.</p></div><div class="fg"><label>Dat Nesans</label><input type="date" required></div><div class="fg"><label>Pri pou chak Moman (Gdes) - 10% komisyon ap retire</label><input type="number" placeholder="ex: 5000" min="1000" required id="priceInput" oninput="calcCommission()"></div>
 <div id="commCalc" style="font-size:0.8rem;color:var(--primary-light);padding:5px 0;display:none"><i class="fas fa-calculator"></i> Ou pral resevwa: <strong id="netAmount">0</strong> Gdes | Komisyon Bizen HT: <strong id="commAmount">0</strong> Gdes</div>
 <div class="fg"><label>Deskripsyon ou</label><textarea placeholder="Dekri tet ou, sevis ou ofri..." rows="4" required></textarea></div>
 <div class="fg">
@@ -4743,6 +4769,35 @@ function doUR(e) {
 }
 
 /* ====================================
+   AJOUTE UNE ZONE PERSONNALISÉE (Elu)
+   ==================================== */
+function addCustomZone() {
+    var inp = document.getElementById("flCustomZone");
+    var box = document.getElementById("flZones");
+    if (!inp || !box) return;
+    var val = inp.value.trim();
+    if (!val) return;
+
+    /* Évite les doublons (insensible à la casse) */
+    var existing = box.querySelectorAll("input[type='checkbox']");
+    for (var i = 0; i < existing.length; i++) {
+        if (existing[i].value.toLowerCase() === val.toLowerCase()) {
+            inp.value = "";
+            toast("Zòn sa a deja nan lis la.", "err");
+            return;
+        }
+    }
+
+    /* Crée une nouvelle case cochée (collectée automatiquement à l'envoi) */
+    var label = document.createElement("label");
+    label.className = "zchk";
+    label.style.borderColor = "rgba(233,30,99,0.5)";
+    label.innerHTML = '<input type="checkbox" value="' + val.replace(/"/g, "&quot;") + '" checked> ' + val;
+    box.appendChild(label);
+    inp.value = "";
+}
+
+/* ====================================
    FREELANCER REGISTER
    ==================================== */
 function doFR(e) {
@@ -4760,7 +4815,15 @@ function doFR(e) {
     var px = f.querySelector("input[type='number']").value;
     var ds = f.querySelector("textarea").value.trim();
     var pw = f.querySelector("input[type='password']").value;
+    /* Zones de couverture (cases cochées) */
+    var flZones = [];
+    var zoneBoxes = document.querySelectorAll("#flZones input[type='checkbox']:checked");
+    zoneBoxes.forEach(function(cb){ flZones.push(cb.value); });
+    /* Si aucune cochée, on prend au moins la localisation principale */
+    if (flZones.length === 0 && vil) flZones.push(vil);
+
     if (!pr || !nm || !gn || !em || !tel || !vil || !px || !ds || !pw) { toast("Ranpli tout chan yo.", "err"); return false; }
+    if (flZones.length === 0) { toast("Chwazi omwen yon zòn ou ka ale.", "err"); return false; }
     if (pw.length < 6) { toast("Modpas dwe gen omwen 6 karakte.", "err"); return false; }
     if (isDisposableEmail(em)) { toast("Imel tanpore pa aksepte.", "err"); return false; }
     var commission = Math.round(parseInt(px) * 0.10);
@@ -4786,6 +4849,7 @@ function doFR(e) {
             db.collection("publicProfiles").doc(user.uid).set({
                 prenom: pr, nomInitial: (nm.charAt(0) || "") + ".",
                 type: "freelancer", genre: gn, localisation: vil,
+                zones: flZones,
                 prixMoment: parseInt(px), description: ds,
                 photoUrl: "", bizenCode: bizenCode, isPremium: false,
                 status: "en_attente", isOnline: false, lastSeen: null,
@@ -4801,6 +4865,7 @@ function doFR(e) {
                 type: "freelancer", status: "en_attente",
                 emailVerified: false,
                 bizenCode: bizenCode,
+                zones: flZones,
                 isOnline: false, lastSeen: null,
                 solde: 0, totalEarnings: 0, reservations: 0,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -5320,6 +5385,7 @@ function openEluProfile(btnOrUid) {
         var photo = d.photoUrl || "";
         var gallery = d.gallery || [];
         var videos = d.videos || [];
+        window._eluProfileZones = d.zones || [];   /* zones de couverture */
 
         var galHtml = "";
         gallery.forEach(function(u) {
@@ -5373,7 +5439,7 @@ function openEluProfile(btnOrUid) {
 }
 
 function startEluBooking(uid, name, price) {
-    bookingTarget = { uid: uid, name: name, price: price };
+    bookingTarget = { uid: uid, name: name, price: price, zones: (window._eluProfileZones || []) };
     cM("eluProfM");
     /* Pré-remplit la modale de réservation */
     var rn = document.getElementById("resName");
@@ -5440,6 +5506,22 @@ function confirmRes() {
         pr = currentResCard ? currentResCard.querySelector(".pv").textContent : "";
         prestateId = currentResCard ? (currentResCard.getAttribute("data-uid") || "") : "";
     }
+
+    /* === VÉRIFICATION DE ZONE ===
+       Si l'Elu a défini des zones, la ville choisie doit y figurer.
+       (Les valeurs du select diffèrent des noms de zones => table de correspondance) */
+    var cityToZone = {
+        potoprens: "Potoprens", petyonvil: "Petion-Ville", delmas: "Delmas",
+        kapayisyen: "Kap-Ayisyen", lekayi: "Les Cayes", gonaives: "Gonaives",
+        jacmel: "Jacmel", tabarre: "Tabarre", carrefour: "Carrefour"
+    };
+    var chosenZone = cityToZone[city.value] || city.value;
+    var eluZones = (bookingTarget && bookingTarget.zones) ? bookingTarget.zones : [];
+    if (eluZones.length > 0 && eluZones.indexOf(chosenZone) === -1) {
+        showOk("Zòn pa disponib", nm + " pa kouvri zòn \"" + chosenZone + "\". Zòn li ka ale: " + eluZones.join(", ") + ". Tanpri chwazi yon lòt zòn.");
+        return;
+    }
+
     var notes = "";
     var notesEl = document.getElementById("resNotes");
     if (notesEl) notes = notesEl.value.trim();
@@ -6740,5 +6822,81 @@ async function saveUserMedia(
         </div>
     </div>
 </div>
+
+<!-- ===== PWA INSTALL BANNER ===== -->
+<div id="pwaInstallBanner" style="display:none;position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:100000;width:92%;max-width:440px;background:linear-gradient(135deg,#15151f,#1a1a2e);border:1px solid rgba(233,30,99,0.4);border-radius:16px;padding:16px 18px;box-shadow:0 10px 40px rgba(0,0,0,0.6);align-items:center;gap:14px">
+    <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.4rem;color:#fff"><i class="fas fa-heart"></i></div>
+    <div style="flex:1">
+        <div style="font-weight:700;font-size:0.92rem;color:#fff">Telechaje Bizen HT</div>
+        <div id="pwaBannerText" style="font-size:0.76rem;color:#b0b0c0">Enstale app la sou telefòn ou pou yon aksè rapid!</div>
+    </div>
+    <button id="pwaInstallBtn" style="padding:9px 16px;border:none;border-radius:50px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;font-family:Montserrat,sans-serif;font-weight:600;font-size:0.8rem;cursor:pointer;white-space:nowrap"><i class="fas fa-download"></i> Enstale</button>
+    <button onclick="dismissPwaBanner()" style="background:none;border:none;color:#6a6a80;font-size:1.1rem;cursor:pointer;padding:4px"><i class="fas fa-times"></i></button>
+</div>
+
+<script>
+/* ====================================
+   PWA — Service Worker + Bannière d'installation
+   ==================================== */
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+        navigator.serviceWorker.register("/sw.js").catch(function (e) {
+            console.warn("SW register:", e.message);
+        });
+    });
+}
+
+var deferredPrompt = null;
+
+function pwaAlreadyInstalled() {
+    return window.matchMedia("(display-mode: standalone)").matches ||
+           window.navigator.standalone === true;
+}
+
+/* Android / Chrome / Edge : événement natif */
+window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!pwaAlreadyInstalled() && localStorage.getItem("pwaBannerClosed") !== "1") {
+        showPwaBanner(false);
+    }
+});
+
+function showPwaBanner(isIOS) {
+    var b = document.getElementById("pwaInstallBanner");
+    if (!b) return;
+    if (isIOS) {
+        document.getElementById("pwaBannerText").innerHTML =
+            'Tape <i class="fas fa-arrow-up-from-bracket"></i> Pataje, apre "Sou Ekran Akèy".';
+        document.getElementById("pwaInstallBtn").style.display = "none";
+    }
+    b.style.display = "flex";
+}
+
+function dismissPwaBanner() {
+    var b = document.getElementById("pwaInstallBanner");
+    if (b) b.style.display = "none";
+    try { localStorage.setItem("pwaBannerClosed", "1"); } catch (e) {}
+}
+
+document.getElementById("pwaInstallBtn").addEventListener("click", function () {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function () {
+            deferredPrompt = null;
+            dismissPwaBanner();
+        });
+    }
+});
+
+/* iOS (Safari) n'a pas beforeinstallprompt : on affiche un guide après 4s */
+(function () {
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+    if (isIOS && isSafari && !pwaAlreadyInstalled() && localStorage.getItem("pwaBannerClosed") !== "1") {
+        setTimeout(function () { showPwaBanner(true); }, 4000);
+    }
+})();
+</script>
 </body>
 </html>

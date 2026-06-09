@@ -1095,6 +1095,18 @@
             Jere Medias Gwoup la
         </h3>
 
+        <!-- Photo de profil Krey -->
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+            <div id="kreyProfilePhotoBox" style="width:80px;height:80px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#9c27b0,#e91e63);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:3px solid #9c27b0">
+                <i class="fas fa-users" style="font-size:1.6rem;color:#fff"></i>
+            </div>
+            <div>
+                <div style="font-size:0.85rem;font-weight:600;margin-bottom:6px">Foto Pwofil Gwoup la</div>
+                <input type="file" id="kreyProfilePhotoInput" accept="image/*" style="display:none" onchange="uploadKreyProfilePhoto(this)">
+                <button onclick="document.getElementById('kreyProfilePhotoInput').click()" style="padding:7px 16px;border:none;border-radius:20px;background:rgba(156,39,176,0.15);color:#9c27b0;font-size:0.78rem;cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600"><i class="fas fa-camera"></i> Chanje Foto Pwofil</button>
+            </div>
+        </div>
+
         <!-- Upload Photos -->
         <div style="margin-bottom:20px">
             <label style="display:block;
@@ -2194,6 +2206,14 @@ function showToast(msg, type) {
 function loadKreyMedia() {
     if (!userData) return;
 
+    /* Photo de profil Krey */
+    var kpb = document.getElementById("kreyProfilePhotoBox");
+    if (kpb) {
+        kpb.innerHTML = userData.profilePhoto
+            ? '<img src="' + userData.profilePhoto + '" style="width:100%;height:100%;object-fit:cover">'
+            : '<i class="fas fa-users" style="font-size:1.6rem;color:#fff"></i>';
+    }
+
     var photos =
         userData.media &&
         userData.media.photos
@@ -2368,6 +2388,7 @@ async function uploadKreyDashPhotos() {
     userData.media.photos =
         oldPhotos.concat(uploaded);
 
+    syncGalleryToPublic();   /* sync galerie -> profil public Krey */
     loadKreyMedia();
     input.value = "";
     showToast(
@@ -2442,12 +2463,40 @@ async function uploadKreyDashVideos() {
     userData.media.videos =
         oldVideos.concat(uploaded);
 
+    syncGalleryToPublic();   /* sync galerie -> profil public Krey */
     loadKreyMedia();
     input.value = "";
     showToast(
         "Videyo yo ajoute!",
         "success"
     );
+}
+
+/* --- Photo de profil Krey --- */
+function uploadKreyProfilePhoto(input) {
+    if (!storage || !db || !currentUser) return;
+    if (!input.files || !input.files[0]) return;
+    var file = input.files[0];
+    if (file.size > 5 * 1024 * 1024) { showToast("Foto two gwo (max 5MB).", "error"); return; }
+    showToast("Telechaje foto pwofil...", "success");
+
+    var safe = Date.now() + "_" + file.name.replace(/\s+/g, "_");
+    var path = "krey/" + currentUser.uid + "/profile/" + safe;
+    var ref = storage.ref(path);
+    ref.put(file).then(function() {
+        return ref.getDownloadURL();
+    }).then(function(url) {
+        userData.profilePhoto = url;
+        return db.collection("users").doc(currentUser.uid).update({ profilePhoto: url });
+    }).then(function() {
+        db.collection("publicProfiles").doc(currentUser.uid).set({ photoUrl: userData.profilePhoto }, { merge: true }).catch(function(){});
+        loadKreyMedia();
+        showToast("Foto pwofil chanje!", "success");
+    }).catch(function(e) {
+        console.error(e);
+        showToast("Ere telechajman. Verifye Storage Rules.", "error");
+    });
+    input.value = "";
 }
 
 /* ====================================
