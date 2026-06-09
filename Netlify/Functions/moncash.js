@@ -1,6 +1,6 @@
 const https = require('https');
 const BUILD_VERSION =
-    "moncash-dynamic-amount-v3";
+    "moncash-fix-token-v2";
 const crypto = require('crypto');
 
 /* ====================================
@@ -28,57 +28,63 @@ const CORS = {
 };
 
 /* ====================================
-   HTTP REQUEST HELPER (avec retry sur 503)
+   HTTP REQUEST HELPER
    ==================================== */
 function doRequest(options, body) {
-    return attempt(1);
-
-    function attempt(n) {
-        return new Promise(function (resolve, reject) {
-            const req = https.request(options, function (res) {
+    return new Promise(function(resolve, reject) {
+        const req = https.request(
+            options,
+            function(res) {
                 let raw = "";
-                res.on("data", function (chunk) { raw += chunk; });
-                res.on("end", function () {
-                    console.log("[HTTP]", options.method, options.path,
-                        "->", res.statusCode, "(eseye " + n + ")");
-                    console.log("[RAW]", raw.substring(0, 500));
 
-                    /* Erreurs serveur transitoires => on réessaie */
-                    if ([502, 503, 504].indexOf(res.statusCode) !== -1 && n < 3) {
-                        console.log("[RETRY] " + res.statusCode + " transitwa, re-eseye...");
-                        return setTimeout(function () {
-                            attempt(n + 1).then(resolve, reject);
-                        }, 800 * n);
-                    }
+                res.on("data", function(chunk) {
+                    raw += chunk;
+                });
+
+                res.on("end", function() {
+                    console.log(
+                        "[HTTP]",
+                        options.method,
+                        options.path,
+                        "->",
+                        res.statusCode
+                    );
+                    console.log(
+                        "[RAW]",
+                        raw.substring(0, 500)
+                    );
 
                     try {
-                        resolve({ statusCode: res.statusCode, data: JSON.parse(raw) });
+                        resolve({
+                            statusCode: res.statusCode,
+                            data: JSON.parse(raw)
+                        });
                     } catch (e) {
-                        resolve({ statusCode: res.statusCode, data: raw });
+                        resolve({
+                            statusCode: res.statusCode,
+                            data: raw
+                        });
                     }
                 });
-            });
+            }
+        );
 
-            req.on("error", function (err) {
-                /* Erreur réseau => on réessaie aussi */
-                if (n < 3) {
-                    console.log("[RETRY] erè rezo, re-eseye...", err.message);
-                    return setTimeout(function () {
-                        attempt(n + 1).then(resolve, reject);
-                    }, 800 * n);
-                }
-                reject(err);
-            });
-
-            req.setTimeout(8000, function () {
-                req.destroy(new Error("Request timeout"));
-
-            });
-
-            if (body) req.write(body);
-            req.end();
+        req.on("error", function(err) {
+            reject(err);
         });
-    }
+
+        req.setTimeout(30000, function() {
+            req.destroy(
+                new Error("Request timeout")
+            );
+        });
+
+        if (body) {
+            req.write(body);
+        }
+
+        req.end();
+    });
 }
 
 /* ====================================
@@ -136,36 +142,21 @@ async function getToken() {
 
 /* ====================================
    CREATE MONCASH PAYMENT
+   According to your Bazik docs:
    POST /moncash/token
-   --> Montant dynamique (gdes = payload.amount)
-   --> Distingue "premium" vs "reservation"
    ==================================== */
 async function createPayment(payload) {
     const token = await getToken();
 
-    /* NOUVEAU: type de paiement (premium par défaut) */
-    const isReservation =
-        payload.purpose === "reservation";
-
-    /* NOUVEAU: libellé + URL de retour adaptés */
-    const description = isReservation
-        ? "Bizen HT - Rezevasyon Elu"
-        : "Bizen HT - Membership Premium";
-
-    const successUrl =
-        SITE_URL +
-        "/?payment=success&ref=" +
-        payload.referenceId +
-        (isReservation
-            ? "&resId=" +
-              (payload.reservationId || "")
-            : "");
-
     const body = JSON.stringify({
         gdes: parseFloat(payload.amount),
         userID: payload.userId || crypto.randomUUID(),
-        successUrl: successUrl,
-        description: description,
+        successUrl:
+    SITE_URL +
+    "/?payment=success&ref=" +
+    payload.referenceId,
+        description:
+            "Bizen HT - Membership Premium",
         referenceId: payload.referenceId,
         errorUrl:
     SITE_URL +
@@ -187,13 +178,7 @@ async function createPayment(payload) {
             firebaseEmail:
                 payload.email || "",
             site: "bizenht.com",
-            product: isReservation
-                ? "reservation"
-                : "premium",
-            purpose:
-                payload.purpose || "premium",
-            reservationId:
-                payload.reservationId || ""
+            product: "premium"
         }
     });
 
@@ -225,6 +210,8 @@ async function createPayment(payload) {
 
 /* ====================================
    VERIFY PAYMENT
+   We try multiple possible endpoints
+   because Bazik docs can vary
    ==================================== */
 async function verifyPayment(referenceId) {
     const token = await getToken();
@@ -371,14 +358,7 @@ exports.handler = async function(
                         body.lastName ||
                         "Bizen",
                     referenceId:
-                        referenceId,
-                    /* NOUVEAU: type + id réservation */
-                    purpose:
-                        body.purpose ||
-                        "premium",
-                    reservationId:
-                        body.reservationId ||
-                        ""
+                        referenceId
                 });
 
             /* Try to extract payment URL */
