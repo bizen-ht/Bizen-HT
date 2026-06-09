@@ -1,6 +1,6 @@
 const https = require('https');
 const BUILD_VERSION =
-    "moncash-fix-token-v2";
+    "moncash-dynamic-amount-v3";
 const crypto = require('crypto');
 
 /* ====================================
@@ -142,21 +142,36 @@ async function getToken() {
 
 /* ====================================
    CREATE MONCASH PAYMENT
-   According to your Bazik docs:
    POST /moncash/token
+   --> Montant dynamique (gdes = payload.amount)
+   --> Distingue "premium" vs "reservation"
    ==================================== */
 async function createPayment(payload) {
     const token = await getToken();
 
+    /* NOUVEAU: type de paiement (premium par défaut) */
+    const isReservation =
+        payload.purpose === "reservation";
+
+    /* NOUVEAU: libellé + URL de retour adaptés */
+    const description = isReservation
+        ? "Bizen HT - Rezevasyon Elu"
+        : "Bizen HT - Membership Premium";
+
+    const successUrl =
+        SITE_URL +
+        "/?payment=success&ref=" +
+        payload.referenceId +
+        (isReservation
+            ? "&resId=" +
+              (payload.reservationId || "")
+            : "");
+
     const body = JSON.stringify({
         gdes: parseFloat(payload.amount),
         userID: payload.userId || crypto.randomUUID(),
-        successUrl:
-    SITE_URL +
-    "/?payment=success&ref=" +
-    payload.referenceId,
-        description:
-            "Bizen HT - Membership Premium",
+        successUrl: successUrl,
+        description: description,
         referenceId: payload.referenceId,
         errorUrl:
     SITE_URL +
@@ -178,7 +193,13 @@ async function createPayment(payload) {
             firebaseEmail:
                 payload.email || "",
             site: "bizenht.com",
-            product: "premium"
+            product: isReservation
+                ? "reservation"
+                : "premium",
+            purpose:
+                payload.purpose || "premium",
+            reservationId:
+                payload.reservationId || ""
         }
     });
 
@@ -210,8 +231,6 @@ async function createPayment(payload) {
 
 /* ====================================
    VERIFY PAYMENT
-   We try multiple possible endpoints
-   because Bazik docs can vary
    ==================================== */
 async function verifyPayment(referenceId) {
     const token = await getToken();
@@ -358,7 +377,14 @@ exports.handler = async function(
                         body.lastName ||
                         "Bizen",
                     referenceId:
-                        referenceId
+                        referenceId,
+                    /* NOUVEAU: type + id réservation */
+                    purpose:
+                        body.purpose ||
+                        "premium",
+                    reservationId:
+                        body.reservationId ||
+                        ""
                 });
 
             /* Try to extract payment URL */

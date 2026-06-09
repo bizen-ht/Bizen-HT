@@ -2772,10 +2772,16 @@ function syncPublicProfile(uid, data, isLogin) {
         prixMoment: data.prixMoment || data.kreyPrice || 0,
         description: data.description || data.kreyDescription || "",
         photoUrl: photo,
+        gallery: (data.media && data.media.photos ? data.media.photos.map(function(p){ return p.url; }) : []),
+        videos: (data.media && data.media.videos ? data.media.videos.map(function(v){ return v.url; }) : []),
         bizenCode: data.bizenCode || "",
         isPremium: data.isPremium === true,
         status: data.status || "en_attente",
         kreyMemberCount: data.kreyMemberCount || null,
+        ratingAvg: data.ratingAvg || 0,
+        ratingCount: data.ratingCount || 0,
+        completedCount: data.completedCount || 0,
+        level: data.level || "Nouvo",
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     if (isLogin) {

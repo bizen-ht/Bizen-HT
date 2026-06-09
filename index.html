@@ -4028,43 +4028,46 @@ try {
     if (urlParams.indexOf(
         "payment=success"
     ) !== -1) {
-        /* Activate premium for
-           logged in user */
+        /* Y a-t-il une réservation en attente de paiement ?
+           Si oui => on confirme la RÉSERVATION (pas le Premium).
+           On lit d'abord l'URL (?resId=...) puis localStorage en secours. */
+        var pendingBooking = null;
+        try {
+            var sp = new URLSearchParams(window.location.search);
+            pendingBooking = sp.get("resId") || localStorage.getItem("bizenPendingBooking");
+        } catch(e) {
+            try { pendingBooking = localStorage.getItem("bizenPendingBooking"); } catch(e2) {}
+        }
+
         if (auth) {
             auth.onAuthStateChanged(
                 function(u) {
-                    if (u && db) {
-                        db.collection("users")
-                            .doc(u.uid)
-                            .update({
-                                isPremium: true,
-                                premiumActivatedAt:
-                                    firebase
-                                    .firestore
-                                    .FieldValue
-                                    .serverTimestamp(),
-                                premiumSource:
-                                    "success_redirect"
-                            })
-                            .then(function() {
-                                showOk(
-                                    "Premium Aktive!",
-                                    "Peman konfime! " +
-                                    "Kont ou " +
-                                    "Premium kounye a!"
-                                );
-                                try {
-                                    unlockUI();
-                                } catch(e) {}
-                            })
-                            .catch(function() {
-                                showOk(
-                                    "Peman Resevwa!",
-                                    "Ekip nou pral " +
-                                    "aktive Premium " +
-                                    "ou toutsuit."
-                                );
-                            });
+                    if (!u || !db) return;
+
+                    if (pendingBooking) {
+                        /* === PAIEMENT D'UNE RÉSERVATION === */
+                        db.collection("reservations").doc(pendingBooking).update({
+                            status: "confirmed",
+                            paid: true,
+                            paidAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }).then(function() {
+                            try { localStorage.removeItem("bizenPendingBooking"); } catch(e) {}
+                            showOk("Rezevasyon Peye!", "Peman ou konfime! Rezevasyon ou aktive. Mèsi!");
+                        }).catch(function() {
+                            showOk("Peman Resevwa!", "Nou pral konfime rezevasyon ou toutsuit.");
+                        });
+                    } else {
+                        /* === PAIEMENT DE L'ABONNEMENT PREMIUM === */
+                        db.collection("users").doc(u.uid).update({
+                            isPremium: true,
+                            premiumActivatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            premiumSource: "success_redirect"
+                        }).then(function() {
+                            showOk("Premium Aktive!", "Peman konfime! Kont ou Premium kounye a!");
+                            try { unlockUI(); } catch(e) {}
+                        }).catch(function() {
+                            showOk("Peman Resevwa!", "Ekip nou pral aktive Premium ou toutsuit.");
+                        });
                     }
                 }
             );
@@ -5196,14 +5199,14 @@ async function unlockUI() {
             return;
         }
 
-        // VRAI PROFIL : réservation active
-        btn.innerHTML = '<i class="fas fa-calendar-check"></i> Rezève Kounye a';
+        // VRAI PROFIL : ouvre la vue profil (photo, galerie, prix, note) puis réservation
+        btn.innerHTML = '<i class="fas fa-eye"></i> Wè Pwofil & Rezève';
         btn.style.cssText = "background:linear-gradient(135deg,#e91e63,#9c27b0);color:white;border:none;";
 
         if (btn.closest(".krey-card")) {
             btn.setAttribute("onclick", "openKreyRes(this)");
         } else {
-            btn.setAttribute("onclick", "openResModal(this)");
+            btn.setAttribute("onclick", "openEluProfile(this)");
         }
     });
 
@@ -5276,8 +5279,107 @@ function renderPrivateMedia(cardEl, media) {
    ==================================== */
 var currentResCard = null;
 
+/* ====================================
+   VUE PROFIL ELU (photo, galerie, prix, note, niveau)
+   Utilise le système existant: eluLevel() + starHtmlIdx()
+   et la collection "ratings" comme source de vérité.
+   ==================================== */
+var bookingTarget = null;
+
+function openEluProfile(btnOrUid) {
+    if (!auth || !auth.currentUser) { oM("lM"); return; }
+    var uid = (typeof btnOrUid === "string") ? btnOrUid : (btnOrUid.closest(".pc") ? btnOrUid.closest(".pc").getAttribute("data-uid") : "");
+    if (!uid || !db) { return; }
+
+    /* Charge profil + notes en parallèle */
+    Promise.all([
+        db.collection("publicProfiles").doc(uid).get(),
+        db.collection("ratings").where("prestateId", "==", uid).get()
+    ]).then(function(results) {
+        var doc = results[0];
+        if (!doc.exists) { toast("Pwofil pa disponib.", "err"); return; }
+        var d = doc.data();
+
+        /* Agrège les notes (même logique que decorateRatings) */
+        var sum = 0, count = 0;
+        results[1].forEach(function(r) { sum += (r.data().stars || 0); count++; });
+        var avg = count ? (sum / count) : 0;
+        var lvl = eluLevel(count, avg);
+
+        var name = (d.prenom || "") + " " + (d.nomInitial || "");
+        var price = (d.prixMoment || 0);
+        var photo = d.photoUrl || "";
+        var gallery = d.gallery || [];
+        var videos = d.videos || [];
+
+        var galHtml = "";
+        gallery.forEach(function(u) {
+            galHtml += '<div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1" onclick="window.open(\'' + u + '\',\'_blank\')"><img src="' + u + '" style="width:100%;height:100%;object-fit:cover;cursor:pointer"></div>';
+        });
+        videos.forEach(function(u) {
+            galHtml += '<div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1" onclick="window.open(\'' + u + '\',\'_blank\')"><video src="' + u + '" style="width:100%;height:100%;object-fit:cover"></video><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);color:#fff;font-size:1.5rem"><i class="fas fa-play-circle"></i></div></div>';
+        });
+        if (!galHtml) galHtml = '<p style="color:#6a6a80;font-size:0.85rem;grid-column:1/-1;text-align:center;padding:20px">Pa gen foto galri ankò.</p>';
+
+        var onlineHtml = d.isOnline
+            ? '<span style="color:#4caf50;font-size:0.8rem"><i class="fas fa-circle" style="font-size:0.5rem"></i> En Liy kounye a</span>'
+            : '<span style="color:#6a6a80;font-size:0.8rem"><i class="fas fa-circle" style="font-size:0.5rem"></i> Dekonekte</span>';
+
+        var avatar = photo
+            ? '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover">'
+            : '<i class="fas fa-user" style="font-size:2.5rem;color:#fff"></i>';
+
+        var lvlBadge = '<span style="display:inline-flex;align-items:center;gap:6px;background:' + lvl.bg + ';border:1px solid ' + lvl.color + '55;color:' + lvl.color + ';padding:4px 12px;border-radius:50px;font-size:0.75rem;font-weight:700"><i class="fas ' + lvl.icon + '"></i> ' + lvl.name + '</span>';
+
+        var ratingHtml = (count === 0)
+            ? '<span style="color:#6a6a80;font-size:0.85rem">Pa gen nòt ankò</span>'
+            : '<span style="font-size:1rem">' + starHtmlIdx(avg) + '</span> <span style="color:#b0b0c0;font-size:0.85rem"><strong>' + avg.toFixed(1) + '</strong> (' + count + ' nòt)</span>';
+
+        var old = document.getElementById("eluProfM");
+        if (old) old.remove();
+
+        var h = '<div class="mbg show" id="eluProfM" style="z-index:10003">';
+        h += '<div class="modal" style="max-width:560px;max-height:95vh;overflow-y:auto">';
+        h += '<button class="mx" onclick="cM(\'eluProfM\')"><i class="fas fa-times"></i></button>';
+        h += '<div style="display:flex;gap:16px;align-items:center;margin-bottom:16px">';
+        h += '<div style="width:90px;height:90px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:3px solid #e91e63">' + avatar + '</div>';
+        h += '<div><h2 style="font-family:\'Playfair Display\',serif;font-size:1.5rem;margin-bottom:4px">' + name + '</h2>';
+        h += '<div style="margin-bottom:6px">' + lvlBadge + '</div>';
+        h += onlineHtml + '</div></div>';
+        h += '<div style="margin-bottom:12px">' + ratingHtml + '</div>';
+        h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;color:#f48fb1;font-size:0.9rem"><i class="fas fa-map-marker-alt"></i> ' + (d.localisation || "Ayiti") + '</div>';
+        h += '<p style="color:#b0b0c0;font-size:0.9rem;line-height:1.6;margin-bottom:16px">' + (d.description || "") + '</p>';
+        h += '<div style="display:flex;align-items:center;gap:8px;padding:14px;background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.2);border-radius:12px;margin-bottom:16px"><i class="fas fa-tag" style="color:#ffd700"></i><span style="font-weight:700;font-size:1.3rem;color:#ffd700">' + price.toLocaleString() + ' Gdes</span><span style="color:#6a6a80;font-size:0.8rem">/ Moman (Hotel inclus)</span></div>';
+        h += '<h4 style="font-size:0.9rem;margin-bottom:10px"><i class="fas fa-images" style="color:#9c27b0"></i> Galri</h4>';
+        h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">' + galHtml + '</div>';
+        h += '<button class="btn btn-primary fw btn-glow" onclick="startEluBooking(\'' + uid + '\',\'' + name.replace(/'/g, "\\'") + '\',\'' + price + '\')"><i class="fas fa-calendar-check"></i> Rezève & Peye ' + price.toLocaleString() + ' Gdes</button>';
+        h += '</div></div>';
+
+        var wrap = document.createElement("div");
+        wrap.innerHTML = h;
+        var el = wrap.firstChild;
+        el.addEventListener("click", function(ev){ if (ev.target === el) cM("eluProfM"); });
+        document.body.appendChild(el);
+    }).catch(function(e){ console.warn(e); toast("Ere chajman pwofil.", "err"); });
+}
+
+function startEluBooking(uid, name, price) {
+    bookingTarget = { uid: uid, name: name, price: price };
+    cM("eluProfM");
+    /* Pré-remplit la modale de réservation */
+    var rn = document.getElementById("resName");
+    var rt = document.getElementById("resTotalPrice");
+    var hw = document.getElementById("hotelChoiceWrap");
+    if (rn) rn.textContent = name + " (Hotel Inclus)";
+    if (rt) rt.textContent = parseInt(price).toLocaleString() + " Gdes";
+    if (hw) hw.style.display = "none";
+    ["resCity","resDate","resTime"].forEach(function(id){ var e = document.getElementById(id); if (e) e.value = ""; });
+    oM("resM");
+}
+
 function openResModal(btn) {
     if (!auth || !auth.currentUser) { oM("lM"); return; }
+    bookingTarget = null;   /* réservation via carte démo classique */
     currentResCard = btn.closest(".pc");
     if (!currentResCard) return;
     var nm = currentResCard.querySelector(".pc-name");
@@ -5320,25 +5422,43 @@ function confirmRes() {
         hotelAddr = cAddr ? cAddr.value.trim() : "";
         hotelIncluded = false;
     }
-    var nm = currentResCard ? currentResCard.querySelector(".pc-name").textContent : "";
-    var pr = currentResCard ? currentResCard.querySelector(".pv").textContent : "";
-    /* uid réel du prestataire (vide si profil démo) — sert au chat sécurisé */
-    var prestateId = currentResCard ? (currentResCard.getAttribute("data-uid") || "") : "";
+    /* La cible peut venir de la modale profil (bookingTarget) OU d'une carte */
+    var nm, pr, prestateId;
+    if (bookingTarget) {
+        nm = bookingTarget.name; pr = bookingTarget.price; prestateId = bookingTarget.uid || "";
+    } else {
+        nm = currentResCard ? currentResCard.querySelector(".pc-name").textContent : "";
+        pr = currentResCard ? currentResCard.querySelector(".pv").textContent : "";
+        prestateId = currentResCard ? (currentResCard.getAttribute("data-uid") || "") : "";
+    }
     var notes = "";
     var notesEl = document.getElementById("resNotes");
     if (notesEl) notes = notesEl.value.trim();
     if (db) {
+        var amountNum = parseInt(String(pr).replace(/[^0-9]/g, "")) || 0;
         var doAdd = function() {
+            /* Pour un VRAI Elu => paiement MonCash du montant du profil.
+               Pour un profil démo (pas de prestateId) => simple réservation. */
+            var payNow = !!prestateId && amountNum > 0;
             db.collection("reservations").add({
                 userId: auth.currentUser.uid, userEmail: auth.currentUser.email,
-                prestateName: nm, prestateId: prestateId, price: pr, date: date.value, time: time.value,
+                prestateName: nm, prestateId: prestateId, price: pr, amount: amountNum,
+                date: date.value, time: time.value,
                 city: city.value, hotelName: hotelName, hotelAddress: hotelAddr,
                 hotelType: hotelType, hotelIncluded: hotelIncluded, notes: notes,
-                status: "en_attente",
+                paid: false,
+                status: payNow ? "en_attente_peman" : "en_attente",
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(function () {
+            }).then(function (ref) {
                 cM("resM");
-                showOk("Rezevasyon Konfime!", "Rezevasyon ou pou " + nm + " le " + date.value + " konfime! Hotel: " + hotelName + ".");
+                if (payNow) {
+                    /* Mémorise la réservation à confirmer après le paiement */
+                    try { localStorage.setItem("bizenPendingBooking", ref.id); } catch(e) {}
+                    showOk("Redireksyon Peman...", "Ou pral peye " + amountNum.toLocaleString() + " Gdes via MonCash pou konfime rezevasyon ak " + nm + ".");
+                    payReservationMonCash(amountNum, ref.id, nm);
+                } else {
+                    showOk("Rezevasyon Konfime!", "Rezevasyon ou pou " + nm + " le " + date.value + " konfime! Hotel: " + hotelName + ".");
+                }
             });
         };
 
@@ -5372,6 +5492,53 @@ function confirmRes() {
         cM("resM");
         showOk("Rezevasyon Konfime!", "Hotel: " + hotelName);
     }
+}
+
+/* ====================================
+   PAIEMENT MONCASH D'UNE RÉSERVATION
+   (montant dynamique = prix de l'Elu)
+   ==================================== */
+function payReservationMonCash(amount, reservationId, prestateName) {
+    if (!auth || !auth.currentUser) { oM("lM"); return; }
+    var user = auth.currentUser;
+
+    fetch("/.netlify/functions/moncash", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "create",
+            amount: amount,                 /* <-- montant du profil Elu */
+            userId: user.uid,
+            userEmail: user.email || "",
+            firstName: "Client",
+            lastName: "Bizen",
+            purpose: "reservation",
+            reservationId: reservationId
+        })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        var finalUrl = data.paymentUrl || (data.rawResponse && data.rawResponse.redirectUrl);
+        if (data.success && finalUrl) {
+            /* Enregistre le paiement lié à la réservation */
+            if (db) {
+                db.collection("payments").add({
+                    userId: user.uid, email: user.email || "",
+                    method: "moncash", referenceId: data.referenceId || null,
+                    amount: amount, status: "en_attente",
+                    purpose: "reservation", reservationId: reservationId,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(function(){});
+            }
+            window.location.href = finalUrl;
+        } else {
+            toast("Pa kapab louvri peman MonCash. Eseye ankò.", "err");
+        }
+    })
+    .catch(function(err) {
+        console.error("payReservationMonCash:", err);
+        toast("Ere koneksyon MonCash. Verifye fonksyon Netlify a.", "err");
+    });
 }
 
 /* ====================================
