@@ -219,13 +219,51 @@ if (!bizenCode) {
             if (snap.empty) {
                 showNotFound();
             } else {
-                showProfile(snap.docs[0].data());
+                var doc = snap.docs[0];
+                showProfile(doc.data());
+                loadProfileRating(doc.id);
             }
         })
         .catch(function(err) {
             console.error(err);
             showNotFound();
         });
+}
+
+function eluLevel(count, avg) {
+    if (count >= 50 && avg >= 4.8) return { name: "Elit VIP", color: "#7df9ff", icon: "fa-gem" };
+    if (count >= 20 && avg >= 4.5) return { name: "Premium", color: "#ffd700", icon: "fa-crown" };
+    if (count >= 5  && avg >= 4.0) return { name: "Konfime", color: "#c0c0c0", icon: "fa-medal" };
+    return { name: "Nouvo Elu", color: "#cd9b6a", icon: "fa-seedling" };
+}
+
+function loadProfileRating(uid) {
+    if (!db || !uid) return;
+    db.collection("ratings").where("prestateId", "==", uid).get()
+        .then(function(snap) {
+            var sum = 0, count = 0;
+            snap.forEach(function(d) { sum += (d.data().stars || 0); count++; });
+            var avg = count ? (sum / count) : 0;
+            var lvl = eluLevel(count, avg);
+
+            var starsStr = "";
+            for (var i = 1; i <= 5; i++) {
+                starsStr += '<i class="fas fa-star" style="color:' + (i <= Math.round(avg) ? "#ffd700" : "#3a3a4a") + '"></i>';
+            }
+            var ratingHtml = count
+                ? '<div style="font-size:1.1rem">' + starsStr + ' <strong style="color:#ffd700">' + avg.toFixed(1) + '</strong></div><div style="font-size:0.72rem;color:#6a6a80;margin-top:2px">' + count + ' nòt</div>'
+                : '<div style="font-size:0.78rem;color:#6a6a80">Pa gen nòt anko</div>';
+
+            var box = document.querySelector(".code-box");
+            if (box) {
+                box.insertAdjacentHTML("afterend",
+                    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap">' +
+                    '<span style="display:inline-flex;align-items:center;gap:6px;background:' + lvl.color + '22;color:' + lvl.color + ';border:1px solid ' + lvl.color + '55;border-radius:50px;padding:5px 14px;font-size:0.78rem;font-weight:700"><i class="fas ' + lvl.icon + '"></i> ' + lvl.name + '</span>' +
+                    '<div style="text-align:right">' + ratingHtml + '</div>' +
+                    '</div>');
+            }
+        })
+        .catch(function(e) { console.warn("rating:", e); });
 }
 </script>
 </body>

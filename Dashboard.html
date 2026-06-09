@@ -1206,15 +1206,26 @@ if (!auth) {
     clearTimeout(authTimeout);
     window.location.href = "index.html";
 } else {
+    var authHandled = false;   /* Empêche la re-vérification à chaque refresh de token */
     auth.onAuthStateChanged(function (user) {
         clearTimeout(authTimeout);
 
         if (!user) {
-            window.location.href = "index.html";
+            /* Vraie déconnexion: on ne redirige que si on a déjà été connecté
+               (évite les fausses redirections au tout début du chargement) */
+            if (authHandled) window.location.href = "index.html";
             return;
         }
 
-        /* Check email verification */
+        /* Si déjà configuré dans cette session, on NE refait PAS la vérif email.
+           (Firebase relance onAuthStateChanged au refresh du token ~1h:
+            c'était ça qui déconnectait l'utilisateur tout seul.) */
+        if (authHandled) {
+            currentUser = user;
+            return;
+        }
+
+        /* Check email verification — UNE SEULE FOIS, au premier chargement */
         try {
             if (!user.emailVerified &&
                 user.providerData &&
@@ -1229,6 +1240,7 @@ if (!auth) {
             console.warn("Email check error:", e);
         }
 
+        authHandled = true;
         currentUser = user;
 
         /* Load user data from Firestore */
@@ -1647,42 +1659,55 @@ function loadUserReservations() {
     listEl.innerHTML = loadingHtml();
     if (fullListEl) fullListEl.innerHTML = loadingHtml();
 
-    db.collection("reservations")
-        .where("userId", "==", currentUser.uid)
-        .get()
-        .then(function (snap) {
-            var items = [];
-            snap.forEach(function (doc) {
-                var d = doc.data();
-                d.id = doc.id;
-                items.push(d);
+    /* On charge d'abord les notes déjà données par ce client */
+    db.collection("ratings").where("userId", "==", currentUser.uid).get()
+        .then(function(rsnap) {
+            var ratedSet = {};
+            rsnap.forEach(function(d) {
+                var rd = d.data();
+                if (rd.reservationId) ratedSet[rd.reservationId] = rd.stars;
             });
-
-            items.sort(function (a, b) {
-                var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
-                var tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
-                return tb - ta;
-            });
-
-            var count = items.length;
-            setEl("uResCount", count);
-
-            if (count === 0) {
-                var emptyH = emptyHtml("fa-calendar-times", "Pa gen rezevasyon anko", "Rezeve yon Elu pou kòmanse!");
-                listEl.innerHTML = emptyH;
-                if (fullListEl) fullListEl.innerHTML = emptyH;
-                return;
-            }
-
-            var h = "";
-            items.forEach(function (r) { h += buildResRow(r, false); });
-
-            listEl.innerHTML = h;
-            if (fullListEl) fullListEl.innerHTML = h;
+            return ratedSet;
         })
-        .catch(function (err) {
-            console.error("loadUserRes error:", err);
-            listEl.innerHTML = emptyHtml("fa-exclamation-circle", "Ere chajman", "Eseye anko pita");
+        .catch(function() { return {}; })
+        .then(function(ratedSet) {
+            db.collection("reservations")
+                .where("userId", "==", currentUser.uid)
+                .get()
+                .then(function (snap) {
+                    var items = [];
+                    snap.forEach(function (doc) {
+                        var d = doc.data();
+                        d.id = doc.id;
+                        items.push(d);
+                    });
+
+                    items.sort(function (a, b) {
+                        var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+                        var tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+                        return tb - ta;
+                    });
+
+                    var count = items.length;
+                    setEl("uResCount", count);
+
+                    if (count === 0) {
+                        var emptyH = emptyHtml("fa-calendar-times", "Pa gen rezevasyon anko", "Rezeve yon Elu pou kòmanse!");
+                        listEl.innerHTML = emptyH;
+                        if (fullListEl) fullListEl.innerHTML = emptyH;
+                        return;
+                    }
+
+                    var h = "";
+                    items.forEach(function (r) { h += buildResRow(r, false, ratedSet); });
+
+                    listEl.innerHTML = h;
+                    if (fullListEl) fullListEl.innerHTML = h;
+                })
+                .catch(function (err) {
+                    console.error("loadUserRes error:", err);
+                    listEl.innerHTML = emptyHtml("fa-exclamation-circle", "Ere chajman", "Eseye anko pita");
+                });
         });
 }
 
@@ -1829,7 +1854,7 @@ function loadFlSoldeByPeriod() {
 /* ====================================
    BUILD RESERVATION ROW
    ==================================== */
-function buildResRow(r, isFL) {
+function buildResRow(r, isFL, ratedSet) {
     var stBg = r.status === "confirmed" ? "rgba(76,175,80,0.15)" : r.status === "cancelled" ? "rgba(244,67,54,0.15)" : "rgba(255,152,0,0.15)";
     var stCol = r.status === "confirmed" ? "#4caf50" : r.status === "cancelled" ? "#f44336" : "#ff9800";
     var stTxt = r.status === "confirmed" ? "Konfime" : r.status === "cancelled" ? "Anile" : "An Atant";
@@ -1854,17 +1879,77 @@ function buildResRow(r, isFL) {
         chatBtn = '<button onclick="openChat(\'' + r.id + '\',\'' + chatPartner.replace(/'/g,"") + '\')" style="margin-top:8px;padding:5px 14px;border:none;border-radius:20px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:white;font-size:0.72rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="fas fa-comment-dots"></i> Chat <span style="font-size:0.6rem;background:rgba(255,255,255,0.2);padding:1px 6px;border-radius:10px">24h</span></button>';
     }
 
+    /* === NOTATION (côté CLIENT uniquement) ===
+       Visible si: réservation confirmée + date passée + vrai Elu (prestateId) */
+    var rateBlock = "";
+    if (!isFL && r.status === "confirmed" && r.prestateId) {
+        var datePassed = false;
+        if (r.date) {
+            var rd = new Date(r.date + "T23:59:59");
+            if (!isNaN(rd.getTime()) && rd.getTime() < Date.now()) datePassed = true;
+        }
+        if (datePassed) {
+            var already = ratedSet && ratedSet[r.id];
+            if (already) {
+                rateBlock = '<div style="margin-top:8px;font-size:0.72rem;color:#ffd700">' + starsHtml(already) + ' <span style="color:#6a6a80">Ou note deja</span></div>';
+            } else {
+                var pName = (r.prestateName || "Elu").replace(/'/g, "");
+                rateBlock = '<div style="margin-top:8px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);border-radius:10px;padding:8px 12px">' +
+                    '<div style="font-size:0.72rem;color:#ffd700;margin-bottom:5px"><i class="fas fa-star"></i> Note Elu sa a:</div>' +
+                    '<div class="rate-stars" data-res="' + r.id + '" data-elu="' + r.prestateId + '">' +
+                    [1,2,3,4,5].map(function(n){
+                        return '<i class="far fa-star" style="color:#ffd700;font-size:1.1rem;cursor:pointer;margin-right:4px" onclick="submitRating(\'' + r.id + '\',\'' + r.prestateId + '\',' + n + ',this)"></i>';
+                    }).join("") +
+                    '</div></div>';
+            }
+        }
+    }
+
     return '<div class="res-item" data-status="' + (r.status || "en_attente") + '">' +
         '<div class="res-info">' +
         '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">' +
         '<strong>' + mainText + '</strong>' + tipBadge + '</div>' +
         '<span class="res-sub">' + (r.date || "N/A") + ' | ' + loc + '</span>' +
-        chatBtn +
+        chatBtn + rateBlock +
         '</div>' +
         '<div class="res-right">' +
         '<span style="padding:3px 12px;border-radius:20px;font-size:0.68rem;font-weight:600;background:' + stBg + ';color:' + stCol + '">' + stTxt + '</span>' +
         '<div class="res-price">' + priceText + '</div>' +
         '</div></div>';
+}
+
+/* Étoiles pleines/vides pour affichage */
+function starsHtml(n) {
+    var s = "";
+    for (var i = 1; i <= 5; i++) {
+        s += '<i class="fas fa-star" style="color:' + (i <= n ? "#ffd700" : "#3a3a4a") + '"></i>';
+    }
+    return s;
+}
+
+/* ====================================
+   SOUMETTRE UNE NOTE
+   ==================================== */
+function submitRating(reservationId, prestateId, stars, el) {
+    if (!db || !currentUser) return;
+
+    /* Une seule note par réservation (doc id = reservationId) */
+    db.collection("ratings").doc(reservationId).set({
+        reservationId: reservationId,
+        prestateId: prestateId,
+        userId: currentUser.uid,
+        stars: stars,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function() {
+        showToast("Mèsi! Ou bay " + stars + " zetwal.", "success");
+        /* Remplace l'UI par la note donnée */
+        if (el && el.parentElement) {
+            el.parentElement.parentElement.innerHTML =
+                '<div style="font-size:0.72rem;color:#ffd700">' + starsHtml(stars) + ' <span style="color:#6a6a80">Mèsi pou nòt ou!</span></div>';
+        }
+    }).catch(function(e) {
+        showToast("Ou deja note rezevasyon sa a.", "error");
+    });
 }
 
 /* ====================================

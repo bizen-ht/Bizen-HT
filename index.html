@@ -2098,13 +2098,14 @@ body.no-screenshot * {
             <p>Chwazi yon metod koneksyon</p>
         </div>
 
-        <!-- GOOGLE LOGIN -->
-        <button class="btn-google"
-                onclick="loginWithGoogle()">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                 alt="Google">
-            Kontinye ak Google
+        <!-- GOOGLE LOGIN (koneksyon sèlman, pa enskripsyon) -->
+        <button class="btn-google" onclick="loginWithGoogle()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+            Konekte ak Google
         </button>
+        <p style="font-size:0.72rem;color:#6a6a80;text-align:center;margin:6px 0 0">
+            <i class="fas fa-info-circle"></i> Google se pou konekte sèlman. Pou yon nouvo kont, itilize fòm enskripsyon an.
+        </p>
 
         <div class="auth-divider">
             <span>oswa ak imel</span>
@@ -2158,16 +2159,6 @@ body.no-screenshot * {
 </div>
 <!-- SIGNUP -->
 <div class="mbg" id="sM"><div class="modal lg"><button class="mx" onclick="cM('sM')"><i class="fas fa-times"></i></button><div class="mhead"><div class="mico"><i class="fas fa-user-plus"></i></div><h2>Kreye Kont ou</h2><p>Chwazi tip kont ou</p></div>
-<button class="btn-google"
-        onclick="loginWithGoogle()">
-    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-         alt="Google">
-    Enskri/Konekte ak Google
-</button>
-
-<div class="auth-divider">
-    <span>oswa chwazi tip kont</span>
-</div>
 <div class="atypes" id="aT"
      style="grid-template-columns:
             1fr 1fr 1fr">
@@ -2345,7 +2336,7 @@ body.no-screenshot * {
 <div class="pend"><i class="fas fa-info-circle"></i><p>Kont Elu yo pase nan validasyon manyel. Repons nan 24-48 edtan.</p></div>
 <!-- COMMISSION NOTICE -->
 <div class="commission-notice"><i class="fas fa-percentage"></i><p>Bizen HT pran <strong>10% komisyon</strong> sou chak moman/rezevasyon. Pa egzanp: Si pri ou se 5,000 Gdes, ou resevwa <strong>4,500 Gdes</strong> e Bizen HT kenbe 500 Gdes. Pri sa a pa negosyab e li afiche klè sou pwofil ou.</p></div>
-<div class="frow"><div class="fg"><label>Non</label><input type="text" placeholder="Non ou" required></div><div class="fg"><label>Siyati</label><input type="text" placeholder="Siyati ou" required></div></div><div class="fg"><label>Seks</label><select required><option value="">Chwazi...</option><option value="femme">Fanm</option><option value="homme">Gason</option></select></div><div class="fg"><label>Imel</label><input type="email" placeholder="email@gmail.com" required></div><div class="fg"><label>Telefon</label><input type="tel" placeholder="+509 XXXX-XXXX" required></div><div class="fg"><label>Lokasyon</label><select required><option value="">Chwazi vil ou...</option><option>Potoprens</option><option>Petion-Ville</option><option>Delmas</option><option>Kap-Ayisyen</option><option>Les Cayes</option><option>Gonaives</option><option>Jacmel</option><option>Lot</option></select></div><div class="fg"><label>Dat Nesans</label><input type="date" required></div><div class="fg"><label>Pri pou chak Moman (Gdes) - 10% komisyon ap retire</label><input type="number" placeholder="ex: 5000" min="1000" required id="priceInput" oninput="calcCommission()"></div>
+<div class="frow"><div class="fg"><label>Non</label><input type="text" placeholder="Non ou" required></div><div class="fg"><label>Siyati</label><input type="text" placeholder="Siyati ou" required></div></div><div class="fg"><label>Seks</label><select required><option value="">Chwazi...</option><option value="femme">Fanm</option><option value="homme">Gason</option><option value="biseksyel">Biseksyèl</option><option value="lot">Lòt</option></select></div><div class="fg"><label>Imel</label><input type="email" placeholder="email@gmail.com" required></div><div class="fg"><label>Telefon</label><input type="tel" placeholder="+509 XXXX-XXXX" required></div><div class="fg"><label>Lokasyon</label><select required><option value="">Chwazi vil ou...</option><option>Potoprens</option><option>Petion-Ville</option><option>Delmas</option><option>Kap-Ayisyen</option><option>Les Cayes</option><option>Gonaives</option><option>Jacmel</option><option>Lot</option></select></div><div class="fg"><label>Dat Nesans</label><input type="date" required></div><div class="fg"><label>Pri pou chak Moman (Gdes) - 10% komisyon ap retire</label><input type="number" placeholder="ex: 5000" min="1000" required id="priceInput" oninput="calcCommission()"></div>
 <div id="commCalc" style="font-size:0.8rem;color:var(--primary-light);padding:5px 0;display:none"><i class="fas fa-calculator"></i> Ou pral resevwa: <strong id="netAmount">0</strong> Gdes | Komisyon Bizen HT: <strong id="commAmount">0</strong> Gdes</div>
 <div class="fg"><label>Deskripsyon ou</label><textarea placeholder="Dekri tet ou, sevis ou ofri..." rows="4" required></textarea></div>
 <div class="fg">
@@ -2385,22 +2376,6 @@ body.no-screenshot * {
     </p>
 </div>
 <div class="fg"><label>Videyo (opsyonel)</label><input type="file" accept="video/*" class="fi"><p class="fhint">MP4 (Maks 50MB)</p></div><div class="fg"><label>Modpas</label><input type="password" placeholder="omwen 6 karaktè" required id="fpw"><button type="button" class="tpw" onclick="tPw('fpw')"><i class="fas fa-eye"></i></button></div>
-            <div class="fg">
-                <label>
-                    <i class="fas fa-camera" style="color:var(--primary);margin-right:5px"></i>
-                    Foto Gwoup la (plizyè foto)
-                </label>
-                <input type="file" id="kreyNewPhotos" multiple accept="image/*" class="fi" required>
-                <p class="form-hint">JPG, PNG (Maks 5MB chak)</p>
-            </div>
-            <div class="fg">
-                <label>
-                    <i class="fas fa-video" style="color:var(--primary);margin-right:5px"></i>
-                    Videyo prezantasyon (opsyonel)
-                </label>
-                <input type="file" id="kreyNewVideos" accept="video/*" class="fi">
-                <p class="form-hint">MP4 (Maks 50MB)</p>
-            </div>
 <label class="ckl"><input type="checkbox" required> Mwen dako ak kondisyon yo, 10% komisyon, mwen gen 18+, e mwen konprann kont mwen ap pase nan validasyon.</label><button type="submit" class="btn btn-secondary fw"><i class="fas fa-paper-plane"></i> Voye Demann Mwen</button></form>
 <!-- KREY FORM -->
 <form class="mform hidden"
@@ -3605,6 +3580,16 @@ function renderRealFreelancers() {
                 if (grid) grid.insertAdjacentHTML("afterbegin", cardHtml);
             });
 
+            /* IMPORTANT: les cartes insérées dynamiquement ont la classe "sr"
+               (opacity:0) mais ne sont pas observées par le scroll-reveal.
+               On les rend visibles immédiatement. */
+            document.querySelectorAll('.pc[data-demo="0"]').forEach(function(c) {
+                c.classList.add("on");
+            });
+
+            /* Notes + niveaux sur les vraies cartes */
+            try { decorateRatings(); } catch(e) {}
+
             /* Si l'utilisateur est déjà Premium, on déverrouille les nouvelles cartes */
             if (auth && auth.currentUser) {
                 db.collection("users").doc(auth.currentUser.uid).get()
@@ -4479,85 +4464,46 @@ function loginWithGoogle() {
     auth.signInWithPopup(provider)
         .then(function(result) {
             var user = result.user;
-            var isNew =
-                result.additionalUserInfo
-                ? result.additionalUserInfo
-                    .isNewUser
-                : false;
 
-            if (db) {
-                if (isNew) {
-                    var pr = "";
-                    var nm = "";
-                    if (user.displayName) {
-                        var parts =
-                            user.displayName
-                            .split(" ");
-                        pr = parts[0] || "";
-                        nm = parts.slice(1)
-                            .join(" ") || "";
-                    } else {
-                        pr = user.email
-                            .split("@")[0];
-                    }
-                    db.collection("users")
-                        .doc(user.uid)
-                        .set({
-                            prenom: pr,
-                            nom: nm,
-                            email: user.email,
-                            telephone: "",
-                            isPremium: false,
-                            type: "user",
-                            status: "active",
-                            emailVerified: true,
-                            loginMethod:
-                                "google",
-                            photoURL:
-                                user.photoURL
-                                || "",
-                            favorites: [],
-                            createdAt:
-                                firebase.firestore
-                                .FieldValue
-                                .serverTimestamp(),
-                            lastLogin:
-                                firebase.firestore
-                                .FieldValue
-                                .serverTimestamp()
-                        })
-                        .catch(
-                            function() {}
-                        );
-                } else {
-                    db.collection("users")
-                        .doc(user.uid)
-                        .update({
-                            lastLogin:
-                                firebase.firestore
-                                .FieldValue
-                                .serverTimestamp()
-                        })
-                        .catch(
-                            function() {}
-                        );
-                }
+            /* CONNEXION SEULEMENT — pas d'inscription via Google.
+               On vérifie que le compte existe DÉJÀ dans Firestore.
+               Sinon on supprime le compte Google créé et on refuse. */
+            if (!db) {
+                cM("lM");
+                showOk("Koneksyon Reyisi!", "Byenveni!");
+                return;
             }
 
-            cM("lM");
-            cM("sM");
+            db.collection("users").doc(user.uid).get()
+                .then(function(doc) {
+                    if (doc.exists) {
+                        /* Compte déjà inscrit -> connexion autorisée */
+                        db.collection("users").doc(user.uid).update({
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        }).catch(function(){});
 
-            var name = user.displayName
-                ? user.displayName
-                    .split(" ")[0]
-                : "Ou";
-            showOk(
-                isNew
-                    ? "Byenveni sou " +
-                      "Bizen HT!"
-                    : "Koneksyon Reyisi!",
-                "Byenveni " + name + "!"
-            );
+                        cM("lM"); cM("sM");
+                        var name = user.displayName ? user.displayName.split(" ")[0] : "Ou";
+                        showOk("Koneksyon Reyisi!", "Byenveni " + name + "!");
+                    } else {
+                        /* Pas de compte -> on REFUSE (Google = login uniquement) */
+                        var newUser = user;
+                        var doneMsg = function() {
+                            cM("lM");
+                            toast("Pa gen kont ak Google sa a. Tanpri enskri ak yon fòm dabò.", "err");
+                            setTimeout(function() { oM("sM"); }, 1500);
+                        };
+                        /* Supprime le compte Google créé automatiquement */
+                        newUser.delete().then(doneMsg).catch(function() {
+                            auth.signOut().then(doneMsg).catch(doneMsg);
+                        });
+                    }
+                })
+                .catch(function() {
+                    auth.signOut();
+                    cM("lM");
+                    toast("Erè verifikasyon kont. Eseye ankò.", "err");
+                });
         })
         .catch(function(error) {
             if (
@@ -4855,56 +4801,39 @@ function doFR(e) {
         ? createdUser.uid
         : null;
 
-    /* Upload photos */
-    var uploadedPhotoData = [];
-    if (uid && uploadedPhotos.length > 0) {
-        uploadedPhotoData =
-            await uploadFilesToStorage(
-                uploadedPhotos,
-                uid,
-                "photos",
-                "Elu"
-            );
+    /* Les uploads média NE DOIVENT JAMAIS faire échouer l'inscription.
+       Tout est enveloppé dans try/catch: si le storage échoue,
+       le compte reste créé et on continue normalement. */
+    try {
+        /* Upload photos */
+        var uploadedPhotoData = [];
+        if (uid && uploadedPhotos.length > 0) {
+            uploadedPhotoData = await uploadFilesToStorage(uploadedPhotos, uid, "photos", "Elu");
+        }
+
+        /* Upload video */
+        var uploadedVideoData = [];
+        var vidInput = f.querySelector("input[type='file'][accept='video/*']");
+        if (uid && vidInput && vidInput.files && vidInput.files.length > 0) {
+            uploadedVideoData = await uploadFilesToStorage(vidInput.files, uid, "videos", "Elu");
+        }
+
+        /* First photo = profile photo */
+        var profilePhoto = uploadedPhotoData.length > 0 ? uploadedPhotoData[0].url : "";
+
+        /* Save media refs in Firestore (users + publicProfiles) */
+        if (uid) {
+            await saveUserMedia(uid, uploadedPhotoData, uploadedVideoData, profilePhoto);
+            /* Met la photo de profil dans le profil PUBLIC */
+            if (profilePhoto) {
+                db.collection("publicProfiles").doc(uid).set({ photoUrl: profilePhoto }, { merge: true }).catch(function(){});
+            }
+        }
+    } catch (mediaErr) {
+        console.warn("Upload média échoué (compte créé quand même):", mediaErr);
     }
 
-    /* Upload video */
-    var uploadedVideoData = [];
-    var vidInput = f.querySelector(
-        "input[type='file'][accept='video/*']"
-    );
-
-    if (
-        uid &&
-        vidInput &&
-        vidInput.files &&
-        vidInput.files.length > 0
-    ) {
-        uploadedVideoData =
-            await uploadFilesToStorage(
-                vidInput.files,
-                uid,
-                "videos",
-                "Elu"
-            );
-    }
-
-    /* First photo = profile photo */
-    var profilePhoto = "";
-    if (uploadedPhotoData.length > 0) {
-        profilePhoto =
-            uploadedPhotoData[0].url;
-    }
-
-    /* Save media refs in Firestore */
-    if (uid) {
-        await saveUserMedia(
-            uid,
-            uploadedPhotoData,
-            uploadedVideoData,
-            profilePhoto
-        );
-    }
-
+    /* Succès garanti */
     btn.innerHTML = btnOrig;
     btn.disabled = false;
     cM("sM");
@@ -5113,12 +5042,136 @@ function doOut() {
 /* ====================================
    PREMIUM CHECK & UNLOCK
    ==================================== */
+var currentUserType = null;   /* "user" | "freelancer" | "krey" */
+var isPremiumViewer = false;  /* le visiteur actuel est-il Premium ? */
+
 function chkPrem(uid) {
     if (!db) return;
     db.collection("users").doc(uid).get()
         .then(function (d) {
-            if (d.exists && d.data().isPremium === true) unlockUI();
+            if (d.exists) {
+                currentUserType = d.data().type || "user";
+                isPremiumViewer = (d.data().isPremium === true);
+                if (isPremiumViewer) unlockUI();
+                /* Recharge l'affichage des notes (visibles aux Premium) */
+                try { decorateRatings(); } catch(e) {}
+            }
         });
+}
+
+/* ====================================
+   NIVEAUX ELU (basé sur notes)
+   ==================================== */
+function eluLevel(count, avg) {
+    if (count >= 50 && avg >= 4.8) return { name: "Elit VIP", color: "#7df9ff", bg: "rgba(125,249,255,0.12)", icon: "fa-gem", vedette: true };
+    if (count >= 20 && avg >= 4.5) return { name: "Premium", color: "#ffd700", bg: "rgba(255,215,0,0.12)", icon: "fa-crown", vedette: false };
+    if (count >= 5  && avg >= 4.0) return { name: "Konfime", color: "#c0c0c0", bg: "rgba(192,192,192,0.12)", icon: "fa-medal", vedette: false };
+    return { name: "Nouvo", color: "#cd9b6a", bg: "rgba(205,155,106,0.12)", icon: "fa-seedling", vedette: false };
+}
+
+/* ====================================
+   CHARGE LES NOTES + NIVEAUX
+   Agrège la collection "ratings" et
+   décore chaque vraie carte Elu.
+   ==================================== */
+function decorateRatings() {
+    if (!db) return;
+
+    db.collection("ratings").get().then(function(snap) {
+        var agg = {};   /* prestateId -> {sum, count} */
+        snap.forEach(function(doc) {
+            var d = doc.data();
+            if (!d.prestateId) return;
+            if (!agg[d.prestateId]) agg[d.prestateId] = { sum: 0, count: 0 };
+            agg[d.prestateId].sum += (d.stars || 0);
+            agg[d.prestateId].count += 1;
+        });
+
+        var realCards = document.querySelectorAll('.pc[data-demo="0"]');
+        realCards.forEach(function(card) {
+            var uid = card.getAttribute("data-uid");
+            if (!uid) return;
+            var a = agg[uid] || { sum: 0, count: 0 };
+            var avg = a.count ? (a.sum / a.count) : 0;
+            var lvl = eluLevel(a.count, avg);
+
+            /* Tri: stocke un score de niveau pour réordonner */
+            var score = (lvl.vedette ? 4 : lvl.name === "Premium" ? 3 : lvl.name === "Konfime" ? 2 : 1) * 1000 + Math.round(avg * 100);
+            card.setAttribute("data-level-score", score);
+
+            /* Évite les doublons d'injection */
+            var old = card.querySelector(".elu-rating-row");
+            if (old) old.remove();
+
+            var body = card.querySelector(".pc-body");
+            if (!body) return;
+
+            /* Badge de niveau (visible par TOUS) */
+            var levelBadge = '<span style="display:inline-flex;align-items:center;gap:5px;background:' + lvl.bg + ';color:' + lvl.color + ';border:1px solid ' + lvl.color + '55;border-radius:50px;padding:3px 10px;font-size:0.68rem;font-weight:700"><i class="fas ' + lvl.icon + '"></i> ' + lvl.name + '</span>';
+
+            /* Étoiles (nombre visible aux Premium seulement) */
+            var starsView;
+            if (a.count === 0) {
+                starsView = '<span style="font-size:0.7rem;color:#6a6a80">Pa gen nòt anko</span>';
+            } else if (isPremiumViewer) {
+                starsView = '<span style="color:#ffd700;font-size:0.78rem">' + starHtmlIdx(avg) + ' <strong>' + avg.toFixed(1) + '</strong> <span style="color:#6a6a80">(' + a.count + ')</span></span>';
+            } else {
+                starsView = '<span style="font-size:0.7rem;color:#6a6a80"><i class="fas fa-lock" style="font-size:0.6rem"></i> Premium pou wè nòt</span>';
+            }
+
+            var row = document.createElement("div");
+            row.className = "elu-rating-row";
+            row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:8px 0 4px";
+            row.innerHTML = levelBadge + starsView;
+
+            /* Insère juste après le nom */
+            var nameEl = card.querySelector(".pc-name");
+            if (nameEl && nameEl.parentNode) {
+                nameEl.parentNode.insertBefore(row, nameEl.nextSibling);
+            } else {
+                body.insertBefore(row, body.firstChild);
+            }
+
+            /* Badge VEDÈT pour Elit VIP */
+            if (lvl.vedette && !card.querySelector(".vedette-flag")) {
+                var vf = document.createElement("div");
+                vf.className = "vedette-flag";
+                vf.style.cssText = "position:absolute;top:15px;left:15px;z-index:4;background:linear-gradient(135deg,#7df9ff,#00bcd4);color:#003;padding:4px 12px;border-radius:50px;font-size:0.68rem;font-weight:800;box-shadow:0 2px 10px rgba(0,188,212,0.4)";
+                vf.innerHTML = '<i class="fas fa-star"></i> VEDÈT';
+                var img = card.querySelector(".pc-img");
+                if (img) img.appendChild(vf);
+            }
+        });
+
+        /* Réordonne les vraies cartes par niveau (meilleurs en premier) */
+        ["fG", "hG"].forEach(function(gid) {
+            var grid = document.getElementById(gid);
+            if (!grid) return;
+            var reals = Array.prototype.slice.call(grid.querySelectorAll('.pc[data-demo="0"]'));
+            reals.sort(function(x, y) {
+                return (parseInt(y.getAttribute("data-level-score")) || 0) - (parseInt(x.getAttribute("data-level-score")) || 0);
+            });
+            reals.forEach(function(c) { grid.insertBefore(c, grid.firstChild); });
+        });
+    }).catch(function(e) { console.warn("decorateRatings:", e.code); });
+}
+
+function starHtmlIdx(avg) {
+    var s = "";
+    for (var i = 1; i <= 5; i++) {
+        s += '<i class="fas fa-star" style="color:' + (i <= Math.round(avg) ? "#ffd700" : "#3a3a4a") + '"></i>';
+    }
+    return s;
+}
+
+/* Premium est RÉSERVÉ AUX CLIENTS. Bloque les comptes Elu/Krey. */
+function blockPremiumForElu() {
+    if (currentUserType === "freelancer" || currentUserType === "krey") {
+        cM("pM");
+        showOk("Premium se pou Kliyan", "Kont Elu/Krey pa bezwen Premium. Premium se pou kliyan ki vle rezève Elu yo. Ou menm, ou se yon Elu — w ap resevwa rezevasyon!");
+        return true;  /* bloqué */
+    }
+    return false;     /* autorisé */
 }
 
 async function unlockUI() {
@@ -5137,9 +5190,9 @@ async function unlockUI() {
         // FAUX PROFIL (démo) : on n'active PAS la réservation, même en Premium.
         // Ce sont des profils vitrine en attendant les vrais inscrits.
         if (isDemo) {
-            btn.innerHTML = '<i class="fas fa-eye"></i> Pwofil Demo - Pa Disponib';
+            btn.innerHTML = '<i class="fas fa-ban"></i> Pa Disponib';
             btn.style.cssText = "background:rgba(255,255,255,0.05);color:#6a6a80;border:1px solid #2a2a3a;cursor:not-allowed;";
-            btn.setAttribute("onclick", "toast('Pwofil sa a se yon egzanp. Vrè Elu yo ap disponib byento!','err');return false;");
+            btn.setAttribute("onclick", "toast('Pa disponib pou kounye a.','err');return false;");
             return;
         }
 
@@ -5275,17 +5328,46 @@ function confirmRes() {
     var notesEl = document.getElementById("resNotes");
     if (notesEl) notes = notesEl.value.trim();
     if (db) {
-        db.collection("reservations").add({
-            userId: auth.currentUser.uid, userEmail: auth.currentUser.email,
-            prestateName: nm, prestateId: prestateId, price: pr, date: date.value, time: time.value,
-            city: city.value, hotelName: hotelName, hotelAddress: hotelAddr,
-            hotelType: hotelType, hotelIncluded: hotelIncluded, notes: notes,
-            status: "en_attente",
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(function () {
-            cM("resM");
-            showOk("Rezevasyon Konfime!", "Rezevasyon ou pou " + nm + " le " + date.value + " konfime! Hotel: " + hotelName + ".");
-        });
+        var doAdd = function() {
+            db.collection("reservations").add({
+                userId: auth.currentUser.uid, userEmail: auth.currentUser.email,
+                prestateName: nm, prestateId: prestateId, price: pr, date: date.value, time: time.value,
+                city: city.value, hotelName: hotelName, hotelAddress: hotelAddr,
+                hotelType: hotelType, hotelIncluded: hotelIncluded, notes: notes,
+                status: "en_attente",
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(function () {
+                cM("resM");
+                showOk("Rezevasyon Konfime!", "Rezevasyon ou pou " + nm + " le " + date.value + " konfime! Hotel: " + hotelName + ".");
+            });
+        };
+
+        /* === VÉRIFICATION DE DISPONIBILITÉ DU CRÉNEAU ===
+           Si cet Elu a déjà une réservation (non annulée) à la même
+           date + même heure, on refuse avec un message. */
+        if (prestateId) {
+            db.collection("reservations")
+                .where("prestateId", "==", prestateId)
+                .get()
+                .then(function(snap) {
+                    var taken = false;
+                    snap.forEach(function(d) {
+                        var r = d.data();
+                        if (r.status !== "cancelled" && r.date === date.value && r.time === time.value) taken = true;
+                    });
+                    if (taken) {
+                        showOk("Lè sa a deja pran!", "Malerezman, " + nm + " gen yon lòt rezevasyon pou " + date.value + " (" + time.value + "). Tanpri chwazi yon lòt lè oswa yon lòt dat.");
+                    } else {
+                        doAdd();
+                    }
+                })
+                .catch(function() {
+                    /* En cas d'erreur de requête, on laisse passer la réservation */
+                    doAdd();
+                });
+        } else {
+            doAdd();
+        }
     } else {
         cM("resM");
         showOk("Rezevasyon Konfime!", "Hotel: " + hotelName);
@@ -5403,6 +5485,7 @@ function initMonCashPayment() {
         }, 1500);
         return;
     }
+    if (blockPremiumForElu()) return;   /* Elu/Krey ne peuvent pas acheter Premium */
 
     var btn = document.getElementById(
         "mcAutoPayBtn"
@@ -5921,6 +6004,7 @@ function dPay() {
         setTimeout(function () { oM("lM"); }, 1500);
         return;
     }
+    if (blockPremiumForElu()) return;   /* Elu/Krey ne peuvent pas acheter Premium */
     var ref = document.getElementById("mcRef");
     if (!ref || !ref.value.trim()) { toast("Antre referans tranzaksyon MonCash ou a.", "err"); return; }
     var refValue = ref.value.trim();

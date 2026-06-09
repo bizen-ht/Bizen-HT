@@ -1436,27 +1436,40 @@ function startRealtimeSync() {
    FIREBASE RULES ERROR — Guide rapide
    ==================================== */
 function showFirebaseRulesError() {
+    /* Si l'admin a déjà confirmé que les rules sont déployées, on ne montre plus rien */
+    try { if (localStorage.getItem("bizenRulesOk") === "1") return; } catch(e) {}
+
     /* Affiche un bandeau d'alerte visible avec les règles à copier */
     var existing = document.getElementById("rulesAlert");
     if (existing) return;
 
     var alert = document.createElement("div");
     alert.id = "rulesAlert";
-    alert.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a0a0a;border-bottom:2px solid #f44336;padding:20px 30px;font-family:Montserrat,sans-serif";
+    alert.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a0a0a;border-bottom:2px solid #f44336;padding:20px 30px;font-family:Montserrat,sans-serif;max-height:90vh;overflow-y:auto";
     alert.innerHTML = [
         '<div style="max-width:900px;margin:0 auto">',
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">',
         '<i class="fas fa-lock" style="color:#f44336;font-size:1.4rem"></i>',
-        '<strong style="color:#f44336;font-size:1rem">FIREBASE PERMISSION DENIED — Firestore Rules bloke admin</strong>',
+        '<strong style="color:#f44336;font-size:1rem">FIREBASE PERMISSION DENIED — Firestore Rules</strong>',
         '<button onclick="document.getElementById(\'rulesAlert\').remove()" style="margin-left:auto;background:none;border:1px solid #555;color:#aaa;padding:4px 12px;border-radius:6px;cursor:pointer">Fèmen</button>',
         '</div>',
-        '<p style="color:#b0b0c0;font-size:0.82rem;margin-bottom:12px">Ale nan <strong style="color:white">Firebase Console → Firestore Database → Rules</strong> epi ranplase tout teks la ak sa ki anba a, apre klike <strong style="color:#4caf50">Publish</strong> :</p>',
-        '<pre id="rulesTxt" style="background:#0a0a0a;border:1px solid #333;border-radius:8px;padding:14px;font-size:0.78rem;color:#4caf50;overflow-x:auto;line-height:1.6;white-space:pre">rules_version = \'2\';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n\n    // Admin: aksè total\n    match /{document=**} {\n      allow read, write: if request.auth != null\n        && request.auth.token.email == "bizenht@gmail.com";\n    }\n\n    // Pwofil: lekti piblik (katalòg + QR), ekriti pwòp tèt ou sèlman\n    match /users/{userId} {\n      allow read: if true;\n      allow create, update, delete: if request.auth != null\n        && request.auth.uid == userId;\n    }\n\n    // Rezevasyon — itilizatè konekte\n    match /reservations/{resId} {\n      allow read, write: if request.auth != null;\n    }\n\n    // Peman — itilizatè konekte\n    match /payments/{payId} {\n      allow read, write: if request.auth != null;\n    }\n\n    // Chat sekirize — SÈLMAN 2 patisipan yo\n    match /chats/{resId} {\n      allow create: if request.auth != null;\n      allow read, update: if request.auth != null\n        && request.auth.uid in resource.data.participants;\n\n      match /messages/{msgId} {\n        allow read, create, update, delete: if request.auth != null\n          && request.auth.uid in\n          get(/databases/$(database)/documents/chats/$(resId)).data.participants;\n      }\n    }\n  }\n}</pre>',
-        '<button onclick="copyRules()" style="margin-top:10px;padding:8px 20px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.8rem;font-weight:600"><i class="fas fa-copy"></i> Kopye Rules la</button>',
+        '<p style="color:#b0b0c0;font-size:0.82rem;margin-bottom:12px">Ale nan <strong style="color:white">Firebase Console → Firestore Database → Rules</strong>, ranplase tout teks la ak sa ki anba a, klike <strong style="color:#4caf50">Publish</strong>. Si ou deja fè l, klike bouton vèt "Mwen deja deploye" pou pa wè mesaj sa ankò.</p>',
+        '<pre id="rulesTxt" style="background:#0a0a0a;border:1px solid #333;border-radius:8px;padding:14px;font-size:0.78rem;color:#4caf50;overflow-x:auto;line-height:1.6;white-space:pre">rules_version = \'2\';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n\n    // Admin: aksè total\n    match /{document=**} {\n      allow read, write: if request.auth != null\n        && request.auth.token.email == "bizenht@gmail.com";\n    }\n\n    // Pwofil prive (users): pwopriyetè a sèlman\n    match /users/{userId} {\n      allow read: if request.auth != null && request.auth.uid == userId;\n      allow create, update, delete: if request.auth != null\n        && request.auth.uid == userId;\n    }\n\n    // Pwofil piblik (san imel/telefòn): lekti piblik katalòg + QR\n    match /publicProfiles/{userId} {\n      allow read: if true;\n      allow create, update, delete: if request.auth != null\n        && request.auth.uid == userId;\n    }\n\n    // Rezevasyon — itilizatè konekte\n    match /reservations/{resId} {\n      allow read, write: if request.auth != null;\n    }\n\n    // Peman — itilizatè konekte\n    match /payments/{payId} {\n      allow read, write: if request.auth != null;\n    }\n\n    // Nòt (zetwal) — lekti piblik, kreye si konekte, pa ka chanje\n    match /ratings/{ratingId} {\n      allow read: if true;\n      allow create: if request.auth != null;\n      allow update, delete: if false;\n    }\n\n    // Chat sekirize — SÈLMAN 2 patisipan yo\n    match /chats/{resId} {\n      allow create: if request.auth != null;\n      allow read, update: if request.auth != null\n        && request.auth.uid in resource.data.participants;\n\n      match /messages/{msgId} {\n        allow read, create, update, delete: if request.auth != null\n          && request.auth.uid in\n          get(/databases/$(database)/documents/chats/$(resId)).data.participants;\n      }\n    }\n  }\n}</pre>',
+        '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">',
+        '<button onclick="copyRules()" style="padding:8px 20px;background:#2196f3;color:white;border:none;border-radius:8px;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.8rem;font-weight:600"><i class="fas fa-copy"></i> Kopye Rules la</button>',
+        '<button onclick="markRulesDeployed()" style="padding:8px 20px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.8rem;font-weight:600"><i class="fas fa-check"></i> Mwen deja deploye (pa montre ankò)</button>',
+        '</div>',
         '</div>'
     ].join("");
 
     document.body.prepend(alert);
+}
+
+function markRulesDeployed() {
+    try { localStorage.setItem("bizenRulesOk", "1"); } catch(e) {}
+    var a = document.getElementById("rulesAlert");
+    if (a) a.remove();
+    toast("OK! Mesaj rules la pap parèt ankò.", true);
 }
 
 function copyRules() {
@@ -2239,8 +2252,39 @@ function viewAccountDetail(uid) {
         '<div><span style="color:#6a6a80">Plan:</span><br>' + planBadge + '</div>' +
         '<div><span style="color:#6a6a80">Estati:</span><br>' + statusBadge + '</div>' +
         (user.prixMoment ? '<div><span style="color:#6a6a80">Pri/Moman:</span><br><strong>' + user.prixMoment.toLocaleString() + ' G</strong></div>' : '') +
+        (user.kreyPrice ? '<div><span style="color:#6a6a80">Pri Krey:</span><br><strong>' + user.kreyPrice.toLocaleString() + ' G</strong></div>' : '') +
+        (user.kreyMemberCount ? '<div><span style="color:#6a6a80">Manm:</span><br><strong>' + user.kreyMemberCount + '</strong></div>' : '') +
         (user.solde !== undefined ? '<div><span style="color:#6a6a80">Solde:</span><br><strong style="color:#4caf50">' + (user.solde || 0).toLocaleString() + ' G</strong></div>' : '') +
         '</div>';
+
+    /* === DESCRIPTION === */
+    var descTxt = user.description || user.kreyDescription || "";
+    if (descTxt) {
+        content.innerHTML += '<div style="margin-top:16px"><div style="font-size:0.72rem;color:#6a6a80;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px"><i class="fas fa-align-left"></i> Deskripsyon</div>' +
+            '<div style="background:rgba(255,255,255,0.03);border:1px solid #2a2a3a;border-radius:10px;padding:12px;font-size:0.85rem;line-height:1.6;color:#d0d0d8">' + descTxt + '</div></div>';
+    }
+
+    /* === MÉDIAS (photos + vidéos) === */
+    var media = user.media || {};
+    var photos = media.photos || [];
+    var videos = media.videos || [];
+
+    if (photos.length || videos.length) {
+        var mh = '<div style="margin-top:16px"><div style="font-size:0.72rem;color:#6a6a80;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px"><i class="fas fa-images"></i> Foto & Videyo (' + photos.length + ' foto, ' + videos.length + ' videyo)</div>';
+        mh += '<div style="display:flex;flex-wrap:wrap;gap:8px">';
+        photos.forEach(function(p) {
+            var url = (typeof p === "string") ? p : (p.url || "");
+            if (url) mh += '<a href="' + url + '" target="_blank" style="display:block;width:80px;height:80px;border-radius:10px;overflow:hidden;border:1px solid #2a2a3a"><img src="' + url + '" style="width:100%;height:100%;object-fit:cover"></a>';
+        });
+        videos.forEach(function(v) {
+            var url = (typeof v === "string") ? v : (v.url || "");
+            if (url) mh += '<a href="' + url + '" target="_blank" style="display:flex;align-items:center;justify-content:center;width:80px;height:80px;border-radius:10px;background:rgba(233,30,99,0.12);border:1px solid #2a2a3a;color:#e91e63;font-size:1.4rem"><i class="fas fa-play-circle"></i></a>';
+        });
+        mh += '</div></div>';
+        content.innerHTML += mh;
+    } else if (user.type === "freelancer" || user.type === "krey") {
+        content.innerHTML += '<div style="margin-top:16px;font-size:0.8rem;color:#6a6a80"><i class="fas fa-image"></i> Pa gen medya uploade.</div>';
+    }
 
     actions.innerHTML = "";
     if (!user.isPremium) {
