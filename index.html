@@ -1610,6 +1610,11 @@ body.no-screenshot * {
 
 <!-- HERO -->
 <section class="hero" id="top">
+  <div class="hero-grid">
+    <a href="#femmes" class="hero-side hero-side-f" aria-label="Gade Fanm yo">
+        <i class="fas fa-person-dress hero-sil"></i>
+        <span class="hero-side-label"><i class="fas fa-venus"></i> Gade Fanm yo</span>
+    </a>
     <div class="hero-content">
         <p class="hero-sub">Byenveni sou platfom #1 an Ayiti</p>
         <h1 class="hero-title"><span class="cursive">Bizen</span> HT</h1>
@@ -1627,6 +1632,11 @@ body.no-screenshot * {
             <div class="stat"><span class="stat-n" data-c="3500">0</span>+<span class="stat-l">Moman Kreye</span></div>
         </div>
     </div>
+    <a href="#hommes" class="hero-side hero-side-h" aria-label="Gade Gason yo">
+        <i class="fas fa-person hero-sil"></i>
+        <span class="hero-side-label"><i class="fas fa-mars"></i> Gade Gason yo</span>
+    </a>
+  </div>
 </section>
 
 <!-- ABOUT -->
@@ -2012,6 +2022,28 @@ body.is-premium .pc-blur{display:none!important}
 #lightbox .lb-dots span{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,0.35);cursor:pointer;transition:all .3s}
 #lightbox .lb-dots span.on{background:#e91e63;width:22px;border-radius:5px}
 @media(max-width:600px){#lightbox .lb-arrow{width:42px;height:42px}}
+/* Header 3 colonnes : silhouette femme / texte / silhouette homme */
+.hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:minmax(160px,1fr) minmax(0,2.3fr) minmax(160px,1fr);align-items:center;gap:26px;width:100%;max-width:1320px;margin:0 auto;padding:100px 26px 50px}
+.hero-grid .hero-content{padding:10px 0;max-width:none}
+.hero-side{position:relative;border-radius:26px;overflow:hidden;min-height:440px;display:flex;align-items:flex-end;justify-content:center;text-decoration:none;border:1px solid rgba(255,255,255,0.08);background:#0d0d16;transition:transform .4s,box-shadow .4s}
+.hero-side::before{content:"";position:absolute;inset:0}
+.hero-side-f::before{background:linear-gradient(160deg,rgba(233,30,99,0.40),rgba(156,39,176,0.14) 55%,rgba(10,10,16,0) 90%)}
+.hero-side-h::before{background:linear-gradient(160deg,rgba(63,81,181,0.42),rgba(33,150,243,0.14) 55%,rgba(10,10,16,0) 90%)}
+.hero-sil{position:absolute;top:50%;left:50%;transform:translate(-50%,-56%);font-size:13rem;line-height:1;z-index:1}
+.hero-side-f .hero-sil{color:rgba(233,30,99,0.22)}
+.hero-side-h .hero-sil{color:rgba(99,121,222,0.26)}
+.hero-side-label{position:relative;z-index:2;margin-bottom:28px;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);color:#fff;padding:10px 18px;border-radius:50px;font-family:'Montserrat',sans-serif;font-weight:600;font-size:0.9rem;border:1px solid rgba(255,255,255,0.18);white-space:nowrap}
+.hero-side:hover{transform:translateY(-6px)}
+.hero-side-f:hover{box-shadow:0 16px 50px rgba(233,30,99,0.30)}
+.hero-side-h:hover{box-shadow:0 16px 50px rgba(63,81,181,0.30)}
+@media(max-width:980px){
+  .hero-grid{grid-template-columns:1fr 1fr;grid-template-areas:"text text" "f h";gap:14px;padding:90px 16px 36px}
+  .hero-grid .hero-content{grid-area:text;margin-bottom:6px}
+  .hero-side-f{grid-area:f}.hero-side-h{grid-area:h}
+  .hero-side{min-height:190px;border-radius:18px}
+  .hero-sil{font-size:6.5rem}
+  .hero-side-label{margin-bottom:16px;font-size:0.8rem;padding:8px 14px}
+}
 </style>
 
 <!-- REVIEW MODAL -->
