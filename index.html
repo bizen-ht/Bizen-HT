@@ -1612,7 +1612,7 @@ body.no-screenshot * {
 <section class="hero" id="top">
   <div class="hero-grid">
     <a href="#femmes" class="hero-side hero-side-f" aria-label="Gade Fanm yo">
-        <img class="hero-photo" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=700&q=80" alt="Fanm" loading="lazy">
+        <img class="hero-photo" src="images/header-fanm.jpg" alt="Fanm" loading="lazy">
         <span class="hero-side-label"><i class="fas fa-venus"></i> Gade Fanm yo</span>
     </a>
     <div class="hero-content">
@@ -1633,7 +1633,7 @@ body.no-screenshot * {
         </div>
     </div>
     <a href="#hommes" class="hero-side hero-side-h" aria-label="Gade Gason yo">
-        <img class="hero-photo" src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=700&q=80" alt="Gason" loading="lazy">
+        <img class="hero-photo" src="images/header-gason.jpg" alt="Gason" loading="lazy">
         <span class="hero-side-label"><i class="fas fa-mars"></i> Gade Gason yo</span>
     </a>
   </div>
@@ -2026,7 +2026,9 @@ body.is-premium .pc-blur{display:none!important}
 .hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:minmax(160px,1fr) minmax(0,2.3fr) minmax(160px,1fr);align-items:center;gap:26px;width:100%;max-width:1320px;margin:0 auto;padding:100px 26px 50px}
 .hero-grid .hero-content{padding:10px 0;max-width:none}
 .hero-side{position:relative;border-radius:26px;overflow:hidden;min-height:440px;display:flex;align-items:flex-end;justify-content:center;text-decoration:none;border:1px solid rgba(255,255,255,0.08);background:#0d0d16;transition:transform .4s,box-shadow .4s}
-.hero-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 18%;z-index:0;transition:transform .6s}
+.hero-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 20%;z-index:0;transition:transform .6s}
+.hero-side-f .hero-photo{object-position:center 30%}
+.hero-side-h .hero-photo{object-position:center 22%}
 .hero-side:hover .hero-photo{transform:scale(1.05)}
 .hero-side::before{content:"";position:absolute;inset:0;z-index:1}
 .hero-side-f::before{background:linear-gradient(to top,rgba(8,8,14,0.75),rgba(8,8,14,0.05) 42%,transparent 72%),linear-gradient(160deg,rgba(233,30,99,0.42),rgba(156,39,176,0.16) 55%,transparent 92%)}
