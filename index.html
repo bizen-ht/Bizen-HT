@@ -7060,13 +7060,23 @@ window.addEventListener("beforeinstallprompt", function (e) {
     }
 });
 
-function showPwaBanner(isIOS) {
+function showPwaBanner(mode) {
     var b = document.getElementById("pwaInstallBanner");
     if (!b) return;
-    if (isIOS) {
-        document.getElementById("pwaBannerText").innerHTML =
-            'Tape <i class="fas fa-arrow-up-from-bracket"></i> Pataje, apre "Sou Ekran Akèy".';
-        document.getElementById("pwaInstallBtn").style.display = "none";
+    var txt = document.getElementById("pwaBannerText");
+    var btn = document.getElementById("pwaInstallBtn");
+    if (mode === "ios") {
+        /* Guide étape par étape (iOS Safari ne permet pas l'install auto) */
+        txt.innerHTML =
+            'Pou enstale: 1) Tape <i class="fas fa-arrow-up-from-bracket" style="color:#e91e63"></i> anba a · ' +
+            '2) Chwazi <b>"Sou Ekran Akèy"</b> · 3) Tape <b>Ajoute</b>.';
+        if (btn) btn.style.display = "none";
+    } else if (mode === "ios-browser") {
+        /* iOS mais navigateur in-app (Instagram, etc.) : impossible d'installer */
+        txt.innerHTML =
+            'Pou enstale app la sou iPhone: louvri <b>bizenht.com</b> nan <b>Safari</b>, ' +
+            'apre tape <i class="fas fa-arrow-up-from-bracket" style="color:#e91e63"></i> &rarr; "Sou Ekran Akèy".';
+        if (btn) btn.style.display = "none";
     }
     b.style.display = "flex";
 }
@@ -7087,13 +7097,18 @@ document.getElementById("pwaInstallBtn").addEventListener("click", function () {
     }
 });
 
-/* iOS (Safari) n'a pas beforeinstallprompt : on affiche un guide après 4s */
+/* iOS n'a pas beforeinstallprompt : on affiche un guide après 4s.
+   - Safari : guide d'installation en 3 étapes.
+   - Navigateur in-app (Instagram, Facebook, etc.) : on invite à ouvrir dans Safari,
+     car l'installation y est impossible. */
 (function () {
-    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    var isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
-    if (isIOS && isSafari && !pwaAlreadyInstalled() && localStorage.getItem("pwaBannerClosed") !== "1") {
-        setTimeout(function () { showPwaBanner(true); }, 4000);
-    }
+    var ua = navigator.userAgent || "";
+    var isIOS = /iphone|ipad|ipod/i.test(ua);
+    var isSafari = /^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(ua);
+    var inApp = /Instagram|FBAN|FBAV|FB_IAB|Line|Twitter|Messenger|WhatsApp/i.test(ua);
+    if (!isIOS || pwaAlreadyInstalled() || localStorage.getItem("pwaBannerClosed") === "1") return;
+    var mode = (isSafari && !inApp) ? "ios" : "ios-browser";
+    setTimeout(function () { showPwaBanner(mode); }, 4000);
 })();
 </script>
 </body>
