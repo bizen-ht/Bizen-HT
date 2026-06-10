@@ -1896,8 +1896,8 @@ body.no-screenshot * {
                 <div class="gi-overlay"><span>Naicka - Routes frères</span><i class="fas fa-heart"></i></div>
             </div>
         </div>
-        <div class="gal-cta">
-        
+        <div class="gal-cta premium-hide">
+
             <button class="btn btn-primary btn-glow" onclick="oM('pM')"><i class="fas fa-crown"></i> Vin Premium pou Rezève - 1,000 Gdes</button>
         </div>
     </div>
@@ -1986,6 +1986,9 @@ body.no-screenshot * {
 .rev-dots span{width:9px;height:9px;border-radius:50%;background:#3a3a4a;cursor:pointer;transition:all .3s}
 .rev-dots span.on{background:#e91e63;width:24px;border-radius:5px}
 @media(max-width:600px){.rev-arrow{display:none}.rev-track>.tc{flex:0 0 86vw}}
+/* Contenu promo réservé aux comptes gratuits : masqué pour les Premium */
+body.is-premium .premium-hide{display:none!important}
+body.is-premium .pc-blur{display:none!important}
 </style>
 
 <!-- REVIEW MODAL -->
@@ -5288,6 +5291,11 @@ function blockPremiumForElu() {
 }
 
 async function unlockUI() {
+    // 0. Marque le visiteur comme Premium -> masque tout le contenu promo
+    //    réservé au gratuit (classe .premium-hide via CSS) et les textes de cadenas.
+    document.body.classList.add("is-premium");
+    document.querySelectorAll(".pc-blur").forEach(el => el.style.display = "none");
+
     // 1. Débloquer les boutons et enlever le flou visuel
     document.querySelectorAll(".blur-ov").forEach(el => el.style.display = "none");
     document.querySelectorAll(".blt").forEach(el => {
