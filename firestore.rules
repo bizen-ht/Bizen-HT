@@ -1,0 +1,118 @@
+rules_version = '2';
+
+/* ============================================================
+   BIZEN HT — Règles de sécurité Firestore
+   But : aucune fuite de données, aucune écriture non autorisée.
+   À déployer dans : Firebase Console > Firestore Database > Règles
+   (voir SECURITE-DEPLOIEMENT.md)
+   ============================================================ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* L'administrateur (toi) est identifié par son e-mail vérifié. */
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == "bizenht@gmail.com"
+        && request.auth.token.email_verified == true;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /* -------- PROFIL PRIVÉ (users) : le propriétaire uniquement --------
+       Contient e-mail, téléphone, date de naissance => JAMAIS public. */
+    match /users/{userId} {
+      allow read:   if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow delete: if isAdmin();
+    }
+
+    /* -------- PROFIL PUBLIC (publicProfiles) : catalogue --------
+       Pas d'e-mail/téléphone ici. Lecture publique (catalogue + QR).
+       Écriture seulement par le propriétaire ou l'admin. */
+    match /publicProfiles/{userId} {
+      allow read:  if true;
+      allow write: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+    }
+
+    /* -------- RÉSERVATIONS : client + Elu concernés + admin --------
+       userId = client, prestateId = Elu. Personne d'autre ne peut lire. */
+    match /reservations/{resId} {
+      allow read:   if isAdmin()
+        || (isSignedIn() && (resource.data.userId == request.auth.uid
+                          || resource.data.prestateId == request.auth.uid));
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin()
+        || (isSignedIn() && (resource.data.userId == request.auth.uid
+                          || resource.data.prestateId == request.auth.uid));
+      allow delete: if isAdmin();
+    }
+
+    /* -------- PAIEMENTS : le propriétaire + admin uniquement -------- */
+    match /payments/{payId} {
+      allow read:   if isAdmin()
+        || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin()
+        || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    /* -------- NOTES / ÉTOILES (ratings) : lecture publique --------
+       Servent à calculer la moyenne affichée sur le catalogue.
+       Créables par un utilisateur connecté ; non modifiables ensuite. */
+    match /ratings/{ratingId} {
+      allow read:   if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    /* -------- AVIS GLOBAUX DU SITE (siteReviews) --------
+       Public : ne voit QUE les avis approuvés.
+       Un utilisateur connecté peut en créer un, forcément "pending"
+       (il ne peut pas s'auto-approuver). Seul l'admin approuve/supprime. */
+    match /siteReviews/{reviewId} {
+      allow read: if isAdmin()
+        || (resource != null && resource.data.status == "approved");
+      allow create: if isSignedIn()
+        && request.resource.data.status == "pending"
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 1000
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow update, delete: if isAdmin();
+    }
+
+    /* -------- NOTIFICATIONS ADMIN (adminNotifs) — optionnel --------
+       Réservé à l'admin. */
+    match /adminNotifs/{notifId} {
+      allow read, write: if isAdmin();
+    }
+
+    /* -------- CHAT SÉCURISÉ : seulement les 2 participants -------- */
+    match /chats/{resId} {
+      allow create: if isSignedIn();
+      allow read, update: if isAdmin()
+        || (isSignedIn() && request.auth.uid in resource.data.participants);
+
+      match /messages/{msgId} {
+        allow read, create, update, delete: if isAdmin()
+          || (isSignedIn() && request.auth.uid in
+              get(/databases/$(database)/documents/chats/$(resId)).data.participants);
+      }
+    }
+
+    /* -------- TOUT LE RESTE : interdit par défaut --------
+       (Aucune collection oubliée ne reste ouverte.) */
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

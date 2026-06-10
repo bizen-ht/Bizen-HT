@@ -1,0 +1,44 @@
+rules_version = '2';
+
+/* ============================================================
+   BIZEN HT — Règles de sécurité Firebase Storage (médias)
+   But : seul le propriétaire (ou l'admin) peut téléverser/écraser
+   ses photos/vidéos ; uniquement des images/vidéos ; taille limitée.
+   À déployer dans : Firebase Console > Storage > Règles
+   (voir SECURITE-DEPLOIEMENT.md)
+   ============================================================ */
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == "bizenht@gmail.com"
+        && request.auth.token.email_verified == true;
+    }
+
+    function isOwnerUpload(userId) {
+      return request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 60 * 1024 * 1024  /* max 60 Mo */
+        && (
+          request.resource.contentType.matches('image/.*')
+          || request.resource.contentType.matches('video/.*')
+        );
+    }
+
+    /* Médias rangés par UID : Elu/{uid}/..., krey/{uid}/..., etc.
+       La lecture s'appuie sur les URLs de téléchargement tokenisées
+       générées par getDownloadURL() (déjà le cas dans le code). */
+    match /{root}/{userId}/{allPaths=**} {
+      allow read:  if true;
+      allow write: if isAdmin() || isOwnerUpload(userId);
+    }
+
+    /* Tout autre chemin : lecture publique, écriture admin seulement. */
+    match /{allPaths=**} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+  }
+}

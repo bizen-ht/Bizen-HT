@@ -1950,20 +1950,45 @@ body.no-screenshot * {
 </section>
 
 <!-- TESTIMONIALS -->
-<section class="section">
+<section class="section" id="temwayaj">
     <div class="container">
         <div class="sec-head">
             <p class="sec-sub"><i class="fas fa-quote-left"></i> Temwanyaj</p>
             <h2 class="sec-title">Kliyan Nou <span class="hl">Satisfe</span></h2>
             <div class="ubar"></div>
         </div>
-        <div class="tgrid">
+        <div class="tgrid" id="reviewsGrid">
             <div class="tc sr"><div class="ts">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tt">"Hotel la te magnifik e Elu a te tre pwofesyonel. Tout bagay te pafè!"</p><div class="ta"><div class="tav"><i class="fas fa-user"></i></div><div><h4>Marc A.</h4><p>Manm Premium</p></div></div></div>
             <div class="tc sr"><div class="ts">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tt">"Mwen renmen ke hotel la inclus nan pri a. Pa gen sipriz, tout kle depi deba!"</p><div class="ta"><div class="tav"><i class="fas fa-user"></i></div><div><h4>Sophie B.</h4><p>Manm Premium</p></div></div></div>
             <div class="tc sr"><div class="ts">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tt">"Diskresyon total. Hotel la te bel, Elu a te dous. Mwen ap retounen!"</p><div class="ta"><div class="tav"><i class="fas fa-user"></i></div><div><h4>Pierre L.</h4><p>Manm Premium</p></div></div></div>
         </div>
+        <div style="text-align:center;margin-top:34px">
+            <button class="btn btn-outline" onclick="openReviewModal()"><i class="fas fa-pen-nib"></i> Kite yon avi</button>
+        </div>
     </div>
 </section>
+
+<!-- REVIEW MODAL -->
+<div class="mbg" id="revM">
+    <div class="modal">
+        <button class="mx" onclick="cM('revM')"><i class="fas fa-times"></i></button>
+        <div class="mhead">
+            <div class="mico"><i class="fas fa-star"></i></div>
+            <h2>Kite yon Avi</h2>
+            <p>Pataje eksperyans ou sou Bizen HT</p>
+        </div>
+        <div class="fg">
+            <label style="display:block;margin-bottom:8px;color:#b0b0c0;font-size:0.82rem">Nòt ou</label>
+            <div id="revStars" style="font-size:1.9rem;color:#ffd700;cursor:pointer;letter-spacing:6px;user-select:none">
+                <span data-v="1">&#9734;</span><span data-v="2">&#9734;</span><span data-v="3">&#9734;</span><span data-v="4">&#9734;</span><span data-v="5">&#9734;</span>
+            </div>
+        </div>
+        <div class="fg"><input type="text" id="revName" maxlength="80" placeholder="Non ou (egz. Jean P.)"></div>
+        <div class="fg"><textarea id="revText" maxlength="1000" rows="4" placeholder="Eksperyans ou..."></textarea></div>
+        <button class="btn btn-primary" style="width:100%" onclick="submitReview()"><i class="fas fa-paper-plane"></i> Voye Avi a</button>
+        <p style="color:#6a6a80;font-size:0.74rem;text-align:center;margin-top:12px">Avi ou a pral parèt apre ekip nou an apwouve l.</p>
+    </div>
+</div>
 
 <!-- CONTACT -->
 <section class="section alt-bg" id="contact">
@@ -6267,8 +6292,8 @@ function activatePremium(userId, orderId) {
         isPremium: true,
         premiumActivatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }).then(function () {
-        db.collection("payments").where("orderId", "==", orderId).get()
-            .then(function (snap) { snap.forEach(function (doc) { doc.ref.update({ status: "confirmed" }); }); });
+        db.collection("payments").where("userId", "==", userId).get()
+            .then(function (snap) { snap.forEach(function (doc) { if (doc.data().orderId === orderId) doc.ref.update({ status: "confirmed" }); }); });
         cM("pM");
         showOk("Premium Aktive!", "Peman konfime! Ou ka jwenn tout Elu yo kounye a!");
         try { unlockUI(); } catch (e) {}
@@ -6838,6 +6863,118 @@ async function saveUserMedia(
 /* ====================================
    PWA — Service Worker + Bannière d'installation
    ==================================== */
+/* ====================================================
+   AVIS DU SITE (siteReviews) — réels, modérés par l'admin
+   ==================================================== */
+/* Anti-XSS : échappe tout contenu utilisateur avant innerHTML */
+function escapeHtml(s) {
+    return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+var revRating = 0;
+
+function paintRevStars() {
+    var sp = document.querySelectorAll("#revStars span");
+    for (var i = 0; i < sp.length; i++) {
+        sp[i].innerHTML = (i < revRating) ? "&#9733;" : "&#9734;";
+    }
+}
+
+(function initRevStars() {
+    var box = document.getElementById("revStars");
+    if (!box) return;
+    box.addEventListener("click", function (e) {
+        var t = e.target;
+        if (t && t.getAttribute("data-v")) {
+            revRating = parseInt(t.getAttribute("data-v"), 10);
+            paintRevStars();
+        }
+    });
+})();
+
+function openReviewModal() {
+    if (!auth || !auth.currentUser) {
+        toast("Konekte dabò pou kite yon avi.", "err");
+        setTimeout(function () { oM("lM"); }, 1200);
+        return;
+    }
+    revRating = 0;
+    paintRevStars();
+    var nm = document.getElementById("revName");
+    var tx = document.getElementById("revText");
+    if (nm) nm.value = (auth.currentUser.displayName || "").trim();
+    if (tx) tx.value = "";
+    oM("revM");
+}
+
+function submitReview() {
+    if (!auth || !auth.currentUser) { toast("Konekte dabò.", "err"); return; }
+    if (!db) { toast("Erè koneksyon.", "err"); return; }
+    var name = (document.getElementById("revName").value || "").trim();
+    var text = (document.getElementById("revText").value || "").trim();
+    if (revRating < 1) { toast("Chwazi yon nòt (zetwal).", "err"); return; }
+    if (name.length < 2) { toast("Antre non ou.", "err"); return; }
+    if (text.length < 5) { toast("Ekri yon ti mo sou eksperyans ou.", "err"); return; }
+
+    db.collection("siteReviews").add({
+        userId: auth.currentUser.uid,
+        userEmail: auth.currentUser.email || "",
+        name: name.substring(0, 80),
+        text: text.substring(0, 1000),
+        rating: revRating,
+        status: "pending",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function () {
+        cM("revM");
+        showOk("Mèsi!", "Avi ou a resevwa. L ap parèt sou sit la apre nou apwouve l.");
+    }).catch(function (e) {
+        toast("Erè: " + (e.code || e.message), "err");
+    });
+}
+
+function renderReviewCard(d) {
+    var n = Math.max(1, Math.min(5, parseInt(d.rating, 10) || 5));
+    var stars = "";
+    for (var i = 0; i < 5; i++) stars += (i < n ? "&#9733;" : "&#9734;");
+    return '<div class="tc sr">' +
+        '<div class="ts">' + stars + '</div>' +
+        '<p class="tt">"' + escapeHtml(d.text) + '"</p>' +
+        '<div class="ta"><div class="tav"><i class="fas fa-user"></i></div>' +
+        '<div><h4>' + escapeHtml(d.name) + '</h4><p>Manm Bizen HT</p></div></div></div>';
+}
+
+function loadApprovedReviews() {
+    if (!db) return;
+    db.collection("siteReviews").where("status", "==", "approved").get()
+        .then(function (snap) {
+            if (snap.empty) return;  /* garde les avis de secours */
+            var items = [];
+            snap.forEach(function (doc) { items.push(doc.data()); });
+            items.sort(function (a, b) {
+                var ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+                var tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+                return tb - ta;
+            });
+            var grid = document.getElementById("reviewsGrid");
+            if (!grid) return;
+            var html = "";
+            for (var i = 0; i < Math.min(items.length, 12); i++) {
+                html += renderReviewCard(items[i]);
+            }
+            grid.innerHTML = html;
+        })
+        .catch(function (e) { console.warn("loadApprovedReviews:", e.code); });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(loadApprovedReviews, 800);
+});
+
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
         navigator.serviceWorker.register("/sw.js").catch(function (e) {

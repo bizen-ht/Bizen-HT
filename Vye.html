@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bizen HT - Admin Panel</title>
+    <link rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -804,7 +806,7 @@
                 <span class="sb-bdg bdg-b" id="bdgU">0</span>
             </button>
             <button class="sb-link" onclick="goPage('fl',this)">
-                <i class="fas fa-star"></i> Prestate
+                <i class="fas fa-star"></i> Elu
                 <span class="sb-bdg bdg-r" id="bdgF">0</span>
             </button>
             <button class="sb-link" onclick="goPage('krey',this)">
@@ -828,6 +830,10 @@
             <button class="sb-link" onclick="goPage('pay',this)">
                 <i class="fas fa-credit-card"></i> Peman
                 <span class="sb-bdg bdg-o" id="bdgPy">0</span>
+            </button>
+            <button class="sb-link" onclick="goPage('avis',this)">
+                <i class="fas fa-star"></i> Avi
+                <span class="sb-bdg bdg-r" id="bdgAv">0</span>
             </button>
 
             <div class="sb-cat">Finans</div>
@@ -876,7 +882,7 @@
                 <div class="sc rd">
                     <div class="sc-ico rd"><i class="fas fa-star"></i></div>
                     <div class="sc-val" id="stF">0</div>
-                    <div class="sc-lbl">Prestate</div>
+                    <div class="sc-lbl">Elu</div>
                 </div>
                 <div class="sc gd">
                     <div class="sc-ico gd"><i class="fas fa-crown"></i></div>
@@ -947,12 +953,12 @@
         <!-- PRESTATEURS -->
         <div class="pg" id="pg-fl">
             <div class="ph">
-                <h1 class="ph-title"><i class="fas fa-star" style="color:var(--red)"></i> Prestate</h1>
+                <h1 class="ph-title"><i class="fas fa-star" style="color:var(--red)"></i> Elu</h1>
                 <input class="srch" placeholder="Chache..." oninput="srchTbl('tbF',this.value)">
             </div>
             <div class="tc">
                 <div class="tc-head">
-                    <div class="tc-title"><i class="fas fa-star"></i> Tout Prestate</div>
+                    <div class="tc-title"><i class="fas fa-star"></i> Tout Elu</div>
                     <div class="tc-filters">
                         <button class="tf active" onclick="fltTbl('tbF','all',this)">Tout</button>
                         <button class="tf" onclick="fltTbl('tbF','active',this)">Aktif</button>
@@ -1084,7 +1090,7 @@
                         <thead>
                             <tr>
                                 <th>Kliyan</th>
-                                <th>Prestate</th>
+                                <th>Elu</th>
                                 <th>Dat</th>
                                 <th>Kote</th>
                                 <th>Pri</th>
@@ -1132,6 +1138,39 @@
             </div>
         </div>
 
+        <!-- AVIS / TÉMOIGNAGES -->
+        <div class="pg" id="pg-avis">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-star" style="color:var(--gold)"></i> Avi sou Sit la</h1>
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-comment-dots"></i> Avi Itilizatè yo</div>
+                    <div class="tc-filters">
+                        <button class="tf active" onclick="fltTbl('tbAv','all',this)">Tout</button>
+                        <button class="tf" onclick="fltTbl('tbAv','pending',this)">An Atant</button>
+                        <button class="tf" onclick="fltTbl('tbAv','approved',this)">Apwouve</button>
+                    </div>
+                </div>
+                <div class="tscroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Non</th>
+                                <th>Nòt</th>
+                                <th>Avi</th>
+                                <th>Itilizatè</th>
+                                <th>Estati</th>
+                                <th>Dat</th>
+                                <th>Aksyon</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbAv"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- FINANCE -->
         <div class="pg" id="pg-fin">
             <div class="ph">
@@ -1169,21 +1208,21 @@
         <!-- COMMISSIONS -->
         <div class="pg" id="pg-comm">
             <div class="ph">
-                <h1 class="ph-title"><i class="fas fa-percentage" style="color:var(--purple)"></i> Komisyon Prestate</h1>
+                <h1 class="ph-title"><i class="fas fa-percentage" style="color:var(--purple)"></i> Komisyon Elu</h1>
             </div>
             <div class="tc">
                 <div class="tc-head">
-                    <div class="tc-title"><i class="fas fa-percentage"></i> Komisyon pa Prestate</div>
+                    <div class="tc-title"><i class="fas fa-percentage"></i> Komisyon pa Elu</div>
                 </div>
                 <div class="tscroll">
                     <table>
                         <thead>
                             <tr>
-                                <th>Prestate</th>
+                                <th>Elu</th>
                                 <th>Rezevasyon</th>
                                 <th>Total Touche</th>
                                 <th>Komisyon (10%)</th>
-                                <th>Net Prestate</th>
+                                <th>Net Elu</th>
                                 <th>Solde</th>
                             </tr>
                         </thead>
@@ -1430,6 +1469,9 @@ function startRealtimeSync() {
         console.error("PAYMENTS error:", err.code);
         if (err.code === "permission-denied") showFirebaseRulesError();
     });
+
+    /* Cloche de notifications temps-réel (inscriptions, paiements, etc.) */
+    initAdminNotifs();
 }
 
 /* ====================================
@@ -1454,7 +1496,7 @@ function showFirebaseRulesError() {
         '<button onclick="document.getElementById(\'rulesAlert\').remove()" style="margin-left:auto;background:none;border:1px solid #555;color:#aaa;padding:4px 12px;border-radius:6px;cursor:pointer">Fèmen</button>',
         '</div>',
         '<p style="color:#b0b0c0;font-size:0.82rem;margin-bottom:12px">Ale nan <strong style="color:white">Firebase Console → Firestore Database → Rules</strong>, ranplase tout teks la ak sa ki anba a, klike <strong style="color:#4caf50">Publish</strong>. Si ou deja fè l, klike bouton vèt "Mwen deja deploye" pou pa wè mesaj sa ankò.</p>',
-        '<pre id="rulesTxt" style="background:#0a0a0a;border:1px solid #333;border-radius:8px;padding:14px;font-size:0.78rem;color:#4caf50;overflow-x:auto;line-height:1.6;white-space:pre">rules_version = \'2\';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n\n    // Admin: aksè total\n    match /{document=**} {\n      allow read, write: if request.auth != null\n        && request.auth.token.email == "bizenht@gmail.com";\n    }\n\n    // Pwofil prive (users): pwopriyetè a sèlman\n    match /users/{userId} {\n      allow read: if request.auth != null && request.auth.uid == userId;\n      allow create, update, delete: if request.auth != null\n        && request.auth.uid == userId;\n    }\n\n    // Pwofil piblik (san imel/telefòn): lekti piblik katalòg + QR\n    match /publicProfiles/{userId} {\n      allow read: if true;\n      allow create, update, delete: if request.auth != null\n        && request.auth.uid == userId;\n    }\n\n    // Rezevasyon — itilizatè konekte\n    match /reservations/{resId} {\n      allow read, write: if request.auth != null;\n    }\n\n    // Peman — itilizatè konekte\n    match /payments/{payId} {\n      allow read, write: if request.auth != null;\n    }\n\n    // Nòt (zetwal) — lekti piblik, kreye si konekte, pa ka chanje\n    match /ratings/{ratingId} {\n      allow read: if true;\n      allow create: if request.auth != null;\n      allow update, delete: if false;\n    }\n\n    // Chat sekirize — SÈLMAN 2 patisipan yo\n    match /chats/{resId} {\n      allow create: if request.auth != null;\n      allow read, update: if request.auth != null\n        && request.auth.uid in resource.data.participants;\n\n      match /messages/{msgId} {\n        allow read, create, update, delete: if request.auth != null\n          && request.auth.uid in\n          get(/databases/$(database)/documents/chats/$(resId)).data.participants;\n      }\n    }\n  }\n}</pre>',
+        '<pre id="rulesTxt" style="background:#0a0a0a;border:1px solid #333;border-radius:8px;padding:14px;font-size:0.78rem;color:#4caf50;overflow-x:auto;line-height:1.6;white-space:pre">rules_version = \'2\';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n\n    function isAdmin() {\n      return request.auth != null\n        && request.auth.token.email == "bizenht@gmail.com"\n        && request.auth.token.email_verified == true;\n    }\n    function isSignedIn() { return request.auth != null; }\n\n    // Pwofil prive (users): pwopriyetè a sèlman\n    match /users/{userId} {\n      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);\n      allow create: if isSignedIn() && request.auth.uid == userId;\n      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);\n      allow delete: if isAdmin();\n    }\n\n    // Pwofil piblik (san imel/telefòn): lekti piblik katalòg + QR\n    match /publicProfiles/{userId} {\n      allow read: if true;\n      allow write: if isAdmin() || (isSignedIn() && request.auth.uid == userId);\n    }\n\n    // Rezevasyon — kliyan + Elu konsène yo + admin\n    match /reservations/{resId} {\n      allow read: if isAdmin() || (isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.prestateId == request.auth.uid));\n      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;\n      allow update: if isAdmin() || (isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.prestateId == request.auth.uid));\n      allow delete: if isAdmin();\n    }\n\n    // Peman — pwopriyetè a + admin sèlman\n    match /payments/{payId} {\n      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);\n      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;\n      allow update: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);\n      allow delete: if isAdmin();\n    }\n\n    // Nòt (zetwal) — lekti piblik\n    match /ratings/{ratingId} {\n      allow read: if true;\n      allow create: if isSignedIn();\n      allow update, delete: if isAdmin();\n    }\n\n    // Avi sou sit la — piblik wè sèlman sa ki apwouve\n    match /siteReviews/{reviewId} {\n      allow read: if isAdmin() || (resource != null && resource.data.status == "approved");\n      allow create: if isSignedIn() && request.resource.data.status == "pending" && request.resource.data.userId == request.auth.uid;\n      allow update, delete: if isAdmin();\n    }\n\n    // Notifikasyon admin\n    match /adminNotifs/{notifId} { allow read, write: if isAdmin(); }\n\n    // Chat sekirize — SÈLMAN 2 patisipan yo\n    match /chats/{resId} {\n      allow create: if isSignedIn();\n      allow read, update: if isAdmin() || (isSignedIn() && request.auth.uid in resource.data.participants);\n\n      match /messages/{msgId} {\n        allow read, create, update, delete: if isAdmin() || (isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(resId)).data.participants);\n      }\n    }\n\n    // Tout lòt bagay: fèmen pa default\n    match /{document=**} { allow read, write: if isAdmin(); }\n  }\n}</pre>',
         '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">',
         '<button onclick="copyRules()" style="padding:8px 20px;background:#2196f3;color:white;border:none;border-radius:8px;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.8rem;font-weight:600"><i class="fas fa-copy"></i> Kopye Rules la</button>',
         '<button onclick="markRulesDeployed()" style="padding:8px 20px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.8rem;font-weight:600"><i class="fas fa-check"></i> Mwen deja deploye (pa montre ankò)</button>',
@@ -1517,8 +1559,8 @@ function renderUsersTable(list) {
         );
 
         h += '<tr data-filter="' + (u.isPremium ? "premium" : "free") + '">';
-        h += '<td><strong>' + (u.prenom || '') + ' ' + (u.nom || '') + '</strong><br><small style="color:#6a6a80">' + (u.email || '') + '</small></td>';
-        h += '<td>' + (u.telephone || 'N/A') + '</td>';
+        h += '<td><strong>' + escHtml(u.prenom || '') + ' ' + escHtml(u.nom || '') + '</strong><br><small style="color:#6a6a80">' + escHtml(u.email || '') + '</small></td>';
+        h += '<td>' + escHtml(u.telephone || 'N/A') + '</td>';
         h += '<td>' + planB + '</td>';
         h += '<td>' + statB + '</td>';
         h += '<td>' + date + '</td>';
@@ -1559,9 +1601,9 @@ function renderFLTable(list) {
         var stTxt = f.status === "active" ? "Aktif" : f.status === "en_attente" ? "An Atant" : "Jele";
 
         h += '<tr data-filter="' + (f.status || '') + '">';
-        h += '<td><strong>' + (f.prenom || '') + ' ' + (f.nom || '') + '</strong><br><small style="color:#6a6a80">' + (f.email || '') + '</small></td>';
+        h += '<td><strong>' + escHtml(f.prenom || '') + ' ' + escHtml(f.nom || '') + '</strong><br><small style="color:#6a6a80">' + escHtml(f.email || '') + '</small></td>';
         h += '<td>' + (f.genre === "femme" ? "Fanm" : "Gason") + '</td>';
-        h += '<td>' + (f.localisation || 'N/A') + '</td>';
+        h += '<td>' + escHtml(f.localisation || 'N/A') + '</td>';
         h += '<td>' + ((f.prixMoment || 0).toLocaleString()) + ' G</td>';
         h += '<td>' + ((f.solde || 0).toLocaleString()) + ' G</td>';
         h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
@@ -1602,7 +1644,7 @@ function renderKreyTable(list) {
         var stTxt = k.status === "active" ? "Aktif" : k.status === "en_attente" ? "An Atant" : "Jele";
 
         h += '<tr data-filter="' + (k.status || '') + '">';
-        h += '<td><strong>' + (k.kreyName || k.prenom || '') + '</strong><br><small style="color:#6a6a80">' + (k.email || '') + '</small></td>';
+        h += '<td><strong>' + escHtml(k.kreyName || k.prenom || '') + '</strong><br><small style="color:#6a6a80">' + escHtml(k.email || '') + '</small></td>';
         h += '<td>' + (k.kreyZone || 'N/A') + '</td>';
         h += '<td>' + (k.kreyMemberCount || 0) + ' manm</td>';
         h += '<td>' + ((k.kreyPrice || 0).toLocaleString()) + ' G</td>';
@@ -1735,10 +1777,10 @@ function renderResTable(list) {
         var kote = r.type === "krey" ? (r.locationName || "Prive") : (r.hotelName || "Hotel");
 
         h += '<tr data-filter="' + (r.status || '') + '" data-type="' + (r.type || 'individual') + '">';
-        h += '<td><small>' + (r.userEmail || 'N/A') + '</small></td>';
-        h += '<td>' + (r.prestateName || 'N/A') + '</td>';
-        h += '<td>' + (r.date || 'N/A') + '</td>';
-        h += '<td><small>' + kote + '</small></td>';
+        h += '<td><small>' + escHtml(r.userEmail || 'N/A') + '</small></td>';
+        h += '<td>' + escHtml(r.prestateName || 'N/A') + '</td>';
+        h += '<td>' + escHtml(r.date || 'N/A') + '</td>';
+        h += '<td><small>' + escHtml(kote) + '</small></td>';
         h += '<td>' + (r.price || 'N/A') + '</td>';
         h += '<td><span class="sbadge ' + typCl + '">' + typTxt + '</span></td>';
         h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
@@ -1811,9 +1853,9 @@ function renderPayTable(list) {
         var date = fmtDate(p.createdAt && p.createdAt.toDate ? p.createdAt.toDate() : null);
 
         h += '<tr data-filter="' + (p.status || '') + '">';
-        h += '<td><small>' + (p.email || 'N/A') + '</small></td>';
+        h += '<td><small>' + escHtml(p.email || 'N/A') + '</small></td>';
         h += '<td><span class="sbadge ' + methCl + '">' + (p.method === "natcash" ? "NatCash" : "MonCash") + '</span></td>';
-        h += '<td><code style="font-size:0.72rem">' + (p.reference || p.referenceId || 'N/A') + '</code></td>';
+        h += '<td><code style="font-size:0.72rem">' + escHtml(p.reference || p.referenceId || 'N/A') + '</code></td>';
         h += '<td><strong>' + ((p.amount || 1000).toLocaleString()) + ' G</strong></td>';
         h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
         h += '<td>' + date + '</td>';
@@ -1907,8 +1949,8 @@ function loadRecent() {
         h += '<i class="fas ' + it.ico + '"></i>';
         h += '</div>';
         h += '<div style="flex:1">';
-        h += '<strong style="font-size:0.85rem">' + it.txt + '</strong><br>';
-        h += '<small style="color:#6a6a80">' + it.sub + '</small>';
+        h += '<strong style="font-size:0.85rem">' + escHtml(it.txt) + '</strong><br>';
+        h += '<small style="color:#6a6a80">' + escHtml(it.sub) + '</small>';
         h += '</div>';
         h += '<span class="sbadge ' + it.sc + '">' + it.st + '</span>';
         h += '</div>';
@@ -2162,6 +2204,243 @@ function goPage(id, btn) {
     if (id === "fin")   loadFinance();
     if (id === "comm")  loadCommissions();
     if (id === "dash")  loadRecent();
+    if (id === "avis")  loadReviews();
+}
+
+/* ====================================
+   AVIS DU SITE — modération admin
+   ==================================== */
+function escHtml(s) {
+    return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+var adminReviews = [];
+
+function loadReviews() {
+    if (!db) return;
+    db.collection("siteReviews").get().then(function(snap) {
+        adminReviews = [];
+        snap.forEach(function(doc) {
+            var d = doc.data(); d.id = doc.id; adminReviews.push(d);
+        });
+        adminReviews.sort(function(a, b) {
+            var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+            var tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+            return tb - ta;
+        });
+        var pending = adminReviews.filter(function(r) { return r.status === "pending"; });
+        setBdg("bdgAv", pending.length);
+        renderReviewsTable(adminReviews);
+    }).catch(function(e) {
+        console.error("loadReviews:", e.code, e.message);
+    });
+}
+
+function renderReviewsTable(list) {
+    var tb = document.getElementById("tbAv");
+    if (!tb) return;
+    if (!list.length) { tb.innerHTML = emptyRow(7, "Pa gen avi anko"); return; }
+
+    var h = "";
+    list.forEach(function(r) {
+        var st = r.status || "pending";
+        var stCl = st === "approved" ? "green" : st === "rejected" ? "red" : "orange";
+        var stTxt = st === "approved" ? "Apwouve" : st === "rejected" ? "Rejte" : "An Atant";
+        var n = Math.max(1, Math.min(5, parseInt(r.rating, 10) || 5));
+        var stars = "";
+        for (var i = 0; i < n; i++) stars += "★";
+        var dat = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate().toLocaleDateString() : "N/A";
+
+        h += '<tr data-filter="' + st + '">';
+        h += '<td>' + escHtml(r.name) + '</td>';
+        h += '<td style="color:#ffd700">' + stars + '</td>';
+        h += '<td><small>' + escHtml(r.text) + '</small></td>';
+        h += '<td><small>' + escHtml(r.userEmail || 'N/A') + '</small></td>';
+        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
+        h += '<td><small>' + dat + '</small></td>';
+        h += '<td>';
+        if (st !== "approved") {
+            h += actBtn("ab-app", "reviewAction('approve','" + r.id + "')", "fa-check", "Apwouve");
+        }
+        h += actBtn("ab-del", "reviewAction('delete','" + r.id + "')", "fa-trash", "Efase");
+        h += '</td></tr>';
+    });
+    tb.innerHTML = h;
+}
+
+function reviewAction(action, id) {
+    if (!db || !id) return;
+    if (action === "approve") {
+        db.collection("siteReviews").doc(id).update({ status: "approved" })
+            .then(function() { toast("Avi apwouve!", true); loadReviews(); })
+            .catch(function(e) { toast("Erè: " + e.code, false); });
+    } else if (action === "delete") {
+        if (!confirm("Efase avi sa a nèt?")) return;
+        db.collection("siteReviews").doc(id).delete()
+            .then(function() { toast("Avi efase.", true); loadReviews(); })
+            .catch(function(e) { toast("Erè: " + e.code, false); });
+    }
+}
+
+/* ====================================
+   NOTIFICATIONS ADMIN (cloche temps-réel)
+   inscription / paiement / réservation / avis
+   ==================================== */
+var notifList = [];
+var notifSeenTs = 0;
+var notifInited = false;
+var unsubNotifUsers = null, unsubNotifPay = null,
+    unsubNotifRes = null, unsubNotifRev = null;
+
+function loadNotifState() {
+    try {
+        notifList = JSON.parse(localStorage.getItem("bizenNotifs") || "[]");
+        notifSeenTs = parseInt(localStorage.getItem("bizenNotifSeen") || "0", 10);
+    } catch (e) { notifList = []; notifSeenTs = 0; }
+}
+
+function saveNotifState() {
+    try {
+        localStorage.setItem("bizenNotifs",
+            JSON.stringify(notifList.slice(0, 40)));
+        localStorage.setItem("bizenNotifSeen", String(notifSeenTs));
+    } catch (e) {}
+}
+
+function notifUnseenCount() {
+    return notifList.filter(function (n) { return n.t > notifSeenTs; }).length;
+}
+
+function pushNotif(n) {
+    n.t = Date.now();
+    notifList.unshift(n);
+    notifList = notifList.slice(0, 40);
+    saveNotifState();
+    paintNotif();
+    try {
+        toast(n.txt, true);
+        var a = document.getElementById("notifSound");
+        if (a) { a.currentTime = 0; a.play().catch(function () {}); }
+    } catch (e) {}
+}
+
+function buildNotifBell() {
+    if (document.getElementById("notifBell")) return;
+    var b = document.createElement("div");
+    b.id = "notifBell";
+    b.style.cssText = "position:fixed;top:18px;right:22px;z-index:9000";
+    b.innerHTML =
+        '<button onclick="toggleNotifPanel()" style="position:relative;width:46px;height:46px;border-radius:50%;background:#15151f;border:1px solid #2a2a3a;color:#fff;cursor:pointer;font-size:1.1rem;box-shadow:0 4px 18px rgba(0,0,0,0.4)">' +
+        '<i class="fas fa-bell"></i>' +
+        '<span id="notifBadge" style="position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;border-radius:10px;background:#f44336;color:#fff;font-size:0.68rem;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 5px;font-family:Montserrat,sans-serif">0</span>' +
+        '</button>' +
+        '<div id="notifPanel" style="display:none;position:absolute;top:56px;right:0;width:330px;max-height:60vh;overflow-y:auto;background:#12121a;border:1px solid #2a2a3a;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,0.6);font-family:Montserrat,sans-serif">' +
+        '<div style="padding:14px 16px;border-bottom:1px solid #2a2a3a;display:flex;justify-content:space-between;align-items:center">' +
+        '<strong style="font-size:0.9rem;color:#fff">Notifikasyon</strong>' +
+        '<button onclick="clearNotifs()" style="background:none;border:none;color:#6a6a80;cursor:pointer;font-size:0.74rem">Efase tout</button>' +
+        '</div><div id="notifItems"></div></div>';
+    document.body.appendChild(b);
+    /* petit son discret (bip) en base64 */
+    var au = document.createElement("audio");
+    au.id = "notifSound";
+    au.src = "data:audio/mpeg;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCA";
+    document.body.appendChild(au);
+}
+
+function paintNotif() {
+    var badge = document.getElementById("notifBadge");
+    if (badge) {
+        var c = notifUnseenCount();
+        badge.textContent = c > 9 ? "9+" : String(c);
+        badge.style.display = c > 0 ? "flex" : "none";
+    }
+    var box = document.getElementById("notifItems");
+    if (!box) return;
+    if (!notifList.length) {
+        box.innerHTML = '<div style="padding:26px 16px;text-align:center;color:#6a6a80;font-size:0.8rem">Pa gen notifikasyon</div>';
+        return;
+    }
+    var h = "";
+    notifList.slice(0, 30).forEach(function (n) {
+        var isNew = n.t > notifSeenTs;
+        var when = new Date(n.t).toLocaleString();
+        h += '<div style="padding:12px 16px;border-bottom:1px solid #20202c;display:flex;gap:12px;align-items:flex-start;' + (isNew ? 'background:rgba(233,30,99,0.06)' : '') + '">';
+        h += '<div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;color:' + n.cl + ';flex-shrink:0"><i class="fas ' + n.ico + '"></i></div>';
+        h += '<div style="flex:1;min-width:0"><div style="font-size:0.82rem;color:#fff;font-weight:600">' + escHtml(n.txt) + '</div>';
+        h += '<div style="font-size:0.72rem;color:#8a8a9a;margin-top:2px">' + escHtml(n.sub || "") + '</div>';
+        h += '<div style="font-size:0.66rem;color:#5a5a6a;margin-top:3px">' + when + '</div></div></div>';
+    });
+    box.innerHTML = h;
+}
+
+function toggleNotifPanel() {
+    var p = document.getElementById("notifPanel");
+    if (!p) return;
+    var open = p.style.display === "block";
+    p.style.display = open ? "none" : "block";
+    if (!open) {
+        notifSeenTs = Date.now();
+        saveNotifState();
+        paintNotif();
+    }
+}
+
+function clearNotifs() {
+    notifList = [];
+    notifSeenTs = Date.now();
+    saveNotifState();
+    paintNotif();
+}
+
+function initAdminNotifs() {
+    if (notifInited || !db) return;
+    notifInited = true;
+    loadNotifState();
+    buildNotifBell();
+    paintNotif();
+
+    /* Pour chaque collection : on ignore le 1er snapshot (chargement)
+       puis on signale chaque nouveau document ajouté. */
+    function listen(coll, firstFlagName, makeNotif) {
+        var first = true;
+        return db.collection(coll).onSnapshot(function (snap) {
+            snap.docChanges().forEach(function (ch) {
+                if (ch.type !== "added") return;
+                if (first) return;
+                var n = makeNotif(ch.doc.data());
+                if (n) pushNotif(n);
+            });
+            first = false;
+        }, function (err) { console.warn("notif " + coll + ":", err.code); });
+    }
+
+    unsubNotifUsers = listen("users", "u", function (d) {
+        if (d.type === "admin") return null;
+        var role = d.type === "freelancer" ? "Elu" : d.type === "krey" ? "Krey" : "Itilizatè";
+        return { ico: "fa-user-plus", cl: "#4caf50",
+            txt: "Nouvo enskripsyon (" + role + ")",
+            sub: ((d.prenom || "") + " " + (d.nom || "")).trim() + " | " + (d.email || "") };
+    });
+
+    unsubNotifPay = listen("payments", "p", function (d) {
+        return { ico: "fa-credit-card", cl: "#ffd700",
+            txt: "Nouvo peman: " + ((d.amount || 1000).toLocaleString()) + " Gdes",
+            sub: (d.email || d.userEmail || "N/A") + " | " + (d.reference || d.method || "") };
+    });
+
+    unsubNotifRes = listen("reservations", "r", function (d) {
+        return { ico: "fa-calendar-check", cl: "#2196f3",
+            txt: "Nouvo rezevasyon",
+            sub: (d.prestateName || "N/A") + " | " + (d.userEmail || "") };
+    });
+
+    unsubNotifRev = listen("siteReviews", "rev", function (d) {
+        return { ico: "fa-star", cl: "#e91e63",
+            txt: "Nouvo avi (" + (d.rating || "?") + "★) — ap tann apwobasyon",
+            sub: (d.name || "") };
+    });
 }
 
 /* ====================================
