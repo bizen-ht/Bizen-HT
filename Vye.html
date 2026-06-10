@@ -843,6 +843,10 @@
             <button class="sb-link" onclick="goPage('comm',this)">
                 <i class="fas fa-percentage"></i> Komisyon
             </button>
+            <button class="sb-link" onclick="goPage('afil',this)">
+                <i class="fas fa-user-friends"></i> Afilye
+                <span class="sb-bdg bdg-o" id="bdgAf">0</span>
+            </button>
         </nav>
 
         <div class="sb-footer">
@@ -1203,6 +1207,27 @@
                     <div class="fs">Komisyon + Membership</div>
                 </div>
             </div>
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-file-download"></i> Telechaje Rapò</div>
+                </div>
+                <div style="padding:18px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
+                    <div>
+                        <label style="display:block;font-size:0.76rem;color:#6a6a80;margin-bottom:6px">Peryòd</label>
+                        <select id="repPeriod" style="background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 14px;font-size:0.85rem;min-width:170px">
+                            <option value="day">Jodi a (Jou)</option>
+                            <option value="week">7 dènye jou (Semèn)</option>
+                            <option value="month" selected>Mwa sa a</option>
+                            <option value="quarter">Trimès sa a</option>
+                            <option value="year">Ane sa a</option>
+                            <option value="all">Tout tan</option>
+                        </select>
+                    </div>
+                    <button onclick="downloadReport('csv')" style="background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:8px;padding:11px 18px;font-weight:600;font-size:0.85rem;cursor:pointer"><i class="fas fa-file-csv"></i> Telechaje CSV (Excel)</button>
+                    <button onclick="downloadReport('print')" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:11px 18px;font-weight:600;font-size:0.85rem;cursor:pointer"><i class="fas fa-print"></i> Enprime / PDF</button>
+                </div>
+                <p style="padding:0 18px 16px;color:#6a6a80;font-size:0.76rem">Rapò a gen ladann: total rezevasyon, komisyon Bizen (10%), revni Premium, revni net, detay pa Elu, ak nouvo enskripsyon pou peryòd la.</p>
+            </div>
         </div>
 
         <!-- COMMISSIONS -->
@@ -1229,6 +1254,48 @@
                         <tbody id="tbComm"></tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- AFILYE / KÒD PROMO -->
+        <div class="pg" id="pg-afil">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-user-friends" style="color:var(--orange,#ff9800)"></i> Afilye / Kòd Promo</h1>
+            </div>
+
+            <div class="fg">
+                <div class="fc"><h4><i class="fas fa-ticket-alt"></i> Kòd</h4><div class="fv" id="afCodes">0</div><div class="fs">Total kòd promo</div></div>
+                <div class="fc"><h4><i class="fas fa-coins"></i> Total Komisyon</h4><div class="fv" style="color:var(--gold)" id="afEarned">0 G</div><div class="fs">Afilye yo touche</div></div>
+                <div class="fc"><h4><i class="fas fa-hand-holding-usd"></i> Deja Peye</h4><div class="fv" style="color:var(--green)" id="afPaid">0 G</div><div class="fs">Retrè ki fèt</div></div>
+                <div class="fc"><h4><i class="fas fa-wallet"></i> Sòld Pou Peye</h4><div class="fv" style="color:var(--red)" id="afBalance">0 G</div><div class="fs">Lajan ki dwe</div></div>
+            </div>
+
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-plus-circle"></i> Kreye yon Kòd (manyèl sèlman)</div></div>
+                <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px">
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Kòd</label><input id="afCode" placeholder="Egz: MARIE10" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem;text-transform:uppercase"></div>
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Non pwopriyetè</label><input id="afName" placeholder="Non konplè" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Imel pwopriyetè (kont Bizen)</label><input id="afEmail" placeholder="imel@..." style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Telefòn</label><input id="afPhone" placeholder="+509..." style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Komisyon %</label><input id="afPct" type="number" value="10" min="1" max="100" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
+                    <div style="display:flex;align-items:flex-end"><button onclick="createPromoCode()" style="width:100%;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:8px;padding:11px 16px;font-weight:600;cursor:pointer;font-size:0.85rem"><i class="fas fa-plus"></i> Kreye Kòd</button></div>
+                </div>
+                <p style="padding:0 18px 16px;color:#6a6a80;font-size:0.76rem">L'imel dwe se imel kont Bizen pwopriyetè a (se konsa l ap wè dashboard afilye li). Komisyon kredite SÈLMAN lè ou konfime peman an. Valab pou Premium sèlman.</p>
+            </div>
+
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-list"></i> Tout Kòd Promo</div></div>
+                <div class="tscroll"><table><thead><tr><th>Kòd</th><th>Pwopriyetè</th><th>%</th><th>Itilizasyon</th><th>Total Touche</th><th>Peye</th><th>Sòld</th><th>Estati</th><th>Aksyon</th></tr></thead><tbody id="tbAfCodes"></tbody></table></div>
+            </div>
+
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-exchange-alt"></i> Tranzaksyon ak Kòd (peman konfime)</div></div>
+                <div class="tscroll"><table><thead><tr><th>Dat</th><th>Kòd</th><th>Kliyan</th><th>Montan</th><th>Komisyon</th></tr></thead><tbody id="tbAfTx"></tbody></table></div>
+            </div>
+
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-money-check-alt"></i> Demann Retrè</div></div>
+                <div class="tscroll"><table><thead><tr><th>Dat</th><th>Kòd</th><th>Pwopriyetè</th><th>Montan</th><th>Estati</th><th>Aksyon</th></tr></thead><tbody id="tbAfWd"></tbody></table></div>
             </div>
         </div>
 
@@ -1281,10 +1348,16 @@ var adminFL = [];
 var adminKrey = [];
 var adminRes = [];
 var adminPay = [];
+var adminPromoCodes = [];
+var adminAfTx = [];
+var adminAfWd = [];
 
 var unsubUsers = null;
 var unsubRes = null;
 var unsubPay = null;
+var unsubPromo = null;
+var unsubAfTx = null;
+var unsubAfWd = null;
 
 /* ====================================
    AUTH CHECK
@@ -1470,6 +1543,29 @@ function startRealtimeSync() {
         if (err.code === "permission-denied") showFirebaseRulesError();
     });
 
+    /* ===== AFFILIATION (codes promo) ===== */
+    unsubPromo = db.collection("promoCodes").onSnapshot(function(snap) {
+        adminPromoCodes = [];
+        snap.forEach(function(doc) { var d = doc.data(); d.id = doc.id; adminPromoCodes.push(d); });
+        setBdg("bdgAf", adminPromoCodes.length);
+        renderAfCodes(); loadAfKpis();
+    }, function(err) {
+        console.error("promoCodes error:", err.code);
+        if (err.code === "permission-denied") showFirebaseRulesError();
+    });
+
+    unsubAfTx = db.collection("affiliateTransactions").onSnapshot(function(snap) {
+        adminAfTx = [];
+        snap.forEach(function(doc) { var d = doc.data(); d.id = doc.id; adminAfTx.push(d); });
+        renderAfTx();
+    }, function(err) { console.error("afTx error:", err.code); });
+
+    unsubAfWd = db.collection("affiliateWithdrawals").onSnapshot(function(snap) {
+        adminAfWd = [];
+        snap.forEach(function(doc) { var d = doc.data(); d.id = doc.id; adminAfWd.push(d); });
+        renderAfWd(); loadAfKpis();
+    }, function(err) { console.error("afWd error:", err.code); });
+
     /* Cloche de notifications temps-réel (inscriptions, paiements, etc.) */
     initAdminNotifs();
 }
@@ -1496,7 +1592,7 @@ function showFirebaseRulesError() {
         '<button onclick="document.getElementById(\'rulesAlert\').remove()" style="margin-left:auto;background:none;border:1px solid #555;color:#aaa;padding:4px 12px;border-radius:6px;cursor:pointer">Fèmen</button>',
         '</div>',
         '<p style="color:#b0b0c0;font-size:0.82rem;margin-bottom:12px">Ale nan <strong style="color:white">Firebase Console → Firestore Database → Rules</strong>, ranplase tout teks la ak sa ki anba a, klike <strong style="color:#4caf50">Publish</strong>. Si ou deja fè l, klike bouton vèt "Mwen deja deploye" pou pa wè mesaj sa ankò.</p>',
-        '<pre id="rulesTxt" style="background:#0a0a0a;border:1px solid #333;border-radius:8px;padding:14px;font-size:0.78rem;color:#4caf50;overflow-x:auto;line-height:1.6;white-space:pre">rules_version = \'2\';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n\n    function isAdmin() {\n      return request.auth != null\n        && request.auth.token.email == "bizenht@gmail.com";\n    }\n    function isSignedIn() { return request.auth != null; }\n\n    // Pwofil prive (users): pwopriyetè a sèlman\n    match /users/{userId} {\n      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);\n      allow create: if isSignedIn() && request.auth.uid == userId;\n      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);\n      allow delete: if isAdmin();\n    }\n\n    // Pwofil piblik (san imel/telefòn): lekti piblik katalòg + QR\n    match /publicProfiles/{userId} {\n      allow read: if true;\n      allow write: if isAdmin() || (isSignedIn() && request.auth.uid == userId);\n    }\n\n    // Rezevasyon — kliyan + Elu konsène yo + admin\n    match /reservations/{resId} {\n      allow read: if isAdmin() || (isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.prestateId == request.auth.uid));\n      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;\n      allow update: if isAdmin() || (isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.prestateId == request.auth.uid));\n      allow delete: if isAdmin();\n    }\n\n    // Peman — pwopriyetè a + admin sèlman\n    match /payments/{payId} {\n      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);\n      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;\n      allow update: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);\n      allow delete: if isAdmin();\n    }\n\n    // Nòt (zetwal) — lekti piblik\n    match /ratings/{ratingId} {\n      allow read: if true;\n      allow create: if isSignedIn();\n      allow update, delete: if isAdmin();\n    }\n\n    // Avi sou sit la — piblik wè sèlman sa ki apwouve\n    match /siteReviews/{reviewId} {\n      allow read: if isAdmin() || (resource != null && resource.data.status == "approved");\n      allow create: if isSignedIn() && request.resource.data.status == "pending" && request.resource.data.userId == request.auth.uid;\n      allow update, delete: if isAdmin();\n    }\n\n    // Notifikasyon admin\n    match /adminNotifs/{notifId} { allow read, write: if isAdmin(); }\n\n    // Chat sekirize — SÈLMAN 2 patisipan yo\n    match /chats/{resId} {\n      allow create: if isSignedIn();\n      allow read, update: if isAdmin() || (isSignedIn() && request.auth.uid in resource.data.participants);\n\n      match /messages/{msgId} {\n        allow read, create, update, delete: if isAdmin() || (isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(resId)).data.participants);\n      }\n    }\n\n    // Tout lòt bagay: fèmen pa default\n    match /{document=**} { allow read, write: if isAdmin(); }\n  }\n}</pre>',
+        '<pre id="rulesTxt" style="background:#0a0a0a;border:1px solid #333;border-radius:8px;padding:14px;font-size:0.78rem;color:#4caf50;overflow-x:auto;line-height:1.6;white-space:pre">rules_version = \'2\';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n\n    function isAdmin() {\n      return request.auth != null\n        && request.auth.token.email == "bizenht@gmail.com";\n    }\n    function isSignedIn() { return request.auth != null; }\n\n    // Pwofil prive (users): pwopriyetè a sèlman\n    match /users/{userId} {\n      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);\n      allow create: if isSignedIn() && request.auth.uid == userId;\n      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);\n      allow delete: if isAdmin();\n    }\n\n    // Pwofil piblik (san imel/telefòn): lekti piblik katalòg + QR\n    match /publicProfiles/{userId} {\n      allow read: if true;\n      allow write: if isAdmin() || (isSignedIn() && request.auth.uid == userId);\n    }\n\n    // Rezevasyon — kliyan + Elu konsène yo + admin\n    match /reservations/{resId} {\n      allow read: if isAdmin() || (isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.prestateId == request.auth.uid));\n      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;\n      allow update: if isAdmin() || (isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.prestateId == request.auth.uid));\n      allow delete: if isAdmin();\n    }\n\n    // Peman — pwopriyetè a + admin sèlman\n    match /payments/{payId} {\n      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);\n      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;\n      allow update: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);\n      allow delete: if isAdmin();\n    }\n\n    // Nòt (zetwal) — lekti piblik\n    match /ratings/{ratingId} {\n      allow read: if true;\n      allow create: if isSignedIn();\n      allow update, delete: if isAdmin();\n    }\n\n    // Avi sou sit la — piblik wè sèlman sa ki apwouve\n    match /siteReviews/{reviewId} {\n      allow read: if isAdmin() || (resource != null && resource.data.status == "approved");\n      allow create: if isSignedIn() && request.resource.data.status == "pending" && request.resource.data.userId == request.auth.uid;\n      allow update, delete: if isAdmin();\n    }\n\n    // Notifikasyon admin\n    match /adminNotifs/{notifId} { allow read, write: if isAdmin(); }\n\n    // Chat sekirize — SÈLMAN 2 patisipan yo\n    match /chats/{resId} {\n      allow create: if isSignedIn();\n      allow read, update: if isAdmin() || (isSignedIn() && request.auth.uid in resource.data.participants);\n\n      match /messages/{msgId} {\n        allow read, create, update, delete: if isAdmin() || (isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(resId)).data.participants);\n      }\n    }\n\n    // Afilye: kòd promo, tranzaksyon, retrè\n    match /promoCodes/{codeId} {\n      allow read: if isAdmin() || (isSignedIn() && resource.data.ownerEmail == request.auth.token.email);\n      allow write: if isAdmin();\n    }\n    match /affiliateTransactions/{txId} {\n      allow read: if isAdmin() || (isSignedIn() && resource.data.ownerEmail == request.auth.token.email);\n      allow create, update, delete: if isAdmin();\n    }\n    match /affiliateWithdrawals/{wId} {\n      allow read: if isAdmin() || (isSignedIn() && resource.data.ownerEmail == request.auth.token.email);\n      allow create: if isSignedIn() && request.resource.data.ownerEmail == request.auth.token.email && request.resource.data.status == "pending";\n      allow update, delete: if isAdmin();\n    }\n\n    // Tout lòt bagay: fèmen pa default\n    match /{document=**} { allow read, write: if isAdmin(); }\n  }\n}</pre>',
         '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">',
         '<button onclick="copyRules()" style="padding:8px 20px;background:#2196f3;color:white;border:none;border-radius:8px;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.8rem;font-weight:600"><i class="fas fa-copy"></i> Kopye Rules la</button>',
         '<button onclick="markRulesDeployed()" style="padding:8px 20px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.8rem;font-weight:600"><i class="fas fa-check"></i> Mwen deja deploye (pa montre ankò)</button>',
@@ -2091,6 +2187,9 @@ function payAction(action, id, userId) {
             })
             .then(function() {
                 toast("Konfime! Premium aktive!", true);
+                /* Crédit commission affilié si le paiement porte un code valide */
+                var pay = adminPay.find(function(p) { return p.id === id; });
+                if (pay) { try { creditAffiliate(pay); } catch (e) { console.warn("creditAffiliate:", e); } }
             });
     }
 
@@ -2469,6 +2568,336 @@ function loadFin(period, btn) {
     loadFinance();
 }
 
+/* ====================================================
+   EXPORT RAPÒ — Jou / Semèn / Mwa / Trimès / Ane / Tout
+   ==================================================== */
+function repTsToDate(t) {
+    if (!t) return null;
+    if (t.toDate) return t.toDate();
+    if (t.seconds) return new Date(t.seconds * 1000);
+    if (typeof t === "string") { var d = new Date(t); return isNaN(d.getTime()) ? null : d; }
+    return null;
+}
+
+function repRange(period) {
+    var now = new Date();
+    var start = new Date(0);
+    var label = "Tout tan";
+    if (period === "day") { start = new Date(now); start.setHours(0,0,0,0); label = "Jodi a (" + now.toLocaleDateString("fr-FR") + ")"; }
+    else if (period === "week") { start = new Date(now); start.setDate(now.getDate() - 7); label = "7 dènye jou"; }
+    else if (period === "month") { start = new Date(now.getFullYear(), now.getMonth(), 1); label = "Mwa " + (now.getMonth() + 1) + "/" + now.getFullYear(); }
+    else if (period === "quarter") { var q = Math.floor(now.getMonth() / 3); start = new Date(now.getFullYear(), q * 3, 1); label = "Trimès " + (q + 1) + " — " + now.getFullYear(); }
+    else if (period === "year") { start = new Date(now.getFullYear(), 0, 1); label = "Ane " + now.getFullYear(); }
+    return { start: start, end: now, label: label };
+}
+
+function repInRange(it, range) {
+    var d = repTsToDate(it.createdAt) || repTsToDate(it.date);
+    if (!d) return range.start.getTime() === 0; /* san dat: konte sèlman nan "Tout tan" */
+    return d >= range.start && d <= range.end;
+}
+
+function repNum(v) { return parseInt(String(v == null ? "0" : v).replace(/[^0-9]/g, "")) || 0; }
+
+function buildReport(period) {
+    var range = repRange(period);
+    var res = (adminRes || []).filter(function(r) { return repInRange(r, range); });
+    var pay = (adminPay || []).filter(function(p) { return repInRange(p, range); });
+    var us  = (adminUsers || []).filter(function(u) { return repInRange(u, range); });
+    var fl  = (adminFL || []).filter(function(f) { return repInRange(f, range); });
+    var kr  = (adminKrey || []).filter(function(k) { return repInRange(k, range); });
+
+    var totalRes = 0, commission = 0, perElu = {};
+    res.forEach(function(r) {
+        if (r.status !== "confirmed") return;
+        var price = repNum(r.price || r.amount);
+        var c = Math.round(price * 0.10);
+        totalRes += price; commission += c;
+        var name = r.prestateName || "N/A";
+        if (!perElu[name]) perElu[name] = { count: 0, total: 0, comm: 0, net: 0 };
+        perElu[name].count++; perElu[name].total += price; perElu[name].comm += c; perElu[name].net += (price - c);
+    });
+    var premium = 0, premiumCount = 0;
+    pay.forEach(function(p) { if (p.status === "confirmed") { premium += (p.amount || 0); premiumCount++; } });
+
+    return {
+        range: range, totalRes: totalRes, commission: commission,
+        premium: premium, premiumCount: premiumCount, net: commission + premium,
+        perElu: perElu,
+        counts: { users: us.length, elu: fl.length, krey: kr.length },
+        pay: pay
+    };
+}
+
+function repCell(v) {
+    var s = String(v == null ? "" : v);
+    if (/[",\n;]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+}
+
+function repEsc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function(c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+}
+
+function downloadReport(format) {
+    var sel = document.getElementById("repPeriod");
+    var period = sel ? sel.value : "month";
+    var R = buildReport(period);
+    var gen = new Date().toLocaleString("fr-FR");
+
+    if (format === "print") { printReport(R, gen); return; }
+
+    var rows = [];
+    rows.push(["BIZEN HT — RAPÒ FINANSYE"]);
+    rows.push(["Peryòd", R.range.label]);
+    rows.push(["Jenere", gen]);
+    rows.push([]);
+    rows.push(["REZIME"]);
+    rows.push(["Total Rezevasyon (G)", R.totalRes]);
+    rows.push(["Komisyon Bizen 10% (G)", R.commission]);
+    rows.push(["Revni Membership Premium (G)", R.premium]);
+    rows.push(["Kantite Premium peye", R.premiumCount]);
+    rows.push(["REVNI NET TOTAL (G)", R.net]);
+    rows.push([]);
+    rows.push(["NOUVO ENSKRIPSYON"]);
+    rows.push(["Itilizatè", R.counts.users]);
+    rows.push(["Elu", R.counts.elu]);
+    rows.push(["Krey", R.counts.krey]);
+    rows.push([]);
+    rows.push(["DETAY PA ELU"]);
+    rows.push(["Elu", "Rezevasyon", "Total (G)", "Komisyon (G)", "Net Elu (G)"]);
+    Object.keys(R.perElu).forEach(function(name) {
+        var e = R.perElu[name];
+        rows.push([name, e.count, e.total, e.comm, e.net]);
+    });
+    rows.push([]);
+    rows.push(["PEMAN PREMIUM"]);
+    rows.push(["Dat", "Imel", "Montan (G)", "Metòd", "Estati"]);
+    R.pay.forEach(function(p) {
+        var d = repTsToDate(p.createdAt);
+        rows.push([ d ? d.toLocaleDateString("fr-FR") : "", p.email || "", p.amount || 0, p.method || "", p.status || "" ]);
+    });
+
+    var csv = rows.map(function(r) { return r.map(repCell).join(","); }).join("\n");
+    var blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "Bizen-HT-Rapo-" + period + "-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1500);
+    if (typeof toast === "function") toast("Rapò CSV telechaje!", true);
+}
+
+function printReport(R, gen) {
+    var g = function(n) { return (n || 0).toLocaleString(); };
+    var eluRows = Object.keys(R.perElu).map(function(name) {
+        var e = R.perElu[name];
+        return '<tr><td>' + repEsc(name) + '</td><td>' + e.count + '</td><td>' + g(e.total) + '</td><td>' + g(e.comm) + '</td><td>' + g(e.net) + '</td></tr>';
+    }).join("") || '<tr><td colspan="5">Pa gen done pou peryòd sa a</td></tr>';
+
+    var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Bizen HT — Rapò ' + repEsc(R.range.label) + '</title>' +
+        '<style>body{font-family:Arial,Helvetica,sans-serif;color:#141414;padding:32px;max-width:820px;margin:auto}' +
+        'h1{color:#e91e63;margin-bottom:2px}h2{border-bottom:2px solid #e91e63;padding-bottom:6px;margin-top:26px;font-size:1.05rem}' +
+        '.muted{color:#777;font-size:0.85rem}table{width:100%;border-collapse:collapse;margin-top:10px;font-size:0.88rem}' +
+        'th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f4f4f4}' +
+        '.kpi{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}.kpi div{flex:1;min-width:150px;border:1px solid #eee;border-radius:10px;padding:14px}' +
+        '.kpi span{font-size:0.8rem;color:#666}.kpi b{display:block;font-size:1.35rem;color:#e91e63;margin-top:4px}' +
+        '@media print{button{display:none}}</style></head><body>' +
+        '<h1>Bizen HT — Rapò Finansye</h1>' +
+        '<p class="muted">Peryòd : <b>' + repEsc(R.range.label) + '</b> &nbsp;·&nbsp; Jenere : ' + repEsc(gen) + '</p>' +
+        '<div class="kpi">' +
+        '<div><span>Total Rezevasyon</span><b>' + g(R.totalRes) + ' G</b></div>' +
+        '<div><span>Komisyon (10%)</span><b>' + g(R.commission) + ' G</b></div>' +
+        '<div><span>Revni Premium</span><b>' + g(R.premium) + ' G</b></div>' +
+        '<div><span>Revni Net Total</span><b>' + g(R.net) + ' G</b></div></div>' +
+        '<h2>Nouvo enskripsyon</h2><p>Itilizatè : <b>' + R.counts.users + '</b> &nbsp;·&nbsp; Elu : <b>' + R.counts.elu + '</b> &nbsp;·&nbsp; Krey : <b>' + R.counts.krey + '</b> &nbsp;·&nbsp; Premium peye : <b>' + R.premiumCount + '</b></p>' +
+        '<h2>Detay pa Elu</h2><table><tr><th>Elu</th><th>Rezevasyon</th><th>Total</th><th>Komisyon</th><th>Net Elu</th></tr>' + eluRows + '</table>' +
+        '<button onclick="window.print()" style="margin-top:26px;padding:11px 22px;background:#e91e63;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem">Enprime / Sove an PDF</button>' +
+        '</body></html>';
+
+    var w = window.open("", "_blank");
+    if (!w) { if (typeof toast === "function") toast("Otorize pop-up yo pou enprime rapò a.", false); return; }
+    w.document.write(html);
+    w.document.close();
+}
+
+/* ====================================================
+   AFFILIATION — Kòd Promo (admin)
+   ==================================================== */
+function afNum(n) { return (n || 0).toLocaleString(); }
+function afVal(id) { var e = document.getElementById(id); return e ? e.value : ""; }
+function afDateStr(ts) {
+    if (!ts) return "";
+    var d = ts.toDate ? ts.toDate() : (ts.seconds ? new Date(ts.seconds * 1000) : null);
+    return d ? d.toLocaleDateString("fr-FR") : "";
+}
+
+function createPromoCode() {
+    if (!db) return;
+    var code = afVal("afCode").trim().toUpperCase().replace(/\s+/g, "");
+    var name = afVal("afName").trim();
+    var email = afVal("afEmail").trim().toLowerCase();
+    var phone = afVal("afPhone").trim();
+    var pct = parseInt(afVal("afPct")) || 10;
+    if (!code) { toast("Antre yon kòd.", false); return; }
+    if (!name || !email) { toast("Antre non ak imel pwopriyetè a.", false); return; }
+    if (pct < 1 || pct > 100) { toast("Komisyon dwe ant 1 ak 100.", false); return; }
+    db.collection("promoCodes").doc(code).get().then(function(snap) {
+        if (snap.exists) { toast("Kòd sa a egziste deja.", false); return; }
+        db.collection("promoCodes").doc(code).set({
+            code: code, ownerName: name, ownerEmail: email, ownerPhone: phone,
+            commissionPct: pct, active: true,
+            totalUses: 0, totalEarned: 0, totalPaidOut: 0,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function() {
+            toast("Kòd " + code + " kreye!", true);
+            ["afCode", "afName", "afEmail", "afPhone"].forEach(function(id) { var e = document.getElementById(id); if (e) e.value = ""; });
+        }).catch(function(e) { toast("Ere: " + e.message, false); });
+    });
+}
+
+function toggleCode(code, makeActive) {
+    if (!db) return;
+    db.collection("promoCodes").doc(code).update({ active: makeActive })
+        .then(function() { toast(makeActive ? "Kòd aktive" : "Kòd dezaktive", true); });
+}
+
+function renderAfCodes() {
+    var tb = document.getElementById("tbAfCodes");
+    if (!tb) return;
+    if (!adminPromoCodes.length) { tb.innerHTML = emptyRow(9, "Pa gen kòd promo"); return; }
+    var h = "";
+    adminPromoCodes.forEach(function(c) {
+        var bal = (c.totalEarned || 0) - (c.totalPaidOut || 0);
+        var st = c.active ? '<span style="color:#4caf50">Aktif</span>' : '<span style="color:#f44336">Dezaktive</span>';
+        var act = c.active
+            ? '<button onclick="toggleCode(\'' + c.code + '\',false)" style="background:rgba(244,67,54,0.15);color:#f44336;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:0.75rem">Dezaktive</button>'
+            : '<button onclick="toggleCode(\'' + c.code + '\',true)" style="background:rgba(76,175,80,0.15);color:#4caf50;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:0.75rem">Aktive</button>';
+        h += '<tr>';
+        h += '<td><code style="color:#e91e63;font-weight:700">' + escHtml(c.code) + '</code></td>';
+        h += '<td><strong>' + escHtml(c.ownerName || '') + '</strong><br><small style="color:#6a6a80">' + escHtml(c.ownerEmail || '') + '</small></td>';
+        h += '<td>' + (c.commissionPct || 10) + '%</td>';
+        h += '<td>' + (c.totalUses || 0) + '</td>';
+        h += '<td>' + afNum(c.totalEarned) + ' G</td>';
+        h += '<td>' + afNum(c.totalPaidOut) + ' G</td>';
+        h += '<td style="color:#ffd700;font-weight:700">' + afNum(bal) + ' G</td>';
+        h += '<td>' + st + '</td>';
+        h += '<td>' + act + '</td>';
+        h += '</tr>';
+    });
+    tb.innerHTML = h;
+}
+
+function renderAfTx() {
+    var tb = document.getElementById("tbAfTx");
+    if (!tb) return;
+    if (!adminAfTx.length) { tb.innerHTML = emptyRow(5, "Pa gen tranzaksyon ankò"); return; }
+    var items = adminAfTx.slice().sort(function(a, b) {
+        var ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+        var tb2 = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+        return tb2 - ta;
+    });
+    var h = "";
+    items.forEach(function(t) {
+        h += '<tr>';
+        h += '<td><small>' + escHtml(afDateStr(t.createdAt)) + '</small></td>';
+        h += '<td><code style="color:#e91e63">' + escHtml(t.code || '') + '</code></td>';
+        h += '<td><small>' + escHtml(t.buyerEmail || 'N/A') + '</small></td>';
+        h += '<td>' + afNum(t.amount) + ' G</td>';
+        h += '<td style="color:#4caf50;font-weight:700">+' + afNum(t.commission) + ' G</td>';
+        h += '</tr>';
+    });
+    tb.innerHTML = h;
+}
+
+function renderAfWd() {
+    var tb = document.getElementById("tbAfWd");
+    if (!tb) return;
+    if (!adminAfWd.length) { tb.innerHTML = emptyRow(6, "Pa gen demann retrè"); return; }
+    var items = adminAfWd.slice().sort(function(a, b) {
+        var ta = a.requestedAt && a.requestedAt.seconds ? a.requestedAt.seconds : 0;
+        var tb2 = b.requestedAt && b.requestedAt.seconds ? b.requestedAt.seconds : 0;
+        return tb2 - ta;
+    });
+    var h = "";
+    items.forEach(function(w) {
+        var stc = w.status === "paid" ? "#4caf50" : w.status === "rejected" ? "#f44336" : "#ff9800";
+        var stt = w.status === "paid" ? "Peye" : w.status === "rejected" ? "Rejte" : "An Atant";
+        var act = (w.status === "pending" || !w.status)
+            ? '<button onclick="wdAction(\'paid\',\'' + w.id + '\')" style="background:rgba(76,175,80,0.15);color:#4caf50;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:0.72rem;margin-right:6px">Make Peye</button><button onclick="wdAction(\'rejected\',\'' + w.id + '\')" style="background:rgba(244,67,54,0.15);color:#f44336;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:0.72rem">Rejte</button>'
+            : '—';
+        h += '<tr>';
+        h += '<td><small>' + escHtml(afDateStr(w.requestedAt)) + '</small></td>';
+        h += '<td><code style="color:#e91e63">' + escHtml(w.code || '') + '</code></td>';
+        h += '<td><small>' + escHtml(w.ownerEmail || '') + '</small></td>';
+        h += '<td>' + afNum(w.amount) + ' G</td>';
+        h += '<td style="color:' + stc + '">' + stt + '</td>';
+        h += '<td>' + act + '</td>';
+        h += '</tr>';
+    });
+    tb.innerHTML = h;
+}
+
+function wdAction(action, id) {
+    if (!db) return;
+    var w = adminAfWd.find(function(x) { return x.id === id; });
+    if (!w) return;
+    if (action === "paid") {
+        if (!confirm("Konfime ou peye " + afNum(w.amount) + " G bay " + w.code + "?")) return;
+        db.collection("affiliateWithdrawals").doc(id).update({ status: "paid", processedAt: firebase.firestore.FieldValue.serverTimestamp() })
+            .then(function() {
+                return db.collection("promoCodes").doc(w.code).update({ totalPaidOut: firebase.firestore.FieldValue.increment(w.amount || 0) });
+            })
+            .then(function() { toast("Retrè make peye!", true); })
+            .catch(function(e) { toast("Ere: " + e.message, false); });
+    } else if (action === "rejected") {
+        if (!confirm("Rejte demann sa a?")) return;
+        db.collection("affiliateWithdrawals").doc(id).update({ status: "rejected", processedAt: firebase.firestore.FieldValue.serverTimestamp() })
+            .then(function() { toast("Demann rejte.", true); });
+    }
+}
+
+function loadAfKpis() {
+    var earned = 0, paid = 0;
+    adminPromoCodes.forEach(function(c) { earned += (c.totalEarned || 0); paid += (c.totalPaidOut || 0); });
+    setVal("afCodes", adminPromoCodes.length);
+    setVal("afEarned", afNum(earned) + " G");
+    setVal("afPaid", afNum(paid) + " G");
+    setVal("afBalance", afNum(earned - paid) + " G");
+}
+
+/* Crédit de la commission — appelé à la CONFIRMATION d'un paiement (point sûr).
+   N'agit que si le paiement a un code valide + actif et pas déjà crédité. */
+function creditAffiliate(payment) {
+    if (!db || !payment) return;
+    var code = (payment.promoCode || "").trim().toUpperCase();
+    if (!code || payment.promoCredited) return;
+    db.collection("promoCodes").doc(code).get().then(function(snap) {
+        if (!snap.exists) return;          /* code inexistant -> rien */
+        var c = snap.data();
+        if (c.active === false) return;     /* code désactivé -> rien */
+        var amount = payment.amount || 1000;
+        var commission = Math.round(amount * ((c.commissionPct || 10) / 100));
+        db.collection("payments").doc(payment.id).update({
+            promoCredited: true, promoCommission: commission, promoOwnerEmail: c.ownerEmail || ""
+        }).catch(function() {});
+        db.collection("promoCodes").doc(code).update({
+            totalUses: firebase.firestore.FieldValue.increment(1),
+            totalEarned: firebase.firestore.FieldValue.increment(commission)
+        }).catch(function() {});
+        db.collection("affiliateTransactions").add({
+            code: code, ownerEmail: c.ownerEmail || "",
+            paymentId: payment.id, buyerEmail: payment.email || "",
+            amount: amount, commission: commission,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(function() {});
+        toast("Komisyon " + afNum(commission) + " G kredite bay " + code, true);
+    }).catch(function() {});
+}
+
 /* doLogout */
 function doLogout() {
     if (auth) {
@@ -2524,6 +2953,7 @@ function viewAccountDetail(uid) {
 
     content.innerHTML = photoHtml + bizenCodeHtml + onlineHtml +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.85rem">' +
+        '<div><span style="color:#6a6a80">Pseudo (piblik):</span><br><strong style="color:#f48fb1">' + escHtml(user.pseudo || "—") + '</strong></div>' +
         '<div><span style="color:#6a6a80">Imel:</span><br><strong>' + (user.email || "N/A") + '</strong></div>' +
         '<div><span style="color:#6a6a80">Telefon:</span><br><strong>' + (user.telephone || "N/A") + '</strong></div>' +
         '<div><span style="color:#6a6a80">Tip:</span><br><strong>' + typeLabel + '</strong></div>' +

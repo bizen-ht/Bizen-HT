@@ -127,8 +127,8 @@ function showProfile(data) {
     document.getElementById("profileCard").style.display = "block";
     document.getElementById("notFound").style.display = "none";
 
-    /* Name (collection publique: prenom + nomInitial) */
-    var name = (data.prenom || data.kreyName || "") + " " + (data.nomInitial || "");
+    /* Nom public : pseudo si défini, sinon prenom + nomInitial */
+    var name = data.pseudo || ((data.prenom || data.kreyName || "") + " " + (data.nomInitial || ""));
     document.getElementById("profileName").textContent = name.trim() || "Elu";
     document.getElementById("profileCode").textContent = data.bizenCode || bizenCode;
 

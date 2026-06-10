@@ -108,6 +108,33 @@ service cloud.firestore {
       }
     }
 
+    /* -------- AFFILIATION : codes promo --------
+       Créés manuellement par l'admin. Le propriétaire lit SON code (par e-mail). */
+    match /promoCodes/{codeId} {
+      allow read:  if isAdmin()
+        || (isSignedIn() && resource.data.ownerEmail == request.auth.token.email);
+      allow write: if isAdmin();
+    }
+
+    /* -------- AFFILIATION : transactions (commissions gagnées) --------
+       Écrites par l'admin à la confirmation du paiement. L'affilié lit les siennes. */
+    match /affiliateTransactions/{txId} {
+      allow read:   if isAdmin()
+        || (isSignedIn() && resource.data.ownerEmail == request.auth.token.email);
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* -------- AFFILIATION : demandes de retrait --------
+       L'affilié crée sa demande (à son nom, statut "pending"). Admin traite. */
+    match /affiliateWithdrawals/{wId} {
+      allow read:   if isAdmin()
+        || (isSignedIn() && resource.data.ownerEmail == request.auth.token.email);
+      allow create: if isSignedIn()
+        && request.resource.data.ownerEmail == request.auth.token.email
+        && request.resource.data.status == "pending";
+      allow update, delete: if isAdmin();
+    }
+
     /* -------- TOUT LE RESTE : interdit par défaut --------
        (Aucune collection oubliée ne reste ouverte.) */
     match /{document=**} {

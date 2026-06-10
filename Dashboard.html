@@ -557,6 +557,17 @@
         </button>
     </div>
 </div>
+
+<!-- AFILYE MENU (montré seulement si l'utilisateur possède un code promo) -->
+<div id="afilyeMenu" style="display:none">
+    <div class="sb-nav-group">
+        <div class="sb-nav-label">Afilyasyon</div>
+        <button class="sb-link" onclick="showSection('afilye',this)">
+            <i class="fas fa-user-friends"></i>
+            Espas Afilye
+        </button>
+    </div>
+</div>
         </nav>
 
         <div class="sb-footer">
@@ -728,6 +739,36 @@
             </div>
         </div>
 
+        <!-- ESPAS AFILYE -->
+        <div class="dash-section" id="sec-afilye">
+            <div class="dash-top">
+                <h1><i class="fas fa-user-friends"></i> Espas <span>Afilye</span></h1>
+            </div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:640px;margin-bottom:18px">
+                <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px">Kòd promo ou</div>
+                <div id="afMyCode" style="font-size:1.8rem;font-weight:700;color:#e91e63;letter-spacing:3px;margin-bottom:8px">—</div>
+                <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.6">Pataje kòd sa a. Chak fwa yon moun achte Premium ak kòd ou epi peman an konfime, ou touche komisyon ou.</p>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;max-width:640px;margin-bottom:18px">
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px"><div style="font-size:0.75rem;color:var(--text-muted)">Tranzaksyon</div><div id="afMyUses" style="font-size:1.6rem;font-weight:700">0</div></div>
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px"><div style="font-size:0.75rem;color:var(--text-muted)">Total Touche</div><div id="afMyEarned" style="font-size:1.6rem;font-weight:700;color:#ffd700">0 G</div></div>
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px"><div style="font-size:0.75rem;color:var(--text-muted)">Deja Peye</div><div id="afMyPaid" style="font-size:1.6rem;font-weight:700;color:#4caf50">0 G</div></div>
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px"><div style="font-size:0.75rem;color:var(--text-muted)">Sòld Disponib</div><div id="afMyBalance" style="font-size:1.6rem;font-weight:700;color:#e91e63">0 G</div></div>
+            </div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:640px;margin-bottom:18px">
+                <h3 style="font-family:'Playfair Display',serif;margin-bottom:12px;font-size:1.05rem"><i class="fas fa-money-check-alt" style="color:#e91e63"></i> Demann Retrè</h3>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+                    <div style="flex:1;min-width:160px"><label style="display:block;font-size:0.78rem;color:var(--text-muted);margin-bottom:5px">Montan (Gdes)</label><input type="number" id="afWdAmount" placeholder="Egz: 500" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif"></div>
+                    <button onclick="requestWithdrawal()" style="padding:11px 20px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:var(--radius-full);cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600"><i class="fas fa-paper-plane"></i> Mande Retrè</button>
+                </div>
+                <p style="font-size:0.74rem;color:var(--text-muted);margin-top:10px">Admin ap trete demann ou an epi voye lajan an ba ou.</p>
+            </div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:640px">
+                <h3 style="font-family:'Playfair Display',serif;margin-bottom:14px;font-size:1.05rem"><i class="fas fa-list"></i> Tranzaksyon yo</h3>
+                <div id="afMyTx" style="font-size:0.85rem;color:var(--text-muted)">Chaje...</div>
+            </div>
+        </div>
+
         <!-- FL OVERVIEW -->
         <div class="dash-section" id="sec-fl-overview">
             <div class="dash-top">
@@ -886,6 +927,12 @@
                 </h1>
             </div>
             <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:30px;max-width:500px">
+                <div style="margin-bottom:15px">
+                    <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px">Pseudo</label>
+                    <input type="text" id="flPseudo" placeholder="Egz: Bella, King James..."
+                           style="width:100%;padding:10px 15px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif">
+                    <p style="font-size:0.74rem;color:#f48fb1;margin-top:6px"><i class="fas fa-eye"></i> Pseudo a se nom sa kap piblik sou kont ou an. Vrè non w rete prive (pou admin).</p>
+                </div>
                 <div style="margin-bottom:15px">
                     <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px">Deskripsyon</label>
                     <textarea id="flDesc" rows="4"
@@ -1346,6 +1393,9 @@ if (!auth) {
 
                 userData.uid = user.uid;
 
+                /* Espace affilié (s'affiche seulement si l'utilisateur possède un code) */
+                try { initAffiliate(user.email || userData.email); } catch (e) { console.warn("initAffiliate:", e); }
+
                 /* === ONLINE STATUS + PUBLIC PROFILE SYNC === */
                 if (userData.type === "freelancer" || userData.type === "krey") {
                     /* Backfill: génère un bizenCode si le compte existant n'en a pas */
@@ -1562,8 +1612,10 @@ function setupFreelancer() {
     /* Profile edit fields */
     var descEl = document.getElementById("flDesc");
     var priceEl = document.getElementById("flPrice");
+    var pseudoElLoad = document.getElementById("flPseudo");
     if (descEl) descEl.value = userData.description || "";
     if (priceEl) priceEl.value = userData.prixMoment || "";
+    if (pseudoElLoad) pseudoElLoad.value = userData.pseudo || "";
 
     /* Settings */
     var setNameEl = document.getElementById("setName");
@@ -2089,19 +2141,22 @@ function saveFlProfile() {
     var price = document.getElementById("flPrice");
     if (!desc || !price) return;
 
+    var pseudoEl = document.getElementById("flPseudo");
+    var pseudo = pseudoEl ? pseudoEl.value.trim() : "";
+
     var p = parseInt(price.value) || 0;
     var net = Math.round(p * 0.9);
     var comm = p - net;
 
     db.collection("users").doc(currentUser.uid)
         .update({
-            description: desc.value.trim(),
+            description: desc.value.trim(), pseudo: pseudo,
             prixMoment: p, prixNet: net, commissionBizen: comm
         })
         .then(function () {
             /* Reflète sur le profil public (catalogue) */
             db.collection("publicProfiles").doc(currentUser.uid).set({
-                description: desc.value.trim(), prixMoment: p
+                description: desc.value.trim(), prixMoment: p, pseudo: pseudo
             }, { merge: true }).catch(function(){});
             showToast("Pwofil sove!", "success");
             setEl("flPrixEx", p.toLocaleString() + " Gdes");
@@ -2185,6 +2240,78 @@ function emptyHtml(ico, title, sub) {
         '<i class="fas ' + ico + '" style="font-size:2.5rem;margin-bottom:15px;display:block;opacity:0.3"></i>' +
         '<h4 style="color:#b0b0c0;margin-bottom:8px;font-size:1rem">' + title + '</h4>' +
         '<p style="font-size:0.82rem">' + sub + '</p></div>';
+}
+
+/* ====================================================
+   AFFILIATION — Espace affilié (visible si l'utilisateur possède un code)
+   ==================================================== */
+var myAffiliateCode = null;
+function afSet(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+
+function initAffiliate(email) {
+    if (!db || !email) return;
+    email = String(email).toLowerCase();
+    db.collection("promoCodes").where("ownerEmail", "==", email).limit(1).get()
+        .then(function (snap) {
+            if (snap.empty) return;            /* pas affilié -> on ne montre rien */
+            var doc = snap.docs[0];
+            var c = doc.data();
+            myAffiliateCode = c.code || doc.id;
+            var menu = document.getElementById("afilyeMenu");
+            if (menu) menu.style.display = "block";
+            afSet("afMyCode", myAffiliateCode);
+            /* Maj temps réel des stats du code */
+            db.collection("promoCodes").doc(myAffiliateCode).onSnapshot(function (s) {
+                if (!s.exists) return;
+                var d = s.data();
+                var e2 = d.totalEarned || 0, p2 = d.totalPaidOut || 0;
+                afSet("afMyUses", (d.totalUses || 0));
+                afSet("afMyEarned", e2.toLocaleString() + " G");
+                afSet("afMyPaid", p2.toLocaleString() + " G");
+                afSet("afMyBalance", (e2 - p2).toLocaleString() + " G");
+            });
+            loadAffiliateTx(email);
+        }).catch(function (e) { console.warn("initAffiliate:", e.code || e.message); });
+}
+
+function loadAffiliateTx(email) {
+    var box = document.getElementById("afMyTx");
+    if (!box) return;
+    db.collection("affiliateTransactions").where("ownerEmail", "==", email).get()
+        .then(function (snap) {
+            if (snap.empty) { box.innerHTML = "Pa gen tranzaksyon ankò."; return; }
+            var items = [];
+            snap.forEach(function (d) { items.push(d.data()); });
+            items.sort(function (a, b) {
+                var ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+                var tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+                return tb - ta;
+            });
+            var h = '<div style="display:flex;flex-direction:column;gap:8px">';
+            items.forEach(function (t) {
+                var d = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString("fr-FR") : "";
+                h += '<div style="display:flex;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px"><span style="color:var(--text-muted);font-size:0.8rem">' + d + '</span><span style="color:#4caf50;font-weight:700">+' + (t.commission || 0).toLocaleString() + ' G</span></div>';
+            });
+            h += '</div>';
+            box.innerHTML = h;
+        }).catch(function (e) { box.innerHTML = "Pa ka chaje tranzaksyon yo."; console.warn(e.code); });
+}
+
+function requestWithdrawal() {
+    if (!db || !currentUser || !myAffiliateCode) return;
+    var amtEl = document.getElementById("afWdAmount");
+    var amount = parseInt(amtEl ? amtEl.value : "0") || 0;
+    if (amount < 100) { showToast("Montan minimòm retrè se 100 G.", "error"); return; }
+    db.collection("affiliateWithdrawals").add({
+        code: myAffiliateCode,
+        ownerEmail: (currentUser.email || "").toLowerCase(),
+        amount: amount,
+        status: "pending",
+        requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function () {
+        showToast("Demann retrè voye! Admin ap trete l.", "success");
+        if (amtEl) amtEl.value = "";
+    }).catch(function (e) { showToast("Ere: " + e.message, "error"); });
 }
 
 function showToast(msg, type) {
