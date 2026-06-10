@@ -2001,6 +2001,17 @@ body.is-premium .pc-blur{display:none!important}
 .grid-pager{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:34px}
 .grid-pager-info{font-family:'Montserrat',sans-serif;font-size:0.9rem;color:#b0b0c0;min-width:60px;text-align:center;font-weight:600}
 .grid-pager button:disabled{opacity:0.4;cursor:not-allowed}
+/* Lightbox (visionneuse médias) */
+#lightbox .lb-close{position:absolute;top:18px;right:20px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.14);color:#fff;border:none;font-size:1.1rem;cursor:pointer;z-index:6;display:flex;align-items:center;justify-content:center}
+#lightbox .lb-arrow{position:absolute;top:50%;transform:translateY(-50%);width:50px;height:50px;border-radius:50%;background:rgba(233,30,99,0.85);color:#fff;border:none;font-size:1.15rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:6}
+#lightbox .lb-left{left:14px}
+#lightbox .lb-right{right:14px}
+#lightbox .lb-arrow:hover{background:#e91e63}
+#lightbox .lb-stage{display:flex;align-items:center;justify-content:center;max-width:96vw;max-height:86vh}
+#lightbox .lb-dots{position:absolute;bottom:18px;left:0;right:0;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding:0 16px}
+#lightbox .lb-dots span{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,0.35);cursor:pointer;transition:all .3s}
+#lightbox .lb-dots span.on{background:#e91e63;width:22px;border-radius:5px}
+@media(max-width:600px){#lightbox .lb-arrow{width:42px;height:42px}}
 </style>
 
 <!-- REVIEW MODAL -->
@@ -2023,6 +2034,15 @@ body.is-premium .pc-blur{display:none!important}
         <button class="btn btn-primary" style="width:100%" onclick="submitReview()"><i class="fas fa-paper-plane"></i> Voye Avi a</button>
         <p style="color:#6a6a80;font-size:0.74rem;text-align:center;margin-top:12px">Avi ou a pral parèt apre ekip nou an apwouve l.</p>
     </div>
+</div>
+
+<!-- LIGHTBOX (visionneuse médias intégrée) -->
+<div id="lightbox" onclick="if(event.target===this)closeLightbox()" style="display:none;position:fixed;inset:0;z-index:100060;background:rgba(0,0,0,0.94);align-items:center;justify-content:center">
+    <button class="lb-close" onclick="closeLightbox()" aria-label="Fèmen"><i class="fas fa-times"></i></button>
+    <button class="lb-arrow lb-left" onclick="lbNav(-1)" aria-label="Avan"><i class="fas fa-chevron-left"></i></button>
+    <div id="lbStage" class="lb-stage"></div>
+    <button class="lb-arrow lb-right" onclick="lbNav(1)" aria-label="Apre"><i class="fas fa-chevron-right"></i></button>
+    <div id="lbDots" class="lb-dots"></div>
 </div>
 
 <!-- CONTACT -->
@@ -5432,28 +5452,102 @@ function mediaWatermark() {
         '<span style="transform:rotate(-30deg);color:rgba(255,255,255,0.28);font-size:0.6rem;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.5);white-space:nowrap">' + id + '</span></div>';
 }
 
+/* ====================================================
+   LIGHTBOX (visionneuse intégrée, style réseau social)
+   Ouvre les médias DANS la page (pas de nouvelle fenêtre),
+   avec slides (flèches + points + clavier) et filigrane.
+   ==================================================== */
+var _galleries = {};
+var _galSeq = 0;
+window._lb = { items: [], idx: 0 };
+
+function registerGallery(items) {
+    var id = "g" + (_galSeq++);
+    _galleries[id] = items;
+    return id;
+}
+
+function openLightbox(items, idx) {
+    if (typeof items === "string") items = _galleries[items] || [];
+    window._lb = { items: items || [], idx: idx || 0 };
+    renderLightbox();
+}
+
+function renderLightbox() {
+    var lb = document.getElementById("lightbox");
+    if (!lb) return;
+    var items = window._lb.items;
+    var it = items[window._lb.idx];
+    if (!it) { closeLightbox(); return; }
+    var stage = document.getElementById("lbStage");
+    var inner = (it.type === "video")
+        ? '<video src="' + it.url + '" controls autoplay playsinline style="max-width:94vw;max-height:84vh;border-radius:10px"></video>'
+        : '<img src="' + it.url + '" style="max-width:94vw;max-height:84vh;object-fit:contain;border-radius:10px">';
+    stage.innerHTML = '<div style="position:relative;display:inline-block">' + inner + mediaWatermark() + '</div>';
+    var dots = document.getElementById("lbDots");
+    var n = items.length, h = "";
+    for (var i = 0; i < n; i++) h += '<span class="' + (i === window._lb.idx ? "on" : "") + '" onclick="lbGo(' + i + ')"></span>';
+    dots.innerHTML = h;
+    var arrows = document.querySelectorAll(".lb-arrow");
+    for (var a = 0; a < arrows.length; a++) arrows[a].style.display = (n > 1) ? "flex" : "none";
+    lb.style.display = "flex";
+    document.body.classList.add("no-scroll");
+}
+
+function lbGo(i) {
+    var n = window._lb.items.length;
+    if (!n) return;
+    window._lb.idx = ((i % n) + n) % n;
+    renderLightbox();
+}
+function lbNav(d) { lbGo(window._lb.idx + d); }
+
+function closeLightbox() {
+    var lb = document.getElementById("lightbox");
+    if (lb) {
+        lb.style.display = "none";
+        var v = lb.querySelector("video");
+        if (v) { try { v.pause(); } catch (e) {} }
+    }
+    document.body.classList.remove("no-scroll");
+}
+
+document.addEventListener("keydown", function (e) {
+    var lb = document.getElementById("lightbox");
+    if (!lb || lb.style.display !== "flex") return;
+    if (e.key === "Escape") closeLightbox();
+    else if (e.key === "ArrowLeft") lbNav(-1);
+    else if (e.key === "ArrowRight") lbNav(1);
+});
+
 // Fonction pour injecter les miniatures dans la carte
 function renderPrivateMedia(cardEl, media) {
     const body = cardEl.querySelector(".pc-body, .krey-body");
     if (!body) return;
 
-    let mediaHtml = '<div class="p-media-grid">';
-
-    // Afficher les 3 premières photos (avec filigrane)
+    /* Construit la liste de médias (photos + vidéos) pour la lightbox */
     const photos = media.photos || [];
-    photos.slice(0, 3).forEach(photo => {
+    const videos = media.videos || [];
+    const mediaList = [];
+    photos.forEach(p => mediaList.push({ type: "image", url: p.url }));
+    videos.forEach(v => mediaList.push({ type: "video", url: v.url }));
+    if (!mediaList.length) return;
+    const gid = registerGallery(mediaList);
+
+    let mediaHtml = '<div class="p-media-grid">';
+    let shown = 0;
+    photos.slice(0, 3).forEach((photo, i) => {
         mediaHtml += `
-            <div class="p-media-item" style="position:relative" onclick="window.open('${photo.url}', '_blank')">
+            <div class="p-media-item" style="position:relative;cursor:pointer" onclick="openLightbox('${gid}', ${i})">
                 <img src="${photo.url}">
                 ${mediaWatermark()}
             </div>`;
+        shown++;
     });
-
-    // Afficher la première vidéo si elle existe (avec filigrane)
-    const videos = media.videos || [];
     if (videos.length > 0) {
+        const vIdx = photos.length; /* index de la 1re vidéo dans mediaList */
         mediaHtml += `
-            <div class="p-media-item" style="position:relative" onclick="window.open('${videos[0].url}', '_blank')">
+            <div class="p-media-item" style="position:relative;cursor:pointer" onclick="openLightbox('${gid}', ${vIdx})">
                 <div class="p-media-video-icon"><i class="fas fa-play-circle"></i></div>
                 <video src="${videos[0].url}" style="width:100%; height:100%; object-fit:cover;"></video>
                 ${mediaWatermark()}
@@ -5502,12 +5596,18 @@ function openEluProfile(btnOrUid) {
         var videos = d.videos || [];
         window._eluProfileZones = d.zones || [];   /* zones de couverture */
 
+        var mediaList = [];
+        gallery.forEach(function(u) { mediaList.push({ type: "image", url: u }); });
+        videos.forEach(function(u) { mediaList.push({ type: "video", url: u }); });
+        var gid = registerGallery(mediaList);
+
         var galHtml = "";
-        gallery.forEach(function(u) {
-            galHtml += '<div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1" onclick="window.open(\'' + u + '\',\'_blank\')"><img src="' + u + '" style="width:100%;height:100%;object-fit:cover;cursor:pointer"></div>';
-        });
-        videos.forEach(function(u) {
-            galHtml += '<div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1" onclick="window.open(\'' + u + '\',\'_blank\')"><video src="' + u + '" style="width:100%;height:100%;object-fit:cover"></video><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);color:#fff;font-size:1.5rem"><i class="fas fa-play-circle"></i></div></div>';
+        mediaList.forEach(function(m, i) {
+            if (m.type === "image") {
+                galHtml += '<div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1;cursor:pointer" onclick="openLightbox(\'' + gid + '\',' + i + ')"><img src="' + m.url + '" style="width:100%;height:100%;object-fit:cover"></div>';
+            } else {
+                galHtml += '<div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1;cursor:pointer" onclick="openLightbox(\'' + gid + '\',' + i + ')"><video src="' + m.url + '" style="width:100%;height:100%;object-fit:cover"></video><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);color:#fff;font-size:1.5rem"><i class="fas fa-play-circle"></i></div></div>';
+            }
         });
         if (!galHtml) galHtml = '<p style="color:#6a6a80;font-size:0.85rem;grid-column:1/-1;text-align:center;padding:20px">Pa gen foto galri ankò.</p>';
 
