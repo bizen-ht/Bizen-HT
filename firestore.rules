@@ -10,11 +10,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /* L'administrateur (toi) est identifié par son e-mail vérifié. */
+    /* L'administrateur (toi) est identifié par son e-mail unique. */
     function isAdmin() {
       return request.auth != null
-        && request.auth.token.email == "bizenht@gmail.com"
-        && request.auth.token.email_verified == true;
+        && request.auth.token.email == "bizenht@gmail.com";
     }
 
     function isSignedIn() {
