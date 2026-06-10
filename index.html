@@ -1795,7 +1795,11 @@ body.no-screenshot * {
             <button class="fbtn" data-f="Carrefour">Carrefour</button>
         </div>
         <div class="pg" id="fG"></div>
-        <div class="see-more"><button class="btn btn-primary btn-glow" onclick="pa()"><i class="fas fa-crown"></i> We Plis Pwofil - Vin Premium</button></div>
+        <div class="grid-pager" id="fGPager" style="display:none">
+            <button class="btn btn-outline" id="fGPrev" onclick="gridNav('fG',-1)"><i class="fas fa-chevron-left"></i> Avan</button>
+            <span class="grid-pager-info" id="fGInfo">1 / 1</span>
+            <button class="btn btn-primary" id="fGNext" onclick="gridNav('fG',1)">Apre <i class="fas fa-chevron-right"></i></button>
+        </div>
     </div>
 </section>
 
@@ -1809,7 +1813,11 @@ body.no-screenshot * {
             <p class="sec-desc">Gason chaman ak karismatik disponib. Hotel inclus!</p>
         </div>
         <div class="pg" id="hG"></div>
-        <div class="see-more"><button class="btn btn-primary btn-glow" onclick="pa()"><i class="fas fa-crown"></i> We Plis Pwofil - Vin Premium</button></div>
+        <div class="grid-pager" id="hGPager" style="display:none">
+            <button class="btn btn-outline" id="hGPrev" onclick="gridNav('hG',-1)"><i class="fas fa-chevron-left"></i> Avan</button>
+            <span class="grid-pager-info" id="hGInfo">1 / 1</span>
+            <button class="btn btn-primary" id="hGNext" onclick="gridNav('hG',1)">Apre <i class="fas fa-chevron-right"></i></button>
+        </div>
     </div>
 </section>
 
@@ -1989,6 +1997,10 @@ body.no-screenshot * {
 /* Contenu promo réservé aux comptes gratuits : masqué pour les Premium */
 body.is-premium .premium-hide{display:none!important}
 body.is-premium .pc-blur{display:none!important}
+/* Pagination des grilles (6 par page) */
+.grid-pager{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:34px}
+.grid-pager-info{font-family:'Montserrat',sans-serif;font-size:0.9rem;color:#b0b0c0;min-width:60px;text-align:center;font-weight:600}
+.grid-pager button:disabled{opacity:0.4;cursor:not-allowed}
 </style>
 
 <!-- REVIEW MODAL -->
@@ -3605,6 +3617,7 @@ function renderCards() {
         }
         hG.innerHTML = hH;
     }
+    try { refreshGrids(); } catch (e) {}
     try { renderKrey(); } catch (e) {
         console.warn("Krey:", e);
     }
@@ -3668,6 +3681,9 @@ function renderRealFreelancers() {
             document.querySelectorAll('.pc[data-demo="0"]').forEach(function(c) {
                 c.classList.add("on");
             });
+
+            /* Recalcule la pagination (6 par page) avec les nouvelles cartes */
+            try { refreshGrids(); } catch(e) {}
 
             /* Notes + niveaux sur les vraies cartes */
             try { decorateRatings(); } catch(e) {}
@@ -4327,13 +4343,68 @@ function initFilters() {
             for (var j = 0; j < sib.length; j++) sib[j].classList.remove("active");
             this.classList.add("active");
             var f = this.getAttribute("data-f");
-            var cards = this.closest(".section").querySelectorAll(".pc");
-            for (var k = 0; k < cards.length; k++) {
-                var show = (f === "all" || cards[k].getAttribute("data-f") === f);
-                cards[k].style.display = show ? "" : "none";
+            var grid = this.closest(".section").querySelector(".pg");
+            if (grid && gridState[grid.id]) {
+                gridState[grid.id].filter = f;
+                gridState[grid.id].page = 0;
+                renderGridPage(grid.id);
             }
         });
     }
+}
+
+/* ====================================
+   PAGINATION GRILLES (6 par page) — filtre-aware
+   ==================================== */
+var GRID_PER_PAGE = 6;
+var gridState = {
+    fG: { page: 0, filter: "all" },
+    hG: { page: 0, filter: "all" }
+};
+
+function renderGridPage(gridId) {
+    var st = gridState[gridId];
+    var g = document.getElementById(gridId);
+    if (!st || !g) return;
+    /* Cartes éligibles = celles qui passent le filtre actif */
+    var all = g.querySelectorAll(".pc");
+    var elig = [];
+    all.forEach(function (c) {
+        var match = (st.filter === "all" || c.getAttribute("data-f") === st.filter);
+        if (!match) { c.style.display = "none"; }
+        else elig.push(c);
+    });
+    var total = elig.length;
+    var pages = Math.max(1, Math.ceil(total / GRID_PER_PAGE));
+    if (st.page >= pages) st.page = pages - 1;
+    if (st.page < 0) st.page = 0;
+    var start = st.page * GRID_PER_PAGE;
+    elig.forEach(function (c, i) {
+        c.style.display = (i >= start && i < start + GRID_PER_PAGE) ? "" : "none";
+    });
+    var info = document.getElementById(gridId + "Info");
+    if (info) info.textContent = (st.page + 1) + " / " + pages;
+    var prev = document.getElementById(gridId + "Prev");
+    var next = document.getElementById(gridId + "Next");
+    if (prev) prev.disabled = (st.page === 0);
+    if (next) next.disabled = (st.page >= pages - 1);
+    var pager = document.getElementById(gridId + "Pager");
+    if (pager) pager.style.display = (total > GRID_PER_PAGE) ? "flex" : "none";
+}
+
+function gridNav(gridId, dir) {
+    var st = gridState[gridId];
+    if (!st) return;
+    st.page += dir;
+    renderGridPage(gridId);
+    var g = document.getElementById(gridId);
+    var sec = g ? g.closest(".section") : null;
+    if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function refreshGrids() {
+    renderGridPage("fG");
+    renderGridPage("hG");
 }
 
 /* ====================================
