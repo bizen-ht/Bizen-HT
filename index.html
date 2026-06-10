@@ -1957,16 +1957,36 @@ body.no-screenshot * {
             <h2 class="sec-title">Kliyan Nou <span class="hl">Satisfe</span></h2>
             <div class="ubar"></div>
         </div>
-        <div class="tgrid" id="reviewsGrid">
-            <div class="tc sr"><div class="ts">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tt">"Hotel la te magnifik e Elu a te tre pwofesyonel. Tout bagay te pafè!"</p><div class="ta"><div class="tav"><i class="fas fa-user"></i></div><div><h4>Marc A.</h4><p>Manm Premium</p></div></div></div>
-            <div class="tc sr"><div class="ts">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tt">"Mwen renmen ke hotel la inclus nan pri a. Pa gen sipriz, tout kle depi deba!"</p><div class="ta"><div class="tav"><i class="fas fa-user"></i></div><div><h4>Sophie B.</h4><p>Manm Premium</p></div></div></div>
-            <div class="tc sr"><div class="ts">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tt">"Diskresyon total. Hotel la te bel, Elu a te dous. Mwen ap retounen!"</p><div class="ta"><div class="tav"><i class="fas fa-user"></i></div><div><h4>Pierre L.</h4><p>Manm Premium</p></div></div></div>
+        <div class="rev-slider">
+            <button class="rev-arrow rev-arrow-l" onclick="revSlide(-1)" aria-label="Avan"><i class="fas fa-chevron-left"></i></button>
+            <div class="rev-track" id="reviewsGrid">
+                <div class="tc sr"><div class="ts">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tt">"Hotel la te magnifik e Elu a te tre pwofesyonel. Tout bagay te pafè!"</p><div class="ta"><div class="tav"><i class="fas fa-user"></i></div><div><h4>Marc A.</h4><p>Manm Premium</p></div></div></div>
+                <div class="tc sr"><div class="ts">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tt">"Mwen renmen ke hotel la inclus nan pri a. Pa gen sipriz, tout kle depi deba!"</p><div class="ta"><div class="tav"><i class="fas fa-user"></i></div><div><h4>Sophie B.</h4><p>Manm Premium</p></div></div></div>
+                <div class="tc sr"><div class="ts">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tt">"Diskresyon total. Hotel la te bel, Elu a te dous. Mwen ap retounen!"</p><div class="ta"><div class="tav"><i class="fas fa-user"></i></div><div><h4>Pierre L.</h4><p>Manm Premium</p></div></div></div>
+            </div>
+            <button class="rev-arrow rev-arrow-r" onclick="revSlide(1)" aria-label="Apre"><i class="fas fa-chevron-right"></i></button>
         </div>
-        <div style="text-align:center;margin-top:34px">
+        <div class="rev-dots" id="revDots"></div>
+        <div style="text-align:center;margin-top:26px">
             <button class="btn btn-outline" onclick="openReviewModal()"><i class="fas fa-pen-nib"></i> Kite yon avi</button>
         </div>
     </div>
 </section>
+
+<style>
+.rev-slider{position:relative;max-width:1140px;margin:0 auto}
+.rev-track{display:flex;gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:6px 6px 16px;scrollbar-width:none;-ms-overflow-style:none}
+.rev-track::-webkit-scrollbar{display:none}
+.rev-track>.tc{flex:0 0 340px;max-width:84vw;scroll-snap-align:center}
+.rev-arrow{position:absolute;top:42%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(233,30,99,0.92);color:#fff;border:none;cursor:pointer;z-index:5;display:flex;align-items:center;justify-content:center;font-size:1rem;box-shadow:0 6px 20px rgba(0,0,0,0.45);transition:background .2s}
+.rev-arrow:hover{background:#e91e63}
+.rev-arrow-l{left:-8px}
+.rev-arrow-r{right:-8px}
+.rev-dots{display:flex;justify-content:center;gap:8px;margin-top:10px}
+.rev-dots span{width:9px;height:9px;border-radius:50%;background:#3a3a4a;cursor:pointer;transition:all .3s}
+.rev-dots span.on{background:#e91e63;width:24px;border-radius:5px}
+@media(max-width:600px){.rev-arrow{display:none}.rev-track>.tc{flex:0 0 86vw}}
+</style>
 
 <!-- REVIEW MODAL -->
 <div class="mbg" id="revM">
@@ -5079,22 +5099,13 @@ function doKR(e) {
             var createdUser = auth.currentUser;
             var uid = createdUser ? createdUser.uid : null;
 
-            var photoInput = document.getElementById("kreyNewPhotos");
-            var vidInput = document.getElementById("kreyNewVideos");
             var uploadedPhotoData = [];
             var uploadedVideoData = [];
 
-            /* Upload photos Krey */
-            if (uid && photoInput && photoInput.files.length > 0) {
+            /* Upload photos Krey (depuis le tableau géré par handleKreyPhotos) */
+            if (uid && uploadedKreyPhotos && uploadedKreyPhotos.length > 0) {
                 uploadedPhotoData = await uploadFilesToStorage(
-                    photoInput.files, uid, "photos", "krey"
-                );
-            }
-
-            /* Upload video Krey */
-            if (uid && vidInput && vidInput.files && vidInput.files.length > 0) {
-                uploadedVideoData = await uploadFilesToStorage(
-                    vidInput.files, uid, "videos", "krey"
+                    uploadedKreyPhotos, uid, "photos", "krey"
                 );
             }
 
@@ -6949,10 +6960,11 @@ function renderReviewCard(d) {
 }
 
 function loadApprovedReviews() {
-    if (!db) return;
+    if (!db) { setTimeout(loadApprovedReviews, 500); return; }
     db.collection("siteReviews").where("status", "==", "approved").get()
         .then(function (snap) {
-            if (snap.empty) return;  /* garde les avis de secours */
+            console.log("[avis] approuvés trouvés:", snap.size);
+            if (snap.empty) { setupReviewSlider(); return; }  /* garde les avis de secours */
             var items = [];
             snap.forEach(function (doc) { items.push(doc.data()); });
             items.sort(function (a, b) {
@@ -6967,12 +6979,53 @@ function loadApprovedReviews() {
                 html += renderReviewCard(items[i]);
             }
             grid.innerHTML = html;
+            setupReviewSlider();
         })
-        .catch(function (e) { console.warn("loadApprovedReviews:", e.code); });
+        .catch(function (e) { console.warn("loadApprovedReviews:", e.code, e.message); setupReviewSlider(); });
+}
+
+/* ---- Carrousel d'avis ---- */
+var revAuto = null, revIdx = 0;
+
+function revGo(i) {
+    var t = document.getElementById("reviewsGrid");
+    if (!t || !t.children.length) return;
+    var n = t.children.length;
+    revIdx = ((i % n) + n) % n;
+    t.children[revIdx].scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    paintRevDots();
+}
+
+function revSlide(dir) { revGo(revIdx + dir); revRestart(); }
+
+function paintRevDots() {
+    var d = document.getElementById("revDots");
+    var t = document.getElementById("reviewsGrid");
+    if (!d || !t) return;
+    var n = t.children.length, h = "";
+    for (var i = 0; i < n; i++) {
+        h += '<span class="' + (i === revIdx ? "on" : "") + '" onclick="revGo(' + i + ');revRestart()"></span>';
+    }
+    d.innerHTML = h;
+}
+
+function revRestart() {
+    if (revAuto) clearInterval(revAuto);
+    revAuto = setInterval(function () { revGo(revIdx + 1); }, 5000);
+}
+
+function setupReviewSlider() {
+    revIdx = 0;
+    paintRevDots();
+    revRestart();
+    var t = document.getElementById("reviewsGrid");
+    if (t) t.addEventListener("mouseenter", function () { if (revAuto) clearInterval(revAuto); });
+    if (t) t.addEventListener("mouseleave", revRestart);
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    setTimeout(loadApprovedReviews, 800);
+    setupReviewSlider();
+    setTimeout(loadApprovedReviews, 600);
 });
 
 if ("serviceWorker" in navigator) {
