@@ -1,0 +1,9 @@
+{
+  "name": "bizen-ht",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bizen HT — Netlify functions dependencies",
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

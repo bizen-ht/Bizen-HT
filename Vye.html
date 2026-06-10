@@ -1936,8 +1936,12 @@ function renderPayTable(list) {
     var tb = document.getElementById("tbPy");
     if (!tb) return;
 
+    /* L'onglet Peman = peman Premium SÈLMAN. Les paiements de réservation
+       n'ont rien à voir avec l'activation Premium (gérés via Rezevasyon). */
+    list = (list || []).filter(function(p) { return p.purpose !== "reservation"; });
+
     if (!list.length) {
-        tb.innerHTML = emptyRow(7, "Pa gen peman anko");
+        tb.innerHTML = emptyRow(7, "Pa gen peman Premium anko");
         return;
     }
 
@@ -2175,6 +2179,11 @@ function payAction(action, id, userId) {
     if (!db) return;
 
     if (action === "confirm") {
+        var payRec = adminPay.find(function(p) { return p.id === id; });
+        if (payRec && payRec.purpose === "reservation") {
+            toast("Sa a se yon peman rezevasyon — pa gen rapò ak Premium.", false);
+            return;
+        }
         if (!confirm("Konfime peman ak aktive Premium?")) return;
         db.collection("payments").doc(id).update({ status: "confirmed" })
             .then(function() {
