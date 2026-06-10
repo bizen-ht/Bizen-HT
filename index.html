@@ -1612,7 +1612,7 @@ body.no-screenshot * {
 <section class="hero" id="top">
   <div class="hero-grid">
     <a href="#femmes" class="hero-side hero-side-f" aria-label="Gade Fanm yo">
-        <i class="fas fa-person-dress hero-sil"></i>
+        <img class="hero-photo" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=700&q=80" alt="Fanm" loading="lazy">
         <span class="hero-side-label"><i class="fas fa-venus"></i> Gade Fanm yo</span>
     </a>
     <div class="hero-content">
@@ -1633,7 +1633,7 @@ body.no-screenshot * {
         </div>
     </div>
     <a href="#hommes" class="hero-side hero-side-h" aria-label="Gade Gason yo">
-        <i class="fas fa-person hero-sil"></i>
+        <img class="hero-photo" src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=700&q=80" alt="Gason" loading="lazy">
         <span class="hero-side-label"><i class="fas fa-mars"></i> Gade Gason yo</span>
     </a>
   </div>
@@ -1995,7 +1995,7 @@ body.no-screenshot * {
 .rev-slider{position:relative;max-width:1140px;margin:0 auto}
 .rev-track{display:flex;gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:6px 6px 16px;scrollbar-width:none;-ms-overflow-style:none}
 .rev-track::-webkit-scrollbar{display:none}
-.rev-track>.tc{flex:0 0 340px;max-width:84vw;scroll-snap-align:center}
+.rev-track>.tc{flex:0 0 340px;max-width:84vw;scroll-snap-align:center;opacity:1!important;transform:none!important}
 .rev-arrow{position:absolute;top:42%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(233,30,99,0.92);color:#fff;border:none;cursor:pointer;z-index:5;display:flex;align-items:center;justify-content:center;font-size:1rem;box-shadow:0 6px 20px rgba(0,0,0,0.45);transition:background .2s}
 .rev-arrow:hover{background:#e91e63}
 .rev-arrow-l{left:-8px}
@@ -2026,12 +2026,11 @@ body.is-premium .pc-blur{display:none!important}
 .hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:minmax(160px,1fr) minmax(0,2.3fr) minmax(160px,1fr);align-items:center;gap:26px;width:100%;max-width:1320px;margin:0 auto;padding:100px 26px 50px}
 .hero-grid .hero-content{padding:10px 0;max-width:none}
 .hero-side{position:relative;border-radius:26px;overflow:hidden;min-height:440px;display:flex;align-items:flex-end;justify-content:center;text-decoration:none;border:1px solid rgba(255,255,255,0.08);background:#0d0d16;transition:transform .4s,box-shadow .4s}
-.hero-side::before{content:"";position:absolute;inset:0}
-.hero-side-f::before{background:linear-gradient(160deg,rgba(233,30,99,0.40),rgba(156,39,176,0.14) 55%,rgba(10,10,16,0) 90%)}
-.hero-side-h::before{background:linear-gradient(160deg,rgba(63,81,181,0.42),rgba(33,150,243,0.14) 55%,rgba(10,10,16,0) 90%)}
-.hero-sil{position:absolute;top:50%;left:50%;transform:translate(-50%,-56%);font-size:13rem;line-height:1;z-index:1}
-.hero-side-f .hero-sil{color:rgba(233,30,99,0.22)}
-.hero-side-h .hero-sil{color:rgba(99,121,222,0.26)}
+.hero-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 18%;z-index:0;transition:transform .6s}
+.hero-side:hover .hero-photo{transform:scale(1.05)}
+.hero-side::before{content:"";position:absolute;inset:0;z-index:1}
+.hero-side-f::before{background:linear-gradient(to top,rgba(8,8,14,0.75),rgba(8,8,14,0.05) 42%,transparent 72%),linear-gradient(160deg,rgba(233,30,99,0.42),rgba(156,39,176,0.16) 55%,transparent 92%)}
+.hero-side-h::before{background:linear-gradient(to top,rgba(8,8,14,0.75),rgba(8,8,14,0.05) 42%,transparent 72%),linear-gradient(160deg,rgba(63,81,181,0.44),rgba(33,150,243,0.16) 55%,transparent 92%)}
 .hero-side-label{position:relative;z-index:2;margin-bottom:28px;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);color:#fff;padding:10px 18px;border-radius:50px;font-family:'Montserrat',sans-serif;font-weight:600;font-size:0.9rem;border:1px solid rgba(255,255,255,0.18);white-space:nowrap}
 .hero-side:hover{transform:translateY(-6px)}
 .hero-side-f:hover{box-shadow:0 16px 50px rgba(233,30,99,0.30)}
@@ -7203,7 +7202,11 @@ function revGo(i) {
     if (!t || !t.children.length) return;
     var n = t.children.length;
     revIdx = ((i % n) + n) % n;
-    t.children[revIdx].scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    var card = t.children[revIdx];
+    /* Défile UNIQUEMENT le conteneur horizontal, sans déplacer la page */
+    var delta = (card.getBoundingClientRect().left - t.getBoundingClientRect().left)
+              - (t.clientWidth - card.clientWidth) / 2;
+    t.scrollBy({ left: delta, behavior: "smooth" });
     paintRevDots();
 }
 
