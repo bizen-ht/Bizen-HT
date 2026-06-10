@@ -2,10 +2,9 @@ rules_version = '2';
 
 /* ============================================================
    BIZEN HT — Règles de sécurité Firebase Storage (médias)
-   But : seul le propriétaire (ou l'admin) peut téléverser/écraser
-   ses photos/vidéos ; uniquement des images/vidéos ; taille limitée.
+   But : seul le propriétaire (ou l'admin) peut téléverser dans
+   son dossier ; uniquement des images/vidéos ; taille limitée.
    À déployer dans : Firebase Console > Storage > Règles
-   (voir SECURITE-DEPLOIEMENT.md)
    ============================================================ */
 
 service firebase.storage {
@@ -16,27 +15,35 @@ service firebase.storage {
         && request.auth.token.email == "bizenht@gmail.com";
     }
 
-    function isOwnerUpload(userId) {
+    /* Upload autorisé seulement si : c'est le propriétaire du dossier,
+       le fichier est une image ou une vidéo, et fait moins de 60 Mo. */
+    function isValidOwnerUpload(userId) {
       return request.auth != null
         && request.auth.uid == userId
-        && request.resource.size < 60 * 1024 * 1024  /* max 60 Mo */
+        && request.resource.size < 60 * 1024 * 1024
         && (
           request.resource.contentType.matches('image/.*')
           || request.resource.contentType.matches('video/.*')
         );
     }
 
-    /* Médias rangés par UID : Elu/{uid}/..., krey/{uid}/..., etc.
-       La lecture s'appuie sur les URLs de téléchargement tokenisées
-       générées par getDownloadURL() (déjà le cas dans le code). */
-    match /{root}/{userId}/{allPaths=**} {
-      allow read:  if true;
-      allow write: if isAdmin() || isOwnerUpload(userId);
+    /* Lecture publique : les photos s'affichent dans le catalogue. */
+    match /{allPaths=**} {
+      allow read: if true;
     }
 
-    /* Tout autre chemin : lecture publique, écriture admin seulement. */
-    match /{allPaths=**} {
-      allow read:  if true;
+    /* Médias des Elu : Elu/{uid}/... */
+    match /Elu/{userId}/{allPaths=**} {
+      allow write: if isAdmin() || isValidOwnerUpload(userId);
+    }
+
+    /* Médias des groupes Krey : krey/{uid}/... */
+    match /krey/{userId}/{allPaths=**} {
+      allow write: if isAdmin() || isValidOwnerUpload(userId);
+    }
+
+    /* Tout autre chemin : écriture admin uniquement (lecture déjà publique). */
+    match /{root}/{allPaths=**} {
       allow write: if isAdmin();
     }
   }
