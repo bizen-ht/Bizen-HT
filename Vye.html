@@ -1879,10 +1879,14 @@ function renderResTable(list) {
         h += '<td><small>' + escHtml(kote) + '</small></td>';
         h += '<td>' + (r.price || 'N/A') + '</td>';
         h += '<td><span class="sbadge ' + typCl + '">' + typTxt + '</span></td>';
-        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
+        var metBadge = r.paidOut ? ' <span class="sbadge green">Elu Peye</span>' : (r.met ? ' <span class="sbadge gold">Rankont konfime</span>' : '');
+        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span>' + metBadge + '</td>';
         h += '<td>';
         if (r.status === "en_attente") {
             h += actBtn("ab-app", "resAction('confirm','" + r.id + "')", "fa-check", "Konfime");
+        }
+        if (r.met && !r.paidOut) {
+            h += actBtn("ab-app", "resPayout('" + r.id + "')", "fa-money-bill-wave", "Peye Elu");
         }
         if (r.status !== "cancelled") {
             h += actBtn("ab-del", "resAction('cancel','" + r.id + "')", "fa-times", "Anile");
@@ -2170,6 +2174,33 @@ function resAction(action, id) {
         .then(function() {
             toast(action === "confirm" ? "Konfime!" : "Anile!", true);
         });
+}
+
+/* Verse le paiement à l'Elu après une rencontre confirmée par le client.
+   Affiche le net (−10%) à payer + le numéro MonCash de l'Elu, puis marque payé. */
+function resPayout(id) {
+    if (!db) return;
+    var r = adminRes.find(function(x) { return x.id === id; });
+    if (!r) return;
+    if (!r.met) { toast("Kliyan an poko konfime rankont la.", false); return; }
+    var gross = parseInt(String(r.price || "0").replace(/[^0-9]/g, "")) || 0;
+    var net = Math.round(gross * 0.9);
+    var elu = adminUsers.find(function(u) { return u.id === r.prestateId; });
+    var mc = elu && elu.moncashNumber ? elu.moncashNumber : "(pa gen nimewo MonCash)";
+    if (!confirm("Konfime ou voye " + net.toLocaleString() + " G (net) bay Elu a sou MonCash:\n" + mc + " ?")) return;
+    db.collection("reservations").doc(id).update({
+        paidOut: true,
+        paidOutAmount: net,
+        paidOutAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function() {
+        /* Met à jour le cumul de gains de l'Elu (informatif) */
+        if (r.prestateId) {
+            db.collection("users").doc(r.prestateId).update({
+                totalEarnings: firebase.firestore.FieldValue.increment(net)
+            }).catch(function(){});
+        }
+        toast("Peman Elu make kòm voye!", true);
+    }).catch(function(e) { toast("Ere: " + e.message, false); });
 }
 
 /* ====================================
@@ -2841,7 +2872,7 @@ function renderAfWd() {
         h += '<tr>';
         h += '<td><small>' + escHtml(afDateStr(w.requestedAt)) + '</small></td>';
         h += '<td><code style="color:#e91e63">' + escHtml(w.code || '') + '</code></td>';
-        h += '<td><small>' + escHtml(w.ownerEmail || '') + '</small></td>';
+        h += '<td><small>' + escHtml(w.ownerEmail || '') + '</small>' + (w.moncashNumber ? '<br><small style="color:#ffcc00"><i class="fas fa-mobile-alt"></i> ' + escHtml(w.moncashNumber) + '</small>' : '') + '</td>';
         h += '<td>' + afNum(w.amount) + ' G</td>';
         h += '<td style="color:' + stc + '">' + stt + '</td>';
         h += '<td>' + act + '</td>';
@@ -2965,6 +2996,7 @@ function viewAccountDetail(uid) {
         '<div><span style="color:#6a6a80">Pseudo (piblik):</span><br><strong style="color:#f48fb1">' + escHtml(user.pseudo || "—") + '</strong></div>' +
         '<div><span style="color:#6a6a80">Imel:</span><br><strong>' + (user.email || "N/A") + '</strong></div>' +
         '<div><span style="color:#6a6a80">Telefon:</span><br><strong>' + (user.telephone || "N/A") + '</strong></div>' +
+        '<div><span style="color:#6a6a80"><i class="fas fa-mobile-alt" style="color:#ffcc00"></i> MonCash:</span><br><strong style="color:#ffcc00">' + escHtml(user.moncashNumber || "—") + '</strong></div>' +
         '<div><span style="color:#6a6a80">Tip:</span><br><strong>' + typeLabel + '</strong></div>' +
         '<div><span style="color:#6a6a80">Lokasyon:</span><br><strong>' + (user.localisation || user.kreyZone || "N/A") + '</strong></div>' +
         '<div><span style="color:#6a6a80">Plan:</span><br>' + planBadge + '</div>' +

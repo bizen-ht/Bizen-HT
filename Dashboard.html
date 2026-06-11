@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <style>
@@ -758,10 +759,12 @@
             <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:640px;margin-bottom:18px">
                 <h3 style="font-family:'Playfair Display',serif;margin-bottom:12px;font-size:1.05rem"><i class="fas fa-money-check-alt" style="color:#e91e63"></i> Demann Retrè</h3>
                 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-                    <div style="flex:1;min-width:160px"><label style="display:block;font-size:0.78rem;color:var(--text-muted);margin-bottom:5px">Montan (Gdes)</label><input type="number" id="afWdAmount" placeholder="Egz: 500" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif"></div>
+                    <div style="flex:1;min-width:140px"><label style="display:block;font-size:0.78rem;color:var(--text-muted);margin-bottom:5px">Montan (Gdes)</label><input type="number" id="afWdAmount" placeholder="Egz: 500" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif"></div>
+                    <div style="flex:1;min-width:160px"><label style="display:block;font-size:0.78rem;color:var(--text-muted);margin-bottom:5px"><i class="fas fa-mobile-alt" style="color:#ffcc00"></i> Nimewo MonCash</label><input type="tel" id="afWdMoncash" placeholder="+509 XXXX-XXXX" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif"></div>
                     <button onclick="requestWithdrawal()" style="padding:11px 20px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:var(--radius-full);cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600"><i class="fas fa-paper-plane"></i> Mande Retrè</button>
                 </div>
                 <p style="font-size:0.74rem;color:var(--text-muted);margin-top:10px">Admin ap trete demann ou an epi voye lajan an ba ou.</p>
+                <p style="font-size:0.74rem;color:#ff9800;margin-top:4px"><i class="fas fa-info-circle"></i> Yon frè <strong>5%</strong> sou tout retrè ap pran pa MonCash via Bazik.</p>
             </div>
             <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:640px">
                 <h3 style="font-family:'Playfair Display',serif;margin-bottom:14px;font-size:1.05rem"><i class="fas fa-list"></i> Tranzaksyon yo</h3>
@@ -942,6 +945,13 @@
                     <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px">Pri pa Moman (Gdes)</label>
                     <input type="number" id="flPrice"
                            style="width:100%;padding:10px 15px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif">
+                </div>
+                <div style="margin-bottom:15px">
+                    <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px"><i class="fas fa-mobile-alt" style="color:#ffcc00"></i> Nimewo MonCash (pou resevwa peman ou)</label>
+                    <input type="tel" id="flMoncash" placeholder="+509 XXXX-XXXX"
+                           style="width:100%;padding:10px 15px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif">
+                    <p style="font-size:0.74rem;color:#6a6a80;margin-top:6px">Se sou nimewo sa a w ap resevwa lajan ou apre chak moman fèt.</p>
+                    <p style="font-size:0.74rem;color:#ff9800;margin-top:4px"><i class="fas fa-info-circle"></i> Yon frè <strong>5%</strong> sou tout retrè ap pran pa MonCash via Bazik.</p>
                 </div>
                 <p style="font-size:0.8rem;color:var(--primary-light);margin-bottom:20px">
                     <i class="fas fa-info-circle"></i>
@@ -1344,6 +1354,9 @@ if (!auth) {
         authHandled = true;
         currentUser = user;
 
+        /* Notifications push (FCM) */
+        try { initPush(); } catch (e) {}
+
         /* Load user data from Firestore */
         if (!db) {
             /* No Firestore - use auth data */
@@ -1613,9 +1626,11 @@ function setupFreelancer() {
     var descEl = document.getElementById("flDesc");
     var priceEl = document.getElementById("flPrice");
     var pseudoElLoad = document.getElementById("flPseudo");
+    var moncashElLoad = document.getElementById("flMoncash");
     if (descEl) descEl.value = userData.description || "";
     if (priceEl) priceEl.value = userData.prixMoment || "";
     if (pseudoElLoad) pseudoElLoad.value = userData.pseudo || "";
+    if (moncashElLoad) moncashElLoad.value = userData.moncashNumber || "";
 
     /* Settings */
     var setNameEl = document.getElementById("setName");
@@ -2023,12 +2038,27 @@ function buildResRow(r, isFL, ratedSet) {
         }
     }
 
+    /* === CONFIRMATION DE RENCONTRE ===
+       Le CLIENT clique "Konfime rankont" au moment où ils se croisent.
+       => l'admin est averti et peut verser le paiement à l'Elu. */
+    var meetBlock = "";
+    if (r.status === "confirmed") {
+        if (r.met) {
+            meetBlock = '<div style="margin-top:8px;font-size:0.72rem;color:#4caf50;font-weight:600"><i class="fas fa-check-circle"></i> Rankont konfime' +
+                (isFL ? ' — n ap voye peman ou' : '') + '</div>';
+        } else if (!isFL) {
+            meetBlock = '<button onclick="confirmMeeting(\'' + r.id + '\')" style="margin-top:8px;padding:6px 16px;border:none;border-radius:20px;background:linear-gradient(135deg,#4caf50,#2e7d32);color:white;font-size:0.72rem;font-weight:600;cursor:pointer"><i class="fas fa-handshake"></i> Konfime rankont la</button>';
+        } else {
+            meetBlock = '<div style="margin-top:8px;font-size:0.7rem;color:#6a6a80"><i class="fas fa-hourglass-half"></i> Tann kliyan an konfime rankont la</div>';
+        }
+    }
+
     return '<div class="res-item" data-status="' + (r.status || "en_attente") + '">' +
         '<div class="res-info">' +
         '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">' +
         '<strong>' + mainText + '</strong>' + tipBadge + '</div>' +
         '<span class="res-sub">' + (r.date || "N/A") + ' | ' + loc + '</span>' +
-        confirmBlock + chatBtn + rateBlock +
+        confirmBlock + chatBtn + meetBlock + rateBlock +
         '</div>' +
         '<div class="res-right">' +
         '<span style="padding:3px 12px;border-radius:20px;font-size:0.68rem;font-weight:600;background:' + stBg + ';color:' + stCol + '">' + stTxt + '</span>' +
@@ -2053,6 +2083,23 @@ function eluConfirmRes(reservationId, newStatus) {
     }).then(function() {
         showToast(newStatus === "confirmed" ? "Rezevasyon aksepte! Ou ka chat ak kliyan an." : "Rezevasyon refize.", "success");
         loadFlReservations();
+    }).catch(function(err) {
+        showToast("Ere: " + err.message, "error");
+    });
+}
+
+/* === CONFIRMATION DE RENCONTRE (CÔTÉ CLIENT) ===
+   À cliquer au moment où le client et l'Elu se croisent.
+   => marque la réservation "met", l'admin est averti et peut verser l'Elu. */
+function confirmMeeting(reservationId) {
+    if (!db) return;
+    if (!confirm("Konfime ou rankontre Elu a kounye a? (Apre sa, ekip Bizen ap voye peman bay Elu a)")) return;
+    db.collection("reservations").doc(reservationId).update({
+        met: true,
+        metAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function() {
+        showToast("Mèsi! Rankont konfime. Bon moman!", "success");
+        loadUserReservations();
     }).catch(function(err) {
         showToast("Ere: " + err.message, "error");
     });
@@ -2143,6 +2190,8 @@ function saveFlProfile() {
 
     var pseudoEl = document.getElementById("flPseudo");
     var pseudo = pseudoEl ? pseudoEl.value.trim() : "";
+    var moncashEl = document.getElementById("flMoncash");
+    var moncash = moncashEl ? moncashEl.value.trim() : "";
 
     var p = parseInt(price.value) || 0;
     var net = Math.round(p * 0.9);
@@ -2151,6 +2200,7 @@ function saveFlProfile() {
     db.collection("users").doc(currentUser.uid)
         .update({
             description: desc.value.trim(), pseudo: pseudo,
+            moncashNumber: moncash,
             prixMoment: p, prixNet: net, commissionBizen: comm
         })
         .then(function () {
@@ -2300,17 +2350,22 @@ function loadAffiliateTx(email) {
 function requestWithdrawal() {
     if (!db || !currentUser || !myAffiliateCode) return;
     var amtEl = document.getElementById("afWdAmount");
+    var mcEl = document.getElementById("afWdMoncash");
     var amount = parseInt(amtEl ? amtEl.value : "0") || 0;
+    var moncash = mcEl ? mcEl.value.trim() : "";
     if (amount < 100) { showToast("Montan minimòm retrè se 100 G.", "error"); return; }
+    if (!moncash) { showToast("Antre nimewo MonCash ou pou resevwa lajan an.", "error"); return; }
     db.collection("affiliateWithdrawals").add({
         code: myAffiliateCode,
         ownerEmail: (currentUser.email || "").toLowerCase(),
         amount: amount,
+        moncashNumber: moncash,
         status: "pending",
         requestedAt: firebase.firestore.FieldValue.serverTimestamp()
     }).then(function () {
         showToast("Demann retrè voye! Admin ap trete l.", "success");
         if (amtEl) amtEl.value = "";
+        if (mcEl) mcEl.value = "";
     }).catch(function (e) { showToast("Ere: " + e.message, "error"); });
 }
 
@@ -2700,9 +2755,10 @@ async function deleteKreyMedia(
                 <div style="font-weight:700;font-size:0.9rem" id="chatPartnerName">Chat</div>
                 <div style="font-size:0.7rem;color:#e91e63"><i class="fas fa-clock"></i> Mesaj yo disparèt aprè 24h · <i class="fas fa-lock"></i> Pwoteje</div>
             </div>
-            <div style="display:flex;align-items:center;gap:8px">
+            <div style="display:flex;align-items:center;gap:6px">
                 <div id="chatOnlineDot" style="width:10px;height:10px;background:#6a6a80;border-radius:50%"></div>
-                <button onclick="closeChat()" style="background:none;border:none;color:#6a6a80;font-size:1.2rem;cursor:pointer"><i class="fas fa-times"></i></button>
+                <span id="chatOnlineLabel" style="font-size:0.7rem;color:#6a6a80">Dekonekte</span>
+                <button onclick="closeChat()" style="background:none;border:none;color:#6a6a80;font-size:1.2rem;cursor:pointer;margin-left:6px"><i class="fas fa-times"></i></button>
             </div>
         </div>
 
@@ -2738,6 +2794,15 @@ async function deleteKreyMedia(
 var currentChatResId = null;
 var chatUnsubscribe = null;
 var currentChatKey = null;        /* Clé AES dérivée pour CETTE conversation */
+
+/* === Présence chat (point vert en ligne) ===
+   Stockée dans le doc chats (les 2 participants y ont accès), avec
+   un "battement" toutes les 25s; en ligne = battement < 70s. */
+var chatPresenceUnsub = null;
+var chatHeartbeat = null;
+var chatPresenceTimer = null;
+var chatOtherUid = null;
+var chatOtherLastMs = 0;
 
 /* Secret intégré à l'app. La clé réelle est dérivée (PBKDF2) à partir de:
    secret + ID réservation + UID des 2 participants triés.
@@ -2778,6 +2843,49 @@ function decryptMsg(cipher) {
     }
 }
 
+/* ====================================
+   NOTIFICATIONS PUSH (FCM)
+   ==================================== */
+var FCM_VAPID = "BGG8Bm8QMjWrGOKaoYqEOUBzGyfLshmdEoRg4tjr0Y5S9xqLlFBOAQT5HnAXwwNy6pYi2hMZ1wzYbhPzNzxjn-o";
+var fcmMessaging = null;
+
+function initPush() {
+    if (!("serviceWorker" in navigator) || !firebase.messaging || !firebase.messaging.isSupported) return;
+    if (!firebase.messaging.isSupported()) return;
+    navigator.serviceWorker.register("/sw.js").then(function (reg) {
+        if (typeof Notification === "undefined" || Notification.permission === "denied") return;
+        Notification.requestPermission().then(function (perm) {
+            if (perm !== "granted") return;
+            try { fcmMessaging = firebase.messaging(); } catch (e) { return; }
+            fcmMessaging.getToken({ vapidKey: FCM_VAPID, serviceWorkerRegistration: reg })
+                .then(function (token) {
+                    if (token && currentUser && db) {
+                        db.collection("users").doc(currentUser.uid).update({
+                            fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
+                        }).catch(function () {});
+                    }
+                }).catch(function () {});
+            /* Message reçu pendant que l'appli est ouverte */
+            fcmMessaging.onMessage(function (payload) {
+                var n = (payload && payload.notification) || {};
+                try { showToast((n.title || "Bizen HT") + " — " + (n.body || ""), "success"); } catch (e) {}
+            });
+        });
+    }).catch(function () {});
+}
+
+/* Envoie une push à un autre utilisateur (via la fonction Netlify) */
+function sendPushTo(toUid, title, msg, link) {
+    if (!toUid || !currentUser) return;
+    currentUser.getIdToken().then(function (idToken) {
+        fetch("/.netlify/functions/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, toUid: toUid, title: title, msg: msg, link: link || "/Dashboard.html" })
+        }).catch(function () {});
+    }).catch(function () {});
+}
+
 function openChat(reservationId, partnerName) {
     currentChatResId = reservationId;
     currentChatKey = null;
@@ -2812,6 +2920,10 @@ function openChat(reservationId, partnerName) {
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true }).catch(function(){});
 
+                /* Présence (point vert) : on écoute l'autre participant */
+                var otherUid = parts.filter(function(p) { return p !== currentUser.uid; })[0] || null;
+                startChatPresence(reservationId, otherUid);
+
                 /* Charge les messages APRÈS avoir la clé */
                 loadChatMessages(reservationId);
             })
@@ -2838,8 +2950,57 @@ function applyChatWatermark() {
     ov.innerHTML = '<div style="position:absolute;inset:0;overflow:hidden;display:flex;flex-wrap:wrap;align-content:center;justify-content:center">' + grid + '</div>';
 }
 
+function setChatDot(online) {
+    var dot = document.getElementById("chatOnlineDot");
+    if (!dot) return;
+    dot.style.background = online ? "#4caf50" : "#6a6a80";
+    dot.style.boxShadow = online ? "0 0 8px #4caf50" : "none";
+    var lbl = document.getElementById("chatOnlineLabel");
+    if (lbl) { lbl.textContent = online ? "An liy" : "Dekonekte"; lbl.style.color = online ? "#4caf50" : "#6a6a80"; }
+}
+
+function evalChatPresence() {
+    var online = chatOtherLastMs > 0 && (Date.now() - chatOtherLastMs) < 70000;
+    setChatDot(online);
+}
+
+function startChatPresence(resId, otherUid) {
+    stopChatPresence();
+    chatOtherUid = otherUid || null;
+    chatOtherLastMs = 0;
+    setChatDot(false);
+    if (!db || !currentUser) return;
+
+    function beat() {
+        var obj = { presence: {} };
+        obj.presence[currentUser.uid] = firebase.firestore.FieldValue.serverTimestamp();
+        db.collection("chats").doc(resId).set(obj, { merge: true }).catch(function(){});
+    }
+    beat();
+    chatHeartbeat = setInterval(beat, 25000);
+
+    chatPresenceUnsub = db.collection("chats").doc(resId).onSnapshot(function(doc) {
+        if (!doc.exists || !chatOtherUid) return;
+        var pres = doc.data().presence || {};
+        var ts = pres[chatOtherUid];
+        if (ts && ts.toDate) chatOtherLastMs = ts.toDate().getTime();
+        evalChatPresence();
+    }, function(){});
+
+    /* Réévalue la fraîcheur même si l'autre cesse de battre */
+    chatPresenceTimer = setInterval(evalChatPresence, 20000);
+}
+
+function stopChatPresence() {
+    if (chatPresenceUnsub) { chatPresenceUnsub(); chatPresenceUnsub = null; }
+    if (chatHeartbeat) { clearInterval(chatHeartbeat); chatHeartbeat = null; }
+    if (chatPresenceTimer) { clearInterval(chatPresenceTimer); chatPresenceTimer = null; }
+    chatOtherUid = null; chatOtherLastMs = 0;
+}
+
 function closeChat() {
     if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+    stopChatPresence();
     var modal = document.getElementById("chatModal");
     if (modal) modal.style.display = "none";
     currentChatResId = null;
@@ -2945,6 +3106,9 @@ function sendChatMsg() {
         senderEmail: currentUser.email || "",
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    }).then(function() {
+        /* Notifie l'autre participant (push) */
+        if (chatOtherUid) sendPushTo(chatOtherUid, "Nouvo mesaj", "Ou gen yon nouvo mesaj sou Bizen HT", "/Dashboard.html");
     }).catch(function(err) {
         showToast("Ere voye mesaj: " + err.message, "error");
     });

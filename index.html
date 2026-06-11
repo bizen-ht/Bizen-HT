@@ -4190,47 +4190,49 @@ try {
         /* Y a-t-il une réservation en attente de paiement ?
            Si oui => on confirme la RÉSERVATION (pas le Premium).
            On lit d'abord l'URL (?resId=...) puis localStorage en secours. */
-        var pendingBooking = null;
-        try {
-            var sp = new URLSearchParams(window.location.search);
-            pendingBooking = sp.get("resId") || localStorage.getItem("bizenPendingBooking");
-        } catch(e) {
-            try { pendingBooking = localStorage.getItem("bizenPendingBooking"); } catch(e2) {}
-        }
-
+        var pmtHandled = false;
         if (auth) {
-            auth.onAuthStateChanged(
-                function(u) {
-                    if (!u || !db) return;
-
-                    if (pendingBooking) {
-                        /* === PAIEMENT D'UNE RÉSERVATION ===
-                           Payé => en attente de CONFIRMATION par l'Elu. */
-                        db.collection("reservations").doc(pendingBooking).update({
-                            status: "en_attente",
-                            paid: true,
-                            paidAt: firebase.firestore.FieldValue.serverTimestamp()
-                        }).then(function() {
-                            try { localStorage.removeItem("bizenPendingBooking"); } catch(e) {}
-                            showOk("Peman Reyisi!", "Peman ou konfime! Elu a ap konfime rezevasyon w lan byento. W ap resevwa yon repons.");
-                        }).catch(function() {
-                            showOk("Peman Resevwa!", "Nou pral trete rezevasyon ou toutsuit.");
+            auth.onAuthStateChanged(function(u) {
+                if (!u || !db || pmtHandled) return;
+                pmtHandled = true;
+                /* On détermine le VRAI type du paiement via le DERNIER paiement
+                   de l'utilisateur (champ `purpose`), pas via localStorage.
+                   => un paiement Premium ne peut plus être pris pour une réservation. */
+                db.collection("payments").where("userId", "==", u.uid).get()
+                    .then(function(snap) {
+                        var latest = null, lt = -1;
+                        snap.forEach(function(d) {
+                            var p = d.data();
+                            var t = (p.createdAt && p.createdAt.toDate) ? p.createdAt.toDate().getTime() : 0;
+                            if (t >= lt) { lt = t; latest = p; }
                         });
-                    } else {
-                        /* === PAIEMENT DE L'ABONNEMENT PREMIUM === */
-                        db.collection("users").doc(u.uid).update({
-                            isPremium: true,
-                            premiumActivatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                            premiumSource: "success_redirect"
-                        }).then(function() {
+                        try { localStorage.removeItem("bizenPendingBooking"); } catch(e) {}
+
+                        if (latest && latest.purpose === "reservation") {
+                            /* === PAIEMENT D'UNE RÉSERVATION === */
+                            if (latest.reservationId) {
+                                db.collection("reservations").doc(latest.reservationId).update({
+                                    status: "en_attente", paid: true,
+                                    paidAt: firebase.firestore.FieldValue.serverTimestamp()
+                                }).catch(function() {});
+                            }
+                            showOk("Peman Reyisi!", "Peman ou konfime! Elu a ap konfime rezevasyon w lan byento.");
+                        } else {
+                            /* === PAIEMENT PREMIUM === (le webhook l'active déjà côté serveur;
+                               ici message + rafraîchissement de l'écran) */
+                            db.collection("users").doc(u.uid).update({
+                                isPremium: true,
+                                premiumActivatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                premiumSource: "success_redirect"
+                            }).catch(function() {});
                             showOk("Premium Aktive!", "Peman konfime! Kont ou Premium kounye a!");
                             try { unlockUI(); } catch(e) {}
-                        }).catch(function() {
-                            showOk("Peman Resevwa!", "Ekip nou pral aktive Premium ou toutsuit.");
-                        });
-                    }
-                }
-            );
+                        }
+                    })
+                    .catch(function() {
+                        showOk("Peman Resevwa!", "N ap trete peman ou toutsuit.");
+                    });
+            });
         }
         /* Clean URL */
         try {
@@ -5801,6 +5803,8 @@ function confirmRes() {
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             }).then(function (ref) {
                 cM("resM");
+                /* Notifie l'Elu (push) qu'il a une nouvelle demande de réservation */
+                if (prestateId) notifyPush(prestateId, "Nouvo rezevasyon", "Ou gen yon nouvo demann rezevasyon sou Bizen HT", "/Dashboard.html");
                 if (payNow) {
                     /* Mémorise la réservation à confirmer après le paiement */
                     try { localStorage.setItem("bizenPendingBooking", ref.id); } catch(e) {}
@@ -6013,6 +6017,18 @@ function getPromoCode() {
     var el = document.getElementById("mcPromo");
     if (!el) return "";
     return (el.value || "").trim().toUpperCase().replace(/\s+/g, "");
+}
+
+/* Envoie une notification push à un autre utilisateur (via fonction Netlify) */
+function notifyPush(toUid, title, msg, link) {
+    if (!toUid || !auth || !auth.currentUser) return;
+    auth.currentUser.getIdToken().then(function (idToken) {
+        fetch("/.netlify/functions/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, toUid: toUid, title: title, msg: msg, link: link || "/Dashboard.html" })
+        }).catch(function () {});
+    }).catch(function () {});
 }
 
 var currentOrderId = null;
