@@ -27,6 +27,43 @@
   to = "/Vye.html"
   status = 200
 
+# ===== URLs propres (sans .html) =====
+[[redirects]]
+  from = "/dashboard"
+  to = "/Dashboard.html"
+  status = 200
+
+# Lien dédié pour le formulaire Elu (ouvre le popup Inskri sur le formulaire Elu)
+[[redirects]]
+  from = "/elu"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/faq"
+  to = "/FAQ.html"
+  status = 200
+
+[[redirects]]
+  from = "/profil"
+  to = "/profil.html"
+  status = 200
+
+[[redirects]]
+  from = "/kondisyon"
+  to = "/kondisyon.html"
+  status = 200
+
+[[redirects]]
+  from = "/konfidansyalite"
+  to = "/konfidansyalite.html"
+  status = 200
+
+[[redirects]]
+  from = "/regleman"
+  to = "/regleman.html"
+  status = 200
+
 [[redirects]]
   from = "/success.html"
   to = "/?payment=success"

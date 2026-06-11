@@ -3,7 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bizen HT - Moman Plezi Entim </title>
+
+    <!-- ============ SEO ============ -->
+    <title>Bizen HT — Sit Rankont & Konpayon #1 an Ayiti | Moman Plezi Entim</title>
+    <meta name="description" content="Bizen HT, sit rankont ak konpayon #1 an Ayiti. Jwenn yon Elu pou yon moman entim, romantik ak diskrè. Granmoun 18 an+. Otèl enkli. Peman MonCash/Bazik. Diskresyon total.">
+    <meta name="keywords" content="rankont ayiti, sit rankont ayisyen, konpayon ayiti, escort haiti, accompagnement haiti, moman entim, Bizen HT, rencontre haiti, Pòtoprens, Pétion-Ville, MonCash">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="rating" content="adult">
+    <meta name="author" content="Bizen HT">
+    <link rel="canonical" href="https://bizenht.com/">
+    <meta name="language" content="ht, fr">
+
+    <!-- Open Graph (WhatsApp / Facebook / Messenger) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Bizen HT">
+    <meta property="og:locale" content="ht_HT">
+    <meta property="og:locale:alternate" content="fr_FR">
+    <meta property="og:url" content="https://bizenht.com/">
+    <meta property="og:title" content="Bizen HT — Sit Rankont & Konpayon #1 an Ayiti">
+    <meta property="og:description" content="Jwenn yon Elu pou yon moman entim, romantik ak diskrè an Ayiti. Granmoun 18 an+. Otèl enkli. Diskresyon total.">
+    <meta property="og:image" content="https://bizenht.com/Images/header.png">
+    <meta property="og:image:width" content="1355">
+    <meta property="og:image:height" content="606">
+    <meta property="og:image:alt" content="Bizen HT — Sit rankont #1 an Ayiti">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bizen HT — Sit Rankont & Konpayon #1 an Ayiti">
+    <meta name="twitter:description" content="Jwenn yon Elu pou yon moman entim, romantik ak diskrè an Ayiti. Granmoun 18 an+. Diskresyon total.">
+    <meta name="twitter:image" content="https://bizenht.com/Images/header.png">
+
+    <!-- Données structurées (Google + IA) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://bizenht.com/#organization",
+          "name": "Bizen HT",
+          "url": "https://bizenht.com/",
+          "logo": "https://bizenht.com/Images/header.png",
+          "description": "Sit rankont ak konpayon #1 an Ayiti. Moman entim, romantik ak diskrè pou granmoun 18 an+.",
+          "areaServed": {
+            "@type": "Country",
+            "name": "Haiti"
+          },
+          "sameAs": []
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://bizenht.com/#website",
+          "url": "https://bizenht.com/",
+          "name": "Bizen HT",
+          "inLanguage": ["ht", "fr"],
+          "publisher": { "@id": "https://bizenht.com/#organization" }
+        },
+        {
+          "@type": "Service",
+          "name": "Sèvis Konpayon Bizen HT",
+          "serviceType": "Companion & Dating service",
+          "provider": { "@id": "https://bizenht.com/#organization" },
+          "areaServed": "Haiti",
+          "audience": {
+            "@type": "Audience",
+            "audienceType": "Adults 18+"
+          }
+        }
+      ]
+    }
+    </script>
+    <!-- ============ /SEO ============ -->
+
     <link rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
     <!-- PWA -->
@@ -2207,7 +2278,7 @@ body.is-premium .pc-blur{display:none!important}
         <li><a href="faq.html">FAQ</a></li>
     </ul>
 </div>
-            <div class="foot-col"><h4>Legal</h4><ul><li><a href="#">Kondisyon Itilizasyon</a></li><li><a href="#">Konfidansyalite</a></li><li><a href="#">Regleman</a></li></ul></div>
+            <div class="foot-col"><h4>Legal</h4><ul><li><a href="/kondisyon">Kondisyon Itilizasyon</a></li><li><a href="/konfidansyalite">Konfidansyalite</a></li><li><a href="/regleman">Regleman</a></li></ul></div>
             <div class="foot-col"><h4>Kontak</h4><ul><li><a href="#">bizenht@gmail.com</a></li><li><a href="#">WhatsApp</a></li><li><a href="#">Telegram</a></li></ul></div>
         </div>
        <div class="foot-bot">
@@ -2243,13 +2314,13 @@ body.is-premium .pc-blur{display:none!important}
             Konekte ak Google
         </button>
         <p style="font-size:0.72rem;color:#6a6a80;text-align:center;margin:6px 0 0">
-            <i class="fas fa-info-circle"></i> Google se pou konekte sèlman. Pou yon nouvo kont, itilize fòm enskripsyon an.
+            <i class="fas fa-info-circle"></i>
         </p>
-
+ 
         <div class="auth-divider">
             <span>oswa ak imel</span>
         </div>
-
+ 
         <form class="mform"
               onsubmit="return doLogin(event)">
             <div class="fg">
@@ -5804,7 +5875,7 @@ function confirmRes() {
             }).then(function (ref) {
                 cM("resM");
                 /* Notifie l'Elu (push) qu'il a une nouvelle demande de réservation */
-                if (prestateId) notifyPush(prestateId, "Nouvo rezevasyon", "Ou gen yon nouvo demann rezevasyon sou Bizen HT", "/Dashboard.html");
+                if (prestateId) notifyPush(prestateId, "Nouvo rezevasyon", "Ou gen yon nouvo demann rezevasyon sou Bizen HT", "/dashboard");
                 if (payNow) {
                     /* Mémorise la réservation à confirmer après le paiement */
                     try { localStorage.setItem("bizenPendingBooking", ref.id); } catch(e) {}
@@ -6026,7 +6097,7 @@ function notifyPush(toUid, title, msg, link) {
         fetch("/.netlify/functions/notify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ idToken: idToken, toUid: toUid, title: title, msg: msg, link: link || "/Dashboard.html" })
+            body: JSON.stringify({ idToken: idToken, toUid: toUid, title: title, msg: msg, link: link || "/dashboard" })
         }).catch(function () {});
     }).catch(function () {});
 }
@@ -6617,7 +6688,7 @@ function renderNavIn(user) {
     nb.innerHTML = "";
     var dashBtn = document.createElement("button");
     dashBtn.className = "btn-nl";
-    dashBtn.onclick = function () { window.location.href = "dashboard.html"; };
+    dashBtn.onclick = function () { window.location.href = "/dashboard"; };
     dashBtn.innerHTML = '<i class="fas fa-tachometer-alt"></i> Dashboard';
     nb.appendChild(dashBtn);
     var nameSpan = document.createElement("span");
@@ -6635,7 +6706,7 @@ function renderNavIn(user) {
         var mDash = document.createElement("button");
         mDash.className = "btn btn-primary";
         mDash.style.cssText = "width:100%;margin-top:15px;padding:12px;justify-content:center";
-        mDash.onclick = function () { window.location.href = "dashboard.html"; };
+        mDash.onclick = function () { window.location.href = "/dashboard"; };
         mDash.innerHTML = '<i class="fas fa-tachometer-alt"></i> Dashboard Mwen';
         ma.appendChild(mDash);
         var mLog = document.createElement("button");
@@ -7117,11 +7188,20 @@ async function saveUserMedia(
 <div id="pwaInstallBanner" style="display:none;position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:100000;width:92%;max-width:440px;background:linear-gradient(135deg,#15151f,#1a1a2e);border:1px solid rgba(233,30,99,0.4);border-radius:16px;padding:16px 18px;box-shadow:0 10px 40px rgba(0,0,0,0.6);align-items:center;gap:14px">
     <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.4rem;color:#fff"><i class="fas fa-heart"></i></div>
     <div style="flex:1">
-        <div style="font-weight:700;font-size:0.92rem;color:#fff">Telechaje Bizen HT</div>
-        <div id="pwaBannerText" style="font-size:0.76rem;color:#b0b0c0">Enstale app la sou telefòn ou pou yon aksè rapid!</div>
+        <div style="font-weight:700;font-size:0.95rem;color:#fff">Telechaje Bizen HT</div>
     </div>
-    <button id="pwaInstallBtn" style="padding:9px 16px;border:none;border-radius:50px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;font-family:Montserrat,sans-serif;font-weight:600;font-size:0.8rem;cursor:pointer;white-space:nowrap"><i class="fas fa-download"></i> Enstale</button>
+    <button id="pwaInstallBtn" style="padding:9px 18px;border:none;border-radius:50px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;font-family:Montserrat,sans-serif;font-weight:600;font-size:0.82rem;cursor:pointer;white-space:nowrap"><i class="fas fa-download"></i> Telechaje</button>
     <button onclick="dismissPwaBanner()" style="background:none;border:none;color:#6a6a80;font-size:1.1rem;cursor:pointer;padding:4px"><i class="fas fa-times"></i></button>
+</div>
+
+<!-- iOS : feuille d'instructions (Apple n'autorise pas l'install auto) -->
+<div id="iosInstallSheet" style="display:none;position:fixed;inset:0;z-index:100010;background:rgba(0,0,0,0.72);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeIosSheet()">
+    <div style="background:#15151f;border:1px solid #2a2a3a;border-radius:22px 22px 0 0;max-width:480px;width:100%;padding:26px 22px 36px;text-align:center;box-shadow:0 -10px 40px rgba(0,0,0,0.6)">
+        <div style="width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:1.5rem;color:#fff"><i class="fas fa-heart"></i></div>
+        <h3 style="font-family:'Playfair Display',serif;color:#fff;margin-bottom:18px;font-size:1.25rem">Telechaje Bizen HT</h3>
+        <div id="iosSheetBody" style="text-align:left;color:#b0b0c0;font-size:0.9rem"></div>
+        <button onclick="closeIosSheet()" style="margin-top:22px;width:100%;padding:13px;border:none;border-radius:50px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;font-family:Montserrat,sans-serif;font-weight:600;font-size:0.9rem;cursor:pointer">Konprann</button>
+    </div>
 </div>
 
 <script>
@@ -7286,6 +7366,17 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(loadApprovedReviews, 600);
 });
 
+/* Lien dédié /elu : ouvre directement le formulaire Elu dans le popup Inskri.
+   (sert à partager un lien unique aux personnes intéressées) */
+(function () {
+    var p = (location.pathname || "").replace(/\/+$/, "").toLowerCase();
+    if (p === "/elu" || p === "/vin-elu" || p === "/enskri-elu") {
+        setTimeout(function () {
+            try { oM("sM"); pT("freelancer"); } catch (e) {}
+        }, 800);
+    }
+})();
+
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
         navigator.serviceWorker.register("/sw.js").catch(function (e) {
@@ -7301,34 +7392,12 @@ function pwaAlreadyInstalled() {
            window.navigator.standalone === true;
 }
 
-/* Android / Chrome / Edge : événement natif */
-window.addEventListener("beforeinstallprompt", function (e) {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (!pwaAlreadyInstalled() && localStorage.getItem("pwaBannerClosed") !== "1") {
-        showPwaBanner(false);
-    }
-});
-
-function showPwaBanner(mode) {
+function showPwaBanner(force) {
+    if (pwaAlreadyInstalled()) return;
+    /* force = true : on ignore le "déjà fermé" (utilisé pour iPhone, toujours visible) */
+    if (!force && localStorage.getItem("pwaBannerClosed") === "1") return;
     var b = document.getElementById("pwaInstallBanner");
-    if (!b) return;
-    var txt = document.getElementById("pwaBannerText");
-    var btn = document.getElementById("pwaInstallBtn");
-    if (mode === "ios") {
-        /* Guide étape par étape (iOS Safari ne permet pas l'install auto) */
-        txt.innerHTML =
-            'Pou enstale: 1) Tape <i class="fas fa-arrow-up-from-bracket" style="color:#e91e63"></i> anba a · ' +
-            '2) Chwazi <b>"Sou Ekran Akèy"</b> · 3) Tape <b>Ajoute</b>.';
-        if (btn) btn.style.display = "none";
-    } else if (mode === "ios-browser") {
-        /* iOS mais navigateur in-app (Instagram, etc.) : impossible d'installer */
-        txt.innerHTML =
-            'Pou enstale app la sou iPhone: louvri <b>bizenht.com</b> nan <b>Safari</b>, ' +
-            'apre tape <i class="fas fa-arrow-up-from-bracket" style="color:#e91e63"></i> &rarr; "Sou Ekran Akèy".';
-        if (btn) btn.style.display = "none";
-    }
-    b.style.display = "flex";
+    if (b) b.style.display = "flex";
 }
 
 function dismissPwaBanner() {
@@ -7337,6 +7406,46 @@ function dismissPwaBanner() {
     try { localStorage.setItem("pwaBannerClosed", "1"); } catch (e) {}
 }
 
+/* ===== iPhone : feuille d'instructions (Apple n'autorise pas l'install auto) ===== */
+function iosStep(n, t, d) {
+    return '<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px">' +
+        '<div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;flex-shrink:0">' + n + '</div>' +
+        '<div><div style="color:#fff;font-weight:600">' + t + '</div><div style="font-size:0.84rem">' + d + '</div></div></div>';
+}
+
+function openIosSheet() {
+    var ua = navigator.userAgent || "";
+    var inApp = /Instagram|FBAN|FBAV|FB_IAB|Line|Twitter|Messenger|WhatsApp/i.test(ua);
+    var body = document.getElementById("iosSheetBody");
+    if (body) {
+        if (inApp) {
+            body.innerHTML =
+                '<div style="background:rgba(255,152,0,0.1);border:1px solid rgba(255,152,0,0.3);border-radius:12px;padding:14px;color:#ffb74d">' +
+                '<i class="fas fa-exclamation-circle"></i> Louvri <b>bizenht.com</b> nan <b>Safari</b> dabò (tape <b>···</b> → "Louvri nan Safari"), apre swiv etap yo.</div>';
+        } else {
+            body.innerHTML =
+                iosStep('1', 'Tape bouton Pataje', '<i class="fas fa-arrow-up-from-bracket" style="color:#e91e63"></i> anba ekran an (oswa anlè a)') +
+                iosStep('2', 'Glise epi chwazi', '<b>"Sou Ekran Akèy"</b> (Add to Home Screen)') +
+                iosStep('3', 'Tape', '<b>"Ajoute"</b> — app la ap parèt sou telefòn ou!');
+        }
+    }
+    var s = document.getElementById("iosInstallSheet");
+    if (s) s.style.display = "flex";
+}
+
+function closeIosSheet() {
+    var s = document.getElementById("iosInstallSheet");
+    if (s) s.style.display = "none";
+}
+
+/* Android / Chrome / Edge : événement natif d'installation */
+window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    showPwaBanner();
+});
+
+/* Clic "Telechaje" : Android installe directement, iPhone ouvre les étapes */
 document.getElementById("pwaInstallBtn").addEventListener("click", function () {
     if (deferredPrompt) {
         deferredPrompt.prompt();
@@ -7344,21 +7453,20 @@ document.getElementById("pwaInstallBtn").addEventListener("click", function () {
             deferredPrompt = null;
             dismissPwaBanner();
         });
+    } else {
+        openIosSheet();
     }
 });
 
-/* iOS n'a pas beforeinstallprompt : on affiche un guide après 4s.
-   - Safari : guide d'installation en 3 étapes.
-   - Navigateur in-app (Instagram, Facebook, etc.) : on invite à ouvrir dans Safari,
-     car l'installation y est impossible. */
+/* iPhone n'envoie pas beforeinstallprompt : on montre quand même la bannière */
 (function () {
     var ua = navigator.userAgent || "";
-    var isIOS = /iphone|ipad|ipod/i.test(ua);
-    var isSafari = /^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(ua);
-    var inApp = /Instagram|FBAN|FBAV|FB_IAB|Line|Twitter|Messenger|WhatsApp/i.test(ua);
-    if (!isIOS || pwaAlreadyInstalled() || localStorage.getItem("pwaBannerClosed") === "1") return;
-    var mode = (isSafari && !inApp) ? "ios" : "ios-browser";
-    setTimeout(function () { showPwaBanner(mode); }, 4000);
+    var isIOS = /iphone|ipad|ipod/i.test(ua) ||
+                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    /* iPhone : bannière TOUJOURS visible (on ignore la mémoire du "fermé") */
+    if (isIOS && !pwaAlreadyInstalled()) {
+        setTimeout(function () { showPwaBanner(true); }, 3000);
+    }
 })();
 </script>
 </body>

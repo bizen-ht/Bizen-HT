@@ -1,0 +1,19 @@
+# Bizen HT - robots.txt
+# Sit rankont #1 an Ayiti
+
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /FAQ.html
+
+# Paj prive - pa endekse
+Disallow: /Vye.html
+Disallow: /Dashboard.html
+Disallow: /profil.html
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /success.html
+Disallow: /error.html
+Disallow: /Netlify/
+
+Sitemap: https://bizenht.com/sitemap.xml

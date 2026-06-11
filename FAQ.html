@@ -5,7 +5,30 @@
     <meta name="viewport"
           content="width=device-width,
                    initial-scale=1.0">
-    <title>Bizen HT - FAQ</title>
+    <!-- ============ SEO ============ -->
+    <title>FAQ Bizen HT — Kesyon sou Sit Rankont #1 an Ayiti</title>
+    <meta name="description" content="Tout repons sou Bizen HT: kisa li ye, èske li legal an Ayiti, ki zòn ki disponib, kijan peman an mache (MonCash/Bazik), sekirite ak diskresyon. Granmoun 18 an+.">
+    <meta name="keywords" content="FAQ Bizen HT, kesyon rankont ayiti, èske Bizen HT legal, peman MonCash, konpayon ayiti, escort haiti">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="rating" content="adult">
+    <link rel="canonical" href="https://bizenht.com/FAQ.html">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Bizen HT">
+    <meta property="og:locale" content="ht_HT">
+    <meta property="og:url" content="https://bizenht.com/FAQ.html">
+    <meta property="og:title" content="FAQ Bizen HT — Kesyon sou Sit Rankont #1 an Ayiti">
+    <meta property="og:description" content="Repons sou kisa Bizen HT ye, legalite, zòn disponib, peman ak diskresyon. Granmoun 18 an+.">
+    <meta property="og:image" content="https://bizenht.com/Images/header.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="FAQ Bizen HT — Sit Rankont #1 an Ayiti">
+    <meta name="twitter:description" content="Repons sou Bizen HT: legalite, zòn, peman, diskresyon. Granmoun 18 an+.">
+    <meta name="twitter:image" content="https://bizenht.com/Images/header.png">
+    <!-- ============ /SEO ============ -->
+
     <link rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap"
@@ -1417,7 +1440,7 @@
                     <i class="fab fa-whatsapp"></i>
                     WhatsApp
                 </a>
-                <a href="mailto:bizenht@gmail.com.com"
+                <a href="mailto:bizenht@gmail.com"
                    class="btn-mail">
                     <i class="fas fa-envelope"></i>
                     Bizenht@gmail.com
@@ -1428,6 +1451,45 @@
     </div>
 
     <script>
+    /* ====================================
+       FAQPage JSON-LD (SEO + IA)
+       Jenere otomatikman depi .faq-item yo
+       ==================================== */
+    (function buildFaqSchema() {
+        try {
+            var items = document.querySelectorAll(".faq-item");
+            var faqs = [];
+            for (var i = 0; i < items.length; i++) {
+                var btn = items[i].querySelector(".faq-question");
+                var ans = items[i].querySelector(".faq-answer-inner");
+                if (!btn || !ans) continue;
+                /* Tèks kesyon san icon nan */
+                var qClone = btn.cloneNode(true);
+                var ic = qClone.querySelector(".faq-icon");
+                if (ic) ic.remove();
+                var q = qClone.textContent.replace(/\s+/g, " ").trim();
+                var a = ans.textContent.replace(/\s+/g, " ").trim();
+                if (!q || !a) continue;
+                faqs.push({
+                    "@type": "Question",
+                    "name": q,
+                    "acceptedAnswer": { "@type": "Answer", "text": a }
+                });
+            }
+            if (!faqs.length) return;
+            var schema = {
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "inLanguage": "ht",
+                "mainEntity": faqs
+            };
+            var s = document.createElement("script");
+            s.type = "application/ld+json";
+            s.textContent = JSON.stringify(schema);
+            document.head.appendChild(s);
+        } catch (e) { /* silans */ }
+    })();
+
     /* ====================================
        FAQ TOGGLE
        ==================================== */

@@ -3,7 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bizen HT - Pwofil Elu</title>
+    <!-- ============ SEO ============ -->
+    <title>Pwofil Elu — Bizen HT</title>
+    <!-- Paj prive: pa endekse, men patajab (WhatsApp/FB) -->
+    <meta name="robots" content="noindex, follow, max-image-preview:large">
+    <meta name="rating" content="adult">
+
+    <!-- Open Graph default (JS ap mete bon valè yo lè Elu a chaje) -->
+    <meta property="og:type" content="profile">
+    <meta property="og:site_name" content="Bizen HT">
+    <meta property="og:locale" content="ht_HT">
+    <meta id="ogUrl" property="og:url" content="https://bizenht.com/profil.html">
+    <meta id="ogTitle" property="og:title" content="Pwofil Elu sou Bizen HT">
+    <meta id="ogDesc" property="og:description" content="Dekouvri pwofil Elu sa a sou Bizen HT — sit rankont #1 an Ayiti. Granmoun 18 an+.">
+    <meta id="ogImg" property="og:image" content="https://bizenht.com/Images/header.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta id="twTitle" name="twitter:title" content="Pwofil Elu sou Bizen HT">
+    <meta id="twDesc" name="twitter:description" content="Dekouvri pwofil Elu sa a sou Bizen HT. Granmoun 18 an+.">
+    <meta id="twImg" name="twitter:image" content="https://bizenht.com/Images/header.png">
+    <!-- ============ /SEO ============ -->
+
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -129,11 +148,33 @@ function showProfile(data) {
 
     /* Nom public : pseudo si défini, sinon prenom + nomInitial */
     var name = data.pseudo || ((data.prenom || data.kreyName || "") + " " + (data.nomInitial || ""));
-    document.getElementById("profileName").textContent = name.trim() || "Elu";
+    var displayName = name.trim() || "Elu";
+    document.getElementById("profileName").textContent = displayName;
     document.getElementById("profileCode").textContent = data.bizenCode || bizenCode;
 
     /* Avatar */
     var avatarSrc = data.photoUrl || data.profilePhoto || "";
+
+    /* ---- Mete metadata yo ajou (titre + partage) ---- */
+    (function updateMeta() {
+        try {
+            var img = avatarSrc || "https://bizenht.com/Images/header.png";
+            var title = displayName + " — Elu sou Bizen HT";
+            var desc = "Dekouvri pwofil " + displayName + " sou Bizen HT, sit rankont #1 an Ayiti. Granmoun 18 an+. Diskresyon total.";
+            document.title = title + " | Bizen HT";
+            var set = function (id, attr, val) {
+                var el = document.getElementById(id);
+                if (el) el.setAttribute(attr, val);
+            };
+            set("ogTitle", "content", title);
+            set("twTitle", "content", title);
+            set("ogDesc", "content", desc);
+            set("twDesc", "content", desc);
+            set("ogImg", "content", img);
+            set("twImg", "content", img);
+            set("ogUrl", "content", location.href);
+        } catch (e) { /* silans */ }
+    })();
     if (avatarSrc) {
         document.getElementById("avatarEl").innerHTML = '<img src="' + avatarSrc + '" alt="Photo">';
     }
