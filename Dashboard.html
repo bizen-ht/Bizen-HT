@@ -1356,16 +1356,16 @@ if (!auth) {
             return;
         }
 
-        /* Check email verification — UNE SEULE FOIS, au premier chargement */
+        /* Vérification email NON BLOQUANTE : on ne déconnecte plus l'utilisateur
+           s'il n'a pas vérifié son email (cela causait des déconnexions automatiques
+           et beaucoup d'abandons). On retient juste l'état pour un rappel discret. */
+        var emailNotVerified = false;
         try {
             if (!user.emailVerified &&
                 user.providerData &&
                 user.providerData[0] &&
                 user.providerData[0].providerId !== "google.com") {
-                auth.signOut().then(function () {
-                    window.location.href = "index.html?notverified=1";
-                });
-                return;
+                emailNotVerified = true;
             }
         } catch(e) {
             console.warn("Email check error:", e);
@@ -1373,6 +1373,10 @@ if (!auth) {
 
         authHandled = true;
         currentUser = user;
+        window._emailNotVerified = emailNotVerified;
+        if (emailNotVerified) {
+            try { showToast("Konsèy: verifye imel ou pou plis sekirite (tcheke bwat imel ou).", "success"); } catch(e) {}
+        }
 
         /* Notifications push (FCM) */
         try { initPush(); } catch (e) {}
