@@ -3014,20 +3014,26 @@ body.is-premium .pc-blur{display:none!important}
 <!-- RESERVATION MODAL - NOUVEAU -->
 <div class="mbg" id="resM"><div class="modal"><button class="mx" onclick="cM('resM')"><i class="fas fa-times"></i></button><div class="mhead"><div class="mico"><i class="fas fa-calendar-check"></i></div><h2>Rezève Moman Ou</h2><p id="resName">Elu</p></div>
 <div class="mform">
-    <div class="hotel-card"><i class="fas fa-hotel"></i><div><h5>Hotel Inclus!</h5><p>Nou pral asiye w yon hotel patnè selon pozisyon ou.</p><span class="hotel-included-badge"><i class="fas fa-check"></i> Hotel Gratis</span></div></div>
+    <div class="hotel-card" id="hotelInclCard"><i class="fas fa-hotel" id="hotelInclIcon"></i><div><h5 id="hotelInclTitle">Hotel Inclus!</h5><p id="hotelInclText">Nou pral asiye w yon hotel patnè selon pozisyon ou.</p><span class="hotel-included-badge" id="hotelInclBadge"><i class="fas fa-check"></i> Hotel Gratis</span></div></div>
     <div class="fg"><label>Dat ou vle</label><input type="date" id="resDate" required min=""></div>
     <div class="fg"><label>Lè ou prefere</label><select id="resTime" required><option value="">Chwazi...</option><option>Maten (8h-12h)</option><option>Apremidi (12h-17h)</option><option>Aswè (17h-22h)</option><option>Nwit (22h+)</option></select></div>
     <div class="fg"><label>Pozisyon ou / Vil ou</label><select id="resCity" required onchange="showHotel()"><option value="">Chwazi vil ou...</option><option value="potoprens">Potoprens</option><option value="petyonvil">Petion-Ville</option><option value="delmas">Delmas</option><option value="Tabarre">Tabarre</option><option value="Carrefour">Carrefour</option></select></div>
     <!-- LISTE DES HOTELS PARTENAIRES DE LA ZONE CHOISIE -->
     <div id="hotelPicker" style="display:none">
-        <label style="display:block;font-size:0.85rem;color:var(--text-secondary);margin-bottom:8px"><i class="fas fa-hotel" style="color:var(--gold)"></i> Chwazi yon hotel patnè</label>
+        <label style="display:block;font-size:0.85rem;color:var(--text-secondary);margin-bottom:8px"><i class="fas fa-hotel" style="color:var(--gold)"></i> Chwazi yon hotel</label>
         <div id="hotelPickerList"></div>
+        <!-- CHAMP HOTEL PERSONNALISÉ (à la charge du client) -->
+        <div id="customHotelBox" style="display:none;margin-top:6px;padding:12px;background:rgba(255,152,0,0.1);border:1px solid rgba(255,152,0,0.4);border-radius:12px">
+            <p style="font-size:0.85rem;color:#ff9800;font-weight:700;margin-bottom:10px"><i class="fas fa-exclamation-triangle"></i> Se ou kap peye hotel sa</p>
+            <input id="customHotelName" type="text" placeholder="Non hotel ou chwazi a *" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);color:#fff;border-radius:10px;padding:10px 12px;font-size:0.88rem">
+            <input id="customHotelAddr" type="text" placeholder="Adrès hotel la (opsyonèl)" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);color:#fff;border-radius:10px;padding:10px 12px;font-size:0.88rem;margin-top:8px">
+        </div>
     </div>
     <div class="fg"><label>Not adisyonel (opsyonel)</label><textarea placeholder="Nenpot bagay espesyal ou vle di..." rows="2"></textarea></div>
     <div style="padding:10px;background:rgba(233,30,99,0.1);border-radius:var(--radius);text-align:center;margin-bottom:10px">
         <p style="font-size:0.85rem;color:var(--text-secondary)">Total pou peye:</p>
         <p style="font-size:1.5rem;font-weight:700;color:var(--gold)" id="resTotalPrice">0 Gdes</p>
-        <p style="font-size:0.75rem;color:var(--primary-light)"><i class="fas fa-hotel"></i> Hotel inclus nan pri a</p>
+        <p style="font-size:0.75rem;color:var(--primary-light)" id="resHotelNote"><i class="fas fa-hotel"></i> Hotel inclus nan pri a</p>
     </div>
     <button class="btn btn-primary fw btn-glow" onclick="confirmRes()"><i class="fas fa-check-circle"></i> Konfime Rezevasyon</button>
 </div></div></div>
@@ -4707,6 +4713,7 @@ function calcKreyComm() {
    ==================================== */
 /* Hotel actuellement sélectionné dans la modale de réservation */
 var selectedHotel = null;
+var useCustomHotel = false;   /* l'utilisateur saisit son propre hôtel (à ses frais) */
 
 function showHotel() {
     var cityEl = document.getElementById("resCity");
@@ -4724,7 +4731,7 @@ function showHotel() {
         /* Fallback statique si Firebase indisponible */
         var fb = hotels[val];
         if (fb) { renderHotelChoices([{ id: "static", name: fb.name, address: fb.addr, description: fb.dist, logoUrl: "", images: [] }]); }
-        else { listEl.innerHTML = '<p style="color:#ff9800;font-size:0.85rem;padding:8px 0">Pa gen hotel patnè nan zòn sa a pou kounye a.</p>'; }
+        else { renderHotelChoices([]); }
         return;
     }
 
@@ -4741,12 +4748,10 @@ function showHotel() {
 function renderHotelChoices(list) {
     var listEl = document.getElementById("hotelPickerList");
     if (!listEl) return;
-    if (!list.length) {
-        listEl.innerHTML = '<p style="color:#ff9800;font-size:0.85rem;padding:8px 0"><i class="fas fa-info-circle"></i> Pa gen hotel patnè nan zòn sa a pou kounye a. Nou pral asiyen w youn.</p>';
-        selectedHotel = null;
-        return;
-    }
     var h = "";
+    if (!list.length) {
+        h += '<p style="color:#ff9800;font-size:0.82rem;padding:4px 0 8px"><i class="fas fa-info-circle"></i> Pa gen hotel patnè nan zòn sa a pou kounye a. Ou ka antre pa ou anba a.</p>';
+    }
     list.forEach(function(d, i) {
         var logo = d.logoUrl
             ? '<img src="' + d.logoUrl + '" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0">'
@@ -4758,28 +4763,80 @@ function renderHotelChoices(list) {
         if (d.description) h += '<div style="font-size:0.72rem;color:#8a8a9a;margin-top:2px">' + escapeResHotel(d.description) + '</div>';
         h += '</div><i class="fas fa-circle-check hc-check" style="color:var(--gold);opacity:0;font-size:1.1rem"></i></div>';
     });
+    /* Option : entrer son propre hôtel (à ses frais) */
+    h += '<div class="hotel-choice" data-idx="custom" onclick="selectCustomHotel()" style="display:flex;gap:10px;align-items:center;padding:10px;border:1px solid rgba(255,255,255,0.12);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:.2s">';
+    h += '<div style="width:44px;height:44px;border-radius:8px;background:rgba(255,152,0,0.14);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#ff9800"><i class="fas fa-pen"></i></div>';
+    h += '<div style="min-width:0;flex:1"><div style="font-weight:600;font-size:0.9rem">Lòt hotel (chwa pa m)</div>';
+    h += '<div style="font-size:0.75rem;color:#ff9800">Se ou kap peye hotel sa</div></div>';
+    h += '<i class="fas fa-circle-check hc-check" style="color:#ff9800;opacity:0;font-size:1.1rem"></i></div>';
+
     listEl.innerHTML = h;
     window._resHotelList = list;
-    /* Sélection auto du premier hôtel */
-    selectResHotel(0);
+    /* Sélection auto : 1er hôtel partenaire si dispo, sinon l'option personnalisée */
+    if (list.length) selectResHotel(0);
+    else selectCustomHotel();
 }
 
 function escapeResHotel(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function selectResHotel(idx) {
-    var list = window._resHotelList || [];
-    if (!list[idx]) return;
-    selectedHotel = list[idx];
+/* Met en surbrillance la carte choisie (partenaire ou personnalisée) */
+function highlightHotelChoice(idxAttr) {
     var nodes = document.querySelectorAll("#hotelPickerList .hotel-choice");
     nodes.forEach(function(n) {
-        var on = (parseInt(n.getAttribute("data-idx"), 10) === idx);
-        n.style.borderColor = on ? "var(--gold)" : "rgba(255,255,255,0.12)";
-        n.style.background = on ? "rgba(255,215,0,0.08)" : "transparent";
+        var on = (n.getAttribute("data-idx") === String(idxAttr));
+        var color = (n.getAttribute("data-idx") === "custom") ? "#ff9800" : "var(--gold)";
+        n.style.borderColor = on ? color : "rgba(255,255,255,0.12)";
+        n.style.background = on ? (n.getAttribute("data-idx") === "custom" ? "rgba(255,152,0,0.08)" : "rgba(255,215,0,0.08)") : "transparent";
         var chk = n.querySelector(".hc-check");
         if (chk) chk.style.opacity = on ? "1" : "0";
     });
+}
+
+function selectResHotel(idx) {
+    var list = window._resHotelList || [];
+    if (!list[idx]) return;
+    useCustomHotel = false;
+    selectedHotel = list[idx];
+    var box = document.getElementById("customHotelBox");
+    if (box) box.style.display = "none";
+    highlightHotelChoice(idx);
+    updateHotelInclusionUI(false);
+}
+
+function selectCustomHotel() {
+    useCustomHotel = true;
+    selectedHotel = null;
+    var box = document.getElementById("customHotelBox");
+    if (box) box.style.display = "block";
+    highlightHotelChoice("custom");
+    updateHotelInclusionUI(true);
+}
+
+/* Met à jour le bandeau "Hotel inclus" / "Hotel pa enkli" selon le choix */
+function updateHotelInclusionUI(isCustom) {
+    var card = document.getElementById("hotelInclCard");
+    var icon = document.getElementById("hotelInclIcon");
+    var title = document.getElementById("hotelInclTitle");
+    var text = document.getElementById("hotelInclText");
+    var badge = document.getElementById("hotelInclBadge");
+    var note = document.getElementById("resHotelNote");
+    if (isCustom) {
+        if (card) { card.style.background = "rgba(255,152,0,0.1)"; card.style.borderColor = "rgba(255,152,0,0.4)"; }
+        if (icon) icon.style.color = "#ff9800";
+        if (title) title.textContent = "Hotel pa enkli";
+        if (text) text.textContent = "Ou chwazi pwòp hotel ou.";
+        if (badge) { badge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Se ou k ap peye'; badge.style.background = "rgba(255,152,0,0.18)"; badge.style.color = "#ff9800"; }
+        if (note) { note.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Hotel pa enkli — se ou k ap peye'; note.style.color = "#ff9800"; }
+    } else {
+        if (card) { card.style.background = ""; card.style.borderColor = ""; }
+        if (icon) icon.style.color = "";
+        if (title) title.textContent = "Hotel Inclus!";
+        if (text) text.textContent = "Hotel patnè a enkli nan pri a.";
+        if (badge) { badge.innerHTML = '<i class="fas fa-check"></i> Hotel Gratis'; badge.style.background = ""; badge.style.color = ""; }
+        if (note) { note.innerHTML = '<i class="fas fa-hotel"></i> Hotel inclus nan pri a'; note.style.color = "var(--primary-light)"; }
+    }
 }
 
 function selectHotel(type) {
@@ -5889,11 +5946,19 @@ function startEluBooking(uid, name, price) {
 /* Réinitialise la liste d'hôtels à l'ouverture de la modale */
 function resetHotelPicker() {
     selectedHotel = null;
+    useCustomHotel = false;
     window._resHotelList = [];
     var picker = document.getElementById("hotelPicker");
     var listEl = document.getElementById("hotelPickerList");
+    var box = document.getElementById("customHotelBox");
+    var cn = document.getElementById("customHotelName");
+    var ca = document.getElementById("customHotelAddr");
     if (picker) picker.style.display = "none";
     if (listEl) listEl.innerHTML = "";
+    if (box) box.style.display = "none";
+    if (cn) cn.value = "";
+    if (ca) ca.value = "";
+    updateHotelInclusionUI(false);
 }
 
 function openResModal(btn) {
@@ -5925,14 +5990,24 @@ function confirmRes() {
     var time = document.getElementById("resTime");
     var city = document.getElementById("resCity");
     if (!date || !date.value || !time || !time.value || !city || !city.value) { toast("Tanpri ranpli tout chan yo.", "err"); return; }
-    /* Hotel : l'utilisateur a choisi un hôtel partenaire dans la liste de sa zone.
-       Fallback statique si la liste n'a pas pu charger. */
+    /* Hotel : soit un hôtel partenaire de la zone (inclus), soit un hôtel
+       personnalisé saisi par le client (à SES frais). */
     var hotelType = "partner";
     var hotelName = "";
     var hotelAddr = "";
     var hotelId = "";
     var hotelIncluded = true;
-    if (selectedHotel) {
+    if (useCustomHotel) {
+        var cnEl = document.getElementById("customHotelName");
+        var caEl = document.getElementById("customHotelAddr");
+        var cn = cnEl ? cnEl.value.trim() : "";
+        if (!cn) { toast("Antre non hotel ou chwazi a.", "err"); return; }
+        hotelType = "custom";
+        hotelName = cn;
+        hotelAddr = caEl ? caEl.value.trim() : "";
+        hotelId = "";
+        hotelIncluded = false;   /* à la charge du client */
+    } else if (selectedHotel) {
         hotelName = selectedHotel.name || "Hotel Patne";
         hotelAddr = selectedHotel.address || "";
         hotelId = selectedHotel.id && selectedHotel.id !== "static" ? selectedHotel.id : "";
