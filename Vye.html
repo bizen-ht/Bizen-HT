@@ -822,6 +822,9 @@
                 <i class="fas fa-crown"></i> Manm Premium
                 <span class="sb-bdg bdg-p" id="bdgPr">0</span>
             </button>
+            <button class="sb-link" onclick="goPage('addacc',this)">
+                <i class="fas fa-user-plus"></i> Ajoute Kont
+            </button>
 
             <div class="sb-cat">Aktivite</div>
             <button class="sb-link" onclick="goPage('res',this)">
@@ -847,6 +850,12 @@
             <button class="sb-link" onclick="goPage('afil',this)">
                 <i class="fas fa-user-friends"></i> Afilye
                 <span class="sb-bdg bdg-o" id="bdgAf">0</span>
+            </button>
+
+            <div class="sb-cat">Konfigirasyon</div>
+            <button class="sb-link" onclick="goPage('hotels',this)">
+                <i class="fas fa-hotel"></i> Hotels
+                <span class="sb-bdg bdg-b" id="bdgHt">0</span>
             </button>
         </nav>
 
@@ -1080,6 +1089,7 @@
         <div class="pg" id="pg-res">
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-calendar-check" style="color:var(--green)"></i> Rezevasyon</h1>
+                <button onclick="deleteTestReservations()" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:0.82rem"><i class="fas fa-trash"></i> Efase tout rezevasyon test</button>
             </div>
             <div class="tc">
                 <div class="tc-head">
@@ -1088,6 +1098,7 @@
                         <button class="tf active" onclick="fltTbl('tbR','all',this)">Tout</button>
                         <button class="tf" onclick="fltTbl('tbR','en_attente',this)">An Atant</button>
                         <button class="tf" onclick="fltTbl('tbR','confirmed',this)">Konfime</button>
+                        <button class="tf" onclick="fltTbl('tbR','test',this)" style="color:#ce93d8"><i class="fas fa-flask"></i> Test</button>
                     </div>
                 </div>
                 <div class="tscroll">
@@ -1297,6 +1308,133 @@
             <div class="tc" style="margin-top:22px">
                 <div class="tc-head"><div class="tc-title"><i class="fas fa-money-check-alt"></i> Demann Retrè</div></div>
                 <div class="tscroll"><table><thead><tr><th>Dat</th><th>Kòd</th><th>Pwopriyetè</th><th>Montan</th><th>Estati</th><th>Aksyon</th></tr></thead><tbody id="tbAfWd"></tbody></table></div>
+            </div>
+        </div>
+
+        <!-- HOTELS PARTENAIRES -->
+        <div class="pg" id="pg-hotels">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-hotel" style="color:var(--gold,#ffd700)"></i> Hotels Patnè</h1>
+            </div>
+
+            <div class="tc">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-plus-circle"></i> Ajoute yon Hotel</div></div>
+                <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Non Hotel *</label>
+                        <input id="htName" placeholder="Egz: Hotel Marasa" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Zòn *</label>
+                        <select id="htZone" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                            <option value="">Chwazi zòn...</option>
+                            <option value="potoprens">Potoprens</option>
+                            <option value="petyonvil">Petion-Ville</option>
+                            <option value="delmas">Delmas</option>
+                            <option value="Tabarre">Tabarre</option>
+                            <option value="Carrefour">Carrefour</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Adrès *</label>
+                        <input id="htAddr" placeholder="Egz: Delmas 33" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div style="grid-column:1/-1">
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Deskripsyon</label>
+                        <textarea id="htDesc" rows="2" placeholder="Ti deskripsyon hotel la..." style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem;resize:vertical"></textarea>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Logo (1 imaj)</label>
+                        <input id="htLogo" type="file" accept="image/*" style="width:100%;color:#b0b0c0;font-size:0.8rem">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Foto (plizyè imaj)</label>
+                        <input id="htImages" type="file" accept="image/*" multiple style="width:100%;color:#b0b0c0;font-size:0.8rem">
+                    </div>
+                    <div style="grid-column:1/-1;display:flex;align-items:flex-end">
+                        <button id="htSaveBtn" onclick="saveHotel()" style="background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-weight:600;cursor:pointer;font-size:0.85rem"><i class="fas fa-plus"></i> Ajoute Hotel</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-list"></i> Tout Hotels</div></div>
+                <div id="hotelsGrid" style="padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px"></div>
+            </div>
+        </div>
+
+        <!-- AJOUTE KONT (Itilizatè / Elu) -->
+        <div class="pg" id="pg-addacc">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-user-plus" style="color:var(--green,#4caf50)"></i> Ajoute Kont</h1>
+            </div>
+
+            <div class="tc">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-user-plus"></i> Kreye yon kont pou yon moun</div></div>
+                <p style="padding:14px 18px 0;color:#6a6a80;font-size:0.78rem">Pou moun ki pa ka enskri yo menm. Kont lan ap aktive dirèkteman (pa bezwen verifye imèl).</p>
+                <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Tip Kont *</label>
+                        <select id="acType" onchange="toggleAccEluFields()" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                            <option value="user">Itilizatè (kliyan)</option>
+                            <option value="freelancer">Elu</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Imèl *</label>
+                        <input id="acEmail" type="email" placeholder="imel@..." style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Modpas * (min 6)</label>
+                        <input id="acPass" placeholder="Modpas" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Prenon *</label>
+                        <input id="acPrenom" placeholder="Prenon" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Non</label>
+                        <input id="acNom" placeholder="Non fanmi" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Telefòn</label>
+                        <input id="acPhone" placeholder="+509..." style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+
+                    <!-- KONT TEST (démo) -->
+                    <div style="grid-column:1/-1;background:rgba(156,39,176,0.08);border:1px solid rgba(156,39,176,0.3);border-radius:8px;padding:12px 14px">
+                        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.85rem;color:#e0c4f0">
+                            <input id="acTest" type="checkbox" style="width:18px;height:18px;cursor:pointer">
+                            <span><strong><i class="fas fa-flask"></i> Kont Test (demo)</strong> — kont lan ap Premium otomatikman epi rezevasyon li yo ap GRATIS (san vrè peman MonCash). Pou fè demonstrasyon an dirèk.</span>
+                        </label>
+                    </div>
+
+                    <!-- CHAMPS ELU SEULEMENT -->
+                    <div class="accEluField" style="display:none">
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Seks</label>
+                        <select id="acGenre" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                            <option value="fanm">Fanm</option>
+                            <option value="gason">Gason</option>
+                        </select>
+                    </div>
+                    <div class="accEluField" style="display:none">
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Lokasyon</label>
+                        <input id="acLoc" placeholder="Egz: Petion-Ville" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div class="accEluField" style="display:none">
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Pri / Moman (Gdes)</label>
+                        <input id="acPrix" type="number" placeholder="5000" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div class="accEluField" style="display:none;grid-column:1/-1">
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Deskripsyon</label>
+                        <textarea id="acDesc" rows="2" placeholder="Deskripsyon Elu a..." style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem;resize:vertical"></textarea>
+                    </div>
+
+                    <div style="grid-column:1/-1;display:flex;align-items:flex-end">
+                        <button id="acSaveBtn" onclick="submitAddAccount()" style="background:linear-gradient(135deg,#4caf50,#2e7d32);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-weight:600;cursor:pointer;font-size:0.85rem"><i class="fas fa-user-plus"></i> Kreye Kont</button>
+                    </div>
+                </div>
+                <div id="acResult" style="padding:0 18px 18px;display:none"></div>
             </div>
         </div>
 
@@ -1655,8 +1793,9 @@ function renderUsersTable(list) {
                 : null
         );
 
-        h += '<tr data-filter="' + (u.isPremium ? "premium" : "free") + '">';
-        h += '<td><strong>' + escHtml(u.prenom || '') + ' ' + escHtml(u.nom || '') + '</strong><br><small style="color:#6a6a80">' + escHtml(u.email || '') + '</small></td>';
+        var uTest = u.isTest ? ' <span class="sbadge purple" style="background:rgba(156,39,176,0.18);color:#ce93d8"><i class="fas fa-flask"></i> TEST</span>' : '';
+        h += '<tr data-filter="' + (u.isPremium ? "premium" : "free") + '" data-test="' + (u.isTest ? '1' : '0') + '">';
+        h += '<td><strong>' + escHtml(u.prenom || '') + ' ' + escHtml(u.nom || '') + '</strong>' + uTest + '<br><small style="color:#6a6a80">' + escHtml(u.email || '') + '</small></td>';
         h += '<td>' + escHtml(u.telephone || 'N/A') + '</td>';
         h += '<td>' + planB + '</td>';
         h += '<td>' + statB + '</td>';
@@ -1697,9 +1836,10 @@ function renderFLTable(list) {
         var stCl = f.status === "active" ? "green" : f.status === "en_attente" ? "orange" : "red";
         var stTxt = f.status === "active" ? "Aktif" : f.status === "en_attente" ? "An Atant" : "Jele";
 
-        h += '<tr data-filter="' + (f.status || '') + '">';
-        h += '<td><strong>' + escHtml(f.prenom || '') + ' ' + escHtml(f.nom || '') + '</strong><br><small style="color:#6a6a80">' + escHtml(f.email || '') + '</small></td>';
-        h += '<td>' + (f.genre === "femme" ? "Fanm" : "Gason") + '</td>';
+        var fTest = f.isTest ? ' <span class="sbadge purple" style="background:rgba(156,39,176,0.18);color:#ce93d8"><i class="fas fa-flask"></i> TEST</span>' : '';
+        h += '<tr data-filter="' + (f.status || '') + '" data-test="' + (f.isTest ? '1' : '0') + '">';
+        h += '<td><strong>' + escHtml(f.prenom || '') + ' ' + escHtml(f.nom || '') + '</strong>' + fTest + '<br><small style="color:#6a6a80">' + escHtml(f.email || '') + '</small></td>';
+        h += '<td>' + (f.genre === "femme" ? "Fanm" : (f.genre === "fanm" ? "Fanm" : "Gason")) + '</td>';
         h += '<td>' + escHtml(f.localisation || 'N/A') + '</td>';
         h += '<td>' + ((f.prixMoment || 0).toLocaleString()) + ' G</td>';
         h += '<td>' + ((f.solde || 0).toLocaleString()) + ' G</td>';
@@ -1873,8 +2013,9 @@ function renderResTable(list) {
         var typCl = r.type === "krey" ? "purple" : "blue";
         var kote = r.type === "krey" ? (r.locationName || "Prive") : (r.hotelName || "Hotel");
 
-        h += '<tr data-filter="' + (r.status || '') + '" data-type="' + (r.type || 'individual') + '">';
-        h += '<td><small>' + escHtml(r.userEmail || 'N/A') + '</small></td>';
+        var testBadge = r.test ? ' <span class="sbadge purple" style="background:rgba(156,39,176,0.18);color:#ce93d8"><i class="fas fa-flask"></i> TEST</span>' : '';
+        h += '<tr data-filter="' + (r.status || '') + '" data-type="' + (r.type || 'individual') + '" data-test="' + (r.test ? '1' : '0') + '"' + (r.test ? ' style="background:rgba(156,39,176,0.05)"' : '') + '>';
+        h += '<td><small>' + escHtml(r.userEmail || 'N/A') + '</small>' + testBadge + '</td>';
         h += '<td>' + escHtml(r.prestateName || 'N/A') + '</td>';
         h += '<td>' + escHtml(r.date || 'N/A') + '</td>';
         h += '<td><small>' + escHtml(kote) + '</small></td>';
@@ -1896,6 +2037,27 @@ function renderResTable(list) {
     });
 
     tb.innerHTML = h;
+}
+
+/* ====================================
+   EFASE REZEVASYON TEST (démo)
+   Supprime toutes les réservations marquées test:true.
+   ==================================== */
+function deleteTestReservations() {
+    if (!db) return;
+    var tests = (adminRes || []).filter(function(r) { return r.test === true; });
+    if (!tests.length) { alert("Pa gen rezevasyon test pou efase."); return; }
+    if (!confirm("Efase " + tests.length + " rezevasyon test ? Aksyon sa a definitif.")) return;
+
+    var batch = db.batch();
+    tests.forEach(function(r) { batch.delete(db.collection("reservations").doc(r.id)); });
+    batch.commit().then(function() {
+        alert(tests.length + " rezevasyon test efase.");
+        loadReservations();
+    }).catch(function(e) {
+        console.error("deleteTestReservations:", e);
+        alert("Erè efasman: " + (e.message || e.code));
+    });
 }
 
 /* ====================================
@@ -2265,6 +2427,12 @@ function fltTbl(tableId, filter, btn) {
     rows.forEach(function(r) {
         if (filter === "all") {
             r.style.display = "";
+        } else if (filter === "test") {
+            /* Affiche seulement les lignes marquées test (data-test="1") */
+            r.style.display = (r.getAttribute("data-test") === "1") ? "" : "none";
+        } else if (filter === "real") {
+            /* Affiche seulement les vraies lignes (non test) */
+            r.style.display = (r.getAttribute("data-test") === "1") ? "none" : "";
         } else {
             var rf = r.getAttribute("data-filter");
             r.style.display = (rf === filter) ? "" : "none";
@@ -2345,6 +2513,186 @@ function goPage(id, btn) {
     if (id === "comm")  loadCommissions();
     if (id === "dash")  loadRecent();
     if (id === "avis")  loadReviews();
+    if (id === "hotels") loadHotels();
+    if (id === "addacc") toggleAccEluFields();
+}
+
+/* ====================================
+   HOTELS PARTENAIRES — gestion admin
+   ==================================== */
+var ZONE_LABELS = {
+    potoprens: "Potoprens", petyonvil: "Petion-Ville", delmas: "Delmas",
+    Tabarre: "Tabarre", Carrefour: "Carrefour"
+};
+
+function loadHotels() {
+    if (!db) return;
+    var grid = document.getElementById("hotelsGrid");
+    if (grid) grid.innerHTML = '<p style="color:#6a6a80;grid-column:1/-1">Chajman...</p>';
+    db.collection("hotels").get().then(function(snap) {
+        var list = [];
+        snap.forEach(function(doc) { var d = doc.data(); d.id = doc.id; list.push(d); });
+        list.sort(function(a, b) { return (a.zone || "").localeCompare(b.zone || ""); });
+        setBdg("bdgHt", list.length);
+        renderHotels(list);
+    }).catch(function(e) {
+        console.error("loadHotels:", e.code, e.message);
+        if (grid) grid.innerHTML = '<p style="color:#f44336;grid-column:1/-1">Erè chajman hotels.</p>';
+    });
+}
+
+function renderHotels(list) {
+    var grid = document.getElementById("hotelsGrid");
+    if (!grid) return;
+    if (!list.length) { grid.innerHTML = '<p style="color:#6a6a80;grid-column:1/-1">Pa gen hotel anko. Ajoute youn anlè a.</p>'; return; }
+    var h = "";
+    list.forEach(function(d) {
+        var zoneLbl = ZONE_LABELS[d.zone] || d.zone || "—";
+        var nbImg = (d.images && d.images.length) || 0;
+        var logo = d.logoUrl
+            ? '<img src="' + escHtml(d.logoUrl) + '" style="width:46px;height:46px;border-radius:8px;object-fit:cover;flex-shrink:0">'
+            : '<div style="width:46px;height:46px;border-radius:8px;background:#2a2a3a;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#6a6a80"><i class="fas fa-hotel"></i></div>';
+        h += '<div style="background:#0f0f17;border:1px solid #2a2a3a;border-radius:12px;padding:14px">';
+        h += '<div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">' + logo;
+        h += '<div style="min-width:0"><div style="font-weight:600;color:#fff;font-size:0.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(d.name || "") + '</div>';
+        h += '<div style="font-size:0.72rem;color:#ffd700"><i class="fas fa-map-marker-alt"></i> ' + escHtml(zoneLbl) + '</div></div></div>';
+        h += '<div style="font-size:0.76rem;color:#b0b0c0;margin-bottom:4px">' + escHtml(d.address || "") + '</div>';
+        if (d.description) h += '<div style="font-size:0.74rem;color:#6a6a80;margin-bottom:8px">' + escHtml(d.description) + '</div>';
+        h += '<div style="font-size:0.7rem;color:#6a6a80;margin-bottom:10px"><i class="fas fa-images"></i> ' + nbImg + ' foto</div>';
+        h += '<button onclick="deleteHotel(\'' + d.id + '\',\'' + escHtml(d.name || "").replace(/'/g, "") + '\')" style="width:100%;background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.3);border-radius:8px;padding:8px;font-size:0.78rem;cursor:pointer"><i class="fas fa-trash"></i> Efase</button>';
+        h += '</div>';
+    });
+    grid.innerHTML = h;
+}
+
+function htUpload(file) {
+    var safe = Date.now() + "_" + file.name.replace(/\s+/g, "_");
+    var path = "hotels/" + safe;
+    var ref = storage.ref(path);
+    return ref.put(file).then(function() { return ref.getDownloadURL(); });
+}
+
+function saveHotel() {
+    if (!db || !storage) { alert("Firebase pa disponib."); return; }
+    var name = (document.getElementById("htName").value || "").trim();
+    var zone = document.getElementById("htZone").value;
+    var addr = (document.getElementById("htAddr").value || "").trim();
+    var desc = (document.getElementById("htDesc").value || "").trim();
+    var logoFile = document.getElementById("htLogo").files[0];
+    var imgFiles = document.getElementById("htImages").files;
+
+    if (!name) { alert("Antre non hotel la."); return; }
+    if (!zone) { alert("Chwazi yon zòn."); return; }
+    if (!addr) { alert("Antre adrès la."); return; }
+
+    var btn = document.getElementById("htSaveBtn");
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chajman...';
+
+    /* Upload logo + images en parallèle */
+    var jobs = [];
+    var logoIdx = -1, imgStart = 0;
+    if (logoFile) { logoIdx = jobs.length; jobs.push(htUpload(logoFile)); }
+    imgStart = jobs.length;
+    for (var i = 0; i < imgFiles.length; i++) { jobs.push(htUpload(imgFiles[i])); }
+
+    Promise.all(jobs).then(function(urls) {
+        var logoUrl = logoIdx >= 0 ? urls[logoIdx] : "";
+        var images = urls.slice(imgStart);
+        return db.collection("hotels").add({
+            name: name, zone: zone, address: addr, description: desc,
+            logoUrl: logoUrl, images: images,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    }).then(function() {
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus"></i> Ajoute Hotel';
+        document.getElementById("htName").value = "";
+        document.getElementById("htZone").value = "";
+        document.getElementById("htAddr").value = "";
+        document.getElementById("htDesc").value = "";
+        document.getElementById("htLogo").value = "";
+        document.getElementById("htImages").value = "";
+        loadHotels();
+    }).catch(function(e) {
+        console.error("saveHotel:", e);
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus"></i> Ajoute Hotel';
+        alert("Erè: " + (e.message || e.code) + "\nVerifye Storage Rules.");
+    });
+}
+
+function deleteHotel(id, name) {
+    if (!db) return;
+    if (!confirm("Efase hotel \"" + name + "\" ?")) return;
+    db.collection("hotels").doc(id).delete().then(function() {
+        loadHotels();
+    }).catch(function(e) { alert("Erè efasman: " + (e.message || e.code)); });
+}
+
+/* ====================================
+   AJOUTE KONT — création par l'admin (Netlify + Admin SDK)
+   ==================================== */
+function toggleAccEluFields() {
+    var t = document.getElementById("acType");
+    if (!t) return;
+    var show = (t.value === "freelancer");
+    var fields = document.querySelectorAll(".accEluField");
+    fields.forEach(function(f) { f.style.display = show ? "" : "none"; });
+}
+
+function submitAddAccount() {
+    if (!auth || !auth.currentUser) { alert("Sesyon admin pa valab."); return; }
+    var type = document.getElementById("acType").value;
+    var email = (document.getElementById("acEmail").value || "").trim();
+    var pass = document.getElementById("acPass").value || "";
+    var prenom = (document.getElementById("acPrenom").value || "").trim();
+    var nom = (document.getElementById("acNom").value || "").trim();
+    var phone = (document.getElementById("acPhone").value || "").trim();
+
+    if (!email || email.indexOf("@") === -1) { alert("Imèl pa valab."); return; }
+    if (pass.length < 6) { alert("Modpas dwe gen omwen 6 karaktè."); return; }
+    if (!prenom) { alert("Antre prenon."); return; }
+
+    var isTest = !!(document.getElementById("acTest") && document.getElementById("acTest").checked);
+    var payload = {
+        type: type, email: email, password: pass,
+        prenom: prenom, nom: nom, telephone: phone, isTest: isTest
+    };
+    if (type === "freelancer") {
+        payload.genre = document.getElementById("acGenre").value;
+        payload.localisation = (document.getElementById("acLoc").value || "").trim();
+        payload.prixMoment = parseInt(document.getElementById("acPrix").value, 10) || 0;
+        payload.description = (document.getElementById("acDesc").value || "").trim();
+    }
+
+    var btn = document.getElementById("acSaveBtn");
+    var resBox = document.getElementById("acResult");
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chajman...';
+
+    auth.currentUser.getIdToken().then(function(idToken) {
+        payload.idToken = idToken;
+        return fetch("/.netlify/functions/admin-create-user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+    }).then(function(r) { return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(res) {
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus"></i> Kreye Kont';
+        if (res.ok && res.j.success) {
+            resBox.style.display = "block";
+            resBox.innerHTML = '<div style="background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.3);color:#4caf50;border-radius:8px;padding:12px;font-size:0.84rem"><i class="fas fa-check-circle"></i> Kont kreye! ('
+                + escHtml(res.j.email) + ' — ' + (res.j.type === "freelancer" ? "Elu" : "Itilizatè") + '). Moun lan ka konekte dirèkteman.</div>';
+            ["acEmail","acPass","acPrenom","acNom","acPhone","acLoc","acPrix","acDesc"].forEach(function(idf){ var e = document.getElementById(idf); if (e) e.value = ""; });
+            var tchk = document.getElementById("acTest"); if (tchk) tchk.checked = false;
+        } else {
+            resBox.style.display = "block";
+            resBox.innerHTML = '<div style="background:rgba(244,67,54,0.12);border:1px solid rgba(244,67,54,0.3);color:#f44336;border-radius:8px;padding:12px;font-size:0.84rem"><i class="fas fa-exclamation-triangle"></i> '
+                + escHtml(res.j.error || "Erè enkoni.") + '</div>';
+        }
+    }).catch(function(e) {
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus"></i> Kreye Kont';
+        resBox.style.display = "block";
+        resBox.innerHTML = '<div style="background:rgba(244,67,54,0.12);border:1px solid rgba(244,67,54,0.3);color:#f44336;border-radius:8px;padding:12px;font-size:0.84rem"><i class="fas fa-exclamation-triangle"></i> Erè koneksyon: ' + escHtml(e.message || "") + '</div>';
+    });
 }
 
 /* ====================================

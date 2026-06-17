@@ -95,6 +95,14 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    /* -------- HOTELS PARTENAIRES (hotels) --------
+       Gérés manuellement par l'admin. Lecture publique : la page de
+       réservation affiche la liste des hôtels de la zone choisie. */
+    match /hotels/{hotelId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
     /* -------- CHAT SÉCURISÉ : seulement les 2 participants -------- */
     match /chats/{resId} {
       allow create: if isSignedIn();

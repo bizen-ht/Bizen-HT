@@ -263,6 +263,9 @@
         .pc-name{font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:8px}
         .pc-loc{color:var(--primary-light);font-size:0.85rem;margin-bottom:12px}
         .pc-desc{color:var(--text-secondary);font-size:0.9rem;line-height:1.6;margin-bottom:5px;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        /* Descriptions des Elu TOUJOURS floues (aucun texte lisible, pour tous) */
+        .pc-desc{filter:blur(5px);user-select:none;pointer-events:none}
+        .elu-desc-blur{filter:blur(5px);user-select:none;pointer-events:none}
         .pc-blur{margin-bottom:10px}
         .blt{filter:blur(4px);color:var(--text-muted);font-size:0.85rem;user-select:none}
 
@@ -2182,8 +2185,8 @@ body.is-premium .pc-blur{display:none!important}
                 <p class="con-desc">Nou disponib pou reponn tout kesyon ou yo!</p>
                 <div class="con-item"><i class="fas fa-envelope"></i><span>bizenht@gmail.com</span></div>
                 <div class="con-item"><i class="fab fa-whatsapp"></i><span>+509 47464283</span></div>
-                <div class="con-item"><i class="fab fa-telegram"></i><span>@BizenHT</span></div>
-                <div class="soc-links"><a href="https://www.instagram.com/bizen_ht?igsh=MWZoOGEzZzR2M2ZjYg%3D%3D&utm_source=qr" class="soc-lnk"><i class="fab fa-instagram"></i></a><a href="#" class="soc-lnk"><i class="fab fa-telegram"></i></a><a href="https://wa.me/50947464283" class="soc-lnk"><i class="fab fa-whatsapp"></i></a></div>
+                <div class="con-item"><i class="fab fa-whatsapp"></i><span>Channel WhatsApp</span></div>
+                <div class="soc-links"><a href="https://www.instagram.com/bizen_ht?igsh=MWZoOGEzZzR2M2ZjYg%3D%3D&utm_source=qr" class="soc-lnk"><i class="fab fa-instagram"></i></a><a href="https://whatsapp.com/channel/0029VbCiTTQ6buMPwsobWw05" target="_blank" rel="noopener" class="soc-lnk"><i class="fas fa-bullhorn"></i></a><a href="https://wa.me/50947464283" class="soc-lnk"><i class="fab fa-whatsapp"></i></a></div>
             </div>
             <div class="con-box sr">
                 <form class="cform" id="cForm">
@@ -2288,7 +2291,7 @@ body.is-premium .pc-blur{display:none!important}
     </ul>
 </div>
             <div class="foot-col"><h4>Legal</h4><ul><li><a href="/kondisyon">Kondisyon Itilizasyon</a></li><li><a href="/konfidansyalite">Konfidansyalite</a></li><li><a href="/regleman">Regleman</a></li></ul></div>
-            <div class="foot-col"><h4>Kontak</h4><ul><li><a href="#">bizenht@gmail.com</a></li><li><a href="#">WhatsApp</a></li><li><a href="#">Telegram</a></li></ul></div>
+            <div class="foot-col"><h4>Kontak</h4><ul><li><a href="#">bizenht@gmail.com</a></li><li><a href="https://wa.me/50947464283" target="_blank" rel="noopener">WhatsApp</a></li><li><a href="https://whatsapp.com/channel/0029VbCiTTQ6buMPwsobWw05" target="_blank" rel="noopener">Channel WhatsApp</a></li></ul></div>
         </div>
        <div class="foot-bot">
     <p style="margin-bottom:10px">
@@ -3015,9 +3018,10 @@ body.is-premium .pc-blur{display:none!important}
     <div class="fg"><label>Dat ou vle</label><input type="date" id="resDate" required min=""></div>
     <div class="fg"><label>Lè ou prefere</label><select id="resTime" required><option value="">Chwazi...</option><option>Maten (8h-12h)</option><option>Apremidi (12h-17h)</option><option>Aswè (17h-22h)</option><option>Nwit (22h+)</option></select></div>
     <div class="fg"><label>Pozisyon ou / Vil ou</label><select id="resCity" required onchange="showHotel()"><option value="">Chwazi vil ou...</option><option value="potoprens">Potoprens</option><option value="petyonvil">Petion-Ville</option><option value="delmas">Delmas</option><option value="Tabarre">Tabarre</option><option value="Carrefour">Carrefour</option></select></div>
-    <!-- HOTEL PARTENAIRE SUGGESTION -->
-    <div id="hotelSuggestion" style="display:none">
-        <div class="hotel-card" style="background:rgba(255,215,0,0.1);border-color:rgba(255,215,0,0.3)"><i class="fas fa-star" style="color:var(--gold)"></i><div><h5 id="hotelName">Hotel Patnè</h5><p id="hotelAddress">Adres hotel la</p><span class="hotel-included-badge"><i class="fas fa-map-marker-alt"></i> <span id="hotelDist">Pi pre ou</span></span></div></div>
+    <!-- LISTE DES HOTELS PARTENAIRES DE LA ZONE CHOISIE -->
+    <div id="hotelPicker" style="display:none">
+        <label style="display:block;font-size:0.85rem;color:var(--text-secondary);margin-bottom:8px"><i class="fas fa-hotel" style="color:var(--gold)"></i> Chwazi yon hotel patnè</label>
+        <div id="hotelPickerList"></div>
     </div>
     <div class="fg"><label>Not adisyonel (opsyonel)</label><textarea placeholder="Nenpot bagay espesyal ou vle di..." rows="2"></textarea></div>
     <div style="padding:10px;background:rgba(233,30,99,0.1);border-radius:var(--radius);text-align:center;margin-bottom:10px">
@@ -4701,22 +4705,81 @@ function calcKreyComm() {
 /* ====================================
    SHOW HOTEL
    ==================================== */
+/* Hotel actuellement sélectionné dans la modale de réservation */
+var selectedHotel = null;
+
 function showHotel() {
     var cityEl = document.getElementById("resCity");
-    var wrapEl = document.getElementById("hotelChoiceWrap");
-    var pNameEl = document.getElementById("partnerHotelName");
-    var pAddrEl = document.getElementById("partnerHotelAddr");
-    if (!cityEl || !wrapEl) return;
+    var picker = document.getElementById("hotelPicker");
+    var listEl = document.getElementById("hotelPickerList");
+    if (!cityEl || !picker || !listEl) return;
     var val = cityEl.value;
-    if (!val || !hotels[val]) {
-        wrapEl.style.display = "none";
+    selectedHotel = null;
+    if (!val) { picker.style.display = "none"; listEl.innerHTML = ""; return; }
+
+    picker.style.display = "block";
+    listEl.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;padding:8px 0">Chajman hotels...</p>';
+
+    if (!db) {
+        /* Fallback statique si Firebase indisponible */
+        var fb = hotels[val];
+        if (fb) { renderHotelChoices([{ id: "static", name: fb.name, address: fb.addr, description: fb.dist, logoUrl: "", images: [] }]); }
+        else { listEl.innerHTML = '<p style="color:#ff9800;font-size:0.85rem;padding:8px 0">Pa gen hotel patnè nan zòn sa a pou kounye a.</p>'; }
         return;
     }
-    var h = hotels[val];
-    if (pNameEl) pNameEl.textContent = h.name;
-    if (pAddrEl) pAddrEl.textContent = h.addr + " - " + h.dist;
-    wrapEl.style.display = "block";
-    selectHotel("partner");
+
+    db.collection("hotels").where("zone", "==", val).get().then(function(snap) {
+        var list = [];
+        snap.forEach(function(doc) { var d = doc.data(); d.id = doc.id; list.push(d); });
+        renderHotelChoices(list);
+    }).catch(function(e) {
+        console.warn("showHotel:", e.code);
+        listEl.innerHTML = '<p style="color:#f44336;font-size:0.85rem;padding:8px 0">Erè chajman hotels.</p>';
+    });
+}
+
+function renderHotelChoices(list) {
+    var listEl = document.getElementById("hotelPickerList");
+    if (!listEl) return;
+    if (!list.length) {
+        listEl.innerHTML = '<p style="color:#ff9800;font-size:0.85rem;padding:8px 0"><i class="fas fa-info-circle"></i> Pa gen hotel patnè nan zòn sa a pou kounye a. Nou pral asiyen w youn.</p>';
+        selectedHotel = null;
+        return;
+    }
+    var h = "";
+    list.forEach(function(d, i) {
+        var logo = d.logoUrl
+            ? '<img src="' + d.logoUrl + '" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0">'
+            : '<div style="width:44px;height:44px;border-radius:8px;background:rgba(255,215,0,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gold)"><i class="fas fa-hotel"></i></div>';
+        h += '<div class="hotel-choice" data-idx="' + i + '" onclick="selectResHotel(' + i + ')" style="display:flex;gap:10px;align-items:center;padding:10px;border:1px solid rgba(255,255,255,0.12);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:.2s">';
+        h += logo;
+        h += '<div style="min-width:0;flex:1"><div style="font-weight:600;font-size:0.9rem">' + escapeResHotel(d.name) + '</div>';
+        h += '<div style="font-size:0.75rem;color:var(--text-secondary)"><i class="fas fa-map-marker-alt"></i> ' + escapeResHotel(d.address || "") + '</div>';
+        if (d.description) h += '<div style="font-size:0.72rem;color:#8a8a9a;margin-top:2px">' + escapeResHotel(d.description) + '</div>';
+        h += '</div><i class="fas fa-circle-check hc-check" style="color:var(--gold);opacity:0;font-size:1.1rem"></i></div>';
+    });
+    listEl.innerHTML = h;
+    window._resHotelList = list;
+    /* Sélection auto du premier hôtel */
+    selectResHotel(0);
+}
+
+function escapeResHotel(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function selectResHotel(idx) {
+    var list = window._resHotelList || [];
+    if (!list[idx]) return;
+    selectedHotel = list[idx];
+    var nodes = document.querySelectorAll("#hotelPickerList .hotel-choice");
+    nodes.forEach(function(n) {
+        var on = (parseInt(n.getAttribute("data-idx"), 10) === idx);
+        n.style.borderColor = on ? "var(--gold)" : "rgba(255,255,255,0.12)";
+        n.style.background = on ? "rgba(255,215,0,0.08)" : "transparent";
+        var chk = n.querySelector(".hc-check");
+        if (chk) chk.style.opacity = on ? "1" : "0";
+    });
 }
 
 function selectHotel(type) {
@@ -5377,6 +5440,7 @@ function doOut() {
    ==================================== */
 var currentUserType = null;   /* "user" | "freelancer" | "krey" */
 var isPremiumViewer = false;  /* le visiteur actuel est-il Premium ? */
+var isTestViewer = false;     /* compte test (démo) : réservations sans paiement réel */
 
 function chkPrem(uid) {
     if (!db) return;
@@ -5385,6 +5449,7 @@ function chkPrem(uid) {
             if (d.exists) {
                 currentUserType = d.data().type || "user";
                 isPremiumViewer = (d.data().isPremium === true);
+                isTestViewer = (d.data().isTest === true);
                 if (isPremiumViewer) unlockUI();
                 /* Recharge l'affichage des notes (visibles aux Premium) */
                 try { decorateRatings(); } catch(e) {}
@@ -5764,11 +5829,18 @@ function openEluProfile(btnOrUid) {
         h += onlineHtml + '</div></div>';
         h += '<div style="margin-bottom:12px">' + ratingHtml + '</div>';
         h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;color:#f48fb1;font-size:0.9rem"><i class="fas fa-map-marker-alt"></i> ' + (d.localisation || "Ayiti") + '</div>';
-        h += '<p style="color:#b0b0c0;font-size:0.9rem;line-height:1.6;margin-bottom:16px">' + (d.description || "") + '</p>';
+        h += '<p class="elu-desc-blur" style="color:#b0b0c0;font-size:0.9rem;line-height:1.6;margin-bottom:16px">' + (d.description || "") + '</p>';
         h += '<div style="display:flex;align-items:center;gap:8px;padding:14px;background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.2);border-radius:12px;margin-bottom:16px"><i class="fas fa-tag" style="color:#ffd700"></i><span style="font-weight:700;font-size:1.3rem;color:#ffd700">' + price.toLocaleString() + ' Gdes</span><span style="color:#6a6a80;font-size:0.8rem">/ Moman (Hotel inclus)</span></div>';
         h += '<h4 style="font-size:0.9rem;margin-bottom:10px"><i class="fas fa-images" style="color:#9c27b0"></i> Galri</h4>';
         h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">' + galHtml + '</div>';
-        h += '<button class="btn btn-primary fw btn-glow" onclick="startEluBooking(\'' + uid + '\',\'' + name.replace(/'/g, "\\'") + '\',\'' + price + '\')"><i class="fas fa-calendar-check"></i> Rezève & Peye ' + price.toLocaleString() + ' Gdes</button>';
+        /* MODE REG : une Elu femme en période de règles n'est pas réservable. */
+        var isFemaleElu = !(d.genre === "homme" || d.genre === "gason");
+        if (isFemaleElu && d.regActive === true) {
+            h += '<div style="display:flex;align-items:center;gap:10px;padding:14px;background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);border-radius:12px;margin-bottom:8px"><i class="fas fa-tint" style="color:#e53935;font-size:1.3rem"></i><div><div style="font-weight:700;color:#e53935">Moman Reg</div><div style="font-size:0.8rem;color:#b0b0c0">' + name + ' pa disponib pou rezevasyon kounye a. Tanpri retounen pita.</div></div></div>';
+            h += '<button class="btn fw" disabled style="opacity:0.55;cursor:not-allowed;background:#3a3a4a;color:#9a9aae"><i class="fas fa-ban"></i> Pa disponib (Moman Reg)</button>';
+        } else {
+            h += '<button class="btn btn-primary fw btn-glow" onclick="startEluBooking(\'' + uid + '\',\'' + name.replace(/'/g, "\\'") + '\',\'' + price + '\')"><i class="fas fa-calendar-check"></i> Rezève & Peye ' + price.toLocaleString() + ' Gdes</button>';
+        }
         h += '</div></div>';
 
         var wrap = document.createElement("div");
@@ -5790,7 +5862,18 @@ function startEluBooking(uid, name, price) {
     if (rt) rt.textContent = parseInt(price).toLocaleString() + " Gdes";
     if (hw) hw.style.display = "none";
     ["resCity","resDate","resTime"].forEach(function(id){ var e = document.getElementById(id); if (e) e.value = ""; });
+    resetHotelPicker();
     oM("resM");
+}
+
+/* Réinitialise la liste d'hôtels à l'ouverture de la modale */
+function resetHotelPicker() {
+    selectedHotel = null;
+    window._resHotelList = [];
+    var picker = document.getElementById("hotelPicker");
+    var listEl = document.getElementById("hotelPickerList");
+    if (picker) picker.style.display = "none";
+    if (listEl) listEl.innerHTML = "";
 }
 
 function openResModal(btn) {
@@ -5812,6 +5895,7 @@ function openResModal(btn) {
     if (rc) rc.value = "";
     if (rd) rd.value = "";
     if (rtm) rtm.value = "";
+    resetHotelPicker();
     oM("resM");
 }
 
@@ -5821,22 +5905,21 @@ function confirmRes() {
     var time = document.getElementById("resTime");
     var city = document.getElementById("resCity");
     if (!date || !date.value || !time || !time.value || !city || !city.value) { toast("Tanpri ranpli tout chan yo.", "err"); return; }
+    /* Hotel : l'utilisateur a choisi un hôtel partenaire dans la liste de sa zone.
+       Fallback statique si la liste n'a pas pu charger. */
     var hotelType = "partner";
-    var hc = document.getElementById("hotelCustom");
-    if (hc && hc.checked) hotelType = "custom";
     var hotelName = "";
     var hotelAddr = "";
+    var hotelId = "";
     var hotelIncluded = true;
-    if (hotelType === "partner") {
-        var hi = hotels[city.value] || { name: "Hotel Patne", addr: city.value };
-        hotelName = hi.name; hotelAddr = hi.addr; hotelIncluded = true;
+    if (selectedHotel) {
+        hotelName = selectedHotel.name || "Hotel Patne";
+        hotelAddr = selectedHotel.address || "";
+        hotelId = selectedHotel.id && selectedHotel.id !== "static" ? selectedHotel.id : "";
     } else {
-        var cName = document.getElementById("customHotelName");
-        if (!cName || !cName.value.trim()) { toast("Antre non hotel ou chwazi a.", "err"); return; }
-        hotelName = cName.value.trim();
-        var cAddr = document.getElementById("customHotelAddr");
-        hotelAddr = cAddr ? cAddr.value.trim() : "";
-        hotelIncluded = false;
+        var hiFb = hotels[city.value];
+        if (hiFb) { hotelName = hiFb.name; hotelAddr = hiFb.addr; }
+        else { hotelName = "Hotel Patne"; hotelAddr = city.value; }
     }
     /* La cible peut venir de la modale profil (bookingTarget) OU d'une carte */
     var nm, pr, prestateId;
@@ -5870,15 +5953,17 @@ function confirmRes() {
         var amountNum = parseInt(String(pr).replace(/[^0-9]/g, "")) || 0;
         var doAdd = function() {
             /* Pour un VRAI Elu => paiement MonCash du montant du profil.
-               Pour un profil démo (pas de prestateId) => simple réservation. */
-            var payNow = !!prestateId && amountNum > 0;
+               Pour un profil démo (pas de prestateId) => simple réservation.
+               Pour un COMPTE TEST (démo) => aucune redirection MonCash, réservation directe. */
+            var payNow = !!prestateId && amountNum > 0 && !isTestViewer;
             db.collection("reservations").add({
                 userId: auth.currentUser.uid, userEmail: auth.currentUser.email,
                 prestateName: nm, prestateId: prestateId, price: pr, amount: amountNum,
                 date: date.value, time: time.value,
                 city: city.value, hotelName: hotelName, hotelAddress: hotelAddr,
-                hotelType: hotelType, hotelIncluded: hotelIncluded, notes: notes,
-                paid: false,
+                hotelId: hotelId, hotelType: hotelType, hotelIncluded: hotelIncluded, notes: notes,
+                paid: isTestViewer ? true : false,
+                test: isTestViewer === true,
                 status: payNow ? "en_attente_peman" : "en_attente",
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             }).then(function (ref) {
@@ -5890,6 +5975,8 @@ function confirmRes() {
                     try { localStorage.setItem("bizenPendingBooking", ref.id); } catch(e) {}
                     showOk("Redireksyon Peman...", "Ou pral peye " + amountNum.toLocaleString() + " Gdes via MonCash pou konfime rezevasyon ak " + nm + ".");
                     payReservationMonCash(amountNum, ref.id, nm);
+                } else if (isTestViewer) {
+                    showOk("Rezevasyon Test Konfime!", "[MOD TEST] Rezevasyon demo pou " + nm + " le " + date.value + " kreye san peman. Hotel: " + hotelName + ".");
                 } else {
                     showOk("Rezevasyon Konfime!", "Rezevasyon ou pou " + nm + " le " + date.value + " konfime! Hotel: " + hotelName + ".");
                 }
@@ -6058,6 +6145,8 @@ function submitKreyRes(kreyName, price) {
     }
     var kreyAmount = parseInt(String(price).replace(/[^0-9]/g, "")) || 0;
     var kreyPrestateId = (kreyBookingTarget && kreyBookingTarget.uid) ? kreyBookingTarget.uid : "";
+    /* Compte test (démo) => pas de paiement réel */
+    var kreyPayNow = kreyAmount > 0 && !isTestViewer;
 
     db.collection("reservations").add({
         userId: auth.currentUser.uid, userEmail: auth.currentUser.email,
@@ -6067,16 +6156,19 @@ function submitKreyRes(kreyName, price) {
         locationTypeText: locTypeText, locationName: locName.value.trim(),
         locationAddress: locAddr ? locAddr.value.trim() : "",
         notes: notes ? notes.value.trim() : "",
-        hotelIncluded: false, paid: false,
-        status: kreyAmount > 0 ? "en_attente_peman" : "en_attente",
+        hotelIncluded: false, paid: isTestViewer ? true : false,
+        test: isTestViewer === true,
+        status: kreyPayNow ? "en_attente_peman" : "en_attente",
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }).then(function (ref) {
         cM("kreyResM");
-        if (kreyAmount > 0) {
+        if (kreyPayNow) {
             /* Paiement MonCash obligatoire pour les Krey (comme les Elu) */
             try { localStorage.setItem("bizenPendingBooking", ref.id); } catch(e) {}
             showOk("Redireksyon Peman...", "Ou pral peye " + kreyAmount.toLocaleString() + " Gdes via MonCash pou konfime rezevasyon Krey " + kreyName + ".");
             payReservationMonCash(kreyAmount, ref.id, kreyName);
+        } else if (isTestViewer) {
+            showOk("Rezevasyon Test Konfime!", "[MOD TEST] Rezevasyon demo Krey " + kreyName + " kreye san peman.");
         } else {
             showOk("Rezevasyon Krey Konfime!", "Gwoup " + kreyName + " rezeve pou " + date.value + " a " + time.value + ".");
         }

@@ -833,6 +833,25 @@
                     ou resevwa <strong style="color:var(--green)" id="flNetEx">0 Gdes</strong>.
                 </p>
             </div>
+
+            <!-- MODE REG (Elu femmes seulement) -->
+            <div id="regModeCard" style="display:none;background:rgba(229,57,53,0.06);border:1px solid rgba(229,57,53,0.25);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px">
+                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+                    <div style="width:48px;height:48px;border-radius:50%;background:rgba(229,57,53,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                        <i class="fas fa-tint" style="color:#e53935;font-size:1.4rem"></i>
+                    </div>
+                    <div style="flex:1;min-width:160px">
+                        <div style="font-weight:700;font-size:1rem">Moman Reg</div>
+                        <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;margin-top:2px">
+                            Aktive sa lè ou gen règ ou. Pandan l aktif, bouton « Rezève » sou pwofil ou ap montre <strong>Moman Reg</strong> epi pèsòn p ap ka rezève w. Dezaktive l lè peryòd la fini.
+                        </p>
+                        <div id="regModeStatus" style="margin-top:6px;font-size:0.8rem;font-weight:600"></div>
+                    </div>
+                    <button id="regModeBtn" onclick="toggleRegMode()" style="border:none;border-radius:var(--radius-full);padding:11px 20px;font-weight:600;cursor:pointer;font-size:0.85rem;flex-shrink:0">
+                        <i class="fas fa-tint"></i> <span id="regModeBtnLbl">Aktive</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- FL RESERVATIONS -->
@@ -1623,6 +1642,9 @@ function setupFreelancer() {
         stEl.style.background = "rgba(" + (stCol === "#4caf50" ? "76,175,80" : stCol === "#f44336" ? "244,67,54" : "255,152,0") + ",0.15)";
     }
 
+    /* Mode Reg (Elu femmes) */
+    renderRegMode();
+
     /* Profile edit fields */
     var descEl = document.getElementById("flDesc");
     var priceEl = document.getElementById("flPrice");
@@ -1648,6 +1670,69 @@ function setupFreelancer() {
     /* Activate first FL menu link */
     var firstLink = document.querySelector("#freelancerMenu .sb-link");
     if (firstLink) firstLink.classList.add("active");
+}
+
+/* ====================================
+   MODE REG (Elu femmes)
+   ==================================== */
+function isFemaleEluUser() {
+    if (!userData) return false;
+    var g = userData.genre;
+    return !(g === "homme" || g === "gason");
+}
+
+function renderRegMode() {
+    var card = document.getElementById("regModeCard");
+    if (!card) return;
+    /* Visible seulement pour les Elu femmes */
+    if (!userData || userData.type !== "freelancer" || !isFemaleEluUser()) {
+        card.style.display = "none";
+        return;
+    }
+    card.style.display = "block";
+
+    var active = userData.regActive === true;
+    var statusEl = document.getElementById("regModeStatus");
+    var btn = document.getElementById("regModeBtn");
+    var lbl = document.getElementById("regModeBtnLbl");
+
+    if (statusEl) {
+        statusEl.innerHTML = active
+            ? '<span style="color:#e53935"><i class="fas fa-circle" style="font-size:0.5rem"></i> Aktif kounye a — ou pa disponib pou rezevasyon</span>'
+            : '<span style="color:#4caf50"><i class="fas fa-circle" style="font-size:0.5rem"></i> Dezaktive — ou disponib pou rezevasyon</span>';
+    }
+    if (btn && lbl) {
+        if (active) {
+            lbl.textContent = "Dezaktive";
+            btn.style.background = "rgba(255,255,255,0.1)";
+            btn.style.color = "#fff";
+        } else {
+            lbl.textContent = "Aktive";
+            btn.style.background = "#e53935";
+            btn.style.color = "#fff";
+        }
+    }
+}
+
+function toggleRegMode() {
+    if (!db || !currentUser || !userData) { showToast("Sesyon pa valab.", "error"); return; }
+    var newVal = !(userData.regActive === true);
+    var btn = document.getElementById("regModeBtn");
+    if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
+
+    var p1 = db.collection("users").doc(currentUser.uid).set({ regActive: newVal }, { merge: true });
+    var p2 = db.collection("publicProfiles").doc(currentUser.uid).set({ regActive: newVal }, { merge: true });
+
+    Promise.all([p1, p2]).then(function() {
+        userData.regActive = newVal;
+        if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
+        renderRegMode();
+        showToast(newVal ? "Moman Reg aktive. Ou pa disponib pou rezevasyon." : "Moman Reg dezaktive. Ou disponib ankò.", "success");
+    }).catch(function(e) {
+        console.error("toggleRegMode:", e);
+        if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
+        showToast("Erè. Eseye ankò.", "error");
+    });
 }
 
 /* ====================================
@@ -3193,6 +3278,7 @@ function syncPublicProfile(uid, data, isLogin) {
         videos: (data.media && data.media.videos ? data.media.videos.map(function(v){ return v.url; }) : []),
         bizenCode: data.bizenCode || "",
         isPremium: data.isPremium === true,
+        regActive: data.regActive === true,
         status: data.status || "en_attente",
         kreyMemberCount: data.kreyMemberCount || null,
         ratingAvg: data.ratingAvg || 0,
