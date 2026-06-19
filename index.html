@@ -2388,7 +2388,7 @@ body.is-premium .pc-blur{display:none!important}
             <span>oswa ak imel</span>
         </div>
  
-        <form class="mform"
+        <form class="mform" novalidate
               onsubmit="return doLogin(event)">
             <div class="fg">
                 <label>Imel</label>
@@ -2536,7 +2536,7 @@ body.is-premium .pc-blur{display:none!important}
 </div>
 <!-- USER FORM -->
 <form class="mform hidden"
-      id="uF"
+      id="uF" novalidate
       onsubmit="return doUR(event)">
     <button type="button"
             class="fbk"
@@ -2551,26 +2551,26 @@ body.is-premium .pc-blur{display:none!important}
     <div class="frow">
         <div class="fg">
             <label>Non</label>
-            <input type="text"
+            <input type="text" id="urPrenom"
                    placeholder="Non ou"
                    required>
         </div>
         <div class="fg">
             <label>Siyati</label>
-            <input type="text"
+            <input type="text" id="urNom"
                    placeholder="Siyati ou"
                    required>
         </div>
     </div>
     <div class="fg">
         <label>Imel</label>
-        <input type="email"
+        <input type="email" id="urEmail"
                placeholder="email@gmail.com"
                required>
     </div>
     <div class="fg">
         <label>Telefon</label>
-        <input type="tel"
+        <input type="tel" id="urTel"
                placeholder="+509 XXXX-XXXX"
                required>
     </div>
@@ -2588,16 +2588,16 @@ body.is-premium .pc-blur{display:none!important}
     </div>
     <div class="fg">
         <label>Konfime Modpas</label>
-        <input type="password"
+        <input type="password" id="urPw2"
                placeholder="Repete modpas"
                required>
     </div>
     <div class="fg">
         <label>Dat Nesans</label>
-        <input type="date" required>
+        <input type="date" id="urDob" required>
     </div>
     <label class="ckl">
-        <input type="checkbox" required>
+        <input type="checkbox" id="urAgree" required>
         Mwen dako ak kondisyon yo e
         mwen gen 18+.
     </label>
@@ -2609,7 +2609,7 @@ body.is-premium .pc-blur{display:none!important}
 </form>
 
 <!-- FREELANCER FORM -->
-<form class="mform hidden" id="fF" onsubmit="return doFR(event)"><button type="button" class="fbk" onclick="bT()"><i class="fas fa-arrow-left"></i> Retounen</button><h3 class="ftit"><i class="fas fa-star"></i> Demann Elu</h3>
+<form class="mform hidden" id="fF" novalidate onsubmit="return doFR(event)"><button type="button" class="fbk" onclick="bT()"><i class="fas fa-arrow-left"></i> Retounen</button><h3 class="ftit"><i class="fas fa-star"></i> Demann Elu</h3>
 <div class="pend"><i class="fas fa-info-circle"></i><p>Kont Elu yo pase nan validasyon manyel. Repons nan 24-48 edtan.</p></div>
 <!-- COMMISSION NOTICE -->
 <div class="commission-notice"><i class="fas fa-percentage"></i><p>Bizen HT pran <strong>10% komisyon</strong> sou chak moman/rezevasyon. Pa egzanp: Si pri ou se 5,000 Gdes, ou resevwa <strong>4,500 Gdes</strong> e Bizen HT kenbe 500 Gdes. Pri sa a pa negosyab e li afiche klè sou pwofil ou.</p></div>
@@ -2666,10 +2666,10 @@ body.is-premium .pc-blur{display:none!important}
     </p>
 </div>
 <div class="fg"><label>Videyo (opsyonel)</label><input type="file" accept="video/*" class="fi"><p class="fhint">MP4 (Maks 50MB)</p></div><div class="fg"><label>Modpas</label><input type="password" placeholder="omwen 6 karaktè" required id="fpw"><button type="button" class="tpw" onclick="tPw('fpw')"><i class="fas fa-eye"></i></button></div>
-<label class="ckl"><input type="checkbox" required> Mwen dako ak kondisyon yo, 10% komisyon, mwen gen 18+, e mwen konprann kont mwen ap pase nan validasyon.</label><button type="submit" class="btn btn-secondary fw"><i class="fas fa-paper-plane"></i> Voye Demann Mwen</button></form>
+<label class="ckl"><input type="checkbox" id="flAgree" required> Mwen dako ak kondisyon yo, 10% komisyon, mwen gen 18+, e mwen konprann kont mwen ap pase nan validasyon.</label><button type="submit" class="btn btn-secondary fw"><i class="fas fa-paper-plane"></i> Voye Demann Mwen</button></form>
 <!-- KREY FORM -->
 <form class="mform hidden"
-      id="kF"
+      id="kF" novalidate
       onsubmit="return doKR(event)">
     <button type="button"
             class="fbk"
@@ -2908,7 +2908,7 @@ body.is-premium .pc-blur{display:none!important}
 
     <!-- TERMS -->
     <label class="ckl">
-        <input type="checkbox" required>
+        <input type="checkbox" id="kreyAgree" required>
         Mwen dako ak kondisyon yo,
         10% komisyon sou gwoup,
         tout manm gen 18+, e
@@ -4226,6 +4226,13 @@ function startAutoSlide(id) {
    ==================================== */
 document.addEventListener("DOMContentLoaded", function () {
     /* ====================================
+       NAVIGATEUR INTÉGRÉ (in-app browser)
+       Instagram/Facebook/TikTok bloquent souvent le stockage => l'inscription
+       "ne se charge pas". On prévient l'utilisateur d'ouvrir dans Chrome/Safari.
+       ==================================== */
+    try { warnIfInAppBrowser(); } catch (e) {}
+
+    /* ====================================
        PAYMENT RETURN CHECK
        ==================================== */
     try {
@@ -5152,18 +5159,27 @@ function doLogin(e) {
    USER REGISTER
    ==================================== */
 function doUR(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    /* Tout le corps est protégé : sur certains navigateurs mobiles (in-app
+       Instagram/Facebook, vieux WebView), une erreur silencieuse faisait que
+       "rien ne se passait". Maintenant on affiche toujours un message clair. */
+    try {
     var f = document.getElementById("uF");
-    var ti = f.querySelectorAll("input[type='text']");
-    var pr = ti[0].value.trim();
-    var nm = ti[1].value.trim();
-    var em = f.querySelector("input[type='email']").value.trim();
-    var tel = f.querySelector("input[type='tel']").value.trim();
-    var pws = f.querySelectorAll("input[type='password']");
-    var pw = pws[0].value;
-    var pw2 = pws[1].value;
-    var dt = f.querySelector("input[type='date']").value;
+    if (!f) { toast("Erè fòm lan. Rechaje paj la.", "err"); return false; }
+    /* Lecture robuste par id (résiste à l'autofill qui injecte des champs) */
+    var gv = function(id) { var el = document.getElementById(id); return el ? (el.value || "") : ""; };
+    var pr = gv("urPrenom").trim();
+    var nm = gv("urNom").trim();
+    var em = gv("urEmail").trim();
+    var tel = gv("urTel").trim();
+    var pw = gv("rpw");
+    var pw2 = gv("urPw2");
+    var dt = gv("urDob");
+    var agreeEl = document.getElementById("urAgree");
+    var agreed = agreeEl ? agreeEl.checked : true;
     if (!pr || !nm || !em || !tel || !pw || !dt) { toast("Ranpli tout chan yo.", "err"); return false; }
+    if (!agreed) { toast("Ou dwe dako ak kondisyon yo (18+).", "err"); return false; }
+    if (em.indexOf("@") === -1 || em.indexOf(".") === -1) { toast("Imel la pa valab.", "err"); return false; }
     if (pw !== pw2) { toast("Modpas yo pa menm!", "err"); return false; }
     if (pw.length < 6) { toast("Modpas dwe gen omwen 6 karakte.", "err"); return false; }
     if (isDisposableEmail(em)) { toast("Imel tanpore pa aksepte. Itilize yon imel reyel.", "err"); return false; }
@@ -5213,10 +5229,64 @@ function doUR(e) {
                 showOk("Kont Kreye!", "Byenveni " + pr + "! Kont ou aktif.");
                 return;
             }
-            var msg = error.code === "auth/email-already-in-use" ? "Imel sa a deja itilize." : "Ere: " + error.message;
-            toast(msg, "err");
+            toast(authErrorMessage(error), "err");
         });
     return false;
+    } catch (errOuter) {
+        /* Filet de sécurité : aucune erreur ne doit faire "rien ne se passe" */
+        console.error("doUR:", errOuter);
+        toast("Yon erè rive. Si w nan navigatè Instagram/Facebook, louvri sit la nan Chrome oswa Safari.", "err");
+        return false;
+    }
+}
+
+/* Messages d'erreur Auth clairs (gros facteur d'abandon sur mobile) */
+function authErrorMessage(error) {
+    var code = (error && error.code) ? error.code : "";
+    if (code === "auth/email-already-in-use") return "Imel sa a deja itilize. Eseye konekte.";
+    if (code === "auth/invalid-email") return "Imel la pa valab.";
+    if (code === "auth/weak-password") return "Modpas la twò fèb (omwen 6 karaktè).";
+    if (code === "auth/network-request-failed") return "Pwoblèm rezo. Verifye entènèt ou epi eseye ankò.";
+    if (code === "auth/too-many-requests") return "Twòp eseye. Tann yon ti moman epi reeseye.";
+    if (code === "auth/operation-not-allowed") return "Enskripsyon dezaktive pou kounye a. Kontakte sipò.";
+    if (code === "auth/internal-error" || code === "auth/web-storage-unsupported")
+        return "Navigatè w ap bloke kont lan. Si w nan navigatè Instagram/Facebook, louvri sit la nan Chrome oswa Safari.";
+    return "Erè: " + ((error && error.message) ? error.message : "eseye ankò.");
+}
+
+/* Détecte les navigateurs intégrés (in-app) qui bloquent souvent le stockage
+   Firebase => l'inscription échoue silencieusement. On affiche un bandeau. */
+function isInAppBrowser() {
+    var ua = (navigator.userAgent || "").toLowerCase();
+    return /\bfban\b|\bfbav\b|fb_iab|instagram|musical_ly|tiktok|micromessenger|\bline\b|snapchat|pinterest/.test(ua);
+}
+
+function warnIfInAppBrowser() {
+    if (!isInAppBrowser()) return;
+    if (document.getElementById("iabWarn")) return;
+    var bar = document.createElement("div");
+    bar.id = "iabWarn";
+    bar.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff9800;color:#1a1a1a;padding:11px 44px 11px 14px;font-size:0.82rem;line-height:1.4;font-family:'Montserrat',sans-serif;box-shadow:0 2px 10px rgba(0,0,0,0.3)";
+    bar.innerHTML = '<strong><i class="fas fa-exclamation-triangle"></i> Pou enskripsyon an mache byen :</strong> louvri sit la nan <strong>Chrome</strong> oswa <strong>Safari</strong> (peze meni " ⋮ " an wo a, epi chwazi « Ouvri nan navigatè »).'
+        + '<button onclick="copySiteLink(this)" style="margin-left:8px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:0.75rem;font-weight:600;cursor:pointer"><i class="fas fa-copy"></i> Kopye lyen an</button>'
+        + '<button onclick="document.getElementById(\'iabWarn\').remove()" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#1a1a1a;font-size:1.1rem;cursor:pointer">&times;</button>';
+    document.body.appendChild(bar);
+    /* Décale le contenu pour ne pas masquer le haut de page */
+    try { document.body.style.paddingTop = (bar.offsetHeight || 56) + "px"; } catch (e) {}
+}
+
+function copySiteLink(btn) {
+    var url = "https://bizenht.com/";
+    var done = function () { if (btn) btn.innerHTML = '<i class="fas fa-check"></i> Kopye!'; };
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(done).catch(function () { done(); });
+        } else {
+            var t = document.createElement("textarea");
+            t.value = url; document.body.appendChild(t); t.select();
+            document.execCommand("copy"); document.body.removeChild(t); done();
+        }
+    } catch (e) { done(); }
 }
 
 /* ====================================
@@ -5278,6 +5348,9 @@ function doFR(e) {
     if (!pr || !nm || !gn || !em || !tel || !vil || !px || !ds || !pw) { toast("Ranpli tout chan yo.", "err"); return false; }
     if (flZones.length === 0) { toast("Chwazi omwen yon zòn ou ka ale.", "err"); return false; }
     if (pw.length < 6) { toast("Modpas dwe gen omwen 6 karakte.", "err"); return false; }
+    if (em.indexOf("@") === -1 || em.indexOf(".") === -1) { toast("Imel la pa valab.", "err"); return false; }
+    var flAgreeEl = document.getElementById("flAgree");
+    if (flAgreeEl && !flAgreeEl.checked) { toast("Ou dwe dako ak kondisyon yo (18+).", "err"); return false; }
     if (isDisposableEmail(em)) { toast("Imel tanpore pa aksepte.", "err"); return false; }
     var commission = Math.round(parseInt(px) * 0.10);
     var netPay = parseInt(px) - commission;
@@ -5455,6 +5528,9 @@ function doKR(e) {
     var pw = document.getElementById("kreyPw") ? document.getElementById("kreyPw").value : "";
     if (!groupName || !zone || !count || !desc || !price || !contactName || !contactTel || !contactEmail || !pw) { toast("Ranpli tout chan yo.", "err"); return false; }
     if (pw.length < 6) { toast("Modpas dwe gen omwen 6 karakte.", "err"); return false; }
+    if (contactEmail.indexOf("@") === -1 || contactEmail.indexOf(".") === -1) { toast("Imel la pa valab.", "err"); return false; }
+    var kreyAgreeEl = document.getElementById("kreyAgree");
+    if (kreyAgreeEl && !kreyAgreeEl.checked) { toast("Ou dwe dako ak kondisyon yo (18+).", "err"); return false; }
     if (isDisposableEmail(contactEmail)) { toast("Imel tanpore pa aksepte.", "err"); return false; }
     var priceNum = parseInt(price);
     var commission = Math.round(priceNum * 0.10);
