@@ -51,22 +51,33 @@
           "@type": "Organization",
           "@id": "https://bizenht.com/#organization",
           "name": "Bizen HT",
+          "alternateName": ["Bizen", "BizenHT", "Bizen Haiti", "Bizen Ayiti"],
           "url": "https://bizenht.com/",
           "logo": "https://bizenht.com/Images/header.png",
           "description": "Sit rankont ak konpayon #1 an Ayiti. Moman entim, romantik ak diskrè pou granmoun 18 an+.",
+          "email": "bizenht@gmail.com",
           "areaServed": {
             "@type": "Country",
             "name": "Haiti"
           },
-          "sameAs": []
+          "sameAs": [
+            "https://www.instagram.com/bizen_ht",
+            "https://whatsapp.com/channel/0029VbCiTTQ6buMPwsobWw05"
+          ]
         },
         {
           "@type": "WebSite",
           "@id": "https://bizenht.com/#website",
           "url": "https://bizenht.com/",
           "name": "Bizen HT",
+          "alternateName": "Bizen Ayiti",
           "inLanguage": ["ht", "fr"],
-          "publisher": { "@id": "https://bizenht.com/#organization" }
+          "publisher": { "@id": "https://bizenht.com/#organization" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://bizenht.com/?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
         },
         {
           "@type": "Service",
@@ -262,10 +273,10 @@
         .pc-body{padding:20px}
         .pc-name{font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:8px}
         .pc-loc{color:var(--primary-light);font-size:0.85rem;margin-bottom:12px}
-        .pc-desc{color:var(--text-secondary);font-size:0.9rem;line-height:1.6;margin-bottom:5px;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        /* Descriptions des Elu TOUJOURS floues (aucun texte lisible, pour tous) */
-        .pc-desc{filter:blur(5px);user-select:none;pointer-events:none}
-        .elu-desc-blur{filter:blur(5px);user-select:none;pointer-events:none}
+        /* Comptes GRATUITS : 1 seule ligne de description visible (le reste = teaser flou .pc-blur) */
+        .pc-desc{color:var(--text-secondary);font-size:0.9rem;line-height:1.6;margin-bottom:5px;display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+        /* Membres PREMIUM : description complète visible */
+        body.is-premium .pc-desc{-webkit-line-clamp:unset;line-clamp:unset;display:block;overflow:visible}
         .pc-blur{margin-bottom:10px}
         .blt{filter:blur(4px);color:var(--text-muted);font-size:0.85rem;user-select:none}
 
@@ -5906,7 +5917,19 @@ function openEluProfile(btnOrUid) {
         h += onlineHtml + '</div></div>';
         h += '<div style="margin-bottom:12px">' + ratingHtml + '</div>';
         h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;color:#f48fb1;font-size:0.9rem"><i class="fas fa-map-marker-alt"></i> ' + (d.localisation || "Ayiti") + '</div>';
-        h += '<p class="elu-desc-blur" style="color:#b0b0c0;font-size:0.9rem;line-height:1.6;margin-bottom:16px">' + (d.description || "") + '</p>';
+        /* Description : complète pour les Premium ; 1 ligne visible + reste flou pour les gratuits. */
+        var descFull = d.description || "";
+        if (descFull) {
+            if (isPremiumViewer) {
+                h += '<p style="color:#b0b0c0;font-size:0.9rem;line-height:1.6;margin-bottom:16px">' + descFull + '</p>';
+            } else {
+                h += '<div style="margin-bottom:16px">';
+                h += '<p style="color:#b0b0c0;font-size:0.9rem;line-height:1.6;display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">' + descFull + '</p>';
+                h += '<p style="color:#b0b0c0;font-size:0.9rem;line-height:1.6;filter:blur(5px);user-select:none;pointer-events:none;max-height:2.6em;overflow:hidden;margin-top:2px">' + descFull + '</p>';
+                h += '<p style="color:#ffd700;font-size:0.8rem;margin-top:8px"><i class="fas fa-lock"></i> Vin Premium pou wè deskripsyon konplè a</p>';
+                h += '</div>';
+            }
+        }
         h += '<div style="display:flex;align-items:center;gap:8px;padding:14px;background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.2);border-radius:12px;margin-bottom:16px"><i class="fas fa-tag" style="color:#ffd700"></i><span style="font-weight:700;font-size:1.3rem;color:#ffd700">' + price.toLocaleString() + ' Gdes</span><span style="color:#6a6a80;font-size:0.8rem">/ Moman (Hotel inclus)</span></div>';
         h += '<h4 style="font-size:0.9rem;margin-bottom:10px"><i class="fas fa-images" style="color:#9c27b0"></i> Galri</h4>';
         h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">' + galHtml + '</div>';
