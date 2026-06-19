@@ -825,6 +825,10 @@
             <button class="sb-link" onclick="goPage('addacc',this)">
                 <i class="fas fa-user-plus"></i> Ajoute Kont
             </button>
+            <button class="sb-link" onclick="goPage('dyaspora',this)">
+                <i class="fas fa-plane-departure"></i> Lis Dyaspora
+                <span class="sb-bdg bdg-b" id="bdgDy">0</span>
+            </button>
 
             <div class="sb-cat">Aktivite</div>
             <button class="sb-link" onclick="goPage('res',this)">
@@ -1435,6 +1439,46 @@
                     </div>
                 </div>
                 <div id="acResult" style="padding:0 18px 18px;display:none"></div>
+            </div>
+        </div>
+
+        <!-- LIS DATANT DYASPORA -->
+        <div class="pg" id="pg-dyaspora">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-plane-departure" style="color:var(--blue)"></i> Lis Datant Dyaspora</h1>
+                <input class="srch" placeholder="Chache..." oninput="srchTbl('tbDy',this.value)">
+            </div>
+
+            <div class="fg">
+                <div class="fc"><h4><i class="fas fa-plane-arrival"></i> Vin Ayiti</h4><div class="fv" style="color:var(--blue)" id="dyCntVizit">0</div><div class="fs">Vle rezève Elu davans</div></div>
+                <div class="fc"><h4><i class="fas fa-video"></i> An Liy / Streaming</h4><div class="fv" style="color:#9c27b0" id="dyCntOnline">0</div><div class="fs">Vle plezi an dirèk</div></div>
+                <div class="fc"><h4><i class="fas fa-map-marked-alt"></i> Elu Lokal</h4><div class="fv" style="color:var(--green)" id="dyCntLokal">0</div><div class="fs">Vle Elu nan peyi yo</div></div>
+            </div>
+
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-globe-americas"></i> Dyaspora ki enskri</div>
+                    <div class="tc-filters">
+                        <button class="tf active" onclick="fltTbl('tbDy','all',this)">Tout</button>
+                        <button class="tf" onclick="fltTbl('tbDy','vizit',this)">Vin Ayiti</button>
+                        <button class="tf" onclick="fltTbl('tbDy','online',this)">An Liy</button>
+                        <button class="tf" onclick="fltTbl('tbDy','lokal',this)">Elu Lokal</button>
+                    </div>
+                </div>
+                <div class="tscroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Peyi</th>
+                                <th>Enterè</th>
+                                <th>WhatsApp</th>
+                                <th>Dat enskripsyon</th>
+                                <th>Aksyon</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbDy"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -2515,6 +2559,74 @@ function goPage(id, btn) {
     if (id === "avis")  loadReviews();
     if (id === "hotels") loadHotels();
     if (id === "addacc") toggleAccEluFields();
+    if (id === "dyaspora") loadDiaspora();
+}
+
+/* ====================================
+   LIS DATANT DYASPORA — gestion admin
+   ==================================== */
+function loadDiaspora() {
+    if (!db) return;
+    var tb = document.getElementById("tbDy");
+    if (tb) tb.innerHTML = emptyRow(5, "Chajman...");
+    db.collection("diasporaWaitlist").get().then(function(snap) {
+        var list = [];
+        snap.forEach(function(doc) { var d = doc.data(); d.id = doc.id; list.push(d); });
+        list.sort(function(a, b) {
+            var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+            var tb2 = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+            return tb2 - ta;
+        });
+        setBdg("bdgDy", list.length);
+        renderDiasporaTable(list);
+    }).catch(function(e) {
+        console.error("loadDiaspora:", e.code, e.message);
+        if (tb) tb.innerHTML = emptyRow(5, "Erè chajman.");
+    });
+}
+
+var DY_INTEREST = {
+    vizit:  { label: "Vin Ayiti (rezève davans)", cls: "blue" },
+    online: { label: "Plezi an liy / Streaming",  cls: "purple" },
+    lokal:  { label: "Elu nan peyi l",            cls: "green" }
+};
+
+function renderDiasporaTable(list) {
+    var tb = document.getElementById("tbDy");
+    if (!tb) return;
+    if (!list.length) { tb.innerHTML = emptyRow(5, "Pa gen enskripsyon dyaspora anko"); return; }
+
+    /* Compteurs par type d'intérêt (pour la décision business) */
+    var cnt = { vizit: 0, online: 0, lokal: 0 };
+    list.forEach(function(d) { if (cnt[d.interest] !== undefined) cnt[d.interest]++; });
+    setVal("dyCntVizit", cnt.vizit);
+    setVal("dyCntOnline", cnt.online);
+    setVal("dyCntLokal", cnt.lokal);
+
+    var h = "";
+    list.forEach(function(d) {
+        var dat = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleDateString("fr-FR") : "N/A";
+        var waNum = String(d.whatsapp || "").replace(/[^0-9]/g, "");
+        var waLink = waNum ? '<a href="https://wa.me/' + waNum + '" target="_blank" rel="noopener" style="color:#25d366;text-decoration:none"><i class="fab fa-whatsapp"></i> ' + escHtml(d.whatsapp) + '</a>' : escHtml(d.whatsapp || "N/A");
+        var it = DY_INTEREST[d.interest] || { label: d.interest || "—", cls: "" };
+        var itBadge = '<span class="sbadge ' + it.cls + '">' + escHtml(it.label) + '</span>';
+        h += '<tr data-filter="' + (d.interest || "") + '">';
+        h += '<td><strong>' + escHtml(d.country || "N/A") + '</strong></td>';
+        h += '<td>' + itBadge + '</td>';
+        h += '<td>' + waLink + '</td>';
+        h += '<td><small>' + dat + '</small></td>';
+        h += '<td>' + actBtn("ab-del", "deleteDiaspora('" + d.id + "')", "fa-trash", "Efase") + '</td>';
+        h += '</tr>';
+    });
+    tb.innerHTML = h;
+}
+
+function deleteDiaspora(id) {
+    if (!db) return;
+    if (!confirm("Efase enskripsyon dyaspora sa a ?")) return;
+    db.collection("diasporaWaitlist").doc(id).delete().then(function() {
+        loadDiaspora();
+    }).catch(function(e) { alert("Erè efasman: " + (e.message || e.code)); });
 }
 
 /* ====================================

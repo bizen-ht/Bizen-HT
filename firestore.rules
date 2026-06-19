@@ -103,6 +103,20 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    /* -------- LISTE D'ATTENTE DIASPORA (diasporaWaitlist) --------
+       N'importe quel visiteur (même non connecté) peut s'inscrire avec
+       son pays + WhatsApp. Lecture/gestion réservées à l'admin. */
+    match /diasporaWaitlist/{entryId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if request.resource.data.country is string
+        && request.resource.data.country.size() > 0
+        && request.resource.data.country.size() <= 80
+        && request.resource.data.whatsapp is string
+        && request.resource.data.whatsapp.size() > 0
+        && request.resource.data.whatsapp.size() <= 40
+        && request.resource.data.status == "new";
+    }
+
     /* -------- CHAT SÉCURISÉ : seulement les 2 participants -------- */
     match /chats/{resId} {
       allow create: if isSignedIn();

@@ -2187,6 +2187,50 @@ body.is-premium .pc-blur{display:none!important}
     <div id="lbDots" class="lb-dots"></div>
 </div>
 
+<!-- LIS DATANT DYASPORA -->
+<section class="section" id="dyaspora" style="background:#070710">
+    <div class="container">
+        <div class="sec-head">
+            <p class="sec-sub"><i class="fas fa-plane-departure"></i> Espesyal Dyaspora</p>
+            <h2 class="sec-title">Ou se <span class="hl">dyaspora</span>? Ou vle jwi Bizen?</h2>
+            <div class="ubar"></div>
+            <p class="sec-desc">Lè w ap vizite Ayiti, nou vle prepare yon moman espesyal pou ou. Kite peyi w ak nimewo WhatsApp ou — n ap kontakte w an prive lè gen yon Elu disponib pou ou. <strong>Total diskresyon.</strong></p>
+        </div>
+
+        <div style="max-width:480px;margin:0 auto;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px">
+            <form id="dyForm" onsubmit="return submitDiaspora(event)">
+                <div class="fg" style="margin-bottom:14px">
+                    <label style="display:block;font-size:0.85rem;color:var(--text-secondary);margin-bottom:6px">Ki peyi ou ye? *</label>
+                    <input type="text" id="dyCountry" required placeholder="Egz: USA, Kanada, Frans, Chili, Brezil..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:12px 14px;font-size:0.9rem">
+                </div>
+                <div class="fg" style="margin-bottom:16px">
+                    <label style="display:block;font-size:0.85rem;color:var(--text-secondary);margin-bottom:10px">Ki sa w ap chèche? *</label>
+                    <div style="display:flex;flex-direction:column;gap:10px">
+                        <label class="dy-opt" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--border);border-radius:12px;cursor:pointer;background:rgba(255,255,255,0.03)">
+                            <input type="radio" name="dyInterest" value="vizit" required style="width:20px;height:20px;min-width:20px;flex:0 0 20px;margin:0;padding:0;accent-color:var(--primary);cursor:pointer">
+                            <span style="flex:1;font-size:0.88rem;line-height:1.45;color:#fff">M ap vin Ayiti — rezève yon Elu davans</span>
+                        </label>
+                        <label class="dy-opt" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--border);border-radius:12px;cursor:pointer;background:rgba(255,255,255,0.03)">
+                            <input type="radio" name="dyInterest" value="online" style="width:20px;height:20px;min-width:20px;flex:0 0 20px;margin:0;padding:0;accent-color:var(--primary);cursor:pointer">
+                            <span style="flex:1;font-size:0.88rem;line-height:1.45;color:#fff">Plezi an liy — an dirèk / streaming</span>
+                        </label>
+                        <label class="dy-opt" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--border);border-radius:12px;cursor:pointer;background:rgba(255,255,255,0.03)">
+                            <input type="radio" name="dyInterest" value="lokal" style="width:20px;height:20px;min-width:20px;flex:0 0 20px;margin:0;padding:0;accent-color:var(--primary);cursor:pointer">
+                            <span style="flex:1;font-size:0.88rem;line-height:1.45;color:#fff">Jwenn yon Elu nan peyi kote m ye a</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="fg" style="margin-bottom:18px">
+                    <label style="display:block;font-size:0.85rem;color:var(--text-secondary);margin-bottom:6px">Nimewo WhatsApp ou *</label>
+                    <input type="tel" id="dyWhatsapp" required placeholder="Egz: +1 809 000 0000" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:12px 14px;font-size:0.9rem">
+                </div>
+                <button type="submit" class="btn btn-primary fw btn-glow"><i class="fas fa-heart"></i> Antre nan Lis la</button>
+                <p style="font-size:0.72rem;color:var(--text-muted);text-align:center;margin-top:12px"><i class="fas fa-lock"></i> Enfòmasyon ou yo rete prive. N ap kontakte w sèlman sou WhatsApp.</p>
+            </form>
+        </div>
+    </div>
+</section>
+
 <!-- CONTACT -->
 <section class="section alt-bg" id="contact">
     <div class="container">
@@ -5521,6 +5565,62 @@ function doOut() {
             showOk("Dekonekte", "Anbyen!");
         });
     }
+}
+
+/* ====================================
+   LIS DATANT DYASPORA
+   Capture les visiteurs de la diaspora (pays + WhatsApp).
+   Aucun compte requis : écriture publique dans "diasporaWaitlist".
+   ==================================== */
+function submitDiaspora(e) {
+    if (e) e.preventDefault();
+    var country = document.getElementById("dyCountry");
+    var whatsapp = document.getElementById("dyWhatsapp");
+    var countryVal = country ? country.value.trim() : "";
+    var whatsappVal = whatsapp ? whatsapp.value.trim() : "";
+    var interestEl = document.querySelector("input[name='dyInterest']:checked");
+    var interestVal = interestEl ? interestEl.value : "";
+
+    if (!countryVal) { toast("Antre peyi ou.", "err"); return false; }
+    if (!interestVal) { toast("Chwazi sa w ap chèche.", "err"); return false; }
+    if (!whatsappVal || whatsappVal.replace(/[^0-9]/g, "").length < 6) { toast("Antre yon nimewo WhatsApp valab.", "err"); return false; }
+
+    var form = document.getElementById("dyForm");
+    var btn = form ? form.querySelector("button[type='submit']") : null;
+    var btnOrig = btn ? btn.innerHTML : "";
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chaje...'; btn.disabled = true; }
+
+    if (!db) {
+        if (btn) { btn.innerHTML = btnOrig; btn.disabled = false; }
+        if (form) form.reset();
+        showOk("Mèsi!", "Ou nan lis la! N ap kontakte w sou WhatsApp lè gen yon moman pou ou.");
+        return false;
+    }
+
+    /* Anti-blocage réseau */
+    var dyWatch = setTimeout(function () {
+        if (btn) { btn.innerHTML = btnOrig; btn.disabled = false; }
+        toast("Koneksyon an lan. Eseye ankò.", "err");
+    }, 20000);
+
+    db.collection("diasporaWaitlist").add({
+        country: countryVal.slice(0, 80),
+        whatsapp: whatsappVal.slice(0, 40),
+        interest: interestVal,
+        status: "new",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function () {
+        clearTimeout(dyWatch);
+        if (btn) { btn.innerHTML = btnOrig; btn.disabled = false; }
+        if (form) form.reset();
+        showOk("Ou nan lis la! 💗", "Mèsi! N ap kontakte w an prive sou WhatsApp lè gen yon moman espesyal pou ou an Ayiti.");
+    }).catch(function (err) {
+        clearTimeout(dyWatch);
+        console.error("submitDiaspora:", err);
+        if (btn) { btn.innerHTML = btnOrig; btn.disabled = false; }
+        toast("Ere. Eseye ankò.", "err");
+    });
+    return false;
 }
 
 /* ====================================
