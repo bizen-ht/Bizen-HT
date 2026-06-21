@@ -18,6 +18,10 @@
 [functions.dm-send]
   external_node_modules = ["firebase-admin"]
 
+[functions.dm-cleanup]
+  external_node_modules = ["firebase-admin"]
+  schedule = "@hourly"
+
 [[redirects]]
   from = "/admin.html"
   to = "/404.html"

@@ -3586,6 +3586,14 @@ function mkCard(p, type, male) {
     h += '<span class="pp">/ Moman (Hotel inclus)</span>';
     h += '</div>';
     h += '<div class="pc-tags">' + tg + '</div>';
+    /* Bouton "Pale an prive" (messagerie) — visible pour TOUS (gratuit inclus),
+       placé au-dessus du bouton de réservation. Seulement sur les vrais profils. */
+    if (p.demo === false && p.uid) {
+        var cardNameJs = String(p.n || "Elu").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+        h += '<button class="btn-res" style="background:rgba(156,39,176,0.15);color:#ce93d8;border:1px solid rgba(156,39,176,0.45);margin-bottom:8px" onclick="event.stopPropagation();openDM(\'' + p.uid + '\',\'' + cardNameJs + '\')">';
+        h += '<i class="fas fa-comment-dots"></i> Pale an prive';
+        h += '</button>';
+    }
     h += '<button class="btn-res" onclick="pa()">';
     h += '<i class="fas fa-lock"></i> Rezeve - Premium Selman';
     h += '</button></div></div>';
@@ -6340,7 +6348,13 @@ function renderDM(msgs) {
     var body = document.getElementById("dmBody");
     if (!body) return;
     if (!msgs.length) {
-        body.innerHTML = '<p style="text-align:center;color:#6a6a80;font-size:0.85rem;margin:auto">Ekri premye mesaj ou pou kòmanse... 💬</p>';
+        var emptyH = '<div style="margin:auto;text-align:center">';
+        emptyH += '<p style="color:#6a6a80;font-size:0.85rem">Ekri premye mesaj ou pou kòmanse... 💬</p>';
+        if (!isPremiumViewer) {
+            emptyH += '<p style="color:#ff9800;font-size:0.76rem;margin-top:12px;padding:10px 14px;background:rgba(255,152,0,0.1);border:1px solid rgba(255,152,0,0.3);border-radius:12px;line-height:1.5"><i class="fas fa-info-circle"></i> Ou ka voye selman <strong>5 mesaj pa jou</strong>. Si w vle ilimite, <strong>pase Premium</strong>.</p>';
+        }
+        emptyH += '</div>';
+        body.innerHTML = emptyH;
         return;
     }
     var me = auth.currentUser.uid;
