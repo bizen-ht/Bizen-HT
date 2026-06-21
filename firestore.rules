@@ -103,6 +103,31 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    /* -------- MESSAGERIE DE DÉCOUVERTE (DM avant réservation) --------
+       Threads + messages. L'ÉCRITURE passe UNIQUEMENT par la fonction
+       Netlify dm-send (Admin SDK) => anti-triche sur les limites + filtrage.
+       Le client ne fait que LIRE ses propres fils/messages. */
+    match /dmThreads/{threadId} {
+      /* Lecture alignée sur les champs filtrables (requêtes par userUid / eluUid) */
+      allow read:   if isAdmin()
+        || (isSignedIn() && (resource.data.userUid == request.auth.uid
+                          || resource.data.eluUid == request.auth.uid));
+      allow create, delete: if isAdmin();   /* créé par la fonction (Admin SDK) */
+      /* Un participant peut SEULEMENT remettre à zéro ses compteurs de non-lus. */
+      allow update: if isAdmin()
+        || (isSignedIn() && request.auth.uid in resource.data.participants
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unreadForElu', 'unreadForUser']));
+    }
+    match /dmMessages/{msgId} {
+      /* Lu via une requête where("participants","array-contains",uid) => rule-safe */
+      allow read:  if isAdmin() || (isSignedIn() && request.auth.uid in resource.data.participants);
+      allow write: if isAdmin();   /* écrit par la fonction (Admin SDK) */
+    }
+    /* Compteurs journaliers : strictement serveur (anti-triche). */
+    match /dmCounters/{counterId} {
+      allow read, write: if isAdmin();
+    }
+
     /* -------- LISTE D'ATTENTE DIASPORA (diasporaWaitlist) --------
        N'importe quel visiteur (même non connecté) peut s'inscrire avec
        son pays + WhatsApp. Lecture/gestion réservées à l'admin. */

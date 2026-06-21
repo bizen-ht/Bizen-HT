@@ -15,6 +15,9 @@
 [functions.admin-create-user]
   external_node_modules = ["firebase-admin"]
 
+[functions.dm-send]
+  external_node_modules = ["firebase-admin"]
+
 [[redirects]]
   from = "/admin.html"
   to = "/404.html"
