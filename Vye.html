@@ -1523,9 +1523,14 @@
 
             <!-- OFFRE PREMIUM À RABAIS -->
             <div class="tc" style="margin-top:22px">
-                <div class="tc-head"><div class="tc-title"><i class="fas fa-tags"></i> Ofri Premium ak Rabè (kont a rebò)</div></div>
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-tags"></i> Òf Premium ak Rabè (kont a rebò)</div></div>
                 <div style="padding:18px">
                     <div id="offerStatus" style="margin-bottom:14px"></div>
+                    <div style="margin-bottom:14px">
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Tèks pwomosyon (sa k ap parèt sou sit la)</label>
+                        <input id="offerText" maxlength="160" placeholder="Egz: Jodi a sèlman : Premium a -30% !" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                        <p style="font-size:0.7rem;color:#6a6a80;margin-top:4px">Kont a rebò a ap ajoute otomatikman apre tèks ou a.</p>
+                    </div>
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;align-items:end">
                         <div>
                             <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Rabè (%)</label>
@@ -1537,11 +1542,11 @@
                         </div>
                         <div id="offerPreview" style="font-size:0.85rem;color:var(--gold)"></div>
                         <div style="display:flex;gap:8px">
-                            <button onclick="activateOffer()" style="background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:11px 18px;font-weight:600;cursor:pointer;font-size:0.84rem;flex:1"><i class="fas fa-bolt"></i> Lanse Ofri</button>
+                            <button onclick="activateOffer()" style="background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:11px 18px;font-weight:600;cursor:pointer;font-size:0.84rem;flex:1"><i class="fas fa-bolt"></i> Lanse Òf</button>
                             <button onclick="stopOffer()" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:11px 16px;font-weight:600;cursor:pointer;font-size:0.84rem"><i class="fas fa-stop"></i> Sispann</button>
                         </div>
                     </div>
-                    <p style="font-size:0.74rem;color:#6a6a80;margin-top:10px">Pri Premium nòmal: <strong>1,000 Gdes</strong>. Rabè a aplike otomatikman nan peman MonCash pandan ofri a aktif.</p>
+                    <p style="font-size:0.74rem;color:#6a6a80;margin-top:10px">Pri Premium nòmal: <strong>1,000 Gdes</strong>. Rabè a aplike otomatikman nan peman MonCash pandan òf la aktif.</p>
                 </div>
             </div>
 
@@ -2822,27 +2827,29 @@ function offerPreview() {
     if (!el) return;
     if (pct > 0 && pct < 100) {
         var price = Math.round(PREMIUM_BASE_PRICE * (1 - pct / 100));
-        el.innerHTML = 'Pri ofri: <strong>' + price.toLocaleString() + ' Gdes</strong><br><small style="color:#6a6a80">(olye 1,000)</small>';
+        el.innerHTML = 'Pri òf: <strong>' + price.toLocaleString() + ' Gdes</strong><br><small style="color:#6a6a80">(olye 1,000)</small>';
     } else el.innerHTML = "";
 }
 
 function activateOffer() {
     var pct = parseInt(document.getElementById("offerPercent").value, 10) || 0;
     var hours = parseFloat(document.getElementById("offerHours").value) || 0;
+    var text = (document.getElementById("offerText").value || "").trim();
     if (pct < 1 || pct > 90) { alert("Rabè dwe ant 1 ak 90%."); return; }
     if (hours <= 0) { alert("Antre yon dire valab (èdtan)."); return; }
+    if (!text) text = "Jodi a sèlman : Premium a -" + pct + "% !";
     var endsAt = firebase.firestore.Timestamp.fromMillis(Date.now() + hours * 3600 * 1000);
     db.collection("settings").doc("premiumOffer").set({
-        active: true, percent: pct, endsAt: endsAt,
+        active: true, percent: pct, endsAt: endsAt, text: text,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function () { toast("Ofri lanse! 🔥", true); loadOfferStatus(); })
+    }).then(function () { toast("Òf lanse! 🔥", true); loadOfferStatus(); })
       .catch(function (e) { alert("Erè: " + (e.message || e.code)); });
 }
 
 function stopOffer() {
-    if (!confirm("Sispann ofri Premium lan?")) return;
+    if (!confirm("Sispann òf Premium lan?")) return;
     db.collection("settings").doc("premiumOffer").set({ active: false }, { merge: true })
-      .then(function () { toast("Ofri sispann.", true); loadOfferStatus(); })
+      .then(function () { toast("Òf sispann.", true); loadOfferStatus(); })
       .catch(function (e) { alert("Erè: " + (e.message || e.code)); });
 }
 
@@ -2851,24 +2858,26 @@ function loadOfferStatus() {
     if (!db || !el) return;
     if (offerStatusTimer) { clearInterval(offerStatusTimer); offerStatusTimer = null; }
     db.collection("settings").doc("premiumOffer").get().then(function (doc) {
-        if (!doc.exists) { el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Pa gen ofri pou kounye a.</span>'; return; }
+        if (!doc.exists) { el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Pa gen òf pou kounye a.</span>'; return; }
         var o = doc.data();
+        var txtEl = document.getElementById("offerText");
+        if (txtEl && o.text && !txtEl.value) txtEl.value = o.text;
         var ends = o.endsAt && o.endsAt.toMillis ? o.endsAt.toMillis() : 0;
         if (o.active === true && ends > Date.now()) {
             var price = Math.round(PREMIUM_BASE_PRICE * (1 - (o.percent || 0) / 100));
             var render = function () {
                 var left = ends - Date.now();
                 if (left <= 0) {
-                    el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Ofri a fini.</span>';
+                    el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Òf la fini.</span>';
                     if (offerStatusTimer) { clearInterval(offerStatusTimer); offerStatusTimer = null; }
                     return;
                 }
-                el.innerHTML = '<div style="background:rgba(255,152,0,0.12);border:1px solid rgba(255,152,0,0.4);border-radius:10px;padding:12px;font-size:0.88rem;color:#ff9800"><i class="fas fa-bolt"></i> <strong>OFRI AKTIF: -' + o.percent + '%</strong> → Premium a <strong>' + price.toLocaleString() + ' Gdes</strong>. Fini nan <strong>' + fmtCountdown(left) + '</strong> ⏳</div>';
+                el.innerHTML = '<div style="background:rgba(255,152,0,0.12);border:1px solid rgba(255,152,0,0.4);border-radius:10px;padding:12px;font-size:0.88rem;color:#ff9800"><i class="fas fa-bolt"></i> <strong>ÒF AKTIF: -' + o.percent + '%</strong> → Premium a <strong>' + price.toLocaleString() + ' Gdes</strong>. Fini nan <strong>' + fmtCountdown(left) + '</strong> ⏳</div>';
             };
             render();
             offerStatusTimer = setInterval(render, 1000);
         } else {
-            el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Pa gen ofri aktif.</span>';
+            el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Pa gen òf aktif.</span>';
         }
     }).catch(function (e) { console.warn("loadOfferStatus:", e.code); });
 }

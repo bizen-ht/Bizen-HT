@@ -3526,6 +3526,23 @@ setTimeout(stopPre, 1500);
 setTimeout(stopPre, 3000);
 setTimeout(stopPre, 5000);
 
+/* Calcule le rabais d'un Elu (montant fixe pendant X jours) */
+function eluDiscount(d) {
+    var amt = (d && d.discountAmount) || 0;
+    var ends = 0;
+    if (d && d.discountEndsAt && d.discountEndsAt.toMillis) ends = d.discountEndsAt.toMillis();
+    else if (d && typeof d.discountEndsAt === "number") ends = d.discountEndsAt;
+    var base = (d && d.prixMoment) || 0;
+    var active = amt > 0 && ends > Date.now();
+    return {
+        active: active,
+        amount: amt,
+        base: base,
+        newPrice: active ? Math.max(0, base - amt) : base,
+        daysLeft: active ? Math.ceil((ends - Date.now()) / (24 * 3600 * 1000)) : 0
+    };
+}
+
 /* ====================================
    BUILD PROFILE CARD
    ==================================== */
@@ -3570,7 +3587,9 @@ function mkCard(p, type, male) {
     h += '<i class="far fa-heart"></i>';
     h += '</button></div>';
     h += '<div class="pc-body">';
-    h += '<h3 class="pc-name">' + p.n + '</h3>';
+    h += '<h3 class="pc-name">' + p.n;
+    if (p.discountBadge) h += ' <span style="display:inline-block;vertical-align:middle;background:#ff9800;color:#1a1a1a;font-size:0.6rem;font-weight:700;padding:2px 7px;border-radius:50px;font-family:\'Montserrat\',sans-serif"><i class="fas fa-tags"></i> ' + p.discountBadge + '</span>';
+    h += '</h3>';
     h += '<div class="pc-loc">';
     h += '<i class="fas fa-map-marker-alt"></i> ' + p.l;
     h += '</div>';
@@ -3583,6 +3602,7 @@ function mkCard(p, type, male) {
     h += '</div>';
     h += '<div class="pc-price">';
     h += '<i class="fas fa-tag"></i>';
+    if (p.origP) h += '<span style="text-decoration:line-through;color:#6a6a80;font-size:0.8rem;margin-right:6px">' + p.origP + '</span>';
     h += '<span class="pv">' + p.p + ' Gdes</span>';
     h += '<span class="pp">/ Moman (Hotel inclus)</span>';
     h += '</div>';
@@ -3870,11 +3890,14 @@ function renderRealFreelancers() {
                 if (d.type !== "freelancer") return;   /* Krey gérés ailleurs */
                 var male = (d.genre === "homme" || d.genre === "gason");
 
+                var disc = eluDiscount(d);
                 var cardData = {
                     n: d.pseudo || ((d.prenom || "") + " " + (d.nomInitial || "")),
                     l: d.localisation || "Ayiti",
                     lk: (d.localisation || "").toLowerCase().replace(/\s+/g, ""),
-                    p: (d.prixMoment || 0).toLocaleString(),
+                    p: disc.newPrice.toLocaleString(),
+                    origP: disc.active ? disc.base.toLocaleString() : "",
+                    discountBadge: disc.active ? ('Rabè -' + disc.amount.toLocaleString() + ' Gdes · ' + disc.daysLeft + ' jou') : "",
                     d: d.description || "Elu verifye Bizen HT.",
                     t: ["Verifye", "Hotel inclus"],
                     b: d.isOnline ? "An Liy" : "Verifye",
@@ -6087,7 +6110,8 @@ function openEluProfile(btnOrUid) {
         var lvl = eluLevel(count, avg);
 
         var name = d.pseudo || ((d.prenom || "") + " " + (d.nomInitial || ""));
-        var price = (d.prixMoment || 0);
+        var disc = eluDiscount(d);
+        var price = disc.newPrice;   /* prix réduit si rabais actif */
         var photo = d.photoUrl || "";
         var gallery = d.gallery || [];
         var videos = d.videos || [];
@@ -6130,7 +6154,8 @@ function openEluProfile(btnOrUid) {
         h += '<button class="mx" onclick="cM(\'eluProfM\')"><i class="fas fa-times"></i></button>';
         h += '<div style="display:flex;gap:16px;align-items:center;margin-bottom:16px">';
         h += '<div style="width:90px;height:90px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:3px solid #e91e63">' + avatar + '</div>';
-        h += '<div><h2 style="font-family:\'Playfair Display\',serif;font-size:1.5rem;margin-bottom:4px">' + name + '</h2>';
+        var discBadgeHtml = disc.active ? ' <span style="display:inline-block;vertical-align:middle;background:#ff9800;color:#1a1a1a;font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:50px"><i class="fas fa-tags"></i> Rabè -' + disc.amount.toLocaleString() + ' Gdes · ' + disc.daysLeft + ' jou</span>' : '';
+        h += '<div><h2 style="font-family:\'Playfair Display\',serif;font-size:1.5rem;margin-bottom:4px">' + name + discBadgeHtml + '</h2>';
         h += '<div style="margin-bottom:6px">' + lvlBadge + '</div>';
         h += onlineHtml + '</div></div>';
         h += '<div style="margin-bottom:12px">' + ratingHtml + '</div>';
@@ -6148,7 +6173,8 @@ function openEluProfile(btnOrUid) {
                 h += '</div>';
             }
         }
-        h += '<div style="display:flex;align-items:center;gap:8px;padding:14px;background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.2);border-radius:12px;margin-bottom:16px"><i class="fas fa-tag" style="color:#ffd700"></i><span style="font-weight:700;font-size:1.3rem;color:#ffd700">' + price.toLocaleString() + ' Gdes</span><span style="color:#6a6a80;font-size:0.8rem">/ Moman (Hotel inclus)</span></div>';
+        var origPriceHtml = disc.active ? '<span style="text-decoration:line-through;color:#6a6a80;font-size:0.95rem;margin-right:6px">' + disc.base.toLocaleString() + '</span>' : '';
+        h += '<div style="display:flex;align-items:center;gap:8px;padding:14px;background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.2);border-radius:12px;margin-bottom:16px"><i class="fas fa-tag" style="color:#ffd700"></i>' + origPriceHtml + '<span style="font-weight:700;font-size:1.3rem;color:#ffd700">' + price.toLocaleString() + ' Gdes</span><span style="color:#6a6a80;font-size:0.8rem">/ Moman (Hotel inclus)</span></div>';
         h += '<h4 style="font-size:0.9rem;margin-bottom:10px"><i class="fas fa-images" style="color:#9c27b0"></i> Galri</h4>';
         h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">' + galHtml + '</div>';
         /* MESSAGERIE : tout le monde peut écrire (les gratuits "à l'aveugle"). */
@@ -7375,17 +7401,37 @@ function offerCountdownTxt(ms) {
 
 function initPremiumOffer() {
     if (!db) return;
-    db.collection("settings").doc("premiumOffer").get().then(function (doc) {
-        if (!doc.exists) return;
-        var o = doc.data();
-        var ends = o.endsAt && o.endsAt.toMillis ? o.endsAt.toMillis() : (typeof o.endsAt === "number" ? o.endsAt : 0);
-        if (o.active === true && o.percent > 0 && o.percent < 100 && ends > Date.now()) {
-            var price = Math.round(1000 * (1 - o.percent / 100));
-            window.premiumOffer = { percent: o.percent, endsAt: ends, price: price };
-            showPremiumOfferBanner();
-            applyOfferPrices();
+    /* onSnapshot = la bannière apparaît/disparaît en direct quand l'admin change l'offre */
+    db.collection("settings").doc("premiumOffer").onSnapshot(function (doc) {
+        var active = false;
+        if (doc.exists) {
+            var o = doc.data();
+            var ends = o.endsAt && o.endsAt.toMillis ? o.endsAt.toMillis() : (typeof o.endsAt === "number" ? o.endsAt : 0);
+            if (o.active === true && o.percent > 0 && o.percent < 100 && ends > Date.now()) {
+                window.premiumOffer = {
+                    percent: o.percent, endsAt: ends,
+                    price: Math.round(1000 * (1 - o.percent / 100)),
+                    text: o.text || ("Jodi a sèlman : Premium a -" + o.percent + "% !")
+                };
+                active = true;
+            }
         }
-    }).catch(function () {});
+        if (!active) { window.premiumOffer = null; removeOfferBar(); }
+        else showPremiumOfferBanner();
+        applyOfferPrices();
+    }, function () {});
+}
+
+function setNavbarOffset(px) {
+    var nav = document.getElementById("navbar");
+    if (nav) nav.style.top = px ? (px + "px") : "";
+}
+
+function removeOfferBar() {
+    if (premiumOfferTimer) { clearInterval(premiumOfferTimer); premiumOfferTimer = null; }
+    var bar = document.getElementById("premOfferBar");
+    if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
+    setNavbarOffset(0);
 }
 
 function showPremiumOfferBanner() {
@@ -7395,22 +7441,19 @@ function showPremiumOfferBanner() {
     if (!bar) {
         bar = document.createElement("div");
         bar.id = "premOfferBar";
-        bar.style.cssText = "position:fixed;bottom:0;left:0;right:0;z-index:9998;background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;padding:11px 14px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;box-shadow:0 -4px 16px rgba(0,0,0,0.35);font-size:0.88rem;font-weight:600;cursor:pointer";
+        /* EN HAUT du site (au-dessus du menu) */
+        bar.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:1001;background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;padding:9px 36px 9px 14px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;box-shadow:0 2px 14px rgba(0,0,0,0.35);font-size:0.84rem;font-weight:600;cursor:pointer";
         bar.onclick = function (e) { if (e.target.id !== "premOfferClose") { cM("paM"); oM("pM"); } };
         document.body.appendChild(bar);
     }
     var render = function () {
         var left = o.endsAt - Date.now();
-        if (left <= 0) {
-            if (premiumOfferTimer) { clearInterval(premiumOfferTimer); premiumOfferTimer = null; }
-            window.premiumOffer = null;
-            if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
-            applyOfferPrices();
-            return;
-        }
-        bar.innerHTML = '<span><i class="fas fa-bolt"></i> Jodi a sèlman : Premium a <strong>-' + o.percent + '%</strong> (' + o.price.toLocaleString() + ' Gdes). Of la ap fini nan <strong>' + offerCountdownTxt(left) + '</strong> ⏳</span>'
-            + '<button style="background:#fff;color:#e91e63;border:none;border-radius:50px;padding:6px 16px;font-weight:700;cursor:pointer;font-size:0.82rem"><i class="fas fa-crown"></i> Pwofite</button>'
-            + '<span id="premOfferClose" onclick="event.stopPropagation();dismissOfferBar()" style="position:absolute;top:4px;right:10px;font-size:1.1rem;opacity:0.8">&times;</span>';
+        if (left <= 0) { window.premiumOffer = null; removeOfferBar(); applyOfferPrices(); return; }
+        bar.innerHTML = '<span><i class="fas fa-bolt"></i> ' + (o.text || "") + ' Òf la ap fini nan <strong>' + offerCountdownTxt(left) + '</strong> ⏳</span>'
+            + '<button style="background:#fff;color:#e91e63;border:none;border-radius:50px;padding:5px 14px;font-weight:700;cursor:pointer;font-size:0.78rem;white-space:nowrap"><i class="fas fa-crown"></i> Pwofite</button>'
+            + '<span id="premOfferClose" onclick="event.stopPropagation();dismissOfferBar()" style="position:absolute;top:3px;right:10px;font-size:1.1rem;opacity:0.85">&times;</span>';
+        /* Décale le menu fixe sous la bannière */
+        setNavbarOffset(bar.offsetHeight || 40);
     };
     render();
     if (premiumOfferTimer) clearInterval(premiumOfferTimer);
@@ -7418,8 +7461,7 @@ function showPremiumOfferBanner() {
 }
 
 function dismissOfferBar() {
-    var bar = document.getElementById("premOfferBar");
-    if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
+    removeOfferBar();
     /* l'offre reste active (juste la bannière masquée pour cette session) */
 }
 

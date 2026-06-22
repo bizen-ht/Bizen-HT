@@ -881,6 +881,42 @@
                     </button>
                 </div>
             </div>
+
+            <!-- RABAIS SUR LE PRIX (Elu) -->
+            <div id="discountCard" style="display:none;background:rgba(255,152,0,0.06);border:1px solid rgba(255,152,0,0.25);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px">
+                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+                    <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,152,0,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                        <i class="fas fa-tags" style="color:#ff9800;font-size:1.3rem"></i>
+                    </div>
+                    <div style="flex:1;min-width:160px">
+                        <div style="font-weight:700;font-size:1rem">Rabè sou pri ou</div>
+                        <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;margin-top:2px">
+                            Bay yon rabè (an Gdes) sou pri ou pou yon peryòd. Yon ti badj <strong>« Rabè »</strong> ap parèt sou pwofil ou, epi kliyan yo ap peye pri redui a.
+                        </p>
+                        <div id="discountStatus" style="margin-top:6px;font-size:0.8rem;font-weight:600"></div>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;align-items:end">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:5px">Montan rabè (Gdes)</label>
+                        <input id="discAmount" type="number" min="1" placeholder="Egz: 500" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:5px">Pou konbyen jou</label>
+                        <select id="discDays" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem">
+                            <option value="1">1 jou</option>
+                            <option value="2">2 jou</option>
+                            <option value="3">3 jou</option>
+                            <option value="5">5 jou</option>
+                            <option value="7">7 jou</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                        <button onclick="activateEluDiscount()" style="flex:1;background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:10px;padding:11px 16px;font-weight:600;cursor:pointer;font-size:0.84rem"><i class="fas fa-tags"></i> Aktive</button>
+                        <button onclick="stopEluDiscount()" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:10px;padding:11px 14px;font-weight:600;cursor:pointer;font-size:0.84rem"><i class="fas fa-stop"></i></button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- FL RESERVATIONS -->
@@ -1697,6 +1733,8 @@ function setupFreelancer() {
 
     /* Mode Reg (Elu femmes) */
     renderRegMode();
+    /* Rabais sur le prix (tous les Elus) */
+    renderEluDiscount();
 
     /* Profile edit fields */
     var descEl = document.getElementById("flDesc");
@@ -1787,6 +1825,62 @@ function toggleRegMode() {
         if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
         showToast("Erè. Eseye ankò.", "error");
     });
+}
+
+/* ====================================
+   RABAIS SUR LE PRIX (Elu)
+   ==================================== */
+function renderEluDiscount() {
+    var card = document.getElementById("discountCard");
+    if (!card) return;
+    if (!userData || userData.type !== "freelancer") { card.style.display = "none"; return; }
+    card.style.display = "block";
+    var st = document.getElementById("discountStatus");
+    var amt = userData.discountAmount || 0;
+    var ends = userData.discountEndsAt && userData.discountEndsAt.toMillis ? userData.discountEndsAt.toMillis() : 0;
+    var active = amt > 0 && ends > Date.now();
+    if (st) {
+        if (active) {
+            var daysLeft = Math.ceil((ends - Date.now()) / (24 * 3600 * 1000));
+            var newPrice = Math.max(0, (userData.prixMoment || 0) - amt);
+            st.innerHTML = '<span style="color:#ff9800"><i class="fas fa-circle" style="font-size:0.5rem"></i> Rabè AKTIF : -' + amt.toLocaleString() + ' Gdes → pri ' + newPrice.toLocaleString() + ' Gdes (rès ' + daysLeft + ' jou)</span>';
+        } else {
+            st.innerHTML = '<span style="color:var(--text-muted)"><i class="fas fa-circle" style="font-size:0.5rem"></i> Pa gen rabè aktif</span>';
+        }
+    }
+}
+
+function activateEluDiscount() {
+    if (!db || !currentUser || !userData) { showToast("Sesyon pa valab.", "error"); return; }
+    var amt = parseInt((document.getElementById("discAmount") || {}).value, 10) || 0;
+    var days = parseInt((document.getElementById("discDays") || {}).value, 10) || 1;
+    var price = userData.prixMoment || 0;
+    if (amt < 1) { showToast("Antre yon montan rabè.", "error"); return; }
+    if (amt >= price) { showToast("Rabè a dwe pi piti pase pri ou (" + price.toLocaleString() + " Gdes).", "error"); return; }
+    var endsAt = firebase.firestore.Timestamp.fromMillis(Date.now() + days * 24 * 3600 * 1000);
+    var data = { discountAmount: amt, discountEndsAt: endsAt };
+    Promise.all([
+        db.collection("users").doc(currentUser.uid).set(data, { merge: true }),
+        db.collection("publicProfiles").doc(currentUser.uid).set(data, { merge: true })
+    ]).then(function() {
+        userData.discountAmount = amt; userData.discountEndsAt = endsAt;
+        renderEluDiscount();
+        showToast("Rabè aktive pou " + days + " jou! 🏷️", "success");
+    }).catch(function(e) { console.error(e); showToast("Erè. Eseye ankò.", "error"); });
+}
+
+function stopEluDiscount() {
+    if (!db || !currentUser || !userData) return;
+    if (!confirm("Sispann rabè a?")) return;
+    var data = { discountAmount: 0, discountEndsAt: null };
+    Promise.all([
+        db.collection("users").doc(currentUser.uid).set(data, { merge: true }),
+        db.collection("publicProfiles").doc(currentUser.uid).set(data, { merge: true })
+    ]).then(function() {
+        userData.discountAmount = 0; userData.discountEndsAt = null;
+        renderEluDiscount();
+        showToast("Rabè sispann.", "success");
+    }).catch(function(e) { console.error(e); showToast("Erè.", "error"); });
 }
 
 /* ====================================
@@ -3556,6 +3650,8 @@ function syncPublicProfile(uid, data, isLogin) {
         bizenCode: data.bizenCode || "",
         isPremium: data.isPremium === true,
         regActive: data.regActive === true,
+        discountAmount: data.discountAmount || 0,
+        discountEndsAt: data.discountEndsAt || null,
         status: data.status || "en_attente",
         kreyMemberCount: data.kreyMemberCount || null,
         ratingAvg: data.ratingAvg || 0,
