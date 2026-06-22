@@ -2044,7 +2044,7 @@ body.no-screenshot * {
             </div>
             <div class="plan gold-plan sr">
                 <div class="plan-rib">Pi Popilè</div>
-                <div class="plan-head"><div class="plan-ico gld"><i class="fas fa-crown"></i></div><h3>Aksè Premium</h3><div class="plan-price"><span class="pb">1,000</span><span class="pc2">Gdes</span><span class="pt">Peman Inik</span></div></div>
+                <div class="plan-head"><div class="plan-ico gld"><i class="fas fa-crown"></i></div><h3>Aksè Premium</h3><div class="plan-price"><span class="pb prem-price-val">1,000</span><span class="pc2">Gdes</span><span class="prem-offer-badge" style="display:none;background:#e91e63;color:#fff;font-size:0.65rem;font-weight:700;padding:1px 7px;border-radius:50px;margin-left:5px"></span><span class="pt">Peman Inik</span></div></div>
                 <ul class="plan-feats">
                     <li class="fy"><i class="fas fa-check"></i> Tout aksè gratis yo</li>
                     <li class="fy"><i class="fas fa-check"></i> Pwofil konplè + foto klè</li>
@@ -2942,7 +2942,7 @@ body.is-premium .pc-blur{display:none!important}
             </div>
             <h2>Vin Manm Premium</h2>
             <p>
-                Peye 1,000 Gdes via MonCash
+                Konplete peman ou via MonCash
             </p>
         </div>
 
@@ -2950,8 +2950,9 @@ body.is-premium .pc-blur{display:none!important}
 
             <!-- PRICE -->
             <div class="ppb">
-                <span class="bigp">1,000</span>
+                <span class="bigp prem-price-val">1,000</span>
                 <span class="plbl">Gourdes</span>
+                <span class="prem-offer-badge" style="display:none;background:#e91e63;color:#fff;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:50px;margin-left:6px"></span>
                 <span class="ponc">Peman Inik!</span>
             </div>
 
@@ -4240,6 +4241,7 @@ document.addEventListener("DOMContentLoaded", function () {
        "ne se charge pas". On prévient l'utilisateur d'ouvrir dans Chrome/Safari.
        ==================================== */
     try { warnIfInAppBrowser(); } catch (e) {}
+    try { initPremiumOffer(); } catch (e) {}
 
     /* ====================================
        PAYMENT RETURN CHECK
@@ -6874,6 +6876,7 @@ function createMonCashPayment(
             body: JSON.stringify({
                 action: "create",
                 amount: 1000,
+                purpose: "premium",
                 userId: userId,
                 userEmail: email,
                 firstName: firstName,
@@ -6891,10 +6894,11 @@ function createMonCashPayment(
         );
 
         if (btn) {
+            var _amt = window.premiumOffer ? window.premiumOffer.price : 1000;
             btn.innerHTML =
                 '<i class="fas ' +
                 'fa-mobile-alt"></i>' +
-                ' Peye 1,000 Gdes' +
+                ' Peye ' + _amt.toLocaleString() + ' Gdes' +
                 ' via MonCash';
             btn.disabled = false;
         }
@@ -6925,7 +6929,7 @@ function createMonCashPayment(
                         method: "moncash",
                         referenceId:
                             data.referenceId,
-                        amount: 1000,
+                        amount: (data && data.amount) ? data.amount : 1000,
                         status: "en_attente",
                         provider: "bazik",
                         purpose: "premium",
@@ -6977,10 +6981,11 @@ function createMonCashPayment(
             "Payment error:", err
         );
         if (btn) {
+            var _amt = window.premiumOffer ? window.premiumOffer.price : 1000;
             btn.innerHTML =
                 '<i class="fas ' +
                 'fa-mobile-alt"></i>' +
-                ' Peye 1,000 Gdes' +
+                ' Peye ' + _amt.toLocaleString() + ' Gdes' +
                 ' via MonCash';
             btn.disabled = false;
         }
@@ -7031,7 +7036,7 @@ function dPay() {
             email: auth.currentUser.email,
             method: "moncash",
             reference: refValue,
-            amount: 1000,
+            amount: window.premiumOffer ? window.premiumOffer.price : 1000,
             status: "en_attente",
             provider: "manual",
             purpose: "premium",
@@ -7353,6 +7358,85 @@ function dPay() {
 function pa() { oM("paM"); }
 
 /* ====================================
+   OFFRE PREMIUM À RABAIS — bannière + compte à rebours
+   Lit settings/premiumOffer. Si active & non expirée : bannière + prix réduit.
+   Le VRAI prix est appliqué côté serveur (moncash.js).
+   ==================================== */
+var premiumOfferTimer = null;
+window.premiumOffer = null;   /* { percent, endsAt(ms), price } si active */
+
+function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+function offerCountdownTxt(ms) {
+    var s = Math.max(0, Math.floor(ms / 1000));
+    var h = Math.floor(s / 3600); s -= h * 3600;
+    var m = Math.floor(s / 60); s -= m * 60;
+    return pad2(h) + ":" + pad2(m) + ":" + pad2(s);
+}
+
+function initPremiumOffer() {
+    if (!db) return;
+    db.collection("settings").doc("premiumOffer").get().then(function (doc) {
+        if (!doc.exists) return;
+        var o = doc.data();
+        var ends = o.endsAt && o.endsAt.toMillis ? o.endsAt.toMillis() : (typeof o.endsAt === "number" ? o.endsAt : 0);
+        if (o.active === true && o.percent > 0 && o.percent < 100 && ends > Date.now()) {
+            var price = Math.round(1000 * (1 - o.percent / 100));
+            window.premiumOffer = { percent: o.percent, endsAt: ends, price: price };
+            showPremiumOfferBanner();
+            applyOfferPrices();
+        }
+    }).catch(function () {});
+}
+
+function showPremiumOfferBanner() {
+    var o = window.premiumOffer;
+    if (!o) return;
+    var bar = document.getElementById("premOfferBar");
+    if (!bar) {
+        bar = document.createElement("div");
+        bar.id = "premOfferBar";
+        bar.style.cssText = "position:fixed;bottom:0;left:0;right:0;z-index:9998;background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;padding:11px 14px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;box-shadow:0 -4px 16px rgba(0,0,0,0.35);font-size:0.88rem;font-weight:600;cursor:pointer";
+        bar.onclick = function (e) { if (e.target.id !== "premOfferClose") { cM("paM"); oM("pM"); } };
+        document.body.appendChild(bar);
+    }
+    var render = function () {
+        var left = o.endsAt - Date.now();
+        if (left <= 0) {
+            if (premiumOfferTimer) { clearInterval(premiumOfferTimer); premiumOfferTimer = null; }
+            window.premiumOffer = null;
+            if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
+            applyOfferPrices();
+            return;
+        }
+        bar.innerHTML = '<span><i class="fas fa-bolt"></i> Jodi a sèlman : Premium a <strong>-' + o.percent + '%</strong> (' + o.price.toLocaleString() + ' Gdes). Of la ap fini nan <strong>' + offerCountdownTxt(left) + '</strong> ⏳</span>'
+            + '<button style="background:#fff;color:#e91e63;border:none;border-radius:50px;padding:6px 16px;font-weight:700;cursor:pointer;font-size:0.82rem"><i class="fas fa-crown"></i> Pwofite</button>'
+            + '<span id="premOfferClose" onclick="event.stopPropagation();dismissOfferBar()" style="position:absolute;top:4px;right:10px;font-size:1.1rem;opacity:0.8">&times;</span>';
+    };
+    render();
+    if (premiumOfferTimer) clearInterval(premiumOfferTimer);
+    premiumOfferTimer = setInterval(render, 1000);
+}
+
+function dismissOfferBar() {
+    var bar = document.getElementById("premOfferBar");
+    if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
+    /* l'offre reste active (juste la bannière masquée pour cette session) */
+}
+
+/* Met à jour les prix Premium affichés (1000 -> prix réduit) */
+function applyOfferPrices() {
+    var o = window.premiumOffer;
+    var price = o ? o.price : 1000;
+    document.querySelectorAll(".prem-price-val").forEach(function (el) {
+        el.textContent = price.toLocaleString();
+    });
+    document.querySelectorAll(".prem-offer-badge").forEach(function (el) {
+        el.style.display = o ? "inline-block" : "none";
+        if (o) el.textContent = "-" + o.percent + "%";
+    });
+}
+
+/* ====================================
    NAVBAR CONNECTED
    ==================================== */
 function renderNavIn(user) {
@@ -7360,13 +7444,7 @@ function renderNavIn(user) {
     if (!nb) return;
     var nm = user.email.split("@")[0];
     nb.innerHTML = "";
-    var msgBtn = document.createElement("button");
-    msgBtn.className = "btn-nl";
-    msgBtn.onclick = openDMInbox;
-    msgBtn.style.position = "relative";
-    msgBtn.innerHTML = '<i class="fas fa-comment-dots"></i> Mesaj <span id="navMsgBadge" style="display:none;position:absolute;top:0;right:0;background:#e91e63;color:#fff;font-size:0.6rem;min-width:16px;height:16px;line-height:16px;border-radius:8px;padding:0 4px">0</span>';
-    nb.appendChild(msgBtn);
-    startUserDMBadge();
+    /* La messagerie (inbox) est désormais DANS le dashboard, pas dans le menu du site. */
     var dashBtn = document.createElement("button");
     dashBtn.className = "btn-nl";
     dashBtn.onclick = function () { window.location.href = "/dashboard"; };

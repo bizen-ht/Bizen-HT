@@ -2,6 +2,46 @@ const https = require('https');
 const BUILD_VERSION =
     "moncash-fix-token-v2";
 const crypto = require('crypto');
+const admin = require('firebase-admin');
+
+/* ====================================
+   PRIX PREMIUM — calculé CÔTÉ SERVEUR
+   Lit l'offre settings/premiumOffer { active, percent, endsAt }.
+   Applique le rabais UNIQUEMENT si l'offre est active et non expirée.
+   Repli sécurisé : prix plein (1000) en cas d'erreur (jamais plus cher).
+   ==================================== */
+const PREMIUM_BASE = 1000;
+var _fbReady = false;
+function initFb() {
+    if (_fbReady) return;
+    var raw = process.env.FIREBASE_SERVICE_ACCOUNT || "";
+    if (!raw) return;
+    if (!admin.apps.length) {
+        admin.initializeApp({ credential: admin.credential.cert(JSON.parse(raw)) });
+    }
+    _fbReady = true;
+}
+
+async function premiumPrice() {
+    try {
+        initFb();
+        if (!admin.apps.length) return PREMIUM_BASE;
+        const doc = await admin.firestore().collection("settings").doc("premiumOffer").get();
+        if (!doc.exists) return PREMIUM_BASE;
+        const o = doc.data() || {};
+        let ends = 0;
+        if (o.endsAt && o.endsAt.toMillis) ends = o.endsAt.toMillis();
+        else if (typeof o.endsAt === "number") ends = o.endsAt;
+        const pct = parseFloat(o.percent);
+        if (o.active === true && pct > 0 && pct < 100 && ends > Date.now()) {
+            const p = Math.round(PREMIUM_BASE * (1 - pct / 100));
+            return (p > 0 && p < PREMIUM_BASE) ? p : PREMIUM_BASE;
+        }
+    } catch (e) {
+        console.warn("[PREMIUM PRICE]", e.message);
+    }
+    return PREMIUM_BASE;
+}
 
 /* ====================================
    CONFIG
@@ -341,10 +381,19 @@ exports.handler = async function(
                     .substr(2, 6)
                     .toUpperCase();
 
+            /* Montant : Premium => prix calculé serveur (avec rabais éventuel).
+               Réservation => montant dynamique fourni (prix de l'Elu). */
+            let finalAmount;
+            if (body.purpose === "reservation") {
+                finalAmount = parseFloat(body.amount) || 0;
+            } else {
+                finalAmount = await premiumPrice();
+            }
+
             const result =
                 await createPayment({
                     amount:
-                        body.amount || 1000,
+                        finalAmount || 1000,
                     userId:
                         body.userId || "",
                     firebaseUserId:
@@ -378,6 +427,7 @@ exports.handler = async function(
                 body: JSON.stringify({
                     success: !!paymentUrl,
                     referenceId: referenceId,
+                    amount: finalAmount,
                     paymentUrl: paymentUrl,
                     rawResponse: result
                 })

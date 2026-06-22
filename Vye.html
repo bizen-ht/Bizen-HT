@@ -860,6 +860,11 @@
                 <span class="sb-bdg bdg-o" id="bdgAf">0</span>
             </button>
 
+            <div class="sb-cat">Maketing</div>
+            <button class="sb-link" onclick="goPage('promo',this)">
+                <i class="fas fa-bullhorn"></i> Pwomosyon
+            </button>
+
             <div class="sb-cat">Konfigirasyon</div>
             <button class="sb-link" onclick="goPage('hotels',this)">
                 <i class="fas fa-hotel"></i> Hotels
@@ -1500,6 +1505,92 @@
                     </div>
                 </div>
                 <div id="adminMsgList" style="padding:14px;display:flex;flex-direction:column;gap:10px"></div>
+            </div>
+        </div>
+
+        <!-- PWOMOSYON / MAKETING -->
+        <div class="pg" id="pg-promo">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-bullhorn" style="color:#9c27b0"></i> Pwomosyon</h1>
+            </div>
+
+            <div class="fg">
+                <div class="fc"><h4><i class="fas fa-users"></i> Total Itilizatè</h4><div class="fv" id="promoTotalUsers">0</div><div class="fs">Kont kliyan</div></div>
+                <div class="fc"><h4><i class="fas fa-crown"></i> Premium</h4><div class="fv" style="color:var(--gold)" id="promoPremium">0</div><div class="fs">Kliyan peye</div></div>
+                <div class="fc"><h4><i class="fas fa-star"></i> Elu</h4><div class="fv" style="color:var(--red)" id="promoElu">0</div><div class="fs">Kont Elu</div></div>
+                <div class="fc"><h4><i class="fas fa-bell"></i> Notif Aktive</h4><div class="fv" style="color:var(--green)" id="promoPushOn">0</div><div class="fs">App enstale / engaje</div></div>
+            </div>
+
+            <!-- OFFRE PREMIUM À RABAIS -->
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-tags"></i> Ofri Premium ak Rabè (kont a rebò)</div></div>
+                <div style="padding:18px">
+                    <div id="offerStatus" style="margin-bottom:14px"></div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;align-items:end">
+                        <div>
+                            <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Rabè (%)</label>
+                            <input id="offerPercent" type="number" min="1" max="90" value="30" oninput="offerPreview()" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Dire (èdtan)</label>
+                            <input id="offerHours" type="number" min="1" max="168" value="5" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                        </div>
+                        <div id="offerPreview" style="font-size:0.85rem;color:var(--gold)"></div>
+                        <div style="display:flex;gap:8px">
+                            <button onclick="activateOffer()" style="background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:11px 18px;font-weight:600;cursor:pointer;font-size:0.84rem;flex:1"><i class="fas fa-bolt"></i> Lanse Ofri</button>
+                            <button onclick="stopOffer()" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:11px 16px;font-weight:600;cursor:pointer;font-size:0.84rem"><i class="fas fa-stop"></i> Sispann</button>
+                        </div>
+                    </div>
+                    <p style="font-size:0.74rem;color:#6a6a80;margin-top:10px">Pri Premium nòmal: <strong>1,000 Gdes</strong>. Rabè a aplike otomatikman nan peman MonCash pandan ofri a aktif.</p>
+                </div>
+            </div>
+
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-paper-plane"></i> Voye yon mesaj</div></div>
+                <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Voye bay *</label>
+                        <select id="promoSegment" onchange="promoUpdateCount()" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                            <option value="free">Itilizatè Gratis</option>
+                            <option value="premium">Itilizatè Premium</option>
+                            <option value="users">Tout Itilizatè (gratis + peye)</option>
+                            <option value="elu">Elu yo</option>
+                            <option value="everyone">Tout moun</option>
+                        </select>
+                        <div id="promoCount" style="font-size:0.74rem;color:#9c27b0;margin-top:5px"></div>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Kanal *</label>
+                        <select id="promoChannel" onchange="promoToggleChannel()" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                            <option value="notif">Notifikasyon Bizen (push)</option>
+                            <option value="whatsapp">WhatsApp (lis difizyon)</option>
+                        </select>
+                    </div>
+                    <div id="promoTitleWrap">
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Tit (notifikasyon)</label>
+                        <input id="promoTitle" maxlength="80" placeholder="Egz: Ofri espesyal Bizen 🔥" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div style="grid-column:1/-1">
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Mesaj *</label>
+                        <textarea id="promoMessage" rows="4" maxlength="300" placeholder="Ekri mesaj maketing ou a..." style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem;resize:vertical"></textarea>
+                    </div>
+                    <div style="grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap">
+                        <button id="promoSendBtn" onclick="sendBroadcast()" style="background:linear-gradient(135deg,#9c27b0,#e91e63);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-weight:600;cursor:pointer;font-size:0.85rem"><i class="fas fa-paper-plane"></i> Voye</button>
+                    </div>
+                </div>
+                <div id="promoResult" style="padding:0 18px 18px;display:none"></div>
+
+                <!-- ZONE WHATSAPP (export numéros) -->
+                <div id="promoWhatsappBox" style="display:none;padding:0 18px 18px">
+                    <div style="background:rgba(37,211,102,0.08);border:1px solid rgba(37,211,102,0.3);border-radius:10px;padding:14px">
+                        <p style="font-size:0.8rem;color:#25d366;margin-bottom:10px"><i class="fab fa-whatsapp"></i> Kopye nimewo yo + mesaj la, epi sèvi ak yon <strong>Lis Difizyon WhatsApp</strong> sou telefòn Bizen an (mesaj la ap soti sou nimewo Bizen).</p>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+                            <button onclick="copyPromoNumbers()" style="background:#25d366;color:#063;border:none;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:0.8rem"><i class="fas fa-copy"></i> Kopye nimewo yo</button>
+                            <button onclick="copyPromoMessage()" style="background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:0.8rem"><i class="fas fa-copy"></i> Kopye mesaj la</button>
+                        </div>
+                        <textarea id="promoNumbers" readonly rows="5" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#b0b0c0;border-radius:8px;padding:10px;font-size:0.8rem"></textarea>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2585,6 +2676,201 @@ function goPage(id, btn) {
     if (id === "addacc") toggleAccEluFields();
     if (id === "dyaspora") loadDiaspora();
     if (id === "msg") loadAdminMsg();
+    if (id === "promo") loadPromo();
+}
+
+/* ====================================
+   PWOMOSYON / DIFFUSION MARKETING
+   ==================================== */
+function loadPromo() {
+    var clients = adminUsers || [];
+    var elus = adminFL || [];
+    var krey = adminKrey || [];
+    var premium = clients.filter(function(u){ return u.isPremium === true; });
+    var pushOn = clients.concat(elus, krey).filter(function(u){ return (u.fcmTokens || []).length > 0; });
+    setVal("promoTotalUsers", clients.length);
+    setVal("promoPremium", premium.length);
+    setVal("promoElu", elus.length);
+    setVal("promoPushOn", pushOn.length);
+    promoUpdateCount();
+    promoToggleChannel();
+    offerPreview();
+    loadOfferStatus();
+}
+
+/* Renvoie la liste d'utilisateurs du segment choisi */
+function promoSegmentUsers(seg) {
+    var clients = adminUsers || [];
+    var elus = adminFL || [];
+    var krey = adminKrey || [];
+    if (seg === "free")     return clients.filter(function(u){ return u.isPremium !== true; });
+    if (seg === "premium")  return clients.filter(function(u){ return u.isPremium === true; });
+    if (seg === "users")    return clients.slice();
+    if (seg === "elu")      return elus.slice();
+    if (seg === "everyone") return clients.concat(elus, krey);
+    return [];
+}
+
+function promoUpdateCount() {
+    var seg = document.getElementById("promoSegment");
+    var out = document.getElementById("promoCount");
+    if (!seg || !out) return;
+    var list = promoSegmentUsers(seg.value);
+    var withPush = list.filter(function(u){ return (u.fcmTokens || []).length > 0; }).length;
+    var withTel = list.filter(function(u){ return (u.telephone || "").replace(/[^0-9]/g,"").length >= 6; }).length;
+    out.innerHTML = '<i class="fas fa-users"></i> ' + list.length + ' moun · ' + withPush + ' ak notif · ' + withTel + ' ak WhatsApp';
+}
+
+function promoToggleChannel() {
+    var ch = document.getElementById("promoChannel");
+    if (!ch) return;
+    var isWa = ch.value === "whatsapp";
+    var titleWrap = document.getElementById("promoTitleWrap");
+    var waBox = document.getElementById("promoWhatsappBox");
+    var sendBtn = document.getElementById("promoSendBtn");
+    if (titleWrap) titleWrap.style.display = isWa ? "none" : "";
+    if (waBox) waBox.style.display = isWa ? "block" : "none";
+    if (sendBtn) sendBtn.innerHTML = isWa
+        ? '<i class="fab fa-whatsapp"></i> Prepare lis WhatsApp'
+        : '<i class="fas fa-paper-plane"></i> Voye';
+}
+
+function sendBroadcast() {
+    var seg = document.getElementById("promoSegment").value;
+    var channel = document.getElementById("promoChannel").value;
+    var message = (document.getElementById("promoMessage").value || "").trim();
+    var resBox = document.getElementById("promoResult");
+    if (!message) { alert("Ekri yon mesaj."); return; }
+
+    if (channel === "whatsapp") {
+        /* Mode liste de diffusion : on prépare numéros + message */
+        var list = promoSegmentUsers(seg).filter(function(u){ return (u.telephone || "").replace(/[^0-9]/g,"").length >= 6; });
+        if (!list.length) { alert("Okenn nimewo WhatsApp nan segman sa a."); return; }
+        var nums = list.map(function(u){ return u.telephone.trim(); }).join("\n");
+        var ta = document.getElementById("promoNumbers");
+        if (ta) ta.value = nums;
+        promoToggleChannel();
+        if (resBox) {
+            resBox.style.display = "block";
+            resBox.innerHTML = '<div style="background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.3);color:#25d366;border-radius:8px;padding:12px;font-size:0.84rem"><i class="fab fa-whatsapp"></i> ' + list.length + ' nimewo prepare anba a. Kopye yo nan yon Lis Difizyon WhatsApp.</div>';
+        }
+        return;
+    }
+
+    /* Canal NOTIFICATION (push via fonction Netlify) */
+    var title = (document.getElementById("promoTitle").value || "Bizen HT").trim();
+    var btn = document.getElementById("promoSendBtn");
+    if (!confirm("Voye notifikasyon sa a bay segman « " + seg + " » ?")) return;
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Voye...';
+
+    auth.currentUser.getIdToken().then(function(idToken) {
+        return fetch("/.netlify/functions/broadcast", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, segment: seg, title: title, message: message })
+        });
+    }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(res){
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Voye';
+        resBox.style.display = "block";
+        if (res.ok && res.j.success) {
+            resBox.innerHTML = '<div style="background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.3);color:#4caf50;border-radius:8px;padding:12px;font-size:0.84rem"><i class="fas fa-check-circle"></i> Notifikasyon voye! ' + res.j.sent + ' resevwa l (' + res.j.matchedUsers + ' moun nan segman an, ' + res.j.tokens + ' aparèy).' + (res.j.note ? ' ' + res.j.note : '') + '</div>';
+            document.getElementById("promoMessage").value = "";
+        } else {
+            resBox.innerHTML = '<div style="background:rgba(244,67,54,0.12);border:1px solid rgba(244,67,54,0.3);color:#f44336;border-radius:8px;padding:12px;font-size:0.84rem"><i class="fas fa-exclamation-triangle"></i> ' + ((res.j && res.j.error) ? res.j.error : "Erè.") + '</div>';
+        }
+    }).catch(function(e){
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Voye';
+        resBox.style.display = "block";
+        resBox.innerHTML = '<div style="background:rgba(244,67,54,0.12);border:1px solid rgba(244,67,54,0.3);color:#f44336;border-radius:8px;padding:12px;font-size:0.84rem"><i class="fas fa-exclamation-triangle"></i> Erè rezo: ' + escHtml(e.message || "") + '</div>';
+    });
+}
+
+function copyPromoNumbers() {
+    var ta = document.getElementById("promoNumbers");
+    if (!ta || !ta.value) { alert("Pa gen nimewo."); return; }
+    ta.select();
+    try { document.execCommand("copy"); } catch(e) {}
+    if (navigator.clipboard) navigator.clipboard.writeText(ta.value).catch(function(){});
+    toast("Nimewo yo kopye!", true);
+}
+
+function copyPromoMessage() {
+    var msg = (document.getElementById("promoMessage").value || "").trim();
+    if (!msg) { alert("Mesaj vid."); return; }
+    if (navigator.clipboard) navigator.clipboard.writeText(msg).catch(function(){});
+    toast("Mesaj la kopye!", true);
+}
+
+/* ====================================
+   OFFRE PREMIUM À RABAIS (compte à rebours)
+   ==================================== */
+var PREMIUM_BASE_PRICE = 1000;
+var offerStatusTimer = null;
+
+function fmtCountdown(ms) {
+    var s = Math.max(0, Math.floor(ms / 1000));
+    var h = Math.floor(s / 3600); s -= h * 3600;
+    var m = Math.floor(s / 60); s -= m * 60;
+    function pad(n) { return n < 10 ? "0" + n : "" + n; }
+    return pad(h) + ":" + pad(m) + ":" + pad(s);
+}
+
+function offerPreview() {
+    var pct = parseInt((document.getElementById("offerPercent") || {}).value, 10) || 0;
+    var el = document.getElementById("offerPreview");
+    if (!el) return;
+    if (pct > 0 && pct < 100) {
+        var price = Math.round(PREMIUM_BASE_PRICE * (1 - pct / 100));
+        el.innerHTML = 'Pri ofri: <strong>' + price.toLocaleString() + ' Gdes</strong><br><small style="color:#6a6a80">(olye 1,000)</small>';
+    } else el.innerHTML = "";
+}
+
+function activateOffer() {
+    var pct = parseInt(document.getElementById("offerPercent").value, 10) || 0;
+    var hours = parseFloat(document.getElementById("offerHours").value) || 0;
+    if (pct < 1 || pct > 90) { alert("Rabè dwe ant 1 ak 90%."); return; }
+    if (hours <= 0) { alert("Antre yon dire valab (èdtan)."); return; }
+    var endsAt = firebase.firestore.Timestamp.fromMillis(Date.now() + hours * 3600 * 1000);
+    db.collection("settings").doc("premiumOffer").set({
+        active: true, percent: pct, endsAt: endsAt,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function () { toast("Ofri lanse! 🔥", true); loadOfferStatus(); })
+      .catch(function (e) { alert("Erè: " + (e.message || e.code)); });
+}
+
+function stopOffer() {
+    if (!confirm("Sispann ofri Premium lan?")) return;
+    db.collection("settings").doc("premiumOffer").set({ active: false }, { merge: true })
+      .then(function () { toast("Ofri sispann.", true); loadOfferStatus(); })
+      .catch(function (e) { alert("Erè: " + (e.message || e.code)); });
+}
+
+function loadOfferStatus() {
+    var el = document.getElementById("offerStatus");
+    if (!db || !el) return;
+    if (offerStatusTimer) { clearInterval(offerStatusTimer); offerStatusTimer = null; }
+    db.collection("settings").doc("premiumOffer").get().then(function (doc) {
+        if (!doc.exists) { el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Pa gen ofri pou kounye a.</span>'; return; }
+        var o = doc.data();
+        var ends = o.endsAt && o.endsAt.toMillis ? o.endsAt.toMillis() : 0;
+        if (o.active === true && ends > Date.now()) {
+            var price = Math.round(PREMIUM_BASE_PRICE * (1 - (o.percent || 0) / 100));
+            var render = function () {
+                var left = ends - Date.now();
+                if (left <= 0) {
+                    el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Ofri a fini.</span>';
+                    if (offerStatusTimer) { clearInterval(offerStatusTimer); offerStatusTimer = null; }
+                    return;
+                }
+                el.innerHTML = '<div style="background:rgba(255,152,0,0.12);border:1px solid rgba(255,152,0,0.4);border-radius:10px;padding:12px;font-size:0.88rem;color:#ff9800"><i class="fas fa-bolt"></i> <strong>OFRI AKTIF: -' + o.percent + '%</strong> → Premium a <strong>' + price.toLocaleString() + ' Gdes</strong>. Fini nan <strong>' + fmtCountdown(left) + '</strong> ⏳</div>';
+            };
+            render();
+            offerStatusTimer = setInterval(render, 1000);
+        } else {
+            el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Pa gen ofri aktif.</span>';
+        }
+    }).catch(function (e) { console.warn("loadOfferStatus:", e.code); });
 }
 
 /* ====================================

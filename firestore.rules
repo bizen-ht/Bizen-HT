@@ -128,6 +128,18 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    /* Historique des diffusions marketing : admin uniquement. */
+    match /broadcasts/{bId} {
+      allow read, write: if isAdmin();
+    }
+
+    /* Paramètres publics (ex: offre Premium à rabais) : lecture publique
+       (le site affiche la bannière), écriture admin uniquement. */
+    match /settings/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
     /* -------- LISTE D'ATTENTE DIASPORA (diasporaWaitlist) --------
        N'importe quel visiteur (même non connecté) peut s'inscrire avec
        son pays + WhatsApp. Lecture/gestion réservées à l'admin. */

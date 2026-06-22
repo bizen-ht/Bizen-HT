@@ -478,6 +478,12 @@
                         <i class="fas fa-calendar-check"></i>
                         Me Rezevasyon yo
                     </button>
+                    <button class="sb-link"
+                            onclick="showSection('messages',this)">
+                        <i class="fas fa-comment-dots"></i>
+                        Mesaj
+                        <span id="userMsgBadge" style="display:none;background:#e91e63;color:#fff;font-size:0.65rem;padding:1px 7px;border-radius:10px;margin-left:auto">0</span>
+                    </button>
                 </div>
                 <div class="sb-nav-group">
                     <div class="sb-nav-label">Kont</div>
@@ -698,6 +704,23 @@
                         <i class="fas fa-calendar-times"></i>
                         <h4>Pa gen rezevasyon</h4>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- USER MESSAGES (inbox) -->
+        <div class="dash-section" id="sec-messages">
+            <div class="dash-top">
+                <h1>
+                    <i class="fas fa-comment-dots" style="color:#ce93d8"></i>
+                    <span>Mesaj</span> mwen yo
+                </h1>
+            </div>
+            <div id="userDmThreads">
+                <div class="empty-state">
+                    <i class="fas fa-comments"></i>
+                    <h4>Pa gen mesaj anko</h4>
+                    <p style="color:var(--text-muted);font-size:0.85rem">Ale sou sit la, jwenn yon Elu epi peze « Pale an prive » pou kòmanse.</p>
                 </div>
             </div>
         </div>
@@ -1582,6 +1605,7 @@ function setupUser() {
     /* Load data */
     loadUserReservations();
     loadUserFavorites();
+    loadUserDmThreads();   /* écoute des messages (badge live) */
 
     /* Show overview */
     showSection("overview", null);
@@ -2272,6 +2296,7 @@ function showSection(id, btn) {
     }
     if (btn) btn.classList.add("active");
     if (id === "fl-messages") loadDmThreads();
+    if (id === "messages") loadUserDmThreads();
     closeSidebar();
 }
 
@@ -2352,12 +2377,13 @@ function eluDmCheckContact() {
     warn.style.display = dmHasContact(input.value) ? "block" : "none";
 }
 
-function openEluDm(threadId, userName, userUid) {
+function openEluDm(threadId, otherName, otherUid, unreadField) {
     eluDmThread = threadId;
-    eluDmOther = { uid: userUid, name: userName };
+    eluDmOther = { uid: otherUid, name: otherName };
 
-    /* Remet à zéro le compteur de non-lus côté Élu (update : ne crée pas le doc) */
-    try { db.collection("dmThreads").doc(threadId).update({ unreadForElu: 0 }).catch(function(){}); } catch(e) {}
+    /* Remet à zéro le compteur de non-lus (Élu OU client selon le champ) */
+    var uf = unreadField || "unreadForElu";
+    try { var upd = {}; upd[uf] = 0; db.collection("dmThreads").doc(threadId).update(upd).catch(function(){}); } catch(e) {}
 
     var old = document.getElementById("eluDmModal");
     if (old) old.remove();
@@ -2442,6 +2468,57 @@ function sendEluDm() {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i>'; }
         showToast("Erè rezo.", "error");
     });
+}
+
+/* ====================================
+   INBOX CLIENT (utilisateur) — réutilise le chat openEluDm
+   ==================================== */
+var userDmThreadsUnsub = null;
+
+function loadUserDmThreads() {
+    if (!db || !currentUser) return;
+    if (userDmThreadsUnsub) { try { userDmThreadsUnsub(); } catch(e){} }
+    userDmThreadsUnsub = db.collection("dmThreads")
+        .where("userUid", "==", currentUser.uid)
+        .onSnapshot(function(snap) {
+            var list = [];
+            snap.forEach(function(doc) { var t = doc.data(); t.id = doc.id; list.push(t); });
+            list.sort(function(a, b) {
+                var ta = a.lastAt && a.lastAt.toMillis ? a.lastAt.toMillis() : 0;
+                var tb = b.lastAt && b.lastAt.toMillis ? b.lastAt.toMillis() : 0;
+                return tb - ta;
+            });
+            renderUserDmThreads(list);
+        }, function(err) { console.warn("loadUserDmThreads:", err.code); });
+}
+
+function renderUserDmThreads(list) {
+    var box = document.getElementById("userDmThreads");
+    var badge = document.getElementById("userMsgBadge");
+    if (!box) return;
+    var totalUnread = 0;
+    list.forEach(function(t){ totalUnread += (t.unreadForUser || 0); });
+    if (badge) {
+        if (totalUnread > 0) { badge.style.display = "inline-block"; badge.textContent = totalUnread; }
+        else badge.style.display = "none";
+    }
+    if (!list.length) {
+        box.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><h4>Pa gen mesaj anko</h4><p style="color:var(--text-muted);font-size:0.85rem">Ale sou sit la, jwenn yon Elu epi peze « Pale an prive » pou kòmanse.</p></div>';
+        return;
+    }
+    var h = "";
+    list.forEach(function(t) {
+        var unread = (t.unreadForUser || 0) > 0 ? '<span style="background:#e91e63;color:#fff;font-size:0.65rem;padding:1px 7px;border-radius:10px;flex-shrink:0">' + t.unreadForUser + '</span>' : '';
+        var when = t.lastAt && t.lastAt.toDate ? t.lastAt.toDate().toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "";
+        var nm = (t.eluName || "Elu");
+        h += '<div onclick="openEluDm(\'' + t.id + '\',\'' + String(nm).replace(/'/g,"") + '\',\'' + (t.eluUid||"") + '\',\'unreadForUser\')" style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:10px;cursor:pointer">';
+        h += '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#9c27b0,#e91e63);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0"><i class="fas fa-user-secret"></i></div>';
+        h += '<div style="flex:1;min-width:0"><div style="font-weight:600">' + escDash(nm) + '</div>';
+        h += '<div style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escDash(t.lastMessage || "") + '</div>';
+        h += '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px">' + when + '</div></div>';
+        h += unread + '</div>';
+    });
+    box.innerHTML = h;
 }
 
 /* ====================================
