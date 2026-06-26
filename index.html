@@ -325,6 +325,16 @@
         .gi-overlay i{color:var(--gold);font-size:1.2rem}
         .gi-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:3rem;color:white;opacity:0.8;transition:var(--transition);text-shadow:0 0 20px rgba(0,0,0,0.5)}
         .gi:hover .gi-play{opacity:1;transform:translate(-50%,-50%) scale(1.1)}
+        /* Showcase photos Bizen (Shoot) — 2x2 PC, image entière (sans couper) */
+        .shoot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+        .shoot-item{position:relative;border-radius:var(--radius);overflow:hidden;aspect-ratio:3/4;background:linear-gradient(135deg,#15151f,#0e0e16);box-shadow:0 12px 30px rgba(0,0,0,0.35);transition:var(--transition)}
+        .shoot-item img{width:100%;height:100%;object-fit:contain;display:block}
+        .shoot-item:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(233,30,99,0.25)}
+        .shoot-ov{position:absolute;left:0;bottom:0;z-index:2;width:100%;padding:12px;display:flex;justify-content:center;background:linear-gradient(transparent,rgba(8,8,13,0.55))}
+        .shoot-ov span{display:inline-flex;align-items:center;gap:7px;font-size:0.72rem;font-weight:600;color:#fff;background:rgba(8,8,13,0.5);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.14);padding:6px 12px;border-radius:50px}
+        .shoot-ov i{color:var(--gold)}
+        @media(max-width:768px){.shoot-grid{grid-template-columns:1fr 1fr}}
+        @media(max-width:480px){.shoot-grid{grid-template-columns:1fr;max-width:360px;margin:0 auto}}
 
         .gal-cta{text-align:center;margin-top:30px}
         .gal-cta > p{color:var(--text-secondary);margin-bottom:20px;font-size:1.05rem}
@@ -1765,6 +1775,30 @@ body.no-screenshot * {
             <div class="about-card sr"><div class="a-ico"><i class="fas fa-hotel"></i></div><h3>Hotel Inclus</h3><p>Chak rezèvasyon gen yon chanm hotel patnè inclus nan pri a.</p></div>
             <div class="about-card sr"><div class="a-ico"><i class="fas fa-shield-alt"></i></div><h3>Diskresyon Total</h3><p>Konfidansyalite 100% garanti. Tout enfomasyon rete prive e sekirize.</p></div>
             <div class="about-card sr"><div class="a-ico"><i class="fas fa-clock"></i></div><h3>Disponib 24/7</h3><p>Platfom nan disponib tout tan. Rezève moman w nenpot le, nenpot jou!</p></div>
+        </div>
+    </div>
+</section>
+
+<!-- SHOWCASE PHOTOS BIZEN (Shoot) -->
+<section class="section" id="shoot" style="padding-top:40px;padding-bottom:40px">
+    <div class="container">
+        <div class="shoot-grid">
+            <div class="shoot-item sr">
+                <img src="images/Shoot_1.jpg" alt="Bizen HT" loading="lazy">
+                <div class="shoot-ov"><span><i class="fas fa-crown"></i> Pase Premium</span></div>
+            </div>
+            <div class="shoot-item sr">
+                <img src="images/Shoot_2.jpg" alt="Bizen HT" loading="lazy">
+                <div class="shoot-ov"><span><i class="fas fa-eye"></i> Gade Elu yo</span></div>
+            </div>
+            <div class="shoot-item sr">
+                <img src="images/Shoot_3.jpg" alt="Bizen HT" loading="lazy">
+                <div class="shoot-ov"><span><i class="fas fa-calendar-check"></i> Rezeve Elu paw lan</span></div>
+            </div>
+            <div class="shoot-item sr">
+                <img src="images/Shoot_4.jpg" alt="Bizen HT" loading="lazy">
+                <div class="shoot-ov"><span><i class="fas fa-heart"></i> Pase Moman w</span></div>
+            </div>
         </div>
     </div>
 </section>
