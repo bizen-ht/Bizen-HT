@@ -2759,6 +2759,7 @@ function renderVedetteList() {
     var q = (document.getElementById("vedetteSearch") || {}).value || "";
     var genre = (document.getElementById("vedetteGenre") || {}).value || "";
     var list = (adminFL || []).filter(function(u) {
+        if (u.isTest) return false;
         if (u.status === "frozen") return false;
         if (genre && u.genre !== genre) return false;
         if (q) { var n = (u.displayName || u.name || "").toLowerCase(); if (n.indexOf(q.toLowerCase()) === -1) return false; }
