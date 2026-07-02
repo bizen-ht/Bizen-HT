@@ -2741,8 +2741,8 @@ function renderCurrentVedettes() {
     var h = "";
     currentFeaturedIds.forEach(function(id) {
         var elu = (adminFL || []).find(function(u) { return u.id === id; }) || {};
-        var name = escHtml(elu.displayName || elu.name || id);
-        var photo = (elu.photos && elu.photos[0]) || elu.photoURL || "";
+        var name = escHtml(elu.pseudo || elu.displayName || ((elu.prenom || "") + " " + (elu.nom || "")).trim() || elu.name || id);
+        var photo = (elu.photos && elu.photos[0]) || elu.photoURL || elu.profilePhoto || "";
         h += '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:10px 14px;min-width:180px">';
         if (photo) h += '<img src="' + photo + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0">';
         else h += '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-user" style="color:#fff;font-size:0.9rem"></i></div>';
@@ -2759,19 +2759,19 @@ function renderVedetteList() {
     var q = (document.getElementById("vedetteSearch") || {}).value || "";
     var genre = (document.getElementById("vedetteGenre") || {}).value || "";
     var list = (adminFL || []).filter(function(u) {
-        if (u.isTest) return false;
-        if (u.status === "frozen") return false;
+        if (u.isTest === true) return false;          /* pa kont test */
+        if (u.status !== "active") return false;      /* sèlman Elu apwouve ki parèt sou sit la */
         if (genre && u.genre !== genre) return false;
-        if (q) { var n = (u.displayName || u.name || "").toLowerCase(); if (n.indexOf(q.toLowerCase()) === -1) return false; }
+        if (q) { var n = ((u.pseudo || u.displayName || u.prenom || u.name || "") + " " + (u.nom || "")).toLowerCase(); if (n.indexOf(q.toLowerCase()) === -1) return false; }
         return true;
     });
     if (!list.length) { box.innerHTML = '<p style="color:#6a6a80">Pa gen Elu ki koresponn.</p>'; return; }
     var h = "";
     list.forEach(function(u) {
         var id = u.id;
-        var name = escHtml(u.displayName || u.name || "Elu");
+        var name = escHtml(u.pseudo || u.displayName || ((u.prenom || "") + " " + (u.nom || "")).trim() || u.name || "Elu");
         var loc = escHtml(u.localisation || "");
-        var photo = (u.photos && u.photos[0]) || u.photoURL || "";
+        var photo = (u.photos && u.photos[0]) || u.photoURL || u.profilePhoto || "";
         var isFeatured = currentFeaturedIds.indexOf(id) !== -1;
         var photoHtml = photo
             ? '<img src="' + photo + '" style="width:100%;height:120px;object-fit:cover;border-radius:10px 10px 0 0">'
