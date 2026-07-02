@@ -4102,20 +4102,40 @@ function viewAccountDetail(uid) {
             '</div></div>';
     }
 
-    /* === NOTE ADMIN (étoiles comme un client) — uniquement pour les Elu === */
+    /* === NOTE ADMIN (étoiles avec quantité par niveau) — uniquement pour les Elu === */
     if (user.type === "freelancer" || user.type === "krey") {
+        /* Charge les notes admin existantes pour pré-remplir les compteurs */
         db.collection("ratings").where("prestateId","==",uid).where("source","==","admin").get().then(function(snap) {
-            var cur = snap.empty ? 0 : (snap.docs[0].data().stars || 0);
-            var ratingBox = document.getElementById("admRatingBox_" + uid);
-            if (!ratingBox) return;
-            paintAdmStars(ratingBox, cur, uid);
+            /* Agrège les quantités par niveau d'étoile */
+            var counts = {1:0, 2:0, 3:0, 4:0, 5:0};
+            snap.forEach(function(d) { var s = d.data().stars; if (s >= 1 && s <= 5) counts[s]++; });
+            [1,2,3,4,5].forEach(function(s) {
+                var inp = document.getElementById("admQty_" + uid + "_" + s);
+                if (inp) inp.value = counts[s] || 0;
+            });
+            renderAdmRatingSummary(uid, counts);
         }).catch(function(){});
 
-        content.innerHTML += '<div id="admRatingBox_' + uid + '" style="margin-top:18px;background:rgba(156,39,176,0.06);border:1px solid rgba(156,39,176,0.25);border-radius:12px;padding:16px">' +
-            '<div style="font-size:0.72rem;color:#ce93d8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px"><i class="fas fa-star"></i> Ba Elu sa yon nòt (kòm admin)</div>' +
-            '<div style="font-size:0.75rem;color:#6a6a80;margin-bottom:10px">Nòt sa a ap parèt menm jan ak nòt kliyan yo sou paj piblik Elu a.</div>' +
-            '<div id="admStars_' + uid + '" style="font-size:2rem;cursor:pointer;color:#6a6a80;letter-spacing:4px">★★★★★</div>' +
-            '<div id="admRatingMsg_' + uid + '" style="font-size:0.75rem;color:#6a6a80;margin-top:6px"></div>' +
+        var starsHtml = "";
+        for (var s = 5; s >= 1; s--) {
+            var stars = "";
+            for (var k = 0; k < s; k++) stars += "★";
+            starsHtml +=
+                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
+                '<span style="color:#ffd700;font-size:1rem;min-width:60px">' + stars + '</span>' +
+                '<input type="number" id="admQty_' + uid + '_' + s + '" min="0" value="0" ' +
+                'style="width:70px;padding:6px 10px;background:rgba(255,255,255,0.05);border:1px solid #2a2a3a;border-radius:8px;color:#fff;font-family:Montserrat,sans-serif;font-size:0.9rem;outline:none;text-align:center">' +
+                '<span style="font-size:0.78rem;color:#6a6a80">fwa</span>' +
+                '</div>';
+        }
+
+        content.innerHTML +=
+            '<div id="admRatingBox_' + uid + '" style="margin-top:18px;background:rgba(156,39,176,0.06);border:1px solid rgba(156,39,176,0.25);border-radius:12px;padding:16px">' +
+            '<div style="font-size:0.72rem;color:#ce93d8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px"><i class="fas fa-star"></i> Ba Elu sa nòt (kòm admin)</div>' +
+            '<div style="font-size:0.75rem;color:#6a6a80;margin-bottom:14px">Antre kantite fwa pou chak nivo etoile. Chak "fwa" konte kòm yon avi separe sou paj piblik la.</div>' +
+            starsHtml +
+            '<div id="admRatingSummary_' + uid + '" style="font-size:0.78rem;color:#ce93d8;margin:10px 0 12px"></div>' +
+            '<button onclick="saveAdmRatings(\'' + uid + '\')" style="width:100%;padding:10px;background:linear-gradient(135deg,#9c27b0,#e91e63);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.85rem"><i class="fas fa-save"></i> Sove Nòt yo</button>' +
             '</div>';
     }
 
@@ -4144,49 +4164,48 @@ function closeDetailModal() {
 }
 
 /* ====================================
-   ADMIN — NOTE ÉTOILES (comme un client)
+   ADMIN — NOTE ÉTOILES AVEC QUANTITÉ
    ==================================== */
-function paintAdmStars(box, current, uid) {
-    var starsDiv = box.querySelector("#admStars_" + uid);
-    var msg = box.querySelector("#admRatingMsg_" + uid);
-    if (!starsDiv) return;
-    starsDiv.innerHTML = "";
-    for (var i = 1; i <= 5; i++) {
-        var span = document.createElement("span");
-        span.textContent = i <= current ? "★" : "☆";
-        span.style.color = i <= current ? "#ffd700" : "#444";
-        span.style.cursor = "pointer";
-        span.style.fontSize = "2rem";
-        span.dataset.val = i;
-        span.dataset.uid = uid;
-        span.onmouseenter = (function(v, b, u) { return function() { hoverAdmStars(b, v, u); }; })(i, box, uid);
-        span.onmouseleave = (function(c, b, u) { return function() { paintAdmStars(b, c, u); }; })(current, box, uid);
-        span.onclick = (function(v, u) { return function() { setAdmRating(u, v); }; })(i, uid);
-        starsDiv.appendChild(span);
-    }
-    if (msg) msg.textContent = current ? ("Nòt aktyèl: " + current + " ★") : "Pa gen nòt anko — klike pou ba nòt.";
+function renderAdmRatingSummary(uid, counts) {
+    var el = document.getElementById("admRatingSummary_" + uid);
+    if (!el) return;
+    var total = 0, sum = 0;
+    [1,2,3,4,5].forEach(function(s) { var c = counts[s] || 0; total += c; sum += s * c; });
+    if (!total) { el.textContent = "Pa gen nòt anko."; return; }
+    var avg = (sum / total).toFixed(1);
+    el.innerHTML = '<i class="fas fa-calculator"></i> Total: <strong>' + total + ' avi</strong> — Mwayèn: <strong style="color:#ffd700">' + avg + ' ★</strong>';
 }
 
-function hoverAdmStars(box, val, uid) {
-    var starsDiv = box.querySelector("#admStars_" + uid);
-    if (!starsDiv) return;
-    var spans = starsDiv.querySelectorAll("span");
-    spans.forEach(function(s, i) {
-        s.textContent = i < val ? "★" : "☆";
-        s.style.color = i < val ? "#ffd700" : "#444";
-    });
-}
-
-function setAdmRating(uid, stars) {
+function saveAdmRatings(uid) {
     if (!db) return;
+    var newCounts = {};
+    [1,2,3,4,5].forEach(function(s) {
+        var inp = document.getElementById("admQty_" + uid + "_" + s);
+        newCounts[s] = Math.max(0, parseInt((inp && inp.value) || 0) || 0);
+    });
+
+    /* Supprime tous les anciens ratings admin pour cet Elu, puis recrée */
     db.collection("ratings").where("prestateId","==",uid).where("source","==","admin").get().then(function(snap) {
-        var data = { prestateId: uid, stars: stars, source: "admin", createdAt: firebase.firestore.FieldValue.serverTimestamp() };
-        var p = snap.empty ? db.collection("ratings").add(data) : snap.docs[0].ref.update({ stars: stars });
-        return p;
+        var batch = db.batch();
+        snap.forEach(function(d) { batch.delete(d.ref); });
+        return batch.commit();
     }).then(function() {
-        toast("Nòt " + stars + " ★ sove!", true);
-        var box = document.getElementById("admRatingBox_" + uid);
-        if (box) paintAdmStars(box, stars, uid);
+        var writes = [];
+        [1,2,3,4,5].forEach(function(s) {
+            for (var i = 0; i < newCounts[s]; i++) {
+                writes.push(db.collection("ratings").add({
+                    prestateId: uid,
+                    stars: s,
+                    source: "admin",
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }));
+            }
+        });
+        return Promise.all(writes);
+    }).then(function() {
+        var total = Object.values(newCounts).reduce(function(a,b){ return a+b; }, 0);
+        toast(total + " nòt admin sove!", true);
+        renderAdmRatingSummary(uid, newCounts);
     }).catch(function(e) { toast("Erè: " + e.message, false); });
 }
 
