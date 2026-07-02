@@ -3549,13 +3549,14 @@ function loadVedettes() {
             if (!elus.length) { section.style.display = "none"; return; }
             var h = "";
             elus.forEach(function(p) {
-                var name = escapeResHotel(p.displayName || p.name || "Elu");
+                var name = escapeResHotel(p.pseudo || ((p.prenom || "") + " " + (p.nomInitial || "")).trim() || "Elu");
                 var prix = (p.prixMoment || 0).toLocaleString();
                 var loc = escapeResHotel(p.localisation || "Ayiti");
-                var genderIcon = (p.genre === "Gason" || p.genre === "Trans") ? "fa-mars" : "fa-venus";
-                var genderLabel = p.genre || "Fanm";
+                var male = (p.genre === "homme" || p.genre === "gason");
+                var genderIcon = male ? "fa-mars" : "fa-venus";
+                var genderLabel = male ? "Gason" : "Fanm";
                 var photo = "";
-                var photoUrl = (p.photos && p.photos[0]) || p.photoURL || "";
+                var photoUrl = p.photoUrl || p.photoURL || (p.photos && p.photos[0]) || "";
                 if (photoUrl) {
                     photo = '<img src="' + photoUrl + '" alt="' + name + '" class="vedette-img" onerror="this.style.display=\'none\';this.parentElement.style.background=\'linear-gradient(135deg,#e91e63,#9c27b0)\'">';
                 }
