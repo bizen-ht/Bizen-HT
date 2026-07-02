@@ -3560,7 +3560,7 @@ function loadVedettes() {
                 if (photoUrl) {
                     photo = '<img src="' + photoUrl + '" alt="' + name + '" class="vedette-img" onerror="this.style.display=\'none\';this.parentElement.style.background=\'linear-gradient(135deg,#e91e63,#9c27b0)\'">';
                 }
-                h += '<div class="vedette-card sr" onclick="openEluProfile(\'' + p.id + '\')">';
+                h += '<div class="vedette-card sr on" onclick="openEluProfile(\'' + p.id + '\')">';
                 h += photo;
                 h += '<div class="vedette-star"><i class="fas fa-star"></i></div>';
                 h += '<div class="vedette-overlay">';
