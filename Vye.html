@@ -861,6 +861,9 @@
             </button>
 
             <div class="sb-cat">Maketing</div>
+            <button class="sb-link" onclick="goPage('vedette',this)">
+                <i class="fas fa-crown"></i> Vedèt Mwa a
+            </button>
             <button class="sb-link" onclick="goPage('promo',this)">
                 <i class="fas fa-bullhorn"></i> Pwomosyon
             </button>
@@ -1506,6 +1509,36 @@
                 </div>
                 <div id="adminMsgList" style="padding:14px;display:flex;flex-direction:column;gap:10px"></div>
             </div>
+        </div>
+
+        <!-- VEDÈT MWA A -->
+        <div class="pg" id="pg-vedette">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-crown" style="color:#ffd700"></i> Meyè Elu Pou Mwa a</h1>
+                <p style="color:#b0b0c0;font-size:0.85rem;margin-top:6px">Chwazi jiska 2 Elu ki ap parèt kòm vedèt sou paj dakèy la.</p>
+            </div>
+
+            <!-- Vedettes actuelles -->
+            <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:18px;margin-bottom:24px">
+                <div style="font-weight:700;font-size:0.9rem;margin-bottom:14px;color:#ffd700"><i class="fas fa-star"></i> Vedèt Aktyèl yo</div>
+                <div id="currentVedettes" style="display:flex;gap:14px;flex-wrap:wrap">
+                    <p style="color:#6a6a80;font-size:0.85rem">Chajman...</p>
+                </div>
+            </div>
+
+            <!-- Filtre + liste Elu -->
+            <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                <input type="text" id="vedetteSearch" placeholder="Chèche yon Elu pa non..." oninput="renderVedetteList()"
+                    style="padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#fff;border-radius:10px;font-family:'Montserrat',sans-serif;font-size:0.85rem;outline:none;flex:1;min-width:200px">
+                <select id="vedetteGenre" onchange="renderVedetteList()"
+                    style="padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#fff;border-radius:10px;font-family:'Montserrat',sans-serif;font-size:0.85rem;outline:none">
+                    <option value="">Tout genre</option>
+                    <option value="Fanm">Fanm</option>
+                    <option value="Gason">Gason</option>
+                    <option value="Trans">Trans</option>
+                </select>
+            </div>
+            <div id="vedetteList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px"></div>
         </div>
 
         <!-- PWOMOSYON / MAKETING -->
@@ -2682,6 +2715,99 @@ function goPage(id, btn) {
     if (id === "dyaspora") loadDiaspora();
     if (id === "msg") loadAdminMsg();
     if (id === "promo") loadPromo();
+    if (id === "vedette") loadVedetteAdmin();
+}
+
+/* ====================================
+   VEDÈT MWA A — admin désigne 2 Elu
+   ==================================== */
+var currentFeaturedIds = [];
+
+function loadVedetteAdmin() {
+    renderVedetteList();
+    db.collection("settings").doc("featuredElus").get().then(function(doc) {
+        currentFeaturedIds = doc.exists ? (doc.data().elus || []) : [];
+        renderCurrentVedettes();
+    }).catch(function() { currentFeaturedIds = []; renderCurrentVedettes(); });
+}
+
+function renderCurrentVedettes() {
+    var box = document.getElementById("currentVedettes");
+    if (!box) return;
+    if (!currentFeaturedIds.length) {
+        box.innerHTML = '<p style="color:#6a6a80;font-size:0.85rem">Pa gen vedèt chwazi anko.</p>';
+        return;
+    }
+    var h = "";
+    currentFeaturedIds.forEach(function(id) {
+        var elu = (adminFL || []).find(function(u) { return u.id === id; }) || {};
+        var name = escHtml(elu.displayName || elu.name || id);
+        var photo = (elu.photos && elu.photos[0]) || elu.photoURL || "";
+        h += '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:10px 14px;min-width:180px">';
+        if (photo) h += '<img src="' + photo + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0">';
+        else h += '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-user" style="color:#fff;font-size:0.9rem"></i></div>';
+        h += '<div style="flex:1"><div style="font-weight:700;font-size:0.85rem">' + name + '</div><div style="font-size:0.72rem;color:#ffd700"><i class="fas fa-star"></i> Vedèt</div></div>';
+        h += '<button onclick="removeVedette(\'' + id + '\')" title="Retire" style="background:rgba(244,67,54,0.15);border:1px solid rgba(244,67,54,0.3);color:#f44336;border-radius:8px;padding:5px 9px;cursor:pointer;font-size:0.78rem"><i class="fas fa-times"></i></button>';
+        h += '</div>';
+    });
+    box.innerHTML = h;
+}
+
+function renderVedetteList() {
+    var box = document.getElementById("vedetteList");
+    if (!box) return;
+    var q = (document.getElementById("vedetteSearch") || {}).value || "";
+    var genre = (document.getElementById("vedetteGenre") || {}).value || "";
+    var list = (adminFL || []).filter(function(u) {
+        if (u.status === "frozen") return false;
+        if (genre && u.genre !== genre) return false;
+        if (q) { var n = (u.displayName || u.name || "").toLowerCase(); if (n.indexOf(q.toLowerCase()) === -1) return false; }
+        return true;
+    });
+    if (!list.length) { box.innerHTML = '<p style="color:#6a6a80">Pa gen Elu ki koresponn.</p>'; return; }
+    var h = "";
+    list.forEach(function(u) {
+        var id = u.id;
+        var name = escHtml(u.displayName || u.name || "Elu");
+        var loc = escHtml(u.localisation || "");
+        var photo = (u.photos && u.photos[0]) || u.photoURL || "";
+        var isFeatured = currentFeaturedIds.indexOf(id) !== -1;
+        var photoHtml = photo
+            ? '<img src="' + photo + '" style="width:100%;height:120px;object-fit:cover;border-radius:10px 10px 0 0">'
+            : '<div style="height:120px;border-radius:10px 10px 0 0;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center"><i class="fas fa-user" style="color:#fff;font-size:2rem"></i></div>';
+        h += '<div style="background:var(--bg-card);border:1px solid ' + (isFeatured ? '#ffd700' : 'var(--border)') + ';border-radius:12px;overflow:hidden">';
+        h += photoHtml;
+        h += '<div style="padding:12px">';
+        h += '<div style="font-weight:700;font-size:0.9rem;margin-bottom:3px">' + name + '</div>';
+        if (loc) h += '<div style="font-size:0.74rem;color:#9c27b0;margin-bottom:10px"><i class="fas fa-map-marker-alt"></i> ' + loc + '</div>';
+        if (isFeatured) {
+            h += '<button onclick="removeVedette(\'' + id + '\')" style="width:100%;padding:8px;background:rgba(244,67,54,0.12);border:1px solid rgba(244,67,54,0.3);color:#f44336;border-radius:8px;cursor:pointer;font-size:0.8rem;font-weight:600"><i class="fas fa-star"></i> Retire kòm Vedèt</button>';
+        } else {
+            h += '<button onclick="setVedette(\'' + id + '\')" style="width:100%;padding:8px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);color:#ffd700;border-radius:8px;cursor:pointer;font-size:0.8rem;font-weight:600" ' + (currentFeaturedIds.length >= 2 ? 'disabled title="Retire youn dabò"' : '') + '><i class="fas fa-crown"></i> Deziye kòm Vedèt</button>';
+        }
+        h += '</div></div>';
+    });
+    box.innerHTML = h;
+}
+
+function setVedette(id) {
+    if (currentFeaturedIds.length >= 2) { toast("Retire youn anvan ou ajoute yon lòt.", false); return; }
+    if (currentFeaturedIds.indexOf(id) !== -1) return;
+    currentFeaturedIds.push(id);
+    saveFeaturedElus();
+}
+
+function removeVedette(id) {
+    currentFeaturedIds = currentFeaturedIds.filter(function(x) { return x !== id; });
+    saveFeaturedElus();
+}
+
+function saveFeaturedElus() {
+    db.collection("settings").doc("featuredElus").set({ elus: currentFeaturedIds }).then(function() {
+        toast("Vedèt yo sove!", true);
+        renderCurrentVedettes();
+        renderVedetteList();
+    }).catch(function(e) { toast("Erè: " + e.message, false); });
 }
 
 /* ====================================
@@ -3976,6 +4102,23 @@ function viewAccountDetail(uid) {
             '</div></div>';
     }
 
+    /* === NOTE ADMIN (étoiles comme un client) — uniquement pour les Elu === */
+    if (user.type === "freelancer" || user.type === "krey") {
+        db.collection("ratings").where("prestateId","==",uid).where("source","==","admin").get().then(function(snap) {
+            var cur = snap.empty ? 0 : (snap.docs[0].data().stars || 0);
+            var ratingBox = document.getElementById("admRatingBox_" + uid);
+            if (!ratingBox) return;
+            paintAdmStars(ratingBox, cur, uid);
+        }).catch(function(){});
+
+        content.innerHTML += '<div id="admRatingBox_' + uid + '" style="margin-top:18px;background:rgba(156,39,176,0.06);border:1px solid rgba(156,39,176,0.25);border-radius:12px;padding:16px">' +
+            '<div style="font-size:0.72rem;color:#ce93d8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px"><i class="fas fa-star"></i> Ba Elu sa yon nòt (kòm admin)</div>' +
+            '<div style="font-size:0.75rem;color:#6a6a80;margin-bottom:10px">Nòt sa a ap parèt menm jan ak nòt kliyan yo sou paj piblik Elu a.</div>' +
+            '<div id="admStars_' + uid + '" style="font-size:2rem;cursor:pointer;color:#6a6a80;letter-spacing:4px">★★★★★</div>' +
+            '<div id="admRatingMsg_' + uid + '" style="font-size:0.75rem;color:#6a6a80;margin-top:6px"></div>' +
+            '</div>';
+    }
+
     actions.innerHTML = "";
     if (!user.isPremium) {
         actions.innerHTML += actBtn("ab-pre", "admAction('premium','" + uid + "');closeDetailModal()", "fa-crown", "Aktive Premium");
@@ -3998,6 +4141,53 @@ function viewAccountDetail(uid) {
 function closeDetailModal() {
     var modal = document.getElementById("detailModal");
     if (modal) modal.classList.remove("show");
+}
+
+/* ====================================
+   ADMIN — NOTE ÉTOILES (comme un client)
+   ==================================== */
+function paintAdmStars(box, current, uid) {
+    var starsDiv = box.querySelector("#admStars_" + uid);
+    var msg = box.querySelector("#admRatingMsg_" + uid);
+    if (!starsDiv) return;
+    starsDiv.innerHTML = "";
+    for (var i = 1; i <= 5; i++) {
+        var span = document.createElement("span");
+        span.textContent = i <= current ? "★" : "☆";
+        span.style.color = i <= current ? "#ffd700" : "#444";
+        span.style.cursor = "pointer";
+        span.style.fontSize = "2rem";
+        span.dataset.val = i;
+        span.dataset.uid = uid;
+        span.onmouseenter = (function(v, b, u) { return function() { hoverAdmStars(b, v, u); }; })(i, box, uid);
+        span.onmouseleave = (function(c, b, u) { return function() { paintAdmStars(b, c, u); }; })(current, box, uid);
+        span.onclick = (function(v, u) { return function() { setAdmRating(u, v); }; })(i, uid);
+        starsDiv.appendChild(span);
+    }
+    if (msg) msg.textContent = current ? ("Nòt aktyèl: " + current + " ★") : "Pa gen nòt anko — klike pou ba nòt.";
+}
+
+function hoverAdmStars(box, val, uid) {
+    var starsDiv = box.querySelector("#admStars_" + uid);
+    if (!starsDiv) return;
+    var spans = starsDiv.querySelectorAll("span");
+    spans.forEach(function(s, i) {
+        s.textContent = i < val ? "★" : "☆";
+        s.style.color = i < val ? "#ffd700" : "#444";
+    });
+}
+
+function setAdmRating(uid, stars) {
+    if (!db) return;
+    db.collection("ratings").where("prestateId","==",uid).where("source","==","admin").get().then(function(snap) {
+        var data = { prestateId: uid, stars: stars, source: "admin", createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+        var p = snap.empty ? db.collection("ratings").add(data) : snap.docs[0].ref.update({ stars: stars });
+        return p;
+    }).then(function() {
+        toast("Nòt " + stars + " ★ sove!", true);
+        var box = document.getElementById("admRatingBox_" + uid);
+        if (box) paintAdmStars(box, stars, uid);
+    }).catch(function(e) { toast("Erè: " + e.message, false); });
 }
 
 /* ====================================

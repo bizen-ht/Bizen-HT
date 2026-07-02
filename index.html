@@ -1828,8 +1828,8 @@ body.no-screenshot * {
     </div>
 </section>
 
-<!-- MANNEQUIN VEDETTES -->
-<section class="vedettes-section">
+<!-- MEYÈ ELU POU MWA A (dynamique — chargé depuis Firestore) -->
+<section class="vedettes-section" id="vedettesSection" style="display:none">
     <div class="container">
         <div class="sec-head">
             <p class="sec-sub">
@@ -1845,96 +1845,7 @@ body.no-screenshot * {
             <div class="ubar"></div>
         </div>
     </div>
-
-    <div class="vedettes-grid">
-
-        <!-- VEDETTE FEMME -->
-        <div class="vedette-card sr"
-     onclick="window.location.href='#femmes'">
-            <!-- Remplacez par votre image -->
-            <img src="https://ei.phncdn.com/pics/albums/073/180/171/820431421/(m=e-yaaGqaq)(mh=DH0ukOfFFI7D4MeT)original_820431421.jpg"
-                 alt="Vedette Fanm"
-                 class="vedette-img"
-                 onerror="this.style.display='none';
-                 this.parentElement.style.background=
-                 'linear-gradient(135deg,#e91e63,#9c27b0)'">
-
-            <!-- Star badge -->
-            <div class="vedette-star">
-                <i class="fas fa-star"></i>
-            </div>
-
-            <!-- Overlay -->
-            <div class="vedette-overlay">
-                <span class="vedette-badge femme">
-                    <i class="fas fa-venus"></i>
-                    Vedèt Fanm
-                </span>
-                <h3 class="vedette-name">
-                    Vanessa P.
-                </h3>
-                <p class="vedette-desc">
-                    Bèl fanm sofistike ki
-                    espesyalize nan moman
-                    romantik ak inoubliab.
-                    Eksperyans wo nivo garanti.
-                </p>
-                <div class="vedette-price">
-                    <i class="fas fa-tag"></i>
-                    5,000 Gdes / Moman
-                </div>
-                <div class="vedette-hotel">
-                    <i class="fas fa-hotel"></i>
-                    Hotel patne inclus nan
-                    rezevasyon
-                </div>
-            </div>
-        </div>
-
-        <!-- VEDETTE FEMMES 2 -->
-        <div class="vedette-card sr"
-     onclick="window.location.href='#femmes'">
-            <!-- Remplacez par votre image -->
-            <img src="https://ei.phncdn.com/(m=bJ4hdaaecac)(mh=zbmR_k-LtACf7yBW)19b92ee0-5cfb-446b-8a82-f81f2d663345.jpg"
-                 alt="Vedette Fanm"
-                 class="vedette-img"
-                 onerror="this.style.display='none';
-                 this.parentElement.style.background=
-                 'linear-gradient(135deg,#e91e63,#9c27b0)'">
-
-            <!-- Star badge -->
-            <div class="vedette-star">
-                <i class="fas fa-star"></i>
-            </div>
-
-            <!-- Overlay -->
-            <div class="vedette-overlay">
-                <span class="vedette-badge femme">
-                    <i class="fas fa-venus"></i>
-                    Vedèt Fanm
-                </span>
-                <h3 class="vedette-name">
-                    Sephora A.
-                </h3>
-                <p class="vedette-desc">
-                    Yon fanm ki pote chalè nan fè bagay
-                    Ki fleksib nan tout pozisyon.
-                    Li Konnen kijan pou fè
-                    chak moman espesyal.
-                </p>
-                <div class="vedette-price">
-                    <i class="fas fa-tag"></i>
-                    5,000 Gdes / Moman
-                </div>
-                <div class="vedette-hotel">
-                    <i class="fas fa-hotel"></i>
-                    Hotel patne inclus nan
-                    rezevasyon
-                </div>
-            </div>
-        </div>
-
-    </div>
+    <div class="vedettes-grid" id="vedettesGrid"></div>
 </section>
 
 <!-- ELU AN RABÈ (slideshow automatique) -->
@@ -3616,6 +3527,55 @@ function eluDiscount(d) {
    Les Elus en rabais y apparaissent dès qu'ils activent une réduction
    et en sortent automatiquement quand la période se termine.
    ==================================== */
+/* ====================================
+   MEYÈ ELU POU MWA A — vedettes dynamiques
+   Lit settings/featuredElus dans Firestore, puis charge les profils
+   ==================================== */
+function loadVedettes() {
+    if (!db) return;
+    db.collection("settings").doc("featuredElus").onSnapshot(function(docSnap) {
+        var section = document.getElementById("vedettesSection");
+        var grid = document.getElementById("vedettesGrid");
+        if (!section || !grid) return;
+        var data = docSnap.exists ? docSnap.data() : {};
+        var ids = (data.elus || []).filter(function(id) { return !!id; });
+        if (!ids.length) { section.style.display = "none"; return; }
+        var promises = ids.map(function(id) {
+            return db.collection("publicProfiles").doc(id).get();
+        });
+        Promise.all(promises).then(function(docs) {
+            var elus = docs.filter(function(d) { return d.exists && d.data().status !== "frozen"; })
+                          .map(function(d) { var o = d.data(); o.id = d.id; return o; });
+            if (!elus.length) { section.style.display = "none"; return; }
+            var h = "";
+            elus.forEach(function(p) {
+                var name = escapeResHotel(p.displayName || p.name || "Elu");
+                var prix = (p.prixMoment || 0).toLocaleString();
+                var loc = escapeResHotel(p.localisation || "Ayiti");
+                var genderIcon = (p.genre === "Gason" || p.genre === "Trans") ? "fa-mars" : "fa-venus";
+                var genderLabel = p.genre || "Fanm";
+                var photo = "";
+                var photoUrl = (p.photos && p.photos[0]) || p.photoURL || "";
+                if (photoUrl) {
+                    photo = '<img src="' + photoUrl + '" alt="' + name + '" class="vedette-img" onerror="this.style.display=\'none\';this.parentElement.style.background=\'linear-gradient(135deg,#e91e63,#9c27b0)\'">';
+                }
+                h += '<div class="vedette-card sr" onclick="openEluProfile(\'' + p.id + '\')">';
+                h += photo;
+                h += '<div class="vedette-star"><i class="fas fa-star"></i></div>';
+                h += '<div class="vedette-overlay">';
+                h += '<span class="vedette-badge femme"><i class="fas ' + genderIcon + '"></i> Vedèt ' + escapeResHotel(genderLabel) + '</span>';
+                h += '<h3 class="vedette-name">' + name + '</h3>';
+                if (p.description) h += '<p class="vedette-desc">' + escapeResHotel((p.description || "").substring(0, 100)) + '</p>';
+                h += '<div class="vedette-price"><i class="fas fa-tag"></i> ' + prix + ' Gdes / Moman</div>';
+                h += '<div class="vedette-hotel"><i class="fas fa-map-marker-alt"></i> ' + loc + '</div>';
+                h += '</div></div>';
+            });
+            grid.innerHTML = h;
+            section.style.display = "";
+        }).catch(function(e) { console.warn("loadVedettes:", e); section.style.display = "none"; });
+    });
+}
+
 var rabaisData = [];
 var rabaisRefilterTimer = null;
 var rabaisAutoTimer = null;
@@ -4412,6 +4372,7 @@ document.addEventListener("DOMContentLoaded", function () {
        ==================================== */
     try { warnIfInAppBrowser(); } catch (e) {}
     try { initPremiumOffer(); } catch (e) {}
+    try { loadVedettes(); } catch (e) {}
     try { loadRabaisSlideshow(); } catch (e) {}
 
     /* ====================================
