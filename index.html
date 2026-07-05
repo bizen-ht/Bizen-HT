@@ -1875,13 +1875,8 @@ body.no-screenshot * {
             <p class="sec-desc">Dekouvri bel fanm ki disponib pou akonpaye w. </p>
             <div id="onlineCount" style="display:inline-flex;align-items:center;gap:8px;margin-top:12px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:50px;padding:6px 16px;font-size:0.78rem;color:#4caf50;font-weight:600"><span style="width:8px;height:8px;background:#4caf50;border-radius:50%;display:inline-block;animation:pulse-dot 1.5s infinite"></span> Chaje...</div>
         </div>
-        <div class="filter-bar">
-            <button class="fbtn active" data-f="all">Tout</button>
-            <button class="fbtn" data-f="petyonvil">Petion-Ville</button>
-            <button class="fbtn" data-f="Tabarre">Tabarre</button>
-            <button class="fbtn" data-f="delmas">Delmas</button>
-            <button class="fbtn" data-f="Routes de freres">Routes de frères</button>
-            <button class="fbtn" data-f="Carrefour">Carrefour</button>
+        <div class="filter-bar" id="femFilterBar">
+            <button class="fbtn active" data-f="all" onclick="applyZoneFilter(this)">Tout</button>
         </div>
         <div class="pg" id="fG"></div>
         <div class="grid-pager" id="fGPager" style="display:none">
@@ -2593,7 +2588,7 @@ body.is-premium .pc-blur{display:none!important}
 <div class="pend"><i class="fas fa-info-circle"></i><p>Kont Elu yo pase nan validasyon manyel. Repons nan 24-48 edtan.</p></div>
 <!-- COMMISSION NOTICE -->
 <div class="commission-notice"><i class="fas fa-percentage"></i><p>Bizen HT pran <strong>10% komisyon</strong> sou chak moman/rezevasyon. Pa egzanp: Si pri ou se 5,000 Gdes, ou resevwa <strong>4,500 Gdes</strong> e Bizen HT kenbe 500 Gdes. Pri sa a pa negosyab e li afiche klè sou pwofil ou.</p></div>
-<div class="frow"><div class="fg"><label>Non</label><input type="text" placeholder="Non ou" required></div><div class="fg"><label>Siyati</label><input type="text" placeholder="Siyati ou" required></div></div><div class="fg"><label>Pseudo</label><input type="text" id="flPseudo" placeholder="Egz: Bella, King James..."><p class="fhint" style="color:#f48fb1;margin-top:5px"><i class="fas fa-eye"></i> Pseudo a se nom sa kap piblik sou kont ou an. Vrè non ak siyati w rete prive (pou admin sèlman).</p></div><div class="fg"><label>Seks</label><select required><option value="">Chwazi...</option><option value="femme">Fanm</option><option value="homme">Gason</option><option value="biseksyel">Biseksyèl</option><option value="lot">Lòt</option></select></div><div class="fg"><label>Imel</label><input type="email" placeholder="email@gmail.com" required></div><div class="fg"><label>Telefon</label><input type="tel" placeholder="+509 XXXX-XXXX" required></div><div class="fg"><label>Lokasyon</label><select required><option value="">Chwazi vil ou...</option><option>Potoprens</option><option>Petion-Ville</option><option>Delmas</option><option>Tabarre</option><option>Carrefour</option><option>Route de freres</option><option>Thomassin</option><option>Lot</option></select></div><div class="fg"><label>Zòn ou ka ale (chwazi tout sa ki aplike)</label><div id="flZones" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
+<div class="frow"><div class="fg"><label>Non</label><input type="text" placeholder="Non ou" required></div><div class="fg"><label>Siyati</label><input type="text" placeholder="Siyati ou" required></div></div><div class="fg"><label>Pseudo</label><input type="text" id="flPseudo" placeholder="Egz: Bella, King James..."><p class="fhint" style="color:#f48fb1;margin-top:5px"><i class="fas fa-eye"></i> Pseudo a se nom sa kap piblik sou kont ou an. Vrè non ak siyati w rete prive (pou admin sèlman).</p></div><div class="fg"><label>Seks</label><select required><option value="">Chwazi...</option><option value="femme">Fanm</option><option value="homme">Gason</option><option value="biseksyel">Biseksyèl</option><option value="lot">Lòt</option></select></div><div class="fg"><label>Imel</label><input type="email" placeholder="email@gmail.com" required></div><div class="fg"><label>Telefon</label><input type="tel" placeholder="+509 XXXX-XXXX" required></div><div class="fg"><label>Lokasyon (kote w ye)</label><select id="flLoc" required onchange="toggleFlLocCustom()"><option value="">Chwazi zòn ou...</option><option value="Pétion-Ville">Pétion-Ville</option><option value="Delmas">Delmas</option><option value="Tabarre">Tabarre</option><option value="Pòtoprens">Pòtoprens</option><option value="Carrefour">Carrefour</option><option value="Route de Frères">Route de Frères</option><option value="Croix-des-Bouquets">Croix-des-Bouquets</option><option value="Thomassin">Thomassin</option><option value="Kenscoff">Kenscoff</option><option value="Cap-Haïtien">Cap-Haïtien</option><option value="Gonaïves">Gonaïves</option><option value="Les Cayes">Les Cayes</option><option value="Jacmel">Jacmel</option><option value="__custom__">Lòt zòn (ekri pa w)...</option></select><input type="text" id="flLocCustom" placeholder="Ekri zòn ou an..." style="display:none;margin-top:8px;width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;color:#fff;font-family:'Montserrat',sans-serif;font-size:0.85rem;outline:none"></div><div class="fg"><label>Zòn ou ka ale (chwazi tout sa ki aplike)</label><div id="flZones" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
 <label class="zchk"><input type="checkbox" value="Potoprens"> Potoprens</label>
 <label class="zchk"><input type="checkbox" value="Petion-Ville"> Petion-Ville</label>
 <label class="zchk"><input type="checkbox" value="Delmas"> Delmas</label>
@@ -3948,11 +3943,9 @@ function renderCards() {
     var fG = document.getElementById("fG");
     var hG = document.getElementById("hG");
     if (fG) {
-        var fH = "";
-        for (var i = 0; i < fd.length; i++) {
-            fH += mkCard(fd[i], "Fanm", false);
-        }
-        fG.innerHTML = fH;
+        /* Plus de profils fictifs pour les FEMMES : seules les vraies Elu
+           (chargées via renderRealFreelancers) apparaissent. */
+        fG.innerHTML = "";
     }
     if (hG) {
         var hH = "";
@@ -3993,16 +3986,25 @@ function renderRealFreelancers() {
             /* Retire les anciennes vraies cartes pour éviter les doublons */
             document.querySelectorAll('.pc[data-demo="0"]').forEach(function(c) { c.remove(); });
 
+            /* Zones RÉELLES des Elu FEMMES -> filtre dynamique (clé -> libellé) */
+            var femZones = {};
+
             snap.forEach(function(doc) {
                 var d = doc.data();
                 if (d.type !== "freelancer") return;   /* Krey gérés ailleurs */
                 var male = (d.genre === "homme" || d.genre === "gason");
 
+                /* Normalisation forte : fusionne les variantes/synonymes de zones */
+                var zc = zoneCanonical(d.localisation);
+                var locKey = zc.key;
+                /* Une zone entre dans le filtre dès qu'une vraie Elu femme l'a comme adresse */
+                if (!male && locKey) femZones[locKey] = zc.label;
+
                 var disc = eluDiscount(d);
                 var cardData = {
                     n: d.pseudo || ((d.prenom || "") + " " + (d.nomInitial || "")),
                     l: d.localisation || "Ayiti",
-                    lk: (d.localisation || "").toLowerCase().replace(/\s+/g, ""),
+                    lk: locKey,
                     p: disc.newPrice.toLocaleString(),
                     origP: disc.active ? disc.base.toLocaleString() : "",
                     discountBadge: disc.active ? ('Rabè -' + disc.amount.toLocaleString() + ' Gdes · ' + disc.daysLeft + ' jou') : "",
@@ -4028,6 +4030,9 @@ function renderRealFreelancers() {
             document.querySelectorAll('.pc[data-demo="0"]').forEach(function(c) {
                 c.classList.add("on");
             });
+
+            /* Reconstruit le filtre de zones FEMMES à partir des vraies Elu */
+            try { rebuildFemFilter(femZones); } catch(e) {}
 
             /* Recalcule la pagination (6 par page) avec les nouvelles cartes */
             try { refreshGrids(); } catch(e) {}
@@ -4711,6 +4716,82 @@ function initFilters() {
             }
         });
     }
+}
+
+/* ====================================
+   NORMALISATION FORTE DES ZONES
+   Fusionne les variantes (accents/tirets/espaces/casse) ET les synonymes
+   (ex: "Cap" = "Cap-Haïtien", "Petion ville" = "Pétion-Ville").
+   ==================================== */
+function zoneNorm(s) {
+    var t = (s == null ? "" : String(s)).toLowerCase();
+    try { t = t.normalize("NFD").replace(/[̀-ͯ]/g, ""); } catch (e) {}  /* enlève les accents */
+    return t.replace(/[^a-z0-9]/g, "");                                            /* enlève espaces, tirets, ponctuation */
+}
+var ZONE_MAP = {};
+(function () {
+    var defs = [
+        { label: "Pétion-Ville", variants: ["petionville", "petyonvil", "petion", "petionvil", "pv"] },
+        { label: "Cap-Haïtien", variants: ["caphaitien", "cap", "okap", "aucap", "kapayisyen", "capaitien", "capayisyen", "kap", "capayti"] },
+        { label: "Delmas", variants: ["delmas"] },
+        { label: "Pòtoprens", variants: ["portauprince", "potoprens", "pap", "poto", "potoprince", "portoprince"] },
+        { label: "Tabarre", variants: ["tabarre", "tabar"] },
+        { label: "Carrefour", variants: ["carrefour", "kafou"] },
+        { label: "Croix-des-Bouquets", variants: ["croixdesbouquets", "kwadebouke", "croixdesbouquet"] },
+        { label: "Route de Frères", variants: ["routedefreres", "routedesfreres", "routefreres", "frere", "freres", "routdefrer"] },
+        { label: "Thomassin", variants: ["thomassin", "tomasen"] },
+        { label: "Kenscoff", variants: ["kenscoff", "kenskof"] },
+        { label: "Gonaïves", variants: ["gonaives", "gonaiv"] },
+        { label: "Les Cayes", variants: ["lescayes", "okay", "aucayes", "cayes"] },
+        { label: "Jacmel", variants: ["jacmel", "jakmel"] }
+    ];
+    defs.forEach(function (d) {
+        var key = zoneNorm(d.label);
+        ZONE_MAP[key] = { key: key, label: d.label };
+        d.variants.forEach(function (v) { ZONE_MAP[zoneNorm(v)] = { key: key, label: d.label }; });
+    });
+})();
+/* Renvoie {key, label} canonique pour une localisation. Zone inconnue => clé normalisée + libellé d'origine. */
+function zoneCanonical(loc) {
+    var n = zoneNorm(loc);
+    if (!n) return { key: "", label: "" };
+    if (ZONE_MAP[n]) return ZONE_MAP[n];
+    return { key: n, label: (loc == null ? "" : String(loc)).trim() };
+}
+
+/* Handler des boutons de zone générés dynamiquement (filtre femmes) */
+function applyZoneFilter(btn) {
+    var sib = btn.parentElement.querySelectorAll(".fbtn");
+    for (var j = 0; j < sib.length; j++) sib[j].classList.remove("active");
+    btn.classList.add("active");
+    var f = btn.getAttribute("data-f");
+    var section = btn.closest(".section");
+    var grid = section ? section.querySelector(".pg") : null;
+    if (grid && gridState[grid.id]) {
+        gridState[grid.id].filter = f;
+        gridState[grid.id].page = 0;
+        renderGridPage(grid.id);
+    }
+}
+
+/* Reconstruit le filtre de zones FEMMES à partir des vraies Elu.
+   zones = { cléNormalisée: "Libellé zone" }. Ajout/retrait 100% automatique :
+   une zone n'apparaît que si une vraie Elu femme active y est. */
+function rebuildFemFilter(zones) {
+    var bar = document.getElementById("femFilterBar");
+    if (!bar) return;
+    var active = (gridState.fG && gridState.fG.filter) ? gridState.fG.filter : "all";
+    var keys = Object.keys(zones).sort(function (a, b) { return zones[a].localeCompare(zones[b]); });
+    /* Si la zone active a disparu (plus d'Elu), on revient à "Tout" */
+    if (active !== "all" && keys.indexOf(active) === -1) {
+        active = "all";
+        if (gridState.fG) { gridState.fG.filter = "all"; gridState.fG.page = 0; }
+    }
+    var h = '<button class="fbtn' + (active === "all" ? " active" : "") + '" data-f="all" onclick="applyZoneFilter(this)">Tout</button>';
+    keys.forEach(function (k) {
+        h += '<button class="fbtn' + (active === k ? " active" : "") + '" data-f="' + k + '" onclick="applyZoneFilter(this)">' + escapeResHotel(zones[k]) + '</button>';
+    });
+    bar.innerHTML = h;
 }
 
 /* ====================================
@@ -5437,6 +5518,18 @@ function copySiteLink(btn) {
 /* ====================================
    AJOUTE UNE ZONE PERSONNALISÉE (Elu)
    ==================================== */
+/* Affiche le champ zone personnalisée quand l'Elu choisit "Lòt" */
+function toggleFlLocCustom() {
+    var sel = document.getElementById("flLoc");
+    var inp = document.getElementById("flLocCustom");
+    if (!sel || !inp) return;
+    var custom = (sel.value === "__custom__");
+    inp.style.display = custom ? "block" : "none";
+    inp.required = custom;
+    if (!custom) inp.value = "";
+    else inp.focus();
+}
+
 function addCustomZone() {
     var inp = document.getElementById("flCustomZone");
     var box = document.getElementById("flZones");
@@ -5478,7 +5571,13 @@ function doFR(e) {
     var gn = sel[0].value;
     var em = f.querySelector("input[type='email']").value.trim();
     var tel = f.querySelector("input[type='tel']").value.trim();
-    var vil = sel[1].value;
+    /* Lokasyon : menu déroulant + option "Lòt" (zone personnalisée) */
+    var flLocSel = document.getElementById("flLoc");
+    var vil = flLocSel ? flLocSel.value : (sel[1] ? sel[1].value : "");
+    if (vil === "__custom__") {
+        var flLocCust = document.getElementById("flLocCustom");
+        vil = flLocCust ? flLocCust.value.trim() : "";
+    }
     var dt = f.querySelector("input[type='date']").value;
     var px = f.querySelector("input[type='number']").value;
     var ds = f.querySelector("textarea").value.trim();
