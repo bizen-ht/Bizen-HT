@@ -2231,8 +2231,8 @@ body.is-premium .pc-blur{display:none!important}
     </div>
 </section>
 
-<!-- HOTEL PARTNERS SECTION -->
-<section class="section" id="hotels-partenaires" style="background:#050510;padding:60px 0;overflow:hidden">
+<!-- HOTEL PARTNERS SECTION (dynamique — pilotée par l'admin) -->
+<section class="section" id="hotels-partenaires" style="background:#050510;padding:60px 0;overflow:hidden;display:none">
     <div class="container">
         <div style="text-align:center;margin-bottom:40px">
             <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(156,39,176,0.1);border:1px solid rgba(156,39,176,0.3);border-radius:50px;padding:6px 16px;font-size:0.78rem;color:#9c27b0;font-weight:600;margin-bottom:16px">
@@ -2241,52 +2241,9 @@ body.is-premium .pc-blur{display:none!important}
             <h2 style="font-family:'Playfair Display',serif;font-size:2rem;margin-bottom:12px"><span style="color:#e91e63">HOTEL PATNÈ </span> nou yo</h2>
             <p style="color:#b0b0c0;font-size:0.9rem">Chak rezèvasyon tou gen Hotel ladanl . Diskresyon total garanti .</p>
         </div>
-        <!-- SLIDER -->
+        <!-- SLIDER (rempli dynamiquement depuis la collection hotels) -->
         <div style="position:relative;overflow:hidden">
-            <div id="hotelSlider" style="display:flex;gap:24px;animation:hotelScroll 30s linear infinite;width:max-content">
-                <!-- Hotel cards repeated twice for seamless loop -->
-                <div class="hotel-slide-card">
-                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#1a1a2e,#16213e)"><i class="fas fa-hotel" style="font-size:2.5rem;color:#ffd700"></i></div>
-                    <div class="hotel-slide-info"><div class="hotel-slide-name">Hotel Montana</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Pétion-Ville</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
-                </div>
-                <div class="hotel-slide-card">
-                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#2d1b69,#11998e)"><i class="fas fa-building" style="font-size:2.5rem;color:#ffd700"></i></div>
-                    <div class="hotel-slide-info"><div class="hotel-slide-name">Karibe Convention</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Tabarre</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
-                </div>
-                <div class="hotel-slide-card">
-                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#c94b4b,#4b134f)"><i class="fas fa-umbrella-beach" style="font-size:2.5rem;color:#ffd700"></i></div>
-                    <div class="hotel-slide-info"><div class="hotel-slide-name">Royal Oasis</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Port-au-Prince</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
-                </div>
-                <div class="hotel-slide-card">
-                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#134e5e,#71b280)"><i class="fas fa-swimming-pool" style="font-size:2.5rem;color:#ffd700"></i></div>
-                    <div class="hotel-slide-info"><div class="hotel-slide-name">Wahoo Bay Beach</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Arcahaie</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
-                </div>
-                <div class="hotel-slide-card">
-                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#8e0e00,#1f1c18)"><i class="fas fa-concierge-bell" style="font-size:2.5rem;color:#ffd700"></i></div>
-                    <div class="hotel-slide-info"><div class="hotel-slide-name">Villa Creole</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Pétion-Ville</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
-                </div>
-                <div class="hotel-slide-card">
-                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#4776e6,#8e54e9)"><i class="fas fa-gem" style="font-size:2.5rem;color:#ffd700"></i></div>
-                    <div class="hotel-slide-info"><div class="hotel-slide-name">El Rancho</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Pétion-Ville</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
-                </div>
-                <!-- Duplicate for seamless loop -->
-                <div class="hotel-slide-card">
-                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#1a1a2e,#16213e)"><i class="fas fa-hotel" style="font-size:2.5rem;color:#ffd700"></i></div>
-                    <div class="hotel-slide-info"><div class="hotel-slide-name">Hotel Montana</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Pétion-Ville</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
-                </div>
-                <div class="hotel-slide-card">
-                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#2d1b69,#11998e)"><i class="fas fa-building" style="font-size:2.5rem;color:#ffd700"></i></div>
-                    <div class="hotel-slide-info"><div class="hotel-slide-name">Karibe Convention</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Tabarre</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
-                </div>
-                <div class="hotel-slide-card">
-                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#c94b4b,#4b134f)"><i class="fas fa-umbrella-beach" style="font-size:2.5rem;color:#ffd700"></i></div>
-                    <div class="hotel-slide-info"><div class="hotel-slide-name">Royal Oasis</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Port-au-Prince</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
-                </div>
-                <div class="hotel-slide-card">
-                    <div class="hotel-slide-img" style="background:linear-gradient(135deg,#134e5e,#71b280)"><i class="fas fa-swimming-pool" style="font-size:2.5rem;color:#ffd700"></i></div>
-                    <div class="hotel-slide-info"><div class="hotel-slide-name">Wahoo Bay Beach</div><div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> Arcahaie</div><div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div>
-                </div>
-            </div>
+            <div id="hotelSlider" style="display:flex;gap:24px;animation:hotelScroll 30s linear infinite;width:max-content"></div>
         </div>
     </div>
 </section>
@@ -4380,6 +4337,7 @@ document.addEventListener("DOMContentLoaded", function () {
     try { initPremiumOffer(); } catch (e) {}
     try { loadVedettes(); } catch (e) {}
     try { loadRabaisSlideshow(); } catch (e) {}
+    try { loadSiteHotels(); } catch (e) {}
 
     /* ====================================
        PAYMENT RETURN CHECK
@@ -7607,6 +7565,40 @@ function offerCountdownTxt(ms) {
     var h = Math.floor(s / 3600); s -= h * 3600;
     var m = Math.floor(s / 60); s -= m * 60;
     return pad2(h) + ":" + pad2(m) + ":" + pad2(s);
+}
+
+/* ====================================
+   HOTELS PARTENAIRES (site) — pilotés par l'admin
+   Affiche SEULEMENT les hôtels avec showOnSite=true. Si aucun => section cachée.
+   ==================================== */
+function loadSiteHotels() {
+    if (!db) return;
+    db.collection("hotels").where("showOnSite", "==", true).onSnapshot(function (snap) {
+        var section = document.getElementById("hotels-partenaires");
+        var slider = document.getElementById("hotelSlider");
+        if (!section || !slider) return;
+        var list = [];
+        snap.forEach(function (doc) { var d = doc.data(); d.id = doc.id; list.push(d); });
+        if (!list.length) { section.style.display = "none"; slider.innerHTML = ""; return; }
+        section.style.display = "block";
+
+        var card = function (d) {
+            var img = d.logoUrl || (d.images && d.images[0]) || "";
+            var imgHtml = img
+                ? '<div class="hotel-slide-img" style="background-image:url(\'' + img + '\');background-size:cover;background-position:center"></div>'
+                : '<div class="hotel-slide-img" style="background:linear-gradient(135deg,#2d1b69,#11998e)"><i class="fas fa-hotel" style="font-size:2.5rem;color:#ffd700"></i></div>';
+            var zoneLabel = d.zone ? (zoneCanonical(d.zone).label || d.zone) : (d.address || "");
+            return '<div class="hotel-slide-card">' + imgHtml
+                + '<div class="hotel-slide-info"><div class="hotel-slide-name">' + escapeResHotel(d.name || "Hotel") + '</div>'
+                + '<div class="hotel-slide-loc"><i class="fas fa-map-marker-alt"></i> ' + escapeResHotel(zoneLabel) + '</div>'
+                + '<div class="hotel-slide-badge">⭐ Patnè Ofisyèl</div></div></div>';
+        };
+        var h = "";
+        list.forEach(function (d) { h += card(d); });
+        /* Duplique pour un défilement en boucle fluide */
+        list.forEach(function (d) { h += card(d); });
+        slider.innerHTML = h;
+    }, function (e) { console.warn("loadSiteHotels:", e.code); });
 }
 
 function initPremiumOffer() {
