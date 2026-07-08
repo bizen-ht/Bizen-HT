@@ -53,7 +53,7 @@ exports.handler = async function (event) {
         }
 
         /* --- 2. Validation des champs --- */
-        var type = (body.type === "freelancer") ? "freelancer" : "user";
+        var type = (body.type === "freelancer" || body.type === "boss") ? body.type : "user";
         var email = (body.email || "").toString().trim().toLowerCase();
         var password = (body.password || "").toString();
         var prenom = (body.prenom || "").toString().trim().slice(0, 60);
@@ -129,6 +129,17 @@ exports.handler = async function (event) {
                 bizenCode: bizenCode, zones: zones,
                 isOnline: false, lastSeen: null,
                 solde: 0, totalEarnings: 0, reservations: 0,
+                createdAt: now, lastLogin: now
+            });
+        } else if (type === "boss") {
+            /* --- BOSS (gère un groupe d'Elu, encaisse leurs paiements) --- */
+            await dbf.collection("users").doc(uid).set({
+                prenom: prenom, nom: nom, email: email, telephone: telephone,
+                type: "boss", status: "active",
+                emailVerified: true,
+                createdByAdmin: true,
+                moncashNumber: (body.moncashNumber || "").toString().trim().slice(0, 30),
+                isPremium: false,
                 createdAt: now, lastLogin: now
             });
         } else {

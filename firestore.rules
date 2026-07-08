@@ -23,7 +23,9 @@ service cloud.firestore {
     /* -------- PROFIL PRIVÉ (users) : le propriétaire uniquement --------
        Contient e-mail, téléphone, date de naissance => JAMAIS public. */
     match /users/{userId} {
-      allow read:   if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow read:   if isAdmin()
+        || (isSignedIn() && request.auth.uid == userId)
+        || (isSignedIn() && resource.data.bossId == request.auth.uid);   /* le Boss lit ses Elu */
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
       allow delete: if isAdmin();

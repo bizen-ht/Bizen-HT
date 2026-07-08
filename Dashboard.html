@@ -572,6 +572,19 @@
     </div>
 </div>
 
+<!-- BOSS MENU -->
+<div id="bossMenu" style="display:none">
+    <div class="sb-nav-group">
+        <div class="sb-nav-label">Dashboard Boss</div>
+        <button class="sb-link" onclick="showSection('boss-overview',this)">
+            <i class="fas fa-user-tie"></i> Gwoup mwen
+        </button>
+        <button class="sb-link" onclick="showSection('settings',this)">
+            <i class="fas fa-cog"></i> Paramèt
+        </button>
+    </div>
+</div>
+
 <!-- AFILYE MENU (montré seulement si l'utilisateur possède un code promo) -->
 <div id="afilyeMenu" style="display:none">
     <div class="sb-nav-group">
@@ -970,6 +983,39 @@
                 <div class="empty-state">
                     <i class="fas fa-comments"></i>
                     <h4>Pa gen mesaj anko</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOSS OVERVIEW -->
+        <div class="dash-section" id="sec-boss-overview">
+            <div class="dash-top">
+                <h1><i class="fas fa-user-tie" style="color:#9c27b0"></i> Gwoup <span>mwen</span></h1>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-top"><div class="stat-card-ico pink"><i class="fas fa-users"></i></div></div>
+                    <div class="stat-val" id="bossEluCount">0</div>
+                    <div class="stat-label">Elu nan gwoup mwen</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-top"><div class="stat-card-ico gold"><i class="fas fa-calendar-check"></i></div></div>
+                    <div class="stat-val" id="bossMeetCount">0</div>
+                    <div class="stat-label">Total rankont peye</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-top"><div class="stat-card-ico green"><i class="fas fa-money-bill-wave"></i></div></div>
+                    <div class="stat-val" id="bossRevenue">0 G</div>
+                    <div class="stat-label">Total revni gwoup la</div>
+                </div>
+            </div>
+            <div style="background:rgba(156,39,176,0.06);border:1px solid rgba(156,39,176,0.2);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:18px;font-size:0.84rem;color:var(--text-secondary)">
+                <i class="fas fa-info-circle" style="color:#ce93d8"></i> Ou wè chak Elu nan gwoup ou ak revni li. Lajan chak moman konte sou Elu a, men se ou (Boss la) ki touche l sou MonCash ou.
+            </div>
+            <div class="dash-table-wrap">
+                <div class="dash-table-head"><h3>Elu yo</h3></div>
+                <div id="bossEluList">
+                    <div class="empty-state"><i class="fas fa-users"></i><h4>Chajman...</h4></div>
                 </div>
             </div>
         </div>
@@ -1572,6 +1618,8 @@ if (!auth) {
                     setupFreelancer();
                 } else if (type === "krey") {
                     setupKrey();
+                } else if (type === "boss") {
+                    setupBoss();
                 } else {
                     setupUser();
                 }
@@ -1881,6 +1929,56 @@ function stopEluDiscount() {
         renderEluDiscount();
         showToast("Rabè sispann.", "success");
     }).catch(function(e) { console.error(e); showToast("Erè.", "error"); });
+}
+
+/* ====================================
+   SETUP BOSS
+   ==================================== */
+function setupBoss() {
+    ["userMenu", "freelancerMenu", "kreyMenu", "afilyeMenu"].forEach(function(id) {
+        var m = document.getElementById(id); if (m) m.style.display = "none";
+    });
+    var bM = document.getElementById("bossMenu"); if (bM) bM.style.display = "block";
+    setEl("sbName", ((userData.prenom || "") + " " + (userData.nom || "")).trim() || "Boss");
+    setEl("sbEmail", userData.email || "");
+    var badges = document.getElementById("sbBadges");
+    if (badges) badges.innerHTML = '<span class="sb-badge" style="background:linear-gradient(135deg,#9c27b0,#e91e63);color:white"><i class="fas fa-user-tie"></i> Boss</span>';
+    setEl("dashUserName", "Dashboard Boss");
+    loadBossElus();
+    showSection("boss-overview", null);
+    var firstLink = document.querySelector("#bossMenu .sb-link");
+    if (firstLink) firstLink.classList.add("active");
+}
+
+function loadBossElus() {
+    if (!db || !currentUser) return;
+    var box = document.getElementById("bossEluList");
+    db.collection("users").where("bossId", "==", currentUser.uid).onSnapshot(function(snap) {
+        var elus = [];
+        snap.forEach(function(doc) { var d = doc.data(); d.id = doc.id; elus.push(d); });
+        var totMeet = 0, totRev = 0;
+        elus.forEach(function(e) { totMeet += (e.paidMeetings || 0); totRev += (e.totalEarnings || 0); });
+        setEl("bossEluCount", elus.length);
+        setEl("bossMeetCount", totMeet);
+        setEl("bossRevenue", totRev.toLocaleString() + " G");
+        if (!box) return;
+        if (!elus.length) { box.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><h4>Pa gen Elu nan gwoup ou anko</h4></div>'; return; }
+        elus.sort(function(a, b) { return (b.totalEarnings || 0) - (a.totalEarnings || 0); });
+        var h = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.86rem">';
+        h += '<thead><tr style="color:var(--text-muted);text-align:left"><th style="padding:10px">Elu</th><th style="padding:10px">Lokasyon</th><th style="padding:10px;text-align:center">Rankont</th><th style="padding:10px;text-align:center">Revni</th></tr></thead><tbody>';
+        elus.forEach(function(e) {
+            var nm = e.pseudo || ((e.prenom || "") + " " + (e.nom || ""));
+            h += '<tr style="border-top:1px solid var(--border)"><td style="padding:10px;font-weight:600">' + escDash(nm) + '</td>';
+            h += '<td style="padding:10px;color:var(--text-secondary)">' + escDash(e.localisation || "—") + '</td>';
+            h += '<td style="padding:10px;text-align:center">' + (e.paidMeetings || 0) + '</td>';
+            h += '<td style="padding:10px;text-align:center;color:var(--green,#4caf50);font-weight:600">' + ((e.totalEarnings || 0).toLocaleString()) + ' G</td></tr>';
+        });
+        h += '</tbody></table></div>';
+        box.innerHTML = h;
+    }, function(err) {
+        console.warn("loadBossElus:", err.code);
+        if (box) box.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h4>Erè chajman</h4></div>';
+    });
 }
 
 /* ====================================

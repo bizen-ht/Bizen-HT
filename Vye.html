@@ -829,6 +829,10 @@
                 <i class="fas fa-plane-departure"></i> Lis Dyaspora
                 <span class="sb-bdg bdg-b" id="bdgDy">0</span>
             </button>
+            <button class="sb-link" onclick="goPage('boss',this)">
+                <i class="fas fa-user-tie"></i> Boss / Gwoup
+                <span class="sb-bdg bdg-p" id="bdgBoss">0</span>
+            </button>
 
             <div class="sb-cat">Aktivite</div>
             <button class="sb-link" onclick="goPage('res',this)">
@@ -1400,7 +1404,12 @@
                         <select id="acType" onchange="toggleAccEluFields()" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
                             <option value="user">Itilizatè (kliyan)</option>
                             <option value="freelancer">Elu</option>
+                            <option value="boss">Boss (jere yon gwoup Elu)</option>
                         </select>
+                    </div>
+                    <div class="accBossField" style="display:none">
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Nimewo MonCash Boss (pou touche)</label>
+                        <input id="acMoncash" placeholder="Egz: 509XXXXXXXX" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
                     </div>
                     <div>
                         <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Imèl *</label>
@@ -1498,6 +1507,33 @@
                     </table>
                 </div>
             </div>
+        </div>
+
+        <!-- BOSS / GWOUP -->
+        <div class="pg" id="pg-boss">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-user-tie" style="color:#9c27b0"></i> Boss / Gwoup Elu</h1>
+            </div>
+
+            <div class="tc">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-link"></i> Asiyen yon Elu bay yon Boss</div></div>
+                <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;align-items:end">
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Boss</label>
+                        <select id="asgBoss" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"><option value="">Chwazi Boss...</option></select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Elu</label>
+                        <select id="asgElu" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"><option value="">Chwazi Elu...</option></select>
+                    </div>
+                    <div>
+                        <button onclick="assignEluToBoss()" style="width:100%;background:linear-gradient(135deg,#9c27b0,#e91e63);color:#fff;border:none;border-radius:8px;padding:11px 16px;font-weight:600;cursor:pointer;font-size:0.85rem"><i class="fas fa-link"></i> Asiyen</button>
+                    </div>
+                </div>
+                <p style="padding:0 18px 16px;color:#6a6a80;font-size:0.76rem">Kreye yon kont <strong>Boss</strong> nan « Ajoute Kont » anvan. Chak Elu dwe enskri nòmalman. Lajan an ap konte sou Elu a men w ap peye Boss la.</p>
+            </div>
+
+            <div id="bossGroups" style="margin-top:22px;display:flex;flex-direction:column;gap:18px"></div>
         </div>
 
         <!-- MESSAGERIE (admin répond au nom des Élus) -->
@@ -2549,23 +2585,36 @@ function resPayout(id) {
     var r = adminRes.find(function(x) { return x.id === id; });
     if (!r) return;
     if (!r.met) { toast("Kliyan an poko konfime rankont la.", false); return; }
+    if (!r.prestateId) { toast("Pa gen Elu pou rezevasyon sa a.", false); return; }
     var gross = parseInt(String(r.price || "0").replace(/[^0-9]/g, "")) || 0;
     var net = Math.round(gross * 0.9);
-    var elu = adminUsers.find(function(u) { return u.id === r.prestateId; });
-    var mc = elu && elu.moncashNumber ? elu.moncashNumber : "(pa gen nimewo MonCash)";
-    if (!confirm("Konfime ou voye " + net.toLocaleString() + " G (net) bay Elu a sou MonCash:\n" + mc + " ?")) return;
-    db.collection("reservations").doc(id).update({
-        paidOut: true,
-        paidOutAmount: net,
-        paidOutAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function() {
-        /* Met à jour le cumul de gains de l'Elu (informatif) */
-        if (r.prestateId) {
-            db.collection("users").doc(r.prestateId).update({
-                totalEarnings: firebase.firestore.FieldValue.increment(net)
-            }).catch(function(){});
+
+    /* On lit l'Elu pour savoir s'il a un Boss (l'argent va alors au Boss). */
+    db.collection("users").doc(r.prestateId).get().then(function(doc) {
+        var elu = doc.exists ? doc.data() : {};
+        var finish = function(mcNumber, isBoss, bossId, bossName) {
+            var who = isBoss ? ("BOSS « " + bossName.trim() + " »") : "Elu a";
+            if (!confirm("Voye " + net.toLocaleString() + " G (net) bay " + who + " sou MonCash:\n" + (mcNumber || "(pa gen nimewo MonCash)") + " ?")) return;
+            var upd = { paidOut: true, paidOutAmount: net, paidOutTo: isBoss ? "boss" : "elu", paidOutAt: firebase.firestore.FieldValue.serverTimestamp() };
+            if (isBoss) upd.bossId = bossId;
+            db.collection("reservations").doc(id).update(upd).then(function() {
+                /* Le montant est TOUJOURS comptabilisé sur l'Elu (pour que le Boss voie qui rapporte). */
+                db.collection("users").doc(r.prestateId).update({
+                    totalEarnings: firebase.firestore.FieldValue.increment(net),
+                    paidMeetings: firebase.firestore.FieldValue.increment(1)
+                }).catch(function(){});
+                toast(isBoss ? "Peman voye bay Boss la! (konte sou Elu a)" : "Peman Elu make kòm voye!", true);
+                try { loadReservations(); } catch(e) {}
+            }).catch(function(e) { toast("Ere: " + e.message, false); });
+        };
+        if (elu.bossId) {
+            db.collection("users").doc(elu.bossId).get().then(function(bd) {
+                var boss = bd.exists ? bd.data() : {};
+                finish(boss.moncashNumber, true, elu.bossId, (boss.prenom || "") + " " + (boss.nom || ""));
+            }).catch(function() { finish("", true, elu.bossId, ""); });
+        } else {
+            finish(elu.moncashNumber, false, null, "");
         }
-        toast("Peman Elu make kòm voye!", true);
     }).catch(function(e) { toast("Ere: " + e.message, false); });
 }
 
@@ -2719,6 +2768,7 @@ function goPage(id, btn) {
     if (id === "hotels") loadHotels();
     if (id === "addacc") toggleAccEluFields();
     if (id === "dyaspora") loadDiaspora();
+    if (id === "boss") loadBoss();
     if (id === "msg") loadAdminMsg();
     if (id === "promo") loadPromo();
     if (id === "vedette") loadVedetteAdmin();
@@ -3229,6 +3279,84 @@ function deleteDiaspora(id) {
 }
 
 /* ====================================
+   BOSS / GWOUP ELU — gestion admin
+   ==================================== */
+function loadBoss() {
+    if (!db) return;
+    db.collection("users").get().then(function(snap) {
+        var bosses = [], elus = [];
+        snap.forEach(function(doc) {
+            var d = doc.data(); d.id = doc.id;
+            if (d.type === "boss") bosses.push(d);
+            else if (d.type === "freelancer") elus.push(d);
+        });
+        setBdg("bdgBoss", bosses.length);
+
+        var bSel = document.getElementById("asgBoss");
+        if (bSel) {
+            var hb = '<option value="">Chwazi Boss...</option>';
+            bosses.forEach(function(b) { hb += '<option value="' + b.id + '">' + escHtml((b.prenom || "") + " " + (b.nom || "") + " (" + (b.email || "") + ")") + '</option>'; });
+            bSel.innerHTML = hb;
+        }
+        var eSel = document.getElementById("asgElu");
+        if (eSel) {
+            var he = '<option value="">Chwazi Elu...</option>';
+            elus.forEach(function(e) {
+                var tag = e.bossId ? " — [deja nan yon boss]" : "";
+                he += '<option value="' + e.id + '">' + escHtml((e.pseudo || e.prenom || "") + " (" + (e.localisation || "") + ")" + tag) + '</option>';
+            });
+            eSel.innerHTML = he;
+        }
+        renderBossGroups(bosses, elus);
+    }).catch(function(e) { console.error("loadBoss:", e); });
+}
+
+function renderBossGroups(bosses, elus) {
+    var box = document.getElementById("bossGroups");
+    if (!box) return;
+    if (!bosses.length) { box.innerHTML = '<p style="color:#6a6a80">Pa gen Boss anko. Kreye youn nan « Ajoute Kont » (tip Boss).</p>'; return; }
+    var h = "";
+    bosses.forEach(function(b) {
+        var group = elus.filter(function(e) { return e.bossId === b.id; });
+        var totRev = 0, totMeet = 0;
+        group.forEach(function(e) { totRev += (e.totalEarnings || 0); totMeet += (e.paidMeetings || 0); });
+        h += '<div style="background:#0f0f17;border:1px solid #2a2a3a;border-radius:12px;padding:16px">';
+        h += '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+        h += '<div><div style="font-weight:700;color:#fff"><i class="fas fa-user-tie" style="color:#9c27b0"></i> ' + escHtml((b.prenom || "") + " " + (b.nom || "")) + '</div><div style="font-size:0.74rem;color:#6a6a80">' + escHtml(b.email || "") + ' · MonCash: ' + escHtml(b.moncashNumber || "—") + '</div></div>';
+        h += '<div style="text-align:right"><div style="color:#4caf50;font-weight:700">' + totRev.toLocaleString() + ' G</div><div style="font-size:0.72rem;color:#6a6a80">' + group.length + ' Elu · ' + totMeet + ' rankont</div></div>';
+        h += '</div>';
+        if (!group.length) { h += '<p style="color:#6a6a80;font-size:0.8rem">Pa gen Elu nan gwoup sa a.</p>'; }
+        else {
+            h += '<div class="tscroll"><table style="width:100%;font-size:0.8rem"><thead><tr><th style="text-align:left">Elu</th><th>Rankont</th><th>Revni</th><th></th></tr></thead><tbody>';
+            group.forEach(function(e) {
+                h += '<tr><td>' + escHtml(e.pseudo || e.prenom || "") + '</td><td style="text-align:center">' + (e.paidMeetings || 0) + '</td><td style="text-align:center;color:#4caf50">' + ((e.totalEarnings || 0).toLocaleString()) + ' G</td><td style="text-align:right"><button onclick="unassignElu(\'' + e.id + '\')" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.3);border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer">Retire</button></td></tr>';
+            });
+            h += '</tbody></table></div>';
+        }
+        h += '</div>';
+    });
+    box.innerHTML = h;
+}
+
+function assignEluToBoss() {
+    if (!db) return;
+    var bossId = document.getElementById("asgBoss").value;
+    var eluId = document.getElementById("asgElu").value;
+    if (!bossId || !eluId) { alert("Chwazi yon Boss ak yon Elu."); return; }
+    db.collection("users").doc(eluId).update({ bossId: bossId }).then(function() {
+        toast("Elu asiyen bay Boss la!", true); loadBoss();
+    }).catch(function(e) { alert("Erè: " + (e.message || e.code)); });
+}
+
+function unassignElu(eluId) {
+    if (!db) return;
+    if (!confirm("Retire Elu sa a nan gwoup Boss la?")) return;
+    db.collection("users").doc(eluId).update({ bossId: firebase.firestore.FieldValue.delete() }).then(function() {
+        toast("Elu retire.", true); loadBoss();
+    }).catch(function(e) { alert("Erè: " + (e.message || e.code)); });
+}
+
+/* ====================================
    HOTELS PARTENAIRES — gestion admin
    ==================================== */
 var ZONE_LABELS = {
@@ -3365,8 +3493,8 @@ function toggleAccEluFields() {
     var t = document.getElementById("acType");
     if (!t) return;
     var show = (t.value === "freelancer");
-    var fields = document.querySelectorAll(".accEluField");
-    fields.forEach(function(f) { f.style.display = show ? "" : "none"; });
+    document.querySelectorAll(".accEluField").forEach(function(f) { f.style.display = show ? "" : "none"; });
+    document.querySelectorAll(".accBossField").forEach(function(f) { f.style.display = (t.value === "boss") ? "" : "none"; });
 }
 
 function submitAddAccount() {
@@ -3392,6 +3520,9 @@ function submitAddAccount() {
         payload.localisation = (document.getElementById("acLoc").value || "").trim();
         payload.prixMoment = parseInt(document.getElementById("acPrix").value, 10) || 0;
         payload.description = (document.getElementById("acDesc").value || "").trim();
+    }
+    if (type === "boss") {
+        payload.moncashNumber = (document.getElementById("acMoncash").value || "").trim();
     }
 
     var btn = document.getElementById("acSaveBtn");
