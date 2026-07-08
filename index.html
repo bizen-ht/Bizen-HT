@@ -3017,7 +3017,7 @@ body.is-premium .pc-blur{display:none!important}
             <input id="customHotelAddr" type="text" placeholder="Adrès hotel la (opsyonèl)" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);color:#fff;border-radius:10px;padding:10px 12px;font-size:0.88rem;margin-top:8px">
         </div>
     </div>
-    <div class="fg"><label>Not adisyonel (opsyonel)</label><textarea placeholder="Nenpot bagay espesyal ou vle di..." rows="2"></textarea></div>
+    <div class="fg"><label>Not adisyonel (opsyonel)</label><textarea id="resNotes" placeholder="Nenpot bagay espesyal ou vle di..." rows="2"></textarea></div>
     <div style="padding:10px;background:rgba(233,30,99,0.1);border-radius:var(--radius);text-align:center;margin-bottom:10px">
         <p style="font-size:0.85rem;color:var(--text-secondary)">Total pou peye:</p>
         <p style="font-size:1.5rem;font-weight:700;color:var(--gold)" id="resTotalPrice">0 Gdes</p>
@@ -6612,7 +6612,7 @@ function startEluBooking(uid, name, price) {
     if (rn) rn.textContent = name + " (Hotel Inclus)";
     if (rt) rt.textContent = parseInt(price).toLocaleString() + " Gdes";
     if (hw) hw.style.display = "none";
-    ["resCity","resDate","resTime"].forEach(function(id){ var e = document.getElementById(id); if (e) e.value = ""; });
+    ["resCity","resDate","resTime","resNotes"].forEach(function(id){ var e = document.getElementById(id); if (e) e.value = ""; });
     resetHotelPicker();
     oM("resM");
 }

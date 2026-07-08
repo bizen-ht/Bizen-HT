@@ -2385,12 +2385,20 @@ function buildResRow(r, isFL, ratedSet) {
         }
     }
 
+    /* === NOTE DU CLIENT ===
+       Visible AVANT même de confirmer/refuser (surtout pour l'Elu). */
+    var noteBlock = "";
+    if (r.notes && String(r.notes).trim()) {
+        noteBlock = '<div style="margin-top:8px;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.28);border-radius:10px;padding:8px 12px;font-size:0.76rem;color:var(--text-secondary);line-height:1.4">' +
+            '<i class="fas fa-sticky-note" style="color:#ffd700"></i> <strong style="color:#ffd700">Not kliyan an:</strong> ' + escDash(r.notes) + '</div>';
+    }
+
     return '<div class="res-item" data-status="' + (r.status || "en_attente") + '">' +
         '<div class="res-info">' +
         '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">' +
         '<strong>' + mainText + '</strong>' + tipBadge + '</div>' +
         '<span class="res-sub">' + (r.date || "N/A") + ' | ' + loc + '</span>' +
-        confirmBlock + chatBtn + meetBlock + rateBlock +
+        noteBlock + confirmBlock + chatBtn + meetBlock + rateBlock +
         '</div>' +
         '<div class="res-right">' +
         '<span style="padding:3px 12px;border-radius:20px;font-size:0.68rem;font-weight:600;background:' + stBg + ';color:' + stCol + '">' + stTxt + '</span>' +
