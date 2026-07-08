@@ -1001,12 +1001,12 @@
                 <div class="stat-card">
                     <div class="stat-card-top"><div class="stat-card-ico gold"><i class="fas fa-calendar-check"></i></div></div>
                     <div class="stat-val" id="bossMeetCount">0</div>
-                    <div class="stat-label">Total rankont peye</div>
+                    <div class="stat-label">Total rezèvasyon konfime</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-card-top"><div class="stat-card-ico green"><i class="fas fa-money-bill-wave"></i></div></div>
                     <div class="stat-val" id="bossRevenue">0 G</div>
-                    <div class="stat-label">Total revni gwoup la</div>
+                    <div class="stat-label">Montan total moman yo</div>
                 </div>
             </div>
             <div style="background:rgba(156,39,176,0.06);border:1px solid rgba(156,39,176,0.2);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:18px;font-size:0.84rem;color:var(--text-secondary)">
@@ -1956,22 +1956,27 @@ function loadBossElus() {
     db.collection("users").where("bossId", "==", currentUser.uid).onSnapshot(function(snap) {
         var elus = [];
         snap.forEach(function(doc) { var d = doc.data(); d.id = doc.id; elus.push(d); });
-        var totMeet = 0, totRev = 0;
-        elus.forEach(function(e) { totMeet += (e.paidMeetings || 0); totRev += (e.totalEarnings || 0); });
+        var totCount = 0, totAmount = 0, totPaid = 0;
+        elus.forEach(function(e) {
+            totCount += (e.confirmedCount || 0);
+            totAmount += (e.confirmedTotal || 0);
+            totPaid += (e.totalEarnings || 0);
+        });
         setEl("bossEluCount", elus.length);
-        setEl("bossMeetCount", totMeet);
-        setEl("bossRevenue", totRev.toLocaleString() + " G");
+        setEl("bossMeetCount", totCount);
+        setEl("bossRevenue", totAmount.toLocaleString() + " G");
         if (!box) return;
         if (!elus.length) { box.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><h4>Pa gen Elu nan gwoup ou anko</h4></div>'; return; }
-        elus.sort(function(a, b) { return (b.totalEarnings || 0) - (a.totalEarnings || 0); });
+        elus.sort(function(a, b) { return (b.confirmedTotal || 0) - (a.confirmedTotal || 0); });
         var h = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.86rem">';
-        h += '<thead><tr style="color:var(--text-muted);text-align:left"><th style="padding:10px">Elu</th><th style="padding:10px">Lokasyon</th><th style="padding:10px;text-align:center">Rankont</th><th style="padding:10px;text-align:center">Revni</th></tr></thead><tbody>';
+        h += '<thead><tr style="color:var(--text-muted);text-align:left"><th style="padding:10px">Elu</th><th style="padding:10px">Lokasyon</th><th style="padding:10px;text-align:center">Rezèvasyon</th><th style="padding:10px;text-align:center">Montan</th><th style="padding:10px;text-align:center">Deja peye</th></tr></thead><tbody>';
         elus.forEach(function(e) {
             var nm = e.pseudo || ((e.prenom || "") + " " + (e.nom || ""));
             h += '<tr style="border-top:1px solid var(--border)"><td style="padding:10px;font-weight:600">' + escDash(nm) + '</td>';
             h += '<td style="padding:10px;color:var(--text-secondary)">' + escDash(e.localisation || "—") + '</td>';
-            h += '<td style="padding:10px;text-align:center">' + (e.paidMeetings || 0) + '</td>';
-            h += '<td style="padding:10px;text-align:center;color:var(--green,#4caf50);font-weight:600">' + ((e.totalEarnings || 0).toLocaleString()) + ' G</td></tr>';
+            h += '<td style="padding:10px;text-align:center">' + (e.confirmedCount || 0) + '</td>';
+            h += '<td style="padding:10px;text-align:center;color:var(--gold,#ffd700);font-weight:600">' + ((e.confirmedTotal || 0).toLocaleString()) + ' G</td>';
+            h += '<td style="padding:10px;text-align:center;color:var(--green,#4caf50)">' + ((e.totalEarnings || 0).toLocaleString()) + ' G</td></tr>';
         });
         h += '</tbody></table></div>';
         box.innerHTML = h;
@@ -2422,6 +2427,21 @@ function eluConfirmRes(reservationId, newStatus) {
         confirmedAt: firebase.firestore.FieldValue.serverTimestamp()
     }).then(function() {
         showToast(newStatus === "confirmed" ? "Rezevasyon aksepte! Ou ka chat ak kliyan an." : "Rezevasyon refize.", "success");
+        /* Comptabilise sur l'Elu dès l'acceptation (nombre + montant) — visible par le Boss.
+           On marque la réservation "countedForElu" pour ne jamais compter 2 fois. */
+        if (newStatus === "confirmed" && currentUser) {
+            db.collection("reservations").doc(reservationId).get().then(function(rd) {
+                if (!rd.exists) return;
+                var d = rd.data();
+                if (d.countedForElu === true) return;
+                var amt = d.amount || parseInt(String(d.price || "0").replace(/[^0-9]/g, ""), 10) || 0;
+                db.collection("reservations").doc(reservationId).update({ countedForElu: true }).catch(function(){});
+                db.collection("users").doc(currentUser.uid).update({
+                    confirmedCount: firebase.firestore.FieldValue.increment(1),
+                    confirmedTotal: firebase.firestore.FieldValue.increment(amt)
+                }).catch(function(){});
+            }).catch(function(){});
+        }
         loadFlReservations();
     }).catch(function(err) {
         showToast("Ere: " + err.message, "error");

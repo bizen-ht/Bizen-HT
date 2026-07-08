@@ -2575,6 +2575,19 @@ function resAction(action, id) {
     db.collection("reservations").doc(id).update({ status: status })
         .then(function() {
             toast(action === "confirm" ? "Konfime!" : "Anile!", true);
+            /* À la confirmation, comptabilise sur l'Elu (nombre + montant) — visible par le Boss.
+               countedForElu évite tout double comptage (Elu OU admin qui confirme). */
+            if (action === "confirm") {
+                var r = adminRes.find(function(x) { return x.id === id; });
+                if (r && r.prestateId && r.countedForElu !== true) {
+                    var amt = r.amount || parseInt(String(r.price || "0").replace(/[^0-9]/g, ""), 10) || 0;
+                    db.collection("reservations").doc(id).update({ countedForElu: true }).catch(function(){});
+                    db.collection("users").doc(r.prestateId).update({
+                        confirmedCount: firebase.firestore.FieldValue.increment(1),
+                        confirmedTotal: firebase.firestore.FieldValue.increment(amt)
+                    }).catch(function(){});
+                }
+            }
         });
 }
 
@@ -3318,18 +3331,18 @@ function renderBossGroups(bosses, elus) {
     var h = "";
     bosses.forEach(function(b) {
         var group = elus.filter(function(e) { return e.bossId === b.id; });
-        var totRev = 0, totMeet = 0;
-        group.forEach(function(e) { totRev += (e.totalEarnings || 0); totMeet += (e.paidMeetings || 0); });
+        var totAmount = 0, totCount = 0, totPaid = 0;
+        group.forEach(function(e) { totAmount += (e.confirmedTotal || 0); totCount += (e.confirmedCount || 0); totPaid += (e.totalEarnings || 0); });
         h += '<div style="background:#0f0f17;border:1px solid #2a2a3a;border-radius:12px;padding:16px">';
         h += '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
         h += '<div><div style="font-weight:700;color:#fff"><i class="fas fa-user-tie" style="color:#9c27b0"></i> ' + escHtml((b.prenom || "") + " " + (b.nom || "")) + '</div><div style="font-size:0.74rem;color:#6a6a80">' + escHtml(b.email || "") + ' · MonCash: ' + escHtml(b.moncashNumber || "—") + '</div></div>';
-        h += '<div style="text-align:right"><div style="color:#4caf50;font-weight:700">' + totRev.toLocaleString() + ' G</div><div style="font-size:0.72rem;color:#6a6a80">' + group.length + ' Elu · ' + totMeet + ' rankont</div></div>';
+        h += '<div style="text-align:right"><div style="color:#ffd700;font-weight:700">' + totAmount.toLocaleString() + ' G</div><div style="font-size:0.72rem;color:#6a6a80">' + group.length + ' Elu · ' + totCount + ' rezèvasyon · ' + totPaid.toLocaleString() + ' G peye</div></div>';
         h += '</div>';
         if (!group.length) { h += '<p style="color:#6a6a80;font-size:0.8rem">Pa gen Elu nan gwoup sa a.</p>'; }
         else {
-            h += '<div class="tscroll"><table style="width:100%;font-size:0.8rem"><thead><tr><th style="text-align:left">Elu</th><th>Rankont</th><th>Revni</th><th></th></tr></thead><tbody>';
+            h += '<div class="tscroll"><table style="width:100%;font-size:0.8rem"><thead><tr><th style="text-align:left">Elu</th><th>Rezèvasyon</th><th>Montan</th><th>Peye</th><th></th></tr></thead><tbody>';
             group.forEach(function(e) {
-                h += '<tr><td>' + escHtml(e.pseudo || e.prenom || "") + '</td><td style="text-align:center">' + (e.paidMeetings || 0) + '</td><td style="text-align:center;color:#4caf50">' + ((e.totalEarnings || 0).toLocaleString()) + ' G</td><td style="text-align:right"><button onclick="unassignElu(\'' + e.id + '\')" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.3);border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer">Retire</button></td></tr>';
+                h += '<tr><td>' + escHtml(e.pseudo || e.prenom || "") + '</td><td style="text-align:center">' + (e.confirmedCount || 0) + '</td><td style="text-align:center;color:#ffd700">' + ((e.confirmedTotal || 0).toLocaleString()) + ' G</td><td style="text-align:center;color:#4caf50">' + ((e.totalEarnings || 0).toLocaleString()) + ' G</td><td style="text-align:right"><button onclick="unassignElu(\'' + e.id + '\')" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.3);border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer">Retire</button></td></tr>';
             });
             h += '</tbody></table></div>';
         }
