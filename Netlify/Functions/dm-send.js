@@ -194,10 +194,44 @@ exports.handler = async function (event) {
             remaining = {
                 isPremium: isPremium,
                 peopleUsed: people2.length,
-                peopleMax: isPremium ? 1 : 2,
+                peopleMax: isPremium ? 3 : 2,
                 messagesUsed: newCount,
                 messagesMax: isPremium ? null : 5
             };
+        }
+
+        /* ---- MESSAGE D'ACCUEIL AUTOMATIQUE DE L'ÉLU ----
+           Envoyé UNE SEULE FOIS : au tout premier message d'un client dans ce fil.
+           Les messages suivants attendent la vraie réponse de l'Élu. */
+        if (!isEluReply && !threadSnap.exists) {
+            try {
+                var eluUserDoc = await dbf.collection("users").doc(eluUid).get();
+                var welcome = eluUserDoc.exists ? (eluUserDoc.data().welcomeMessage || "") : "";
+                welcome = welcome.toString().trim().slice(0, 300);
+                if (welcome) {
+                    var wTs = admin.firestore.Timestamp.fromMillis(now + 1000);
+                    await dbf.collection("dmMessages").add({
+                        threadId: threadId,
+                        participants: pair,
+                        senderId: eluUid,          /* le message vient de l'Élu */
+                        receiverId: senderUid,
+                        text: filterContact(welcome),
+                        mediaUrl: "", mediaType: "",
+                        isAuto: true,              /* marqué comme réponse automatique */
+                        createdAt: wTs,
+                        expireAt: admin.firestore.Timestamp.fromMillis(now + 24 * 3600 * 1000)
+                    });
+                    /* Objet SÉPARÉ : ne pas réutiliser threadUpdate (il contient
+                       unreadForElu: increment(1) => ça compterait 2 fois). */
+                    await threadRef.set({
+                        lastMessage: filterContact(welcome).slice(0, 120),
+                        lastAt: wTs,
+                        updatedAt: wTs,
+                        autoWelcomeSent: true,
+                        unreadForUser: FieldValue.increment(1)
+                    }, { merge: true });
+                }
+            } catch (e) { console.warn("[DM-SEND] welcome:", e.message); }
         }
 
         /* ---- NOTIF PUSH au destinataire (best effort) ---- */

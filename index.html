@@ -3561,7 +3561,9 @@ function renderRabaisSlideshow() {
     var active = rabaisData.filter(function (d) {
         var ends = d.discountEndsAt && d.discountEndsAt.toMillis ? d.discountEndsAt.toMillis() : (typeof d.discountEndsAt === "number" ? d.discountEndsAt : 0);
         var isElu = d.type === "freelancer" || !d.type;
-        return (d.discountAmount > 0) && ends > now && isElu && d.status !== "frozen";
+        /* SEULS les Elu APPROUVÉS (status "active") peuvent apparaître ici.
+           Un compte "en_attente" ne doit jamais être visible sur le site. */
+        return (d.discountAmount > 0) && ends > now && isElu && d.status === "active";
     });
     if (!active.length) { section.style.display = "none"; return; }
     section.style.display = "block";

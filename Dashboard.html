@@ -895,6 +895,28 @@
                 </div>
             </div>
 
+            <!-- MESSAGE D'ACCUEIL AUTOMATIQUE (Elu) -->
+            <div id="welcomeCard" style="display:none;background:rgba(156,39,176,0.06);border:1px solid rgba(156,39,176,0.25);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px">
+                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px">
+                    <div style="width:48px;height:48px;border-radius:50%;background:rgba(156,39,176,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                        <i class="fas fa-hand-sparkles" style="color:#ce93d8;font-size:1.3rem"></i>
+                    </div>
+                    <div style="flex:1;min-width:160px">
+                        <div style="font-weight:700;font-size:1rem">Mesaj akèy otomatik</div>
+                        <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;margin-top:2px">
+                            Lè yon kliyan ekri w pou <strong>premye fwa</strong>, mesaj sa a voye otomatikman — menm si w pa disponib. Apre sa, se ou menm ki reponn.
+                        </p>
+                        <div id="welcomeStatus" style="margin-top:6px;font-size:0.8rem;font-weight:600"></div>
+                    </div>
+                </div>
+                <textarea id="welcomeMsg" rows="3" maxlength="300" placeholder="Egz: Bonjou! Mèsi paske w ekri m. M ap reponn ou byen vit. 😊" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem;resize:vertical;font-family:inherit"></textarea>
+                <p style="font-size:0.72rem;color:var(--text-muted);margin-top:6px"><i class="fas fa-ban"></i> Pa mete nimewo, WhatsApp oswa lòt kontak — sistèm nan ap kache yo.</p>
+                <div style="display:flex;gap:8px;margin-top:10px">
+                    <button onclick="saveWelcomeMsg()" style="background:linear-gradient(135deg,#9c27b0,#e91e63);color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:600;cursor:pointer;font-size:0.84rem"><i class="fas fa-save"></i> Anrejistre</button>
+                    <button onclick="clearWelcomeMsg()" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:10px;padding:11px 14px;font-weight:600;cursor:pointer;font-size:0.84rem"><i class="fas fa-times"></i> Retire</button>
+                </div>
+            </div>
+
             <!-- RABAIS SUR LE PRIX (Elu) -->
             <div id="discountCard" style="display:none;background:rgba(255,152,0,0.06);border:1px solid rgba(255,152,0,0.25);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px">
                 <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
@@ -909,7 +931,10 @@
                         <div id="discountStatus" style="margin-top:6px;font-size:0.8rem;font-weight:600"></div>
                     </div>
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;align-items:end">
+                <div id="discountLock" style="display:none;background:rgba(255,152,0,0.1);border:1px solid rgba(255,152,0,0.3);border-radius:12px;padding:14px;font-size:0.84rem;color:#ff9800">
+                    <i class="fas fa-lock"></i> <strong>Kont ou poko apwouve.</strong> Ou ka bay yon rabè sèlman lè ekip Bizen fin valide kont ou. Nou ap fè sa byento.
+                </div>
+                <div id="discountControls" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;align-items:end">
                     <div>
                         <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:5px">Montan rabè (Gdes)</label>
                         <input id="discAmount" type="number" min="1" placeholder="Egz: 500" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem">
@@ -1783,6 +1808,8 @@ function setupFreelancer() {
     renderRegMode();
     /* Rabais sur le prix (tous les Elus) */
     renderEluDiscount();
+    /* Message d'accueil automatique */
+    renderWelcomeMsg();
 
     /* Profile edit fields */
     var descEl = document.getElementById("flDesc");
@@ -1876,6 +1903,49 @@ function toggleRegMode() {
 }
 
 /* ====================================
+   MESSAGE D'ACCUEIL AUTOMATIQUE (Elu)
+   Envoyé par le serveur au TOUT PREMIER message d'un client.
+   ==================================== */
+function renderWelcomeMsg() {
+    var card = document.getElementById("welcomeCard");
+    if (!card) return;
+    if (!userData || userData.type !== "freelancer") { card.style.display = "none"; return; }
+    card.style.display = "block";
+    var ta = document.getElementById("welcomeMsg");
+    var st = document.getElementById("welcomeStatus");
+    var msg = userData.welcomeMessage || "";
+    if (ta && !ta.value) ta.value = msg;
+    if (st) {
+        st.innerHTML = msg
+            ? '<span style="color:#4caf50"><i class="fas fa-circle" style="font-size:0.5rem"></i> Aktif — mesaj la ap voye otomatikman</span>'
+            : '<span style="color:var(--text-muted)"><i class="fas fa-circle" style="font-size:0.5rem"></i> Pa gen mesaj akèy</span>';
+    }
+}
+
+function saveWelcomeMsg() {
+    if (!db || !currentUser || !userData) { showToast("Sesyon pa valab.", "error"); return; }
+    var ta = document.getElementById("welcomeMsg");
+    var msg = ta ? ta.value.trim().slice(0, 300) : "";
+    if (!msg) { showToast("Ekri yon mesaj anvan.", "error"); return; }
+    db.collection("users").doc(currentUser.uid).set({ welcomeMessage: msg }, { merge: true }).then(function () {
+        userData.welcomeMessage = msg;
+        renderWelcomeMsg();
+        showToast("Mesaj akèy anrejistre! 👋", "success");
+    }).catch(function (e) { console.error(e); showToast("Erè. Eseye ankò.", "error"); });
+}
+
+function clearWelcomeMsg() {
+    if (!db || !currentUser || !userData) return;
+    if (!confirm("Retire mesaj akèy otomatik la?")) return;
+    db.collection("users").doc(currentUser.uid).set({ welcomeMessage: "" }, { merge: true }).then(function () {
+        userData.welcomeMessage = "";
+        var ta = document.getElementById("welcomeMsg"); if (ta) ta.value = "";
+        renderWelcomeMsg();
+        showToast("Mesaj akèy retire.", "success");
+    }).catch(function (e) { console.error(e); showToast("Erè.", "error"); });
+}
+
+/* ====================================
    RABAIS SUR LE PRIX (Elu)
    ==================================== */
 function renderEluDiscount() {
@@ -1883,6 +1953,20 @@ function renderEluDiscount() {
     if (!card) return;
     if (!userData || userData.type !== "freelancer") { card.style.display = "none"; return; }
     card.style.display = "block";
+
+    /* Le rabais n'est disponible QUE pour les comptes approuvés (status "active").
+       Un compte en attente ne doit pas pouvoir s'afficher sur le site. */
+    var approved = (userData.status === "active");
+    var ctrls = document.getElementById("discountControls");
+    var lock = document.getElementById("discountLock");
+    if (ctrls) ctrls.style.display = approved ? "" : "none";
+    if (lock) lock.style.display = approved ? "none" : "block";
+    if (!approved) {
+        var st0 = document.getElementById("discountStatus");
+        if (st0) st0.innerHTML = '<span style="color:var(--text-muted)"><i class="fas fa-lock"></i> Disponib apre validasyon kont ou</span>';
+        return;
+    }
+
     var st = document.getElementById("discountStatus");
     var amt = userData.discountAmount || 0;
     var ends = userData.discountEndsAt && userData.discountEndsAt.toMillis ? userData.discountEndsAt.toMillis() : 0;
@@ -1900,6 +1984,7 @@ function renderEluDiscount() {
 
 function activateEluDiscount() {
     if (!db || !currentUser || !userData) { showToast("Sesyon pa valab.", "error"); return; }
+    if (userData.status !== "active") { showToast("Kont ou poko apwouve. Rabè a disponib apre validasyon.", "error"); return; }
     var amt = parseInt((document.getElementById("discAmount") || {}).value, 10) || 0;
     var days = parseInt((document.getElementById("discDays") || {}).value, 10) || 1;
     var price = userData.prixMoment || 0;
