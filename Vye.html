@@ -2708,6 +2708,23 @@ function fltTbl(tableId, filter, btn) {
 /* ====================================
    HELPERS
    ==================================== */
+/* ====================================
+   MENU MOBILE ADMIN (hamburger + overlay)
+   ==================================== */
+function togSB() {
+    var sb = document.getElementById("sidebar");
+    var ov = document.getElementById("sbOv");
+    if (sb) sb.classList.toggle("open");
+    if (ov) ov.classList.toggle("on");
+}
+
+function closeSB() {
+    var sb = document.getElementById("sidebar");
+    var ov = document.getElementById("sbOv");
+    if (sb) sb.classList.remove("open");
+    if (ov) ov.classList.remove("on");
+}
+
 function setVal(id, val) {
     var el = document.getElementById(id);
     if (el) el.textContent = val;
@@ -2780,6 +2797,7 @@ function goPage(id, btn) {
     if (id === "avis")  loadReviews();
     if (id === "hotels") loadHotels();
     if (id === "addacc") toggleAccEluFields();
+    try { closeSB(); } catch (e) {}   /* referme le menu mobile après navigation */
     if (id === "dyaspora") loadDiaspora();
     if (id === "boss") loadBoss();
     if (id === "msg") loadAdminMsg();

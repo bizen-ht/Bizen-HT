@@ -7211,6 +7211,8 @@ function dPay() {
         return;
     }
 
+    if (blockPremiumForElu()) return;   /* Elu/Krey ne peuvent pas acheter Premium */
+
     var ref = document.getElementById(
         "mcRef"
     );
@@ -7223,6 +7225,8 @@ function dPay() {
     }
 
     var refValue = ref.value.trim();
+    var premAmount = window.premiumOffer ? window.premiumOffer.price : 1000;
+    var premEmail = auth.currentUser.email || "N/A";
 
     if (db) {
         db.collection("payments").add({
@@ -7230,7 +7234,7 @@ function dPay() {
             email: auth.currentUser.email,
             method: "moncash",
             reference: refValue,
-            amount: window.premiumOffer ? window.premiumOffer.price : 1000,
+            amount: premAmount,
             status: "en_attente",
             provider: "manual",
             purpose: "premium",
@@ -7248,6 +7252,15 @@ function dPay() {
                 "referans " + refValue +
                 " epi aktive Premium."
             );
+            /* Notifie l'admin sur WhatsApp (montant reel, rabais inclus) */
+            var msg = encodeURIComponent(
+                "BIZEN HT - Nouvo Peman Premium\n\n" +
+                "Itilizate: " + premEmail + "\n" +
+                "Referans: " + refValue + "\n" +
+                "Montan: " + premAmount.toLocaleString() + " Gdes\n\n" +
+                "Ale nan Vye.html pou konfime epi aktive Premium la."
+            );
+            window.open("https://wa.me/50947464283?text=" + msg, "_blank");
         }).catch(function() {
             toast(
                 "Ere. Eseye anko.",
@@ -7474,80 +7487,6 @@ function activatePremium(
         });
 }
 
-
-function startPaymentCheck(orderId, userId) {
-    if (paymentCheckInterval) clearInterval(paymentCheckInterval);
-    var checkCount = 0;
-    paymentCheckInterval = setInterval(function () {
-        checkCount++;
-        if (checkCount >= 12) { clearInterval(paymentCheckInterval); return; }
-        fetch("/.netlify/functions/moncash", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "verify", orderId: orderId })
-        }).then(function (res) { return res.json(); })
-            .then(function (data) {
-                if (data.success && data.verified) {
-                    clearInterval(paymentCheckInterval);
-                    activatePremium(userId, orderId);
-                }
-            }).catch(function () {});
-    }, 10000);
-}
-
-function activatePremium(userId, orderId) {
-    if (!db) return;
-    db.collection("users").doc(userId).update({
-        isPremium: true,
-        premiumActivatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function () {
-        db.collection("payments").where("userId", "==", userId).get()
-            .then(function (snap) { snap.forEach(function (doc) { if (doc.data().orderId === orderId) doc.ref.update({ status: "confirmed" }); }); });
-        cM("pM");
-        showOk("Premium Aktive!", "Peman konfime! Ou ka jwenn tout Elu yo kounye a!");
-        try { unlockUI(); } catch (e) {}
-    }).catch(function () {});
-}
-
-function dPay() {
-    if (!auth || !auth.currentUser) {
-        cM("pM"); toast("Konekte dabo.", "err");
-        setTimeout(function () { oM("lM"); }, 1500);
-        return;
-    }
-    if (blockPremiumForElu()) return;   /* Elu/Krey ne peuvent pas acheter Premium */
-    var ref = document.getElementById("mcRef");
-    if (!ref || !ref.value.trim()) { toast("Antre referans tranzaksyon MonCash ou a.", "err"); return; }
-    var refValue = ref.value.trim();
-    var userEmail = auth.currentUser.email || "N/A";
-    var userId = auth.currentUser.uid;
-
-    if (db) {
-        db.collection("payments").add({
-            userId: userId, email: userEmail,
-            method: "moncash", reference: refValue, amount: 1000,
-            status: "en_attente", provider: "manual",
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(function () {
-            cM("pM");
-            showOk("Demann Resevwa!", "Mesi! Ekip nou pral verifye referans " + refValue + " epi aktive Premium ou nan kek minit.");
-
-            /* Notifye admin via WhatsApp automatikman */
-            var msg = encodeURIComponent(
-                "🔔 *BIZEN HT — Nouvo Peman Premium*\n\n" +
-                "👤 Itilizate: " + userEmail + "\n" +
-                "💳 Referans: " + refValue + "\n" +
-                "💰 Montan: 1,000 Gdes\n\n" +
-                "Ale nan Vye.html pou konfime epi aktive Premium la."
-            );
-            /* Ouvre WhatsApp admin nan yon nouvo tab */
-            window.open("https://wa.me/50947464283?text=" + msg, "_blank");
-        }).catch(function () { toast("Ere. Eseye anko.", "err"); });
-    } else {
-        cM("pM");
-        showOk("Demann Resevwa!", "Mesi! Ekip nou pral verifye peman ou.");
-    }
-}
 
 function pa() { oM("paM"); }
 
