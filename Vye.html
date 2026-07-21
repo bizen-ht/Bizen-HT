@@ -3201,9 +3201,17 @@ function listenAdminMsg() {
                 var fromElu = m.senderId === adminMsgCur.eluUid;   /* "moi" (admin = Elu) à droite */
                 var time = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate().toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" }) : "";
                 h += '<div style="display:flex;justify-content:' + (fromElu ? "flex-end" : "flex-start") + '">';
-                h += '<div style="max-width:78%;padding:9px 13px;border-radius:16px;font-size:0.88rem;line-height:1.4;' +
+                h += '<div style="max-width:78%;padding:' + (m.mediaUrl ? "6px" : "9px 13px") + ';border-radius:16px;font-size:0.88rem;line-height:1.4;' +
                     (fromElu ? "background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border-bottom-right-radius:4px" : "background:rgba(255,255,255,0.08);color:#eee;border-bottom-left-radius:4px") + '">';
-                h += escHtml(m.text) + '<div style="font-size:0.62rem;opacity:0.6;margin-top:3px;text-align:right">' + time + '</div></div></div>';
+                if (m.mediaUrl) {
+                    if (m.mediaType === "video") {
+                        h += '<video src="' + escHtml(m.mediaUrl) + '" controls playsinline style="max-width:240px;width:100%;border-radius:12px;display:block"></video>';
+                    } else {
+                        h += '<img src="' + escHtml(m.mediaUrl) + '" onclick="window.open(this.src,\'_blank\')" style="max-width:240px;width:100%;border-radius:12px;display:block;cursor:pointer">';
+                    }
+                }
+                if (m.text) h += (m.mediaUrl ? '<div style="padding:6px 7px 0">' : '') + escHtml(m.text) + (m.mediaUrl ? '</div>' : '');
+                h += '<div style="font-size:0.62rem;opacity:0.6;margin-top:3px;text-align:right' + (m.mediaUrl ? ';padding:0 7px 3px' : '') + '">' + time + '</div></div></div>';
             });
             body.innerHTML = h; body.scrollTop = body.scrollHeight;
         }, function(err){ console.warn("listenAdminMsg:", err.code); });

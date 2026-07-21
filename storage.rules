@@ -42,6 +42,11 @@ service firebase.storage {
       allow write: if isAdmin() || isValidOwnerUpload(userId);
     }
 
+    /* Médias envoyés dans la messagerie (client -> Elu) : dm/{uid}/... */
+    match /dm/{userId}/{allPaths=**} {
+      allow write: if isAdmin() || isValidOwnerUpload(userId);
+    }
+
     /* Tout autre chemin : écriture admin uniquement (lecture déjà publique). */
     match /{root}/{allPaths=**} {
       allow write: if isAdmin();

@@ -66,7 +66,14 @@ exports.handler = async function (event) {
         if (!idToken) return err(401, "idToken requis");
         if (!eluUid) return err(400, "eluUid requis");
         var text = rawText.trim().slice(0, 1000);
-        if (!text) return err(400, "Mesaj vid.");
+
+        /* Média (photo/vidéo) envoyé par le CLIENT — l'URL vient de Firebase Storage */
+        var mediaUrl = (body.mediaUrl || "").toString().slice(0, 600);
+        var mediaType = (body.mediaType === "video") ? "video" : (body.mediaType === "image" ? "image" : "");
+        if (mediaUrl && mediaUrl.indexOf("https://") !== 0) return err(400, "Medya pa valab.");
+        if (!mediaUrl) mediaType = "";
+
+        if (!text && !mediaUrl) return err(400, "Mesaj vid.");
 
         var decoded = await admin.auth().verifyIdToken(idToken);
         var senderUid = decoded.uid;
@@ -109,12 +116,12 @@ exports.handler = async function (event) {
             counter = cSnap.exists ? cSnap.data() : { people: [], count: 0, date: dstr };
             var people = counter.people || [];
             var alreadyTalking = people.indexOf(eluUid) !== -1;
-            var maxPeople = isPremium ? 1 : 2;
+            var maxPeople = isPremium ? 3 : 2;
             var maxMessages = isPremium ? Infinity : 5;
 
             if (!alreadyTalking && people.length >= maxPeople) {
                 return err(429, isPremium
-                    ? "Kòm Premium ou ka pale ak yon sèl moun pa jou (mesaj san limit). Retounen demen pou yon lòt."
+                    ? "Kòm Premium ou ka pale ak 3 moun pa jou (mesaj san limit). Retounen demen pou yon lòt."
                     : "Ou rive nan limit 2 moun pa jou a. Vin Premium pou plis, oswa tann demen.",
                     { reason: "people", premiumInvite: !isPremium });
             }
@@ -129,20 +136,28 @@ exports.handler = async function (event) {
         var receiverUid = isEluReply ? thread.userUid : eluUid;
         var filtered = filterContact(text);
 
+        /* Seul le CLIENT peut envoyer un média (pas l'Élu / pas l'admin-pour-Élu) */
+        var okMedia = (!isEluReply && mediaUrl) ? mediaUrl : "";
+        var okMediaType = okMedia ? mediaType : "";
+
         await dbf.collection("dmMessages").add({
             threadId: threadId,
             participants: pair,
             senderId: senderUid,
             receiverId: receiverUid,
             text: filtered,
+            mediaUrl: okMedia,
+            mediaType: okMediaType,
             createdAt: nowTs,
             expireAt: expireTs           /* TTL Firestore supprime ~24h après */
         });
 
         /* ---- MISE À JOUR DU THREAD ---- */
+        var lastPreview = filtered ? filtered.slice(0, 120)
+            : (okMediaType === "video" ? "🎥 Videyo" : "📷 Foto");
         var threadUpdate = {
             participants: pair,
-            lastMessage: filtered.slice(0, 120),
+            lastMessage: lastPreview,
             lastAt: nowTs,
             updatedAt: nowTs
         };

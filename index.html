@@ -6539,6 +6539,8 @@ function openDM(eluUid, eluName) {
     h += '<div id="dmWarn" style="display:none;padding:7px 16px;background:rgba(244,67,54,0.12);color:#ff6b6b;font-size:0.74rem;text-align:center;border-top:1px solid rgba(244,67,54,0.3)"><i class="fas fa-ban"></i> Sa entèdi — tout bagay dwe pase sou Bizen</div>';
     /* Zone de saisie */
     h += '<div style="padding:12px 14px;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:8px">';
+    h += '<input type="file" id="dmFile" accept="image/*,video/*" style="display:none" onchange="sendDMMedia(this)">';
+    h += '<button id="dmAttachBtn" onclick="document.getElementById(\'dmFile\').click()" title="Voye foto oswa videyo" style="width:44px;height:46px;border-radius:50%;border:none;background:rgba(255,255,255,0.08);color:#ce93d8;cursor:pointer;flex-shrink:0"><i class="fas fa-paperclip"></i></button>';
     h += '<input id="dmInput" type="text" placeholder="Ekri yon mesaj..." maxlength="1000" oninput="dmCheckContact()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();sendDM();}" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#fff;border-radius:50px;padding:11px 16px;font-size:0.9rem;outline:none">';
     h += '<button id="dmSendBtn" onclick="sendDM()" style="width:46px;height:46px;border-radius:50%;border:none;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;cursor:pointer;flex-shrink:0"><i class="fas fa-paper-plane"></i></button>';
     h += '</div>';
@@ -6597,13 +6599,66 @@ function renderDM(msgs) {
         var mine = m.senderId === me;
         var t = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
         h += '<div style="display:flex;justify-content:' + (mine ? "flex-end" : "flex-start") + '">';
-        h += '<div style="max-width:78%;padding:9px 13px;border-radius:16px;font-size:0.88rem;line-height:1.4;' +
+        h += '<div style="max-width:78%;padding:' + (m.mediaUrl ? "6px" : "9px 13px") + ';border-radius:16px;font-size:0.88rem;line-height:1.4;' +
             (mine ? "background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border-bottom-right-radius:4px" : "background:rgba(255,255,255,0.08);color:#eee;border-bottom-left-radius:4px") + '">';
-        h += escapeResHotel(m.text) + '<div style="font-size:0.62rem;opacity:0.6;margin-top:3px;text-align:right">' + t + '</div>';
+        if (m.mediaUrl) {
+            if (m.mediaType === "video") {
+                h += '<video src="' + escapeResHotel(m.mediaUrl) + '" controls playsinline style="max-width:240px;width:100%;border-radius:12px;display:block"></video>';
+            } else {
+                h += '<img src="' + escapeResHotel(m.mediaUrl) + '" onclick="window.open(this.src,\'_blank\')" style="max-width:240px;width:100%;border-radius:12px;display:block;cursor:pointer">';
+            }
+        }
+        if (m.text) h += (m.mediaUrl ? '<div style="padding:6px 7px 0">' : '') + escapeResHotel(m.text) + (m.mediaUrl ? '</div>' : '');
+        h += '<div style="font-size:0.62rem;opacity:0.6;margin-top:3px;text-align:right' + (m.mediaUrl ? ';padding:0 7px 3px' : '') + '">' + t + '</div>';
         h += '</div></div>';
     });
     body.innerHTML = h;
     body.scrollTop = body.scrollHeight;
+}
+
+/* Envoi d'une photo/vidéo dans le chat (CLIENT uniquement) */
+function sendDMMedia(input) {
+    if (!auth || !auth.currentUser || !dmCurrentElu || !storage) return;
+    if (!input.files || !input.files[0]) return;
+    var file = input.files[0];
+    input.value = "";
+    var isImg = file.type.indexOf("image/") === 0;
+    var isVid = file.type.indexOf("video/") === 0;
+    if (!isImg && !isVid) { toast("Se foto oswa videyo sèlman.", "err"); return; }
+    var maxMb = isVid ? 25 : 8;
+    if (file.size > maxMb * 1024 * 1024) { toast("Fichye a twò gwo (max " + maxMb + "MB).", "err"); return; }
+
+    var btn = document.getElementById("dmAttachBtn");
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+    toast("Voye " + (isVid ? "videyo" : "foto") + "...", "success");
+
+    var safe = Date.now() + "_" + file.name.replace(/\s+/g, "_");
+    var path = "dm/" + auth.currentUser.uid + "/" + safe;
+    var ref = storage.ref(path);
+    ref.put(file).then(function () {
+        return ref.getDownloadURL();
+    }).then(function (url) {
+        return auth.currentUser.getIdToken().then(function (idToken) {
+            return fetch("/.netlify/functions/dm-send", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    idToken: idToken, eluUid: dmCurrentElu.uid,
+                    text: "", mediaUrl: url, mediaType: isVid ? "video" : "image"
+                })
+            });
+        });
+    }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (res) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paperclip"></i>'; }
+        if (res.ok && res.j.success) { /* le listener temps réel affiche le média */ }
+        else if (res.j && res.j.premiumInvite) { showOk("Vin Premium 👑", res.j.error || "Ou rive nan limit jodi a."); }
+        else { toast((res.j && res.j.error) ? res.j.error : "Medya pa pati.", "err"); }
+    }).catch(function (e) {
+        console.error("sendDMMedia:", e);
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paperclip"></i>'; }
+        toast("Ere. Verifye koneksyon ou.", "err");
+    });
 }
 
 function sendDM() {
