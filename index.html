@@ -3096,6 +3096,14 @@ var db, auth, storage;
 try {
     firebase.initializeApp(fbCfg);
 db = firebase.firestore();
+/* PERSISTANCE HORS-LIGNE : les écritures (profil, etc.) sont mises en file
+   localement et se synchronisent toutes seules dès que la connexion revient.
+   Doit être appelée AVANT toute autre opération Firestore. */
+try {
+    db.enablePersistence({ synchronizeTabs: true }).catch(function (pe) {
+        console.warn("firestore persistence:", pe.code);
+    });
+} catch (pe) { console.warn("firestore persistence:", pe.message); }
 auth = firebase.auth();
 storage = firebase.storage();
 /* Garde la session connectée (évite les déconnexions automatiques) */
@@ -5340,6 +5348,34 @@ function doLogin(e) {
 }
 
 /* ====================================
+   CRÉATION DE COMPTE ROBUSTE (connexion faible)
+   Réessaie automatiquement si le réseau lâche pendant la création du compte.
+   ==================================== */
+function createAccountWithRetry(email, pw, tries) {
+    tries = (tries === undefined) ? 3 : tries;
+    return auth.createUserWithEmailAndPassword(email, pw).catch(function (err) {
+        var code = (err && err.code) ? err.code : "";
+        var isNet = (code === "auth/network-request-failed" || code === "auth/timeout" || code === "auth/internal-error");
+        if (isNet && tries > 1) {
+            return new Promise(function (res) { setTimeout(res, 2500); })
+                .then(function () { return createAccountWithRetry(email, pw, tries - 1); });
+        }
+        throw err;
+    });
+}
+
+/* Écriture Firestore en ARRIÈRE-PLAN (ne bloque jamais l'inscription).
+   Avec la persistance hors-ligne, la donnée est mise en file et se synchronise
+   toute seule au retour du réseau. */
+function bgSet(collection, docId, data, merge) {
+    try {
+        var ref = db.collection(collection).doc(docId);
+        var p = merge ? ref.set(data, { merge: true }) : ref.set(data);
+        p.catch(function (e) { console.warn("bgSet " + collection + ":", e.code || e.message); });
+    } catch (e) { console.warn("bgSet:", e.message); }
+}
+
+/* ====================================
    USER REGISTER
    ==================================== */
 function doUR(e) {
@@ -5383,26 +5419,28 @@ function doUR(e) {
         btn.innerHTML = btnOrig; btn.disabled = false;
         toast("Koneksyon an lan oswa entènèt ou fèb. Eseye ankò.", "err");
     }, 30000);
-    auth.createUserWithEmailAndPassword(em, pw)
+    createAccountWithRetry(em, pw)
         .then(function (result) {
             authOk = true;
+            clearTimeout(urWatch);
             var user = result.user;
+
+            /* ===== SUCCÈS IMMÉDIAT =====
+               Dès que le compte existe, l'utilisateur voit la confirmation.
+               Le profil part en arrière-plan (se synchronise même sur mauvaise connexion). */
+            btn.innerHTML = btnOrig; btn.disabled = false;
+            cM("sM"); bT(); f.reset();
+            showOk("Kont Kreye!", "Byenveni " + pr + "! Kont ou aktif. Nou voye yon lyen verifikasyon nan imel ou (opsyonèl).");
+
+            /* --- ARRIÈRE-PLAN --- */
             user.sendEmailVerification().catch(function () {});
-            return db.collection("users").doc(user.uid).set({
+            bgSet("users", user.uid, {
                 prenom: pr, nom: nm, email: em, telephone: tel,
                 dateNesans: dt, isPremium: false, type: "user",
                 status: "active", emailVerified: false, favorites: [],
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
             });
-        })
-        .then(function () {
-            clearTimeout(urWatch);
-            btn.innerHTML = btnOrig; btn.disabled = false;
-            cM("sM"); bT(); f.reset();
-            /* On NE déconnecte plus : l'utilisateur reste connecté et peut utiliser
-               le site tout de suite. Email de vérification déjà envoyé (non bloquant). */
-            showOk("Kont Kreye!", "Byenveni " + pr + "! Kont ou aktif. Nou voye yon lyen verifikasyon nan imel ou (opsyonèl).");
         })
         .catch(function (error) {
             clearTimeout(urWatch);
@@ -5572,14 +5610,37 @@ function doFR(e) {
         btn.innerHTML = btnOrig; btn.disabled = false;
         toast("Koneksyon an lan oswa entènèt ou fèb. Eseye ankò.", "err");
     }, 30000);
-    auth.createUserWithEmailAndPassword(em, pw)
+    createAccountWithRetry(em, pw)
         .then(function (result) {
             authOk = true;
+            clearTimeout(frWatch);
             var user = result.user;
-            user.sendEmailVerification().catch(function () {});
+            var uid = user.uid;
             var bizenCode = "BZ-" + Math.random().toString(36).substr(2, 4).toUpperCase() + Math.floor(100 + Math.random() * 900);
-            /* Profil PUBLIC (sans email ni téléphone) pour le catalogue + QR */
-            db.collection("publicProfiles").doc(user.uid).set({
+
+            /* On capture les fichiers AVANT de réinitialiser le formulaire */
+            var photosToUpload = uploadedPhotos.slice();
+            var vidInput = f.querySelector("input[type='file'][accept='video/*']");
+            var videoFiles = (vidInput && vidInput.files) ? Array.prototype.slice.call(vidInput.files) : [];
+
+            /* ===== SUCCÈS IMMÉDIAT =====
+               Dès que le compte existe, l'Elu voit la confirmation. Tout le reste
+               (profil, photos) part en arrière-plan et se synchronise même si la
+               connexion est mauvaise (persistance hors-ligne Firestore). */
+            btn.innerHTML = btnOrig;
+            btn.disabled = false;
+            cM("sM");
+            bT();
+            f.reset();
+            uploadedPhotos = [];
+            updatePhotoPreview();
+            showOk("Demann Voye!", "Mesi " + pr + "! Kont Elu ou kreye. Ekip nou pral verifye epi aktive li byento. Ou ka ajoute oswa chanje foto ou nan dashboard ou.");
+
+            /* --- ARRIÈRE-PLAN : e-mail de vérification --- */
+            user.sendEmailVerification().catch(function () {});
+
+            /* --- ARRIÈRE-PLAN : profil PUBLIC (catalogue + QR) --- */
+            bgSet("publicProfiles", uid, {
                 prenom: pr, nomInitial: (nm.charAt(0) || "") + ".",
                 pseudo: ps,
                 type: "freelancer", genre: gn, localisation: vil,
@@ -5588,9 +5649,10 @@ function doFR(e) {
                 photoUrl: "", bizenCode: bizenCode, isPremium: false,
                 status: "en_attente", isOnline: false, lastSeen: null,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).catch(function(){});
+            });
 
-            return db.collection("users").doc(user.uid).set({
+            /* --- ARRIÈRE-PLAN : profil PRIVÉ (users) --- */
+            bgSet("users", uid, {
                 prenom: pr, nom: nm, pseudo: ps, email: em, telephone: tel,
                 genre: gn, localisation: vil, dateNesans: dt,
                 prixMoment: parseInt(px), prixNet: netPay,
@@ -5605,47 +5667,26 @@ function doFR(e) {
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
             });
-        })
-        .then(function () {
-    clearTimeout(frWatch);
-    var createdUser = auth.currentUser;
-    var uid = createdUser ? createdUser.uid : null;
 
-    /* On capture les fichiers AVANT de réinitialiser le formulaire */
-    var photosToUpload = uploadedPhotos.slice();
-    var vidInput = f.querySelector("input[type='file'][accept='video/*']");
-    var videoFiles = (vidInput && vidInput.files) ? Array.prototype.slice.call(vidInput.files) : [];
-
-    /* SUCCÈS IMMÉDIAT — on n'attend PAS la fin des uploads (connexion lente => abandon).
-       L'utilisateur reste connecté ; les photos s'envoient en arrière-plan. */
-    btn.innerHTML = btnOrig;
-    btn.disabled = false;
-    cM("sM");
-    bT();
-    f.reset();
-    uploadedPhotos = [];
-    updatePhotoPreview();
-    showOk("Demann Voye!", "Mesi " + pr + "! Kont Elu ou kreye. Ekip nou pral verifye epi aktive li byento. Ou ka ajoute oswa chanje foto ou nan dashboard ou.");
-
-    /* Upload média EN ARRIÈRE-PLAN — n'empêche jamais l'inscription */
-    if (uid && (photosToUpload.length > 0 || videoFiles.length > 0)) {
-        (async function () {
-            try {
-                var uploadedPhotoData = photosToUpload.length > 0
-                    ? await uploadFilesToStorage(photosToUpload, uid, "photos", "Elu") : [];
-                var uploadedVideoData = videoFiles.length > 0
-                    ? await uploadFilesToStorage(videoFiles, uid, "videos", "Elu") : [];
-                var profilePhoto = uploadedPhotoData.length > 0 ? uploadedPhotoData[0].url : "";
-                await saveUserMedia(uid, uploadedPhotoData, uploadedVideoData, profilePhoto);
-                if (profilePhoto) {
-                    db.collection("publicProfiles").doc(uid).set({ photoUrl: profilePhoto }, { merge: true }).catch(function(){});
-                }
-            } catch (mediaErr) {
-                console.warn("Upload média arrière-plan échoué (compte créé quand même):", mediaErr);
+            /* --- ARRIÈRE-PLAN : médias --- */
+            if (uid && (photosToUpload.length > 0 || videoFiles.length > 0)) {
+                (async function () {
+                    try {
+                        var uploadedPhotoData = photosToUpload.length > 0
+                            ? await uploadFilesToStorage(photosToUpload, uid, "photos", "Elu") : [];
+                        var uploadedVideoData = videoFiles.length > 0
+                            ? await uploadFilesToStorage(videoFiles, uid, "videos", "Elu") : [];
+                        var profilePhoto = uploadedPhotoData.length > 0 ? uploadedPhotoData[0].url : "";
+                        await saveUserMedia(uid, uploadedPhotoData, uploadedVideoData, profilePhoto);
+                        if (profilePhoto) {
+                            db.collection("publicProfiles").doc(uid).set({ photoUrl: profilePhoto }, { merge: true }).catch(function(){});
+                        }
+                    } catch (mediaErr) {
+                        console.warn("Upload média arrière-plan échoué (compte créé quand même):", mediaErr);
+                    }
+                })();
             }
-        })();
-    }
-})
+        })
         .catch(function (error) {
             clearTimeout(frWatch);
             btn.innerHTML = btnOrig; btn.disabled = false;
@@ -5752,14 +5793,27 @@ function doKR(e) {
         if (btn) { btn.innerHTML = btnOrig; btn.disabled = false; }
         toast("Koneksyon an lan oswa entènèt ou fèb. Eseye ankò.", "err");
     }, 30000);
-    auth.createUserWithEmailAndPassword(contactEmail, pw)
+    createAccountWithRetry(contactEmail, pw)
         .then(function (result) {
             authOk = true;
+            clearTimeout(kfWatch);
             var user = result.user;
-            user.sendEmailVerification().catch(function () {});
+            var uid = user.uid;
             var bizenCodeKrey = "BZ-" + Math.random().toString(36).substr(2, 4).toUpperCase() + Math.floor(100 + Math.random() * 900);
-            /* Profil PUBLIC Krey (sans email/téléphone) */
-            db.collection("publicProfiles").doc(user.uid).set({
+            var kreyPhotosToUpload = (uploadedKreyPhotos || []).slice();
+
+            /* ===== SUCCÈS IMMÉDIAT ===== (profil + photos en arrière-plan) */
+            if (btn) { btn.innerHTML = btnOrig; btn.disabled = false; }
+            cM("sM"); bT();
+            var kf = document.getElementById("kF");
+            if (kf) kf.reset();
+            uploadedKreyPhotos = [];
+            try { updateKreyPhotoPreview(); } catch (e) {}
+            showOk("Demann Krey Voye!", "Mesi! Gwoup " + groupName + " kreye. Ekip nou pral verifye epi aktive li byento.");
+
+            /* --- ARRIÈRE-PLAN --- */
+            user.sendEmailVerification().catch(function () {});
+            bgSet("publicProfiles", uid, {
                 prenom: groupName, nomInitial: "",
                 type: "krey", localisation: zone,
                 prixMoment: priceNum, description: desc,
@@ -5767,9 +5821,8 @@ function doKR(e) {
                 status: "en_attente", isOnline: false, lastSeen: null,
                 kreyMemberCount: parseInt(count),
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).catch(function(){});
-
-            return db.collection("users").doc(user.uid).set({
+            });
+            bgSet("users", uid, {
                 prenom: groupName, nom: "(Krey)", email: contactEmail,
                 telephone: contactTel, contactName: contactName,
                 type: "krey", status: "en_attente", isPremium: false,
@@ -5780,26 +5833,11 @@ function doKR(e) {
                 kreyMemberCount: parseInt(count), kreyDescription: desc,
                 kreyPrice: priceNum, kreyPriceNet: netPay,
                 kreyCommission: commission, commissionPct: 10,
-                photoCount: uploadedKreyPhotos.length,
+                photoCount: kreyPhotosToUpload.length,
                 solde: 0, totalEarnings: 0, reservations: 0,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
             });
-        })
-                .then(function () {
-            clearTimeout(kfWatch);
-            var createdUser = auth.currentUser;
-            var uid = createdUser ? createdUser.uid : null;
-            var kreyPhotosToUpload = (uploadedKreyPhotos || []).slice();
-
-            /* SUCCÈS IMMÉDIAT — on n'attend pas les uploads, l'utilisateur reste connecté */
-            if (btn) { btn.innerHTML = btnOrig; btn.disabled = false; }
-            cM("sM"); bT();
-            var kf = document.getElementById("kF");
-            if (kf) kf.reset();
-            uploadedKreyPhotos = [];
-            try { updateKreyPhotoPreview(); } catch (e) {}
-            showOk("Demann Krey Voye!", "Mesi! Gwoup " + groupName + " kreye. Ekip nou pral verifye epi aktive li byento.");
 
             /* Upload photos Krey EN ARRIÈRE-PLAN */
             if (uid && kreyPhotosToUpload.length > 0) {
