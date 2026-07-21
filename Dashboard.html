@@ -2622,7 +2622,10 @@ function loadDmThreads() {
         .where("eluUid", "==", currentUser.uid)
         .onSnapshot(function(snap) {
             var list = [];
-            snap.forEach(function(doc) { var t = doc.data(); t.id = doc.id; list.push(t); });
+            snap.forEach(function(doc) {
+                var t = doc.data(); t.id = doc.id;
+                if (dmThreadAlive(t)) list.push(t);   /* masque les fils expirés (24h) */
+            });
             /* Premium d'abord, puis par récence */
             list.sort(function(a, b) {
                 if ((b.userIsPremium ? 1 : 0) !== (a.userIsPremium ? 1 : 0)) return (b.userIsPremium ? 1 : 0) - (a.userIsPremium ? 1 : 0);
@@ -2666,6 +2669,15 @@ function renderDmThreads(list) {
 
 function escDash(s) {
     return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* Un fil est "vivant" si son dernier message a moins de 24h.
+   Passé ce délai les messages ont expiré => on n'affiche plus le contact
+   (le nettoyage serveur le supprimera définitivement). */
+function dmThreadAlive(t) {
+    var ms = (t && t.lastAt && t.lastAt.toMillis) ? t.lastAt.toMillis() : 0;
+    if (!ms) return false;
+    return (Date.now() - ms) < 24 * 3600 * 1000;
 }
 
 function dmHasContact(t) {
@@ -2795,7 +2807,10 @@ function loadUserDmThreads() {
         .where("userUid", "==", currentUser.uid)
         .onSnapshot(function(snap) {
             var list = [];
-            snap.forEach(function(doc) { var t = doc.data(); t.id = doc.id; list.push(t); });
+            snap.forEach(function(doc) {
+                var t = doc.data(); t.id = doc.id;
+                if (dmThreadAlive(t)) list.push(t);   /* masque les fils expirés (24h) */
+            });
             list.sort(function(a, b) {
                 var ta = a.lastAt && a.lastAt.toMillis ? a.lastAt.toMillis() : 0;
                 var tb = b.lastAt && b.lastAt.toMillis ? b.lastAt.toMillis() : 0;

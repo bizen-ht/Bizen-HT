@@ -3111,7 +3111,13 @@ function loadAdminMsg() {
     if (adminMsgUnsub) { try { adminMsgUnsub(); } catch(e){} }
     adminMsgUnsub = db.collection("dmThreads").onSnapshot(function(snap) {
         adminMsgThreads = [];
-        snap.forEach(function(doc) { var t = doc.data(); t.id = doc.id; adminMsgThreads.push(t); });
+        snap.forEach(function(doc) {
+            var t = doc.data(); t.id = doc.id;
+            /* Fil expiré (dernier message > 24h) : ses messages sont supprimés,
+               on ne montre plus le contact vide. */
+            var ms = (t.lastAt && t.lastAt.toMillis) ? t.lastAt.toMillis() : 0;
+            if (ms && (Date.now() - ms) < 24 * 3600 * 1000) adminMsgThreads.push(t);
+        });
         adminMsgThreads.sort(function(a, b) {
             var ta = a.lastAt && a.lastAt.toMillis ? a.lastAt.toMillis() : 0;
             var tb = b.lastAt && b.lastAt.toMillis ? b.lastAt.toMillis() : 0;

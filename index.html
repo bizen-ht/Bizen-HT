@@ -104,7 +104,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Bizen HT">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/833/833472.png">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -2545,7 +2547,7 @@ body.is-premium .pc-blur{display:none!important}
 <div class="pend"><i class="fas fa-info-circle"></i><p>Kont Elu yo pase nan validasyon manyel. Repons nan 24-48 edtan.</p></div>
 <!-- COMMISSION NOTICE -->
 <div class="commission-notice"><i class="fas fa-percentage"></i><p>Bizen HT pran <strong>10% komisyon</strong> sou chak moman/rezevasyon. Pa egzanp: Si pri ou se 5,000 Gdes, ou resevwa <strong>4,500 Gdes</strong> e Bizen HT kenbe 500 Gdes. Pri sa a pa negosyab e li afiche klè sou pwofil ou.</p></div>
-<div class="frow"><div class="fg"><label>Non</label><input type="text" placeholder="Non ou" required></div><div class="fg"><label>Siyati</label><input type="text" placeholder="Siyati ou" required></div></div><div class="fg"><label>Pseudo</label><input type="text" id="flPseudo" placeholder="Egz: Bella, King James..."><p class="fhint" style="color:#f48fb1;margin-top:5px"><i class="fas fa-eye"></i> Pseudo a se nom sa kap piblik sou kont ou an. Vrè non ak siyati w rete prive (pou admin sèlman).</p></div><div class="fg"><label>Seks</label><select required><option value="">Chwazi...</option><option value="femme">Fanm</option><option value="homme">Gason</option><option value="biseksyel">Biseksyèl</option><option value="lot">Lòt</option></select></div><div class="fg"><label>Imel</label><input type="email" placeholder="email@gmail.com" required></div><div class="fg"><label>Telefon</label><input type="tel" placeholder="+509 XXXX-XXXX" required></div><div class="fg"><label>Lokasyon (kote w ye)</label><select id="flLoc" required onchange="toggleFlLocCustom()"><option value="">Chwazi zòn ou...</option><option value="Pétion-Ville">Pétion-Ville</option><option value="Delmas">Delmas</option><option value="Tabarre">Tabarre</option><option value="Pòtoprens">Pòtoprens</option><option value="Carrefour">Carrefour</option><option value="Route de Frères">Route de Frères</option><option value="Croix-des-Bouquets">Croix-des-Bouquets</option><option value="Thomassin">Thomassin</option><option value="Kenscoff">Kenscoff</option><option value="Cap-Haïtien">Cap-Haïtien</option><option value="Gonaïves">Gonaïves</option><option value="Les Cayes">Les Cayes</option><option value="Jacmel">Jacmel</option><option value="__custom__">Lòt zòn (ekri pa w)...</option></select><input type="text" id="flLocCustom" placeholder="Ekri zòn ou an..." style="display:none;margin-top:8px;width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;color:#fff;font-family:'Montserrat',sans-serif;font-size:0.85rem;outline:none"></div><div class="fg"><label>Zòn ou ka ale (chwazi tout sa ki aplike)</label><div id="flZones" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
+<div class="frow"><div class="fg"><label>Non</label><input type="text" id="flPrenom" placeholder="Non ou" required></div><div class="fg"><label>Siyati</label><input type="text" id="flNom" placeholder="Siyati ou" required></div></div><div class="fg"><label>Pseudo</label><input type="text" id="flPseudo" placeholder="Egz: Bella, King James..."><p class="fhint" style="color:#f48fb1;margin-top:5px"><i class="fas fa-eye"></i> Pseudo a se nom sa kap piblik sou kont ou an. Vrè non ak siyati w rete prive (pou admin sèlman).</p></div><div class="fg"><label>Seks</label><select id="flGenre" required><option value="">Chwazi...</option><option value="femme">Fanm</option><option value="homme">Gason</option><option value="biseksyel">Biseksyèl</option><option value="lot">Lòt</option></select></div><div class="fg"><label>Imel</label><input type="email" id="flEmail" placeholder="email@gmail.com" required></div><div class="fg"><label>Telefon</label><input type="tel" id="flTel" placeholder="+509 XXXX-XXXX" required></div><div class="fg"><label>Lokasyon (kote w ye)</label><select id="flLoc" required onchange="toggleFlLocCustom()"><option value="">Chwazi zòn ou...</option><option value="Pétion-Ville">Pétion-Ville</option><option value="Delmas">Delmas</option><option value="Tabarre">Tabarre</option><option value="Pòtoprens">Pòtoprens</option><option value="Carrefour">Carrefour</option><option value="Route de Frères">Route de Frères</option><option value="Croix-des-Bouquets">Croix-des-Bouquets</option><option value="Thomassin">Thomassin</option><option value="Kenscoff">Kenscoff</option><option value="Cap-Haïtien">Cap-Haïtien</option><option value="Gonaïves">Gonaïves</option><option value="Les Cayes">Les Cayes</option><option value="Jacmel">Jacmel</option><option value="__custom__">Lòt zòn (ekri pa w)...</option></select><input type="text" id="flLocCustom" placeholder="Ekri zòn ou an..." style="display:none;margin-top:8px;width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;color:#fff;font-family:'Montserrat',sans-serif;font-size:0.85rem;outline:none"></div><div class="fg"><label>Zòn ou ka ale (chwazi tout sa ki aplike)</label><div id="flZones" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
 <label class="zchk"><input type="checkbox" value="Potoprens"> Potoprens</label>
 <label class="zchk"><input type="checkbox" value="Petion-Ville"> Petion-Ville</label>
 <label class="zchk"><input type="checkbox" value="Delmas"> Delmas</label>
@@ -2558,9 +2560,9 @@ body.is-premium .pc-blur{display:none!important}
 <input type="text" id="flCustomZone" placeholder="Ajoute yon lòt zòn (ex: Kenscoff)..." style="flex:1;padding:9px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:50px;color:white;font-family:'Montserrat',sans-serif;font-size:0.8rem;outline:none" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomZone();}">
 <button type="button" onclick="addCustomZone()" style="padding:9px 16px;border:none;border-radius:50px;background:rgba(233,30,99,0.15);color:#e91e63;font-weight:600;font-size:0.78rem;cursor:pointer;font-family:'Montserrat',sans-serif;white-space:nowrap"><i class="fas fa-plus"></i> Ajoute</button>
 </div>
-<p style="font-size:0.72rem;color:#6a6a80;margin-top:5px"><i class="fas fa-info-circle"></i> Chwazi nan lis la oswa ajoute pwòp zòn ou. Kliyan yo p ap ka rezève w nan yon zòn ou pa chwazi.</p></div><div class="fg"><label>Dat Nesans</label><input type="date" required></div><div class="fg"><label>Pri pou chak Moman (Gdes) - 10% komisyon ap retire</label><input type="number" placeholder="ex: 2000" min="1000" required id="priceInput" oninput="calcCommission()"></div>
+<p style="font-size:0.72rem;color:#6a6a80;margin-top:5px"><i class="fas fa-info-circle"></i> Chwazi nan lis la oswa ajoute pwòp zòn ou. Kliyan yo p ap ka rezève w nan yon zòn ou pa chwazi.</p></div><div class="fg"><label>Dat Nesans</label><input type="date" id="flDob" required></div><div class="fg"><label>Pri pou chak Moman (Gdes) - 10% komisyon ap retire</label><input type="number" placeholder="ex: 2000" min="1000" required id="priceInput" oninput="calcCommission()"></div>
 <div id="commCalc" style="font-size:0.8rem;color:var(--primary-light);padding:5px 0;display:none"><i class="fas fa-calculator"></i> Ou pral resevwa: <strong id="netAmount">0</strong> Gdes | Komisyon Bizen HT: <strong id="commAmount">0</strong> Gdes</div>
-<div class="fg"><label>Deskripsyon ou</label><textarea placeholder="Dekri tet ou, sevis ou ofri..." rows="4" required></textarea></div>
+<div class="fg"><label>Deskripsyon ou</label><textarea id="flDescTxt" placeholder="Dekri tet ou, sevis ou ofri..." rows="4" required></textarea></div>
 <div class="fg">
     <label>
         Foto ou (ajoute plizyè foto sexy)
@@ -4348,6 +4350,8 @@ document.addEventListener("DOMContentLoaded", function () {
     try { loadVedettes(); } catch (e) {}
     try { loadRabaisSlideshow(); } catch (e) {}
     try { loadSiteHotels(); } catch (e) {}
+    /* Une demande Elu était bloquée par une coupure réseau ? On la renvoie. */
+    setTimeout(function () { try { retryPendingElu(); } catch (e) {} }, 4000);
 
     /* ====================================
        PAYMENT RETURN CHECK
@@ -5558,28 +5562,29 @@ function addCustomZone() {
    FREELANCER REGISTER
    ==================================== */
 function doFR(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    /* Tout le corps est protégé : avant, la moindre erreur de lecture d'un champ
+       faisait que "rien ne se passait" (bouton sans réaction). */
+    try {
     var f = document.getElementById("fF");
-    var ti = f.querySelectorAll("input[type='text']");
-    var sel = f.querySelectorAll("select");
-    var pr = ti[0].value.trim();
-    var nm = ti[1].value.trim();
-    var psEl = document.getElementById("flPseudo");
-    var ps = psEl ? psEl.value.trim() : "";
-    var gn = sel[0].value;
-    var em = f.querySelector("input[type='email']").value.trim();
-    var tel = f.querySelector("input[type='tel']").value.trim();
+    if (!f) { toast("Erè fòm lan. Rechaje paj la.", "err"); return false; }
+
+    /* Lecture ROBUSTE par id (résiste à l'autofill qui injecte des champs
+       et décale les positions). */
+    var gv = function (id) { var el = document.getElementById(id); return el ? (el.value || "") : ""; };
+    var pr = gv("flPrenom").trim();
+    var nm = gv("flNom").trim();
+    var ps = gv("flPseudo").trim();
+    var gn = gv("flGenre");
+    var em = gv("flEmail").trim();
+    var tel = gv("flTel").trim();
     /* Lokasyon : menu déroulant + option "Lòt" (zone personnalisée) */
-    var flLocSel = document.getElementById("flLoc");
-    var vil = flLocSel ? flLocSel.value : (sel[1] ? sel[1].value : "");
-    if (vil === "__custom__") {
-        var flLocCust = document.getElementById("flLocCustom");
-        vil = flLocCust ? flLocCust.value.trim() : "";
-    }
-    var dt = f.querySelector("input[type='date']").value;
-    var px = f.querySelector("input[type='number']").value;
-    var ds = f.querySelector("textarea").value.trim();
-    var pw = f.querySelector("input[type='password']").value;
+    var vil = gv("flLoc");
+    if (vil === "__custom__") vil = gv("flLocCustom").trim();
+    var dt = gv("flDob");
+    var px = gv("priceInput");
+    var ds = gv("flDescTxt").trim();
+    var pw = gv("fpw");
     /* Zones de couverture (cases cochées) */
     var flZones = [];
     var zoneBoxes = document.querySelectorAll("#flZones input[type='checkbox']:checked");
@@ -5700,11 +5705,86 @@ function doFR(e) {
                 showOk("Demann Voye!", "Mesi " + pr + "! Kont Elu ou kreye. Ekip nou pral verifye li byento.");
                 return;
             }
-            var msg = error.code === "auth/email-already-in-use" ? "Imel sa a deja itilize." : "Ere: " + error.message;
-            toast(msg, "err");
+            /* Message CLAIR (plus le message brut de Firebase) */
+            toast(authErrorMessage(error), "err");
+            /* Connexion tombée : on garde la demande et on réessaie au retour du réseau */
+            var code = (error && error.code) ? error.code : "";
+            if (code === "auth/network-request-failed" || code === "auth/timeout" || code === "auth/internal-error") {
+                savePendingElu({
+                    pr: pr, nm: nm, ps: ps, gn: gn, em: em, tel: tel, vil: vil,
+                    dt: dt, px: px, ds: ds, pw: pw, zones: flZones
+                });
+            }
         });
     return false;
+    } catch (errOuter) {
+        /* Filet de sécurité : aucune erreur ne doit faire "rien ne se passe" */
+        console.error("doFR:", errOuter);
+        toast("Yon erè rive. Si w nan navigatè Instagram/Facebook, louvri sit la nan Chrome oswa Safari.", "err");
+        return false;
+    }
 }
+
+/* ====================================
+   DEMANDE ELU EN ATTENTE (connexion tombée)
+   On garde les infos et on réessaie automatiquement au retour du réseau,
+   pour que la personne n'ait pas à tout retaper.
+   ==================================== */
+function savePendingElu(data) {
+    try {
+        localStorage.setItem("bizenPendingElu", JSON.stringify(data));
+        showOk("Nou kenbe demann ou 📌",
+            "Entènèt ou koupe. Nou sove enfòmasyon ou yo — n ap voye demann lan otomatikman lè koneksyon an tounen. Pa fèmen sit la.");
+    } catch (e) {}
+}
+
+function retryPendingElu() {
+    var raw = null;
+    try { raw = localStorage.getItem("bizenPendingElu"); } catch (e) { return; }
+    if (!raw || !auth || !db) return;
+    var d;
+    try { d = JSON.parse(raw); } catch (e) { try { localStorage.removeItem("bizenPendingElu"); } catch (e2) {} return; }
+    if (!d || !d.em || !d.pw) return;
+
+    createAccountWithRetry(d.em, d.pw).then(function (result) {
+        try { localStorage.removeItem("bizenPendingElu"); } catch (e) {}
+        var user = result.user, uid = user.uid;
+        var bizenCode = "BZ-" + Math.random().toString(36).substr(2, 4).toUpperCase() + Math.floor(100 + Math.random() * 900);
+        var commission = Math.round(parseInt(d.px) * 0.10);
+        user.sendEmailVerification().catch(function () {});
+        bgSet("publicProfiles", uid, {
+            prenom: d.pr, nomInitial: (d.nm.charAt(0) || "") + ".", pseudo: d.ps,
+            type: "freelancer", genre: d.gn, localisation: d.vil, zones: d.zones || [],
+            prixMoment: parseInt(d.px), description: d.ds,
+            photoUrl: "", bizenCode: bizenCode, isPremium: false,
+            status: "en_attente", isOnline: false, lastSeen: null,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        bgSet("users", uid, {
+            prenom: d.pr, nom: d.nm, pseudo: d.ps, email: d.em, telephone: d.tel,
+            genre: d.gn, localisation: d.vil, dateNesans: d.dt,
+            prixMoment: parseInt(d.px), prixNet: parseInt(d.px) - commission,
+            commissionBizen: commission, commissionPct: 10,
+            description: d.ds, isPremium: false,
+            type: "freelancer", status: "en_attente", emailVerified: false,
+            bizenCode: bizenCode, zones: d.zones || [],
+            isOnline: false, lastSeen: null,
+            solde: 0, totalEarnings: 0, reservations: 0,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showOk("Demann Voye! ✅", "Mesi " + d.pr + "! Koneksyon an tounen epi demann ou pati. Ekip nou pral verifye kont ou.");
+    }).catch(function (err) {
+        var code = (err && err.code) ? err.code : "";
+        /* Email déjà pris = le compte avait finalement été créé : on nettoie */
+        if (code === "auth/email-already-in-use") {
+            try { localStorage.removeItem("bizenPendingElu"); } catch (e) {}
+        }
+    });
+}
+
+/* Réessaie dès que le navigateur retrouve le réseau, et au chargement */
+window.addEventListener("online", function () { try { retryPendingElu(); } catch (e) {} });
 
 /* ====================================
    KREY REGISTER
@@ -6450,7 +6530,13 @@ function startUserDMBadge() {
         .where("userUid", "==", auth.currentUser.uid)
         .onSnapshot(function(snap) {
             userDMThreads = [];
-            snap.forEach(function(doc) { var t = doc.data(); t.id = doc.id; userDMThreads.push(t); });
+            snap.forEach(function(doc) {
+                var t = doc.data(); t.id = doc.id;
+                /* Fil expiré (dernier message > 24h) => plus rien à afficher,
+                   on masque le contact (le nettoyage serveur le supprimera). */
+                var ms = (t.lastAt && t.lastAt.toMillis) ? t.lastAt.toMillis() : 0;
+                if (ms && (Date.now() - ms) < 24 * 3600 * 1000) userDMThreads.push(t);
+            });
             userDMThreads.sort(function(a, b) {
                 var ta = a.lastAt && a.lastAt.toMillis ? a.lastAt.toMillis() : 0;
                 var tb = b.lastAt && b.lastAt.toMillis ? b.lastAt.toMillis() : 0;
@@ -8490,21 +8576,47 @@ document.getElementById("pwaInstallBtn").addEventListener("click", function () {
             deferredPrompt = null;
             dismissPwaBanner();
         });
-    } else {
-        openIosSheet();
+        return;
     }
+    /* Pas d'install auto : on montre les bonnes instructions selon l'appareil */
+    var ua = navigator.userAgent || "";
+    var isIOS = /iphone|ipad|ipod/i.test(ua) ||
+                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (isIOS) openIosSheet();
+    else openAndroidSheet();
 });
 
-/* iPhone n'envoie pas beforeinstallprompt : on montre quand même la bannière */
+/* Cas où beforeinstallprompt ne se déclenche JAMAIS :
+   - iPhone/iPad (Apple ne le supporte pas)
+   - navigateurs intégrés Android (Instagram, Facebook, TikTok...) : l'install
+     y est impossible, il faut ouvrir dans Chrome. Sans ça ces gens ne voyaient
+     aucune bannière du tout. */
 (function () {
     var ua = navigator.userAgent || "";
     var isIOS = /iphone|ipad|ipod/i.test(ua) ||
                 (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    /* iPhone : bannière TOUJOURS visible (on ignore la mémoire du "fermé") */
-    if (isIOS && !pwaAlreadyInstalled()) {
+    var inApp = /\bfban\b|\bfbav\b|fb_iab|instagram|musical_ly|tiktok|micromessenger|\bline\b|snapchat|pinterest|messenger/i.test(ua.toLowerCase());
+    if (pwaAlreadyInstalled()) return;
+    if (isIOS || inApp) {
         setTimeout(function () { showPwaBanner(true); }, 3000);
     }
 })();
+
+/* Instructions Android quand l'installation auto n'est pas possible
+   (navigateur intégré) : on explique comment ouvrir dans Chrome. */
+function openAndroidSheet() {
+    var body = document.getElementById("iosSheetBody");
+    if (body) {
+        body.innerHTML =
+            '<div style="background:rgba(255,152,0,0.1);border:1px solid rgba(255,152,0,0.3);border-radius:12px;padding:14px;color:#ffb74d;margin-bottom:14px">' +
+            '<i class="fas fa-exclamation-circle"></i> Ou nan navigatè Instagram/Facebook. Enstalasyon an pa posib isit.</div>' +
+            iosStep('1', 'Tape meni an', '<b>⋮</b> oswa <b>···</b> an wo adwat ekran an') +
+            iosStep('2', 'Chwazi', '<b>"Ouvrir dans Chrome"</b> (Open in browser)') +
+            iosStep('3', 'Nan Chrome', 'Tape <b>"Telechaje App la"</b> ankò — l ap enstale!');
+    }
+    var s = document.getElementById("iosInstallSheet");
+    if (s) s.style.display = "flex";
+}
 </script>
 </body>
 </html>

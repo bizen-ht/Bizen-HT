@@ -39,8 +39,27 @@ exports.handler = async function () {
             if (snap.size < 400) break;
         }
 
-        console.log("[DM-CLEANUP] messages supprimés:", totalDeleted);
-        return { statusCode: 200, body: JSON.stringify({ deleted: totalDeleted }) };
+        /* ---- SUPPRESSION DES FILS (CONTACTS) VIDES ----
+           Si le dernier message d'un fil date de plus de 24h, tous ses messages
+           ont expiré => le contact n'a plus rien à afficher, on le supprime aussi.
+           Évite une liste de contacts qui s'allonge avec des conversations vides. */
+        var cutoff = admin.firestore.Timestamp.fromMillis(Date.now() - 24 * 3600 * 1000);
+        var threadsDeleted = 0;
+        for (var tp = 0; tp < 10; tp++) {
+            var tSnap = await dbf.collection("dmThreads")
+                .where("lastAt", "<=", cutoff)
+                .limit(400)
+                .get();
+            if (tSnap.empty) break;
+            var tBatch = dbf.batch();
+            tSnap.forEach(function (doc) { tBatch.delete(doc.ref); });
+            await tBatch.commit();
+            threadsDeleted += tSnap.size;
+            if (tSnap.size < 400) break;
+        }
+
+        console.log("[DM-CLEANUP] mesaj:", totalDeleted, "| kontak:", threadsDeleted);
+        return { statusCode: 200, body: JSON.stringify({ deleted: totalDeleted, threads: threadsDeleted }) };
     } catch (e) {
         console.error("[DM-CLEANUP]", e.message);
         return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
