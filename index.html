@@ -62,7 +62,7 @@
           },
           "sameAs": [
             "https://www.instagram.com/bizen_ht",
-            "https://whatsapp.com/channel/0029VbCiTTQ6buMPwsobWw05"
+            "https://whatsapp.com/channel/0029Vb7o41xFy72Jo1LGtU3X"
           ]
         },
         {
@@ -2218,7 +2218,7 @@ body.is-premium .pc-blur{display:none!important}
                 <div class="con-item"><i class="fas fa-envelope"></i><span>bizenht@gmail.com</span></div>
                 <div class="con-item"><i class="fab fa-whatsapp"></i><span>+509 47464283</span></div>
                 <div class="con-item"><i class="fab fa-whatsapp"></i><span>Channel WhatsApp</span></div>
-                <div class="soc-links"><a href="https://www.instagram.com/bizen_ht?igsh=MWZoOGEzZzR2M2ZjYg%3D%3D&utm_source=qr" class="soc-lnk"><i class="fab fa-instagram"></i></a><a href="https://whatsapp.com/channel/0029VbCiTTQ6buMPwsobWw05" target="_blank" rel="noopener" class="soc-lnk"><i class="fas fa-bullhorn"></i></a><a href="https://wa.me/50947464283" class="soc-lnk"><i class="fab fa-whatsapp"></i></a></div>
+                <div class="soc-links"><a href="https://www.instagram.com/bizen_ht?igsh=MWZoOGEzZzR2M2ZjYg%3D%3D&utm_source=qr" class="soc-lnk"><i class="fab fa-instagram"></i></a><a href="https://whatsapp.com/channel/0029Vb7o41xFy72Jo1LGtU3X" target="_blank" rel="noopener" class="soc-lnk"><i class="fas fa-bullhorn"></i></a><a href="https://wa.me/50947464283" class="soc-lnk"><i class="fab fa-whatsapp"></i></a></div>
             </div>
             <div class="con-box sr">
                 <form class="cform" id="cForm">
@@ -2280,7 +2280,7 @@ body.is-premium .pc-blur{display:none!important}
     </ul>
 </div>
             <div class="foot-col"><h4>Legal</h4><ul><li><a href="/kondisyon">Kondisyon Itilizasyon</a></li><li><a href="/konfidansyalite">Konfidansyalite</a></li><li><a href="/regleman">Regleman</a></li></ul></div>
-            <div class="foot-col"><h4>Kontak</h4><ul><li><a href="#">bizenht@gmail.com</a></li><li><a href="https://wa.me/50947464283" target="_blank" rel="noopener">WhatsApp</a></li><li><a href="https://whatsapp.com/channel/0029VbCiTTQ6buMPwsobWw05" target="_blank" rel="noopener">Channel WhatsApp</a></li></ul></div>
+            <div class="foot-col"><h4>Kontak</h4><ul><li><a href="#">bizenht@gmail.com</a></li><li><a href="https://wa.me/50947464283" target="_blank" rel="noopener">WhatsApp</a></li><li><a href="https://whatsapp.com/channel/0029Vb7o41xFy72Jo1LGtU3X" target="_blank" rel="noopener">Channel WhatsApp</a></li></ul></div>
         </div>
        <div class="foot-bot">
     <p style="margin-bottom:10px">
@@ -3940,11 +3940,9 @@ function renderCards() {
         fG.innerHTML = "";
     }
     if (hG) {
-        var hH = "";
-        for (var j = 0; j < hd.length; j++) {
-            hH += mkCard(hd[j], "Gason", true);
-        }
-        hG.innerHTML = hH;
+        /* Plus de profils fictifs pour les HOMMES non plus : seuls les vrais Elu
+           (avec photos, chargés via renderRealFreelancers) apparaissent. */
+        hG.innerHTML = "";
     }
     try { refreshGrids(); } catch (e) {}
     try { renderKrey(); } catch (e) {
