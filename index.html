@@ -3683,7 +3683,8 @@ function mkCard(p, type, male) {
     h += '<div class="pc-body">';
     h += '<h3 class="pc-name">' + p.n;
     if (p.age) h += ' <span style="display:inline-block;vertical-align:middle;background:rgba(255,255,255,0.1);color:var(--gold);font-size:0.62rem;font-weight:700;padding:2px 9px;border-radius:50px;font-family:\'Montserrat\',sans-serif;border:1px solid rgba(255,215,0,0.35)">' + p.age + ' an</span>';
-    if (p.discountBadge) h += ' <span style="display:inline-block;vertical-align:middle;background:#ff9800;color:#1a1a1a;font-size:0.6rem;font-weight:700;padding:2px 7px;border-radius:50px;font-family:\'Montserrat\',sans-serif"><i class="fas fa-tags"></i> ' + p.discountBadge + '</span>';
+    if (p.frozen) h += ' <span style="display:inline-block;vertical-align:middle;background:rgba(244,67,54,0.15);color:#f44336;font-size:0.6rem;font-weight:700;padding:2px 8px;border-radius:50px;font-family:\'Montserrat\',sans-serif;border:1px solid rgba(244,67,54,0.4)"><i class="fas fa-lock"></i> Kont jele</span>';
+    if (p.discountBadge && !p.frozen) h += ' <span style="display:inline-block;vertical-align:middle;background:#ff9800;color:#1a1a1a;font-size:0.6rem;font-weight:700;padding:2px 7px;border-radius:50px;font-family:\'Montserrat\',sans-serif"><i class="fas fa-tags"></i> ' + p.discountBadge + '</span>';
     h += '</h3>';
     h += '<div class="pc-loc">';
     h += '<i class="fas fa-map-marker-alt"></i> ' + p.l;
@@ -3704,6 +3705,13 @@ function mkCard(p, type, male) {
     h += '<div class="pc-tags">' + tg + '</div>';
     /* Bouton "Pale an prive" (messagerie) — visible pour TOUS (gratuit inclus),
        placé au-dessus du bouton de réservation. Seulement sur les vrais profils. */
+    if (p.frozen) {
+        /* Compte gelé : visible mais NI réservable NI contactable. */
+        h += '<button class="btn-res btn-dm" disabled style="background:rgba(244,67,54,0.1);color:#f44336;border:1px solid rgba(244,67,54,0.35);cursor:not-allowed" onclick="event.stopPropagation();showOk(\'Kont jele\',\'Elu sa a gen kont li jele pou kounye a. Li pa ka resevwa rezevasyon.\');return false;">';
+        h += '<i class="fas fa-lock"></i> Kont jele';
+        h += '</button></div></div>';
+        return h;
+    }
     if (p.demo === false && p.uid) {
         var cardNameJs = String(p.n || "Elu").replace(/'/g, "\\'").replace(/"/g, "&quot;");
         h += '<button class="btn-res btn-dm" style="background:rgba(156,39,176,0.15);color:#ce93d8;border:1px solid rgba(156,39,176,0.45);margin-bottom:8px" onclick="event.stopPropagation();openDM(\'' + p.uid + '\',\'' + cardNameJs + '\')">';
@@ -3969,9 +3977,10 @@ function renderRealFreelancers() {
     var hG = document.getElementById("hG");
 
     /* Lit la collection PUBLIQUE (sans email/téléphone).
-       Filtre status côté serveur, type côté client => pas d'index composite requis. */
+       On inclut les comptes "active" ET "frozen" : un compte gelé reste visible
+       (affiché "Kont jele"), il n'est juste pas réservable. */
     db.collection("publicProfiles")
-        .where("status", "==", "active")
+        .where("status", "in", ["active", "frozen"])
         .onSnapshot(function(snap) {
             /* Retire les anciennes vraies cartes pour éviter les doublons */
             document.querySelectorAll('.pc[data-demo="0"]').forEach(function(c) { c.remove(); });
@@ -4004,6 +4013,7 @@ function renderRealFreelancers() {
                     b: d.isOnline ? "An Liy" : "Verifye",
                     g: "linear-gradient(135deg,#e91e63,#9c27b0)",
                     demo: false,
+                    frozen: (d.status === "frozen"),
                     uid: doc.id,
                     photoUrl: d.photoUrl || "",
                     online: !!d.isOnline,
