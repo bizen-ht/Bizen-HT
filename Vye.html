@@ -9,6 +9,9 @@
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<!-- Leaflet : carte Haïti (open source, sans clé API) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
@@ -833,6 +836,9 @@
                 <i class="fas fa-user-tie"></i> Boss / Gwoup
                 <span class="sb-bdg bdg-p" id="bdgBoss">0</span>
             </button>
+            <button class="sb-link" onclick="goPage('zones',this)">
+                <i class="fas fa-map-marked-alt"></i> Manm pa Zòn
+            </button>
 
             <div class="sb-cat">Aktivite</div>
             <button class="sb-link" onclick="goPage('res',this)">
@@ -1534,6 +1540,61 @@
             </div>
 
             <div id="bossGroups" style="margin-top:22px;display:flex;flex-direction:column;gap:18px"></div>
+        </div>
+
+        <!-- MANM PA ZÒN (carte + analyse d'écart) -->
+        <div class="pg" id="pg-zones">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-map-marked-alt" style="color:#e91e63"></i> Manm pa Zòn</h1>
+                <button onclick="loadZones()" style="background:rgba(233,30,99,0.12);color:#e91e63;border:1px solid rgba(233,30,99,0.35);border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:0.82rem"><i class="fas fa-sync"></i> Aktyalize</button>
+            </div>
+
+            <div class="fg">
+                <div class="fc"><h4><i class="fas fa-crown"></i> Manm Premium</h4><div class="fv" style="color:var(--gold)" id="zPrem">0</div><div class="fs">Total kliyan premium</div></div>
+                <div class="fc"><h4><i class="fas fa-users"></i> Tout Kliyan</h4><div class="fv" style="color:var(--blue)" id="zUsers">0</div><div class="fs">Enskri sou sit la</div></div>
+                <div class="fc"><h4><i class="fas fa-map-pin"></i> Zòn Kouvri</h4><div class="fv" style="color:var(--green)" id="zZones">0</div><div class="fs">Zòn ak omwen 1 manm</div></div>
+                <div class="fc"><h4><i class="fas fa-exclamation-triangle"></i> Zòn San Elu</h4><div class="fv" style="color:#f44336" id="zGaps">0</div><div class="fs">Priyorite rekritman</div></div>
+            </div>
+
+            <!-- ANALYSE D'ÉCART : où recruter en priorité -->
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-bullseye"></i> Priyorite rekritman (manm san Elu nan zòn yo)</div></div>
+                <div id="zoneGapBox" style="padding:16px"></div>
+            </div>
+
+            <!-- TABLEAU COMPLET -->
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-table"></i> Detay pa zòn</div>
+                    <input class="srch" placeholder="Chache zòn..." oninput="srchTbl('tbZones',this.value)">
+                </div>
+                <div class="tscroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Zòn</th>
+                                <th>Premium</th>
+                                <th>Kliyan total</th>
+                                <th>Elu disponib</th>
+                                <th>Estati</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbZones"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CARTE -->
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-globe-americas"></i> Kat Ayiti — kote manm yo ye</div>
+                    <button onclick="toggleZoneMapFull()" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:0.78rem"><i class="fas fa-expand"></i> Plen ekran</button>
+                </div>
+                <div id="zoneMapWrap" style="padding:14px">
+                    <div id="zoneMap" style="width:100%;height:460px;border-radius:12px;overflow:hidden;background:#0f0f17"></div>
+                    <p style="font-size:0.74rem;color:#6a6a80;margin-top:8px"><i class="fas fa-circle" style="color:#e91e63"></i> Gwosè won an = kantite manm nan zòn nan. Klike sou yon won pou detay.</p>
+                </div>
+            </div>
         </div>
 
         <!-- MESSAGERIE (admin répond au nom des Élus) -->
@@ -2800,6 +2861,7 @@ function goPage(id, btn) {
     try { closeSB(); } catch (e) {}   /* referme le menu mobile après navigation */
     if (id === "dyaspora") loadDiaspora();
     if (id === "boss") loadBoss();
+    if (id === "zones") loadZones();
     if (id === "msg") loadAdminMsg();
     if (id === "promo") loadPromo();
     if (id === "vedette") loadVedetteAdmin();
@@ -3322,6 +3384,214 @@ function deleteDiaspora(id) {
         loadDiaspora();
     }).catch(function(e) { alert("Erè efasman: " + (e.message || e.code)); });
 }
+
+/* ====================================
+   NORMALISATION DES ZONES (fusion variantes + synonymes)
+   Identique à index.html : "Cap"/"Cap-Haïtien" et "Petion ville"/"Pétion-Ville"
+   sont regroupés sous une même clé.
+   ==================================== */
+function zoneNorm(s) {
+    return (s == null ? "" : String(s)).toLowerCase()
+        .normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]/g, "");
+}
+var ZONE_MAP = {};
+(function () {
+    var defs = [
+        { label: "Pétion-Ville", variants: ["petionville", "petyonvil", "petion", "petionvil", "pv"] },
+        { label: "Cap-Haïtien", variants: ["caphaitien", "cap", "okap", "aucap", "kapayisyen", "capaitien", "capayisyen", "kap", "capayti"] },
+        { label: "Delmas", variants: ["delmas"] },
+        { label: "Pòtoprens", variants: ["portauprince", "potoprens", "pap", "poto", "potoprince", "portoprince"] },
+        { label: "Tabarre", variants: ["tabarre", "tabar"] },
+        { label: "Carrefour", variants: ["carrefour", "kafou"] },
+        { label: "Croix-des-Bouquets", variants: ["croixdesbouquets", "kwadebouke", "croixdesbouquet"] },
+        { label: "Route de Frères", variants: ["routedefreres", "routedesfreres", "routefreres", "frere", "freres", "routdefrer"] },
+        { label: "Thomassin", variants: ["thomassin", "tomasen"] },
+        { label: "Kenscoff", variants: ["kenscoff", "kenskof"] },
+        { label: "Gonaïves", variants: ["gonaives", "gonaiv"] },
+        { label: "Les Cayes", variants: ["lescayes", "okay", "aucayes", "cayes"] },
+        { label: "Jacmel", variants: ["jacmel", "jakmel"] }
+    ];
+    defs.forEach(function (d) {
+        var key = zoneNorm(d.label);
+        ZONE_MAP[key] = { key: key, label: d.label };
+        d.variants.forEach(function (v) { ZONE_MAP[zoneNorm(v)] = { key: key, label: d.label }; });
+    });
+})();
+function zoneCanonical(loc) {
+    var n = zoneNorm(loc);
+    if (!n) return { key: "", label: "" };
+    if (ZONE_MAP[n]) return ZONE_MAP[n];
+    return { key: n, label: (loc == null ? "" : String(loc)).trim() };
+}
+
+/* ====================================
+   MANM PA ZÒN — analyse + carte
+   Croise les clients (surtout Premium) avec les Elu disponibles
+   pour faire ressortir les zones où recruter en priorité.
+   ==================================== */
+var zoneMap = null, zoneLayer = null;
+
+/* Coordonnées approximatives des zones d'Haïti (lat, lon) */
+var ZONE_COORDS = {
+    "petionville":       [18.5122, -72.2853],
+    "delmas":            [18.5461, -72.3011],
+    "tabarre":           [18.5730, -72.2740],
+    "potoprens":         [18.5944, -72.3074],
+    "carrefour":         [18.5411, -72.3990],
+    "routedefreres":     [18.5200, -72.2650],
+    "croixdesbouquets":  [18.5780, -72.2260],
+    "thomassin":         [18.4870, -72.2870],
+    "kenscoff":          [18.4470, -72.2870],
+    "caphaitien":        [19.7570, -72.2040],
+    "gonaives":          [19.4500, -72.6890],
+    "lescayes":          [18.1960, -73.7500],
+    "jacmel":            [18.2340, -72.5350]
+};
+
+function loadZones() {
+    if (!db) return;
+    db.collection("users").get().then(function (snap) {
+        var zones = {};   /* clé -> { label, prem, users, elus } */
+        var totPrem = 0, totUsers = 0;
+
+        var bucket = function (loc) {
+            var zc = zoneCanonical(loc);
+            if (!zc.key) return null;
+            if (!zones[zc.key]) zones[zc.key] = { label: zc.label, prem: 0, users: 0, elus: 0 };
+            return zones[zc.key];
+        };
+
+        snap.forEach(function (doc) {
+            var d = doc.data();
+            var isElu = d.type === "freelancer";
+            var isKrey = d.type === "krey";
+            var isBoss = d.type === "boss";
+            var b = bucket(d.localisation);
+            if (isElu) {
+                if (b && d.status === "active") b.elus++;
+                return;
+            }
+            if (isKrey || isBoss) return;
+            /* Client */
+            totUsers++;
+            if (d.isPremium === true) totPrem++;
+            if (!b) return;
+            b.users++;
+            if (d.isPremium === true) b.prem++;
+        });
+
+        var list = Object.keys(zones).map(function (k) {
+            var z = zones[k]; z.key = k; return z;
+        }).filter(function (z) { return z.users > 0 || z.elus > 0; });
+
+        /* Tri : priorité aux zones avec le plus de premium sans Elu */
+        list.sort(function (a, b2) {
+            var ga = (a.elus === 0 ? 1 : 0), gb = (b2.elus === 0 ? 1 : 0);
+            if (ga !== gb) return gb - ga;
+            if (b2.prem !== a.prem) return b2.prem - a.prem;
+            return b2.users - a.users;
+        });
+
+        var gaps = list.filter(function (z) { return z.users > 0 && z.elus === 0; });
+        setVal("zPrem", totPrem);
+        setVal("zUsers", totUsers);
+        setVal("zZones", list.filter(function (z) { return z.users > 0; }).length);
+        setVal("zGaps", gaps.length);
+
+        renderZoneGaps(gaps);
+        renderZoneTable(list);
+        renderZoneMap(list);
+    }).catch(function (e) { console.error("loadZones:", e); });
+}
+
+function renderZoneGaps(gaps) {
+    var box = document.getElementById("zoneGapBox");
+    if (!box) return;
+    if (!gaps.length) {
+        box.innerHTML = '<p style="color:#4caf50;font-size:0.86rem"><i class="fas fa-check-circle"></i> Tout zòn ki gen manm gen omwen yon Elu. Bon travay!</p>';
+        return;
+    }
+    var h = '<p style="color:#6a6a80;font-size:0.8rem;margin-bottom:12px">Zòn sa yo gen kliyan men <strong style="color:#f44336">okenn Elu aktif</strong>. Se la pou w rekrite an premye :</p>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:10px">';
+    gaps.forEach(function (z) {
+        h += '<div style="background:rgba(244,67,54,0.08);border:1px solid rgba(244,67,54,0.3);border-radius:12px;padding:12px 16px;min-width:150px">';
+        h += '<div style="font-weight:700;color:#fff">' + escHtml(z.label) + '</div>';
+        h += '<div style="font-size:0.76rem;color:#ffd700;margin-top:3px">' + z.prem + ' premium · ' + z.users + ' kliyan</div>';
+        h += '<div style="font-size:0.72rem;color:#f44336;margin-top:2px"><i class="fas fa-user-slash"></i> 0 Elu</div>';
+        h += '</div>';
+    });
+    h += '</div>';
+    box.innerHTML = h;
+}
+
+function renderZoneTable(list) {
+    var tb = document.getElementById("tbZones");
+    if (!tb) return;
+    if (!list.length) { tb.innerHTML = emptyRow(5, "Pa gen done zòn anko"); return; }
+    var h = "";
+    list.forEach(function (z) {
+        var st, cls;
+        if (z.users > 0 && z.elus === 0) { st = "Bezwen Elu"; cls = "red"; }
+        else if (z.users > 0 && z.elus < z.prem) { st = "Elu ensifizan"; cls = "orange"; }
+        else if (z.users === 0) { st = "Elu san kliyan"; cls = "blue"; }
+        else { st = "Ekilibre"; cls = "green"; }
+        h += '<tr>';
+        h += '<td><strong>' + escHtml(z.label) + '</strong></td>';
+        h += '<td style="text-align:center;color:#ffd700">' + z.prem + '</td>';
+        h += '<td style="text-align:center">' + z.users + '</td>';
+        h += '<td style="text-align:center;color:' + (z.elus ? '#4caf50' : '#f44336') + '">' + z.elus + '</td>';
+        h += '<td><span class="sbadge ' + cls + '">' + st + '</span></td>';
+        h += '</tr>';
+    });
+    tb.innerHTML = h;
+}
+
+function renderZoneMap(list) {
+    if (typeof L === "undefined") return;
+    var el = document.getElementById("zoneMap");
+    if (!el) return;
+    if (!zoneMap) {
+        zoneMap = L.map("zoneMap", { scrollWheelZoom: true }).setView([18.97, -72.55], 8);
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+            attribution: "&copy; OpenStreetMap &copy; CARTO", maxZoom: 18
+        }).addTo(zoneMap);
+    }
+    if (zoneLayer) { zoneMap.removeLayer(zoneLayer); }
+    zoneLayer = L.layerGroup().addTo(zoneMap);
+
+    list.forEach(function (z) {
+        var c = ZONE_COORDS[z.key];
+        if (!c || z.users === 0) return;
+        var radius = 9 + Math.min(26, z.users * 3);
+        var color = (z.elus === 0) ? "#f44336" : (z.elus < z.prem ? "#ff9800" : "#4caf50");
+        var m = L.circleMarker(c, {
+            radius: radius, color: color, weight: 2,
+            fillColor: color, fillOpacity: 0.35
+        }).addTo(zoneLayer);
+        m.bindPopup(
+            "<div style='color:#111;font-family:Montserrat,sans-serif'>" +
+            "<b>" + escHtml(z.label) + "</b><br>" +
+            "Premium : <b>" + z.prem + "</b><br>" +
+            "Kliyan : <b>" + z.users + "</b><br>" +
+            "Elu aktif : <b>" + z.elus + "</b>" +
+            (z.elus === 0 ? "<br><span style='color:#c62828'><b>Bezwen Elu!</b></span>" : "") +
+            "</div>"
+        );
+    });
+    setTimeout(function () { try { zoneMap.invalidateSize(); } catch (e) {} }, 200);
+}
+
+function toggleZoneMapFull() {
+    var wrap = document.getElementById("zoneMap");
+    if (!wrap) return;
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    if (wrap.requestFullscreen) wrap.requestFullscreen();
+    setTimeout(function () { try { zoneMap.invalidateSize(); } catch (e) {} }, 400);
+}
+document.addEventListener("fullscreenchange", function () {
+    setTimeout(function () { try { if (zoneMap) zoneMap.invalidateSize(); } catch (e) {} }, 300);
+});
 
 /* ====================================
    BOSS / GWOUP ELU — gestion admin

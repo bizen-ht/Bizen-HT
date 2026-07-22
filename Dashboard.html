@@ -624,6 +624,49 @@
                     </a>
                 </div>
             </div>
+
+            <!-- RAPPEL ZONE (utilisateurs inscrits avant l'ajout du champ) -->
+            <div id="userZoneCard" style="display:none;background:rgba(233,30,99,0.07);border:1px solid rgba(233,30,99,0.28);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px">
+                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+                    <div style="width:48px;height:48px;border-radius:50%;background:rgba(233,30,99,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                        <i class="fas fa-map-marker-alt" style="color:#f48fb1;font-size:1.3rem"></i>
+                    </div>
+                    <div style="flex:1;min-width:180px">
+                        <div style="font-weight:700;font-size:1rem">Konplete pwofil ou</div>
+                        <p style="font-size:0.84rem;color:var(--text-secondary);line-height:1.5;margin-top:2px">
+                            Di nou <strong>zòn ou</strong> (pou jwenn Elu pi pre w) ak <strong>dat nesans ou</strong> (18 an+ obligatwa).
+                        </p>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end">
+                    <div id="uzZoneWrap">
+                        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:5px">Zòn ou</label>
+                        <select id="userZoneSel" onchange="toggleUserZoneCustom()" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem">
+                            <option value="">Chwazi zòn ou...</option>
+                            <option value="Pétion-Ville">Pétion-Ville</option>
+                            <option value="Delmas">Delmas</option>
+                            <option value="Tabarre">Tabarre</option>
+                            <option value="Pòtoprens">Pòtoprens</option>
+                            <option value="Carrefour">Carrefour</option>
+                            <option value="Route de Frères">Route de Frères</option>
+                            <option value="Croix-des-Bouquets">Croix-des-Bouquets</option>
+                            <option value="Thomassin">Thomassin</option>
+                            <option value="Kenscoff">Kenscoff</option>
+                            <option value="Cap-Haïtien">Cap-Haïtien</option>
+                            <option value="Gonaïves">Gonaïves</option>
+                            <option value="Les Cayes">Les Cayes</option>
+                            <option value="Jacmel">Jacmel</option>
+                            <option value="__custom__">Lòt zòn (ekri pa w)...</option>
+                        </select>
+                        <input type="text" id="userZoneCustom" placeholder="Ekri zòn ou an..." style="display:none;margin-top:8px;width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem">
+                    </div>
+                    <div id="uzDobWrap">
+                        <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:5px">Dat nesans (18 an+)</label>
+                        <input type="date" id="userDob" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem">
+                    </div>
+                    <button onclick="saveUserZone()" style="background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:600;cursor:pointer;font-size:0.86rem"><i class="fas fa-check"></i> Anrejistre</button>
+                </div>
+            </div>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-card-top">
@@ -1677,6 +1720,9 @@ function setupUser() {
     if (uM) uM.style.display = "block";
     if (flM) flM.style.display = "none";
 
+    /* Rappel "mete ki kote w ye" si la zone n'est pas encore connue */
+    try { renderUserZoneCard(); } catch (e) {}
+
     /* Sidebar info */
     var fullName = ((userData.prenom || "") + " " + (userData.nom || "")).trim();
     if (!fullName) fullName = userData.email ? userData.email.split("@")[0] : "Itilizate";
@@ -1900,6 +1946,83 @@ function toggleRegMode() {
         if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
         showToast("Erè. Eseye ankò.", "error");
     });
+}
+
+/* ====================================
+   ZONE DE L'UTILISATEUR (client)
+   Rappel affiché tant que le client n'a pas indiqué sa zone.
+   Sert à savoir où recruter des Elus.
+   ==================================== */
+function toggleUserZoneCustom() {
+    var sel = document.getElementById("userZoneSel");
+    var inp = document.getElementById("userZoneCustom");
+    if (!sel || !inp) return;
+    var custom = (sel.value === "__custom__");
+    inp.style.display = custom ? "block" : "none";
+    if (!custom) inp.value = "";
+}
+
+/* Âge à partir d'une date "YYYY-MM-DD" (null si invalide/future) */
+function dashAgeFromDob(dob) {
+    if (!dob) return null;
+    var d = new Date(dob);
+    if (isNaN(d.getTime())) return null;
+    var now = new Date();
+    if (d > now) return null;
+    var age = now.getFullYear() - d.getFullYear();
+    var m = now.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+    if (age < 0 || age > 120) return null;
+    return age;
+}
+
+function renderUserZoneCard() {
+    var card = document.getElementById("userZoneCard");
+    if (!card) return;
+    var isClient = !userData || (userData.type !== "freelancer" && userData.type !== "krey" && userData.type !== "boss");
+    var hasZone = userData && userData.localisation && String(userData.localisation).trim() !== "";
+    var hasDob = userData && dashAgeFromDob(userData.dateNesans) !== null;
+    /* On affiche la carte tant qu'il manque la zone OU la date de naissance */
+    var show = isClient && (!hasZone || !hasDob);
+    card.style.display = show ? "block" : "none";
+    if (!show) return;
+    /* Masque les sous-champs déjà remplis */
+    var zw = document.getElementById("uzZoneWrap");
+    var dw = document.getElementById("uzDobWrap");
+    if (zw) zw.style.display = hasZone ? "none" : "";
+    if (dw) dw.style.display = hasDob ? "none" : "";
+}
+
+function saveUserZone() {
+    if (!db || !currentUser || !userData) { showToast("Sesyon pa valab.", "error"); return; }
+    var hasZone = userData.localisation && String(userData.localisation).trim() !== "";
+    var hasDob = dashAgeFromDob(userData.dateNesans) !== null;
+
+    var upd = {};
+    /* Zone (si pas encore renseignée) */
+    if (!hasZone) {
+        var sel = document.getElementById("userZoneSel");
+        var zone = sel ? sel.value : "";
+        if (zone === "__custom__") { var inp = document.getElementById("userZoneCustom"); zone = inp ? inp.value.trim() : ""; }
+        if (!zone) { showToast("Chwazi zòn ou anvan.", "error"); return; }
+        upd.localisation = zone;
+    }
+    /* Date de naissance + contrôle 18+ (si pas encore renseignée) */
+    if (!hasDob) {
+        var dobEl = document.getElementById("userDob");
+        var dob = dobEl ? dobEl.value : "";
+        var age = dashAgeFromDob(dob);
+        if (age === null) { showToast("Antre yon dat nesans valab.", "error"); return; }
+        if (age < 18) { showToast("Ou dwe gen 18 an oswa plis.", "error"); return; }
+        upd.dateNesans = dob;
+    }
+
+    db.collection("users").doc(currentUser.uid).set(upd, { merge: true }).then(function () {
+        if (upd.localisation) userData.localisation = upd.localisation;
+        if (upd.dateNesans) userData.dateNesans = upd.dateNesans;
+        renderUserZoneCard();
+        showToast("Mèsi! Pwofil ou ajou. ✅", "success");
+    }).catch(function (e) { console.error(e); showToast("Erè. Eseye ankò.", "error"); });
 }
 
 /* ====================================
@@ -3882,6 +4005,13 @@ function syncPublicProfile(uid, data, isLogin) {
         gallery: (data.media && data.media.photos ? data.media.photos.map(function(p){ return p.url; }) : []),
         videos: (data.media && data.media.videos ? data.media.videos.map(function(v){ return v.url; }) : []),
         bizenCode: data.bizenCode || "",
+        age: (function(){
+            /* Âge calculé depuis la date de naissance — backfill pour les Elu déjà inscrits.
+               Seul l'âge (nombre) est public, jamais la date. */
+            if (typeof data.age === "number" && data.age >= 18 && data.age <= 99) return data.age;
+            var a = dashAgeFromDob(data.dateNesans);
+            return (a !== null && a >= 18) ? a : null;
+        })(),
         isPremium: data.isPremium === true,
         regActive: data.regActive === true,
         discountAmount: data.discountAmount || 0,

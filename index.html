@@ -2509,6 +2509,28 @@ body.is-premium .pc-blur{display:none!important}
                required>
     </div>
     <div class="fg">
+        <label>Kote w ye (zòn ou)</label>
+        <select id="urLoc" required onchange="toggleUrLocCustom()">
+            <option value="">Chwazi zòn ou...</option>
+            <option value="Pétion-Ville">Pétion-Ville</option>
+            <option value="Delmas">Delmas</option>
+            <option value="Tabarre">Tabarre</option>
+            <option value="Pòtoprens">Pòtoprens</option>
+            <option value="Carrefour">Carrefour</option>
+            <option value="Route de Frères">Route de Frères</option>
+            <option value="Croix-des-Bouquets">Croix-des-Bouquets</option>
+            <option value="Thomassin">Thomassin</option>
+            <option value="Kenscoff">Kenscoff</option>
+            <option value="Cap-Haïtien">Cap-Haïtien</option>
+            <option value="Gonaïves">Gonaïves</option>
+            <option value="Les Cayes">Les Cayes</option>
+            <option value="Jacmel">Jacmel</option>
+            <option value="__custom__">Lòt zòn (ekri pa w)...</option>
+        </select>
+        <input type="text" id="urLocCustom" placeholder="Ekri zòn ou an..." style="display:none;margin-top:8px;width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;color:#fff;font-family:'Montserrat',sans-serif;font-size:0.85rem;outline:none">
+        <p class="fhint" style="color:#f48fb1;margin-top:5px"><i class="fas fa-map-marker-alt"></i> Sa ede nou jwenn Elu ki pi pre w.</p>
+    </div>
+    <div class="fg">
         <label>Modpas</label>
         <input type="password"
                placeholder="omwen 6 karakte"
@@ -3660,6 +3682,7 @@ function mkCard(p, type, male) {
     h += '</button></div>';
     h += '<div class="pc-body">';
     h += '<h3 class="pc-name">' + p.n;
+    if (p.age) h += ' <span style="display:inline-block;vertical-align:middle;background:rgba(255,255,255,0.1);color:var(--gold);font-size:0.62rem;font-weight:700;padding:2px 9px;border-radius:50px;font-family:\'Montserrat\',sans-serif;border:1px solid rgba(255,215,0,0.35)">' + p.age + ' an</span>';
     if (p.discountBadge) h += ' <span style="display:inline-block;vertical-align:middle;background:#ff9800;color:#1a1a1a;font-size:0.6rem;font-weight:700;padding:2px 7px;border-radius:50px;font-family:\'Montserrat\',sans-serif"><i class="fas fa-tags"></i> ' + p.discountBadge + '</span>';
     h += '</h3>';
     h += '<div class="pc-loc">';
@@ -3753,7 +3776,7 @@ function renderKrey() {
         }
 
         /* Card HTML */
-        html += '<div class="krey-card sr">';
+        html += '<div class="krey-card sr" data-demo="1">';
 
         /* Slideshow */
         html += '<div class="krey-slideshow"';
@@ -3972,6 +3995,7 @@ function renderRealFreelancers() {
                 var disc = eluDiscount(d);
                 var cardData = {
                     n: d.pseudo || ((d.prenom || "") + " " + (d.nomInitial || "")),
+                    age: (typeof d.age === "number" && d.age >= 18 && d.age <= 99) ? d.age : null,
                     l: d.localisation || "Ayiti",
                     lk: locKey,
                     p: disc.newPrice.toLocaleString(),
@@ -5353,6 +5377,21 @@ function doLogin(e) {
     return false;
 }
 
+/* Calcule l'âge (en années) à partir d'une date "YYYY-MM-DD".
+   Renvoie null si la date est vide/invalide/future. */
+function ageFromDob(dob) {
+    if (!dob) return null;
+    var d = new Date(dob);
+    if (isNaN(d.getTime())) return null;
+    var now = new Date();
+    if (d > now) return null;
+    var age = now.getFullYear() - d.getFullYear();
+    var m = now.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+    if (age < 0 || age > 120) return null;
+    return age;
+}
+
 /* ====================================
    CRÉATION DE COMPTE ROBUSTE (connexion faible)
    Réessaie automatiquement si le réseau lâche pendant la création du compte.
@@ -5401,9 +5440,16 @@ function doUR(e) {
     var pw = gv("rpw");
     var pw2 = gv("urPw2");
     var dt = gv("urDob");
+    /* Zone de l'utilisateur (aide à trouver un Elu proche) */
+    var uloc = gv("urLoc");
+    if (uloc === "__custom__") uloc = gv("urLocCustom").trim();
     var agreeEl = document.getElementById("urAgree");
     var agreed = agreeEl ? agreeEl.checked : true;
     if (!pr || !nm || !em || !tel || !pw || !dt) { toast("Ranpli tout chan yo.", "err"); return false; }
+    if (!uloc) { toast("Chwazi zòn kote w ye a.", "err"); return false; }
+    var ageU = ageFromDob(dt);
+    if (ageU === null) { toast("Antre yon dat nesans valab.", "err"); return false; }
+    if (ageU < 18) { toast("Ou dwe gen 18 an oswa plis pou w enskri.", "err"); return false; }
     if (!agreed) { toast("Ou dwe dako ak kondisyon yo (18+).", "err"); return false; }
     if (em.indexOf("@") === -1 || em.indexOf(".") === -1) { toast("Imel la pa valab.", "err"); return false; }
     if (pw !== pw2) { toast("Modpas yo pa menm!", "err"); return false; }
@@ -5442,6 +5488,7 @@ function doUR(e) {
             user.sendEmailVerification().catch(function () {});
             bgSet("users", user.uid, {
                 prenom: pr, nom: nm, email: em, telephone: tel,
+                localisation: uloc,
                 dateNesans: dt, isPremium: false, type: "user",
                 status: "active", emailVerified: false, favorites: [],
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -5521,6 +5568,18 @@ function copySiteLink(btn) {
    AJOUTE UNE ZONE PERSONNALISÉE (Elu)
    ==================================== */
 /* Affiche le champ zone personnalisée quand l'Elu choisit "Lòt" */
+/* Zone personnalisée — inscription UTILISATEUR */
+function toggleUrLocCustom() {
+    var sel = document.getElementById("urLoc");
+    var inp = document.getElementById("urLocCustom");
+    if (!sel || !inp) return;
+    var custom = (sel.value === "__custom__");
+    inp.style.display = custom ? "block" : "none";
+    inp.required = custom;
+    if (!custom) inp.value = "";
+    else inp.focus();
+}
+
 function toggleFlLocCustom() {
     var sel = document.getElementById("flLoc");
     var inp = document.getElementById("flLocCustom");
@@ -5593,6 +5652,9 @@ function doFR(e) {
     if (flZones.length === 0 && vil) flZones.push(vil);
 
     if (!pr || !nm || !gn || !em || !tel || !vil || !px || !ds || !pw) { toast("Ranpli tout chan yo.", "err"); return false; }
+    var ageF = ageFromDob(dt);
+    if (ageF === null) { toast("Antre yon dat nesans valab.", "err"); return false; }
+    if (ageF < 18) { toast("Ou dwe gen 18 an oswa plis pou w enskri kòm Elu.", "err"); return false; }
     if (flZones.length === 0) { toast("Chwazi omwen yon zòn ou ka ale.", "err"); return false; }
     if (pw.length < 6) { toast("Modpas dwe gen omwen 6 karakte.", "err"); return false; }
     if (em.indexOf("@") === -1 || em.indexOf(".") === -1) { toast("Imel la pa valab.", "err"); return false; }
@@ -5646,12 +5708,14 @@ function doFR(e) {
             /* --- ARRIÈRE-PLAN : e-mail de vérification --- */
             user.sendEmailVerification().catch(function () {});
 
-            /* --- ARRIÈRE-PLAN : profil PUBLIC (catalogue + QR) --- */
+            /* --- ARRIÈRE-PLAN : profil PUBLIC (catalogue + QR) ---
+               On stocke SEULEMENT l'âge (nombre), jamais la date de naissance. */
             bgSet("publicProfiles", uid, {
                 prenom: pr, nomInitial: (nm.charAt(0) || "") + ".",
                 pseudo: ps,
                 type: "freelancer", genre: gn, localisation: vil,
                 zones: flZones,
+                age: ageF,
                 prixMoment: parseInt(px), description: ds,
                 photoUrl: "", bizenCode: bizenCode, isPremium: false,
                 status: "en_attente", isOnline: false, lastSeen: null,
@@ -5661,7 +5725,7 @@ function doFR(e) {
             /* --- ARRIÈRE-PLAN : profil PRIVÉ (users) --- */
             bgSet("users", uid, {
                 prenom: pr, nom: nm, pseudo: ps, email: em, telephone: tel,
-                genre: gn, localisation: vil, dateNesans: dt,
+                genre: gn, localisation: vil, dateNesans: dt, age: ageF,
                 prixMoment: parseInt(px), prixNet: netPay,
                 commissionBizen: commission, commissionPct: 10,
                 description: ds, isPremium: false,
@@ -6210,9 +6274,16 @@ async function unlockUI() {
         // FAUX PROFIL (démo) : on n'active PAS la réservation, même en Premium.
         // Ce sont des profils vitrine en attendant les vrais inscrits.
         if (isDemo) {
-            btn.innerHTML = '<i class="fas fa-ban"></i> Pa Disponib';
+            var isKreyDemo = !!btn.closest(".krey-card");
+            btn.innerHTML = isKreyDemo
+                ? '<i class="fas fa-lock"></i> Kont jele'
+                : '<i class="fas fa-ban"></i> Pa Disponib';
             btn.style.cssText = "background:rgba(255,255,255,0.05);color:#6a6a80;border:1px solid #2a2a3a;cursor:not-allowed;";
-            btn.setAttribute("onclick", "toast('Pa disponib pou kounye a.','err');return false;");
+            if (isKreyDemo) {
+                btn.setAttribute("onclick", "showOk('Kont jele !', 'Nap tann setifika medikal Elu ki nan gwoup la anvan nou aktive Krey sa a.');return false;");
+            } else {
+                btn.setAttribute("onclick", "toast('Pa disponib pou kounye a.','err');return false;");
+            }
             return;
         }
 
@@ -6443,7 +6514,9 @@ function openEluProfile(btnOrUid) {
         h += '<div style="display:flex;gap:16px;align-items:center;margin-bottom:16px">';
         h += '<div style="width:90px;height:90px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:3px solid #e91e63">' + avatar + '</div>';
         var discBadgeHtml = disc.active ? ' <span style="display:inline-block;vertical-align:middle;background:#ff9800;color:#1a1a1a;font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:50px"><i class="fas fa-tags"></i> Rabè -' + disc.amount.toLocaleString() + ' Gdes · ' + disc.daysLeft + ' jou</span>' : '';
-        h += '<div><h2 style="font-family:\'Playfair Display\',serif;font-size:1.5rem;margin-bottom:4px">' + name + discBadgeHtml + '</h2>';
+        var ageBadgeHtml = (typeof d.age === "number" && d.age >= 18 && d.age <= 99)
+            ? ' <span style="display:inline-block;vertical-align:middle;background:rgba(255,255,255,0.1);color:#ffd700;font-size:0.66rem;font-weight:700;padding:2px 10px;border-radius:50px;border:1px solid rgba(255,215,0,0.35)">' + d.age + ' an</span>' : '';
+        h += '<div><h2 style="font-family:\'Playfair Display\',serif;font-size:1.5rem;margin-bottom:4px">' + name + ageBadgeHtml + discBadgeHtml + '</h2>';
         h += '<div style="margin-bottom:6px">' + lvlBadge + '</div>';
         h += onlineHtml + '</div></div>';
         h += '<div style="margin-bottom:12px">' + ratingHtml + '</div>';
