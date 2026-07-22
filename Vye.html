@@ -994,7 +994,10 @@
         <div class="pg" id="pg-fl">
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-star" style="color:var(--red)"></i> Elu</h1>
-                <input class="srch" placeholder="Chache..." oninput="srchTbl('tbF',this.value)">
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                    <button onclick="syncEluAges()" title="Kalkile laj tout Elu ki gen dat nesans" style="background:rgba(156,39,176,0.12);color:#ce93d8;border:1px solid rgba(156,39,176,0.35);border-radius:8px;padding:9px 14px;font-weight:600;cursor:pointer;font-size:0.8rem"><i class="fas fa-calculator"></i> Kalkile laj yo</button>
+                    <input class="srch" placeholder="Chache..." oninput="srchTbl('tbF',this.value)">
+                </div>
             </div>
             <div class="tc">
                 <div class="tc-head">
@@ -1461,6 +1464,10 @@
                     <div class="accEluField" style="display:none">
                         <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Pri / Moman (Gdes)</label>
                         <input id="acPrix" type="number" placeholder="5000" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div class="accEluField" style="display:none">
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Laj (18+)</label>
+                        <input id="acAge" type="number" min="18" max="99" placeholder="Egz: 24" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
                     </div>
                     <div class="accEluField" style="display:none;grid-column:1/-1">
                         <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Deskripsyon</label>
@@ -2122,6 +2129,59 @@ function renderUsersTable(list) {
     tb.innerHTML = h;
 }
 
+/* Calcule l'âge depuis une date "YYYY-MM-DD" (null si invalide) */
+function ageFromDobAdmin(dob) {
+    if (!dob) return null;
+    var d = new Date(dob);
+    if (isNaN(d.getTime())) return null;
+    var now = new Date();
+    if (d > now) return null;
+    var a = now.getFullYear() - d.getFullYear();
+    var m = now.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < d.getDate())) a--;
+    return (a >= 0 && a <= 120) ? a : null;
+}
+
+/* Règle l'âge d'un Elu manuellement (utile pour les comptes créés en admin
+   qui n'ont pas de date de naissance). Écrit dans users + publicProfiles. */
+function setEluAge(id, current) {
+    if (!db) return;
+    var input = prompt("Laj Elu a (18-99) :", current || "");
+    if (input === null) return;
+    var age = parseInt(input, 10);
+    if (!(age >= 18 && age <= 99)) { alert("Laj la dwe ant 18 ak 99."); return; }
+    Promise.all([
+        db.collection("users").doc(id).set({ age: age }, { merge: true }),
+        db.collection("publicProfiles").doc(id).set({ age: age }, { merge: true })
+    ]).then(function () {
+        toast("Laj anrejistre (" + age + " an).", true);
+        /* La table se rafraîchit toute seule via onSnapshot */
+    }).catch(function (e) { alert("Erè: " + (e.message || e.code)); });
+}
+
+/* Calcule l'âge de TOUS les Elu qui ont une date de naissance (comptes formulaire)
+   et l'écrit dans leur profil public. Les comptes sans date sont ignorés (à régler à la main). */
+function syncEluAges() {
+    if (!db) return;
+    if (!confirm("Kalkile laj tout Elu ki gen dat nesans?")) return;
+    db.collection("users").where("type", "==", "freelancer").get().then(function (snap) {
+        var jobs = [], done = 0, skipped = 0;
+        snap.forEach(function (doc) {
+            var d = doc.data();
+            if (typeof d.age === "number" && d.age >= 18) return;   /* déjà défini */
+            var a = ageFromDobAdmin(d.dateNesans);
+            if (a === null || a < 18) { skipped++; return; }
+            done++;
+            jobs.push(db.collection("users").doc(doc.id).set({ age: a }, { merge: true }));
+            jobs.push(db.collection("publicProfiles").doc(doc.id).set({ age: a }, { merge: true }));
+        });
+        return Promise.all(jobs).then(function () {
+            alert(done + " Elu ajou. " + skipped + " san dat (règle laj yo alamen ak bouton « Laj »).");
+            /* La table se rafraîchit toute seule via onSnapshot */
+        });
+    }).catch(function (e) { alert("Erè: " + (e.message || e.code)); });
+}
+
 function renderFLTable(list) {
     var tb = document.getElementById("tbF");
     if (!tb) return;
@@ -2146,6 +2206,7 @@ function renderFLTable(list) {
         h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
         h += '<td>';
         h += actBtn("ab-viw", "viewAccountDetail('" + f.id + "')", "fa-eye", "Voir");
+        h += actBtn("ab-pre", "setEluAge('" + f.id + "'," + (f.age || 0) + ")", "fa-birthday-cake", "Laj" + (f.age ? " (" + f.age + ")" : ""));
 
         if (f.status === "en_attente") {
             h += actBtn("ab-app", "admAction('approve','" + f.id + "')", "fa-check", "Apwouve");
@@ -3835,6 +3896,7 @@ function submitAddAccount() {
         payload.localisation = (document.getElementById("acLoc").value || "").trim();
         payload.prixMoment = parseInt(document.getElementById("acPrix").value, 10) || 0;
         payload.description = (document.getElementById("acDesc").value || "").trim();
+        payload.age = parseInt(document.getElementById("acAge").value, 10) || 0;
     }
     if (type === "boss") {
         payload.moncashNumber = (document.getElementById("acMoncash").value || "").trim();
@@ -3858,7 +3920,7 @@ function submitAddAccount() {
             resBox.style.display = "block";
             resBox.innerHTML = '<div style="background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.3);color:#4caf50;border-radius:8px;padding:12px;font-size:0.84rem"><i class="fas fa-check-circle"></i> Kont kreye! ('
                 + escHtml(res.j.email) + ' — ' + (res.j.type === "freelancer" ? "Elu" : "Itilizatè") + '). Moun lan ka konekte dirèkteman.</div>';
-            ["acEmail","acPass","acPrenom","acNom","acPhone","acLoc","acPrix","acDesc"].forEach(function(idf){ var e = document.getElementById(idf); if (e) e.value = ""; });
+            ["acEmail","acPass","acPrenom","acNom","acPhone","acLoc","acPrix","acAge","acDesc"].forEach(function(idf){ var e = document.getElementById(idf); if (e) e.value = ""; });
             var tchk = document.getElementById("acTest"); if (tchk) tchk.checked = false;
         } else {
             resBox.style.display = "block";

@@ -101,11 +101,29 @@ exports.handler = async function (event) {
             var commission = Math.round(prixMoment * commissionPct / 100);
             var prixNet = prixMoment - commission;
 
+            /* Âge : soit fourni directement par l'admin, soit calculé depuis la date. */
+            var dateNesans = (body.dateNesans || "").toString();
+            var age = parseInt(body.age, 10);
+            if (!(age >= 18 && age <= 99)) {
+                age = null;
+                if (dateNesans) {
+                    var bd = new Date(dateNesans);
+                    if (!isNaN(bd.getTime())) {
+                        var nowD = new Date();
+                        var a = nowD.getFullYear() - bd.getFullYear();
+                        var mm = nowD.getMonth() - bd.getMonth();
+                        if (mm < 0 || (mm === 0 && nowD.getDate() < bd.getDate())) a--;
+                        if (a >= 18 && a <= 99) age = a;
+                    }
+                }
+            }
+
             await dbf.collection("publicProfiles").doc(uid).set({
                 prenom: prenom, nomInitial: (nom.charAt(0) || "") + ".",
                 pseudo: (body.pseudo || "").toString().trim(),
                 type: "freelancer", genre: genre, localisation: localisation,
                 zones: zones, prixMoment: prixMoment, description: description,
+                age: age,
                 photoUrl: "", bizenCode: bizenCode, isPremium: isTest,
                 isTest: isTest,
                 status: "active", isOnline: false, lastSeen: null,
@@ -117,7 +135,7 @@ exports.handler = async function (event) {
                 prenom: prenom, nom: nom, pseudo: (body.pseudo || "").toString().trim(),
                 email: email, telephone: telephone,
                 genre: genre, localisation: localisation,
-                dateNesans: (body.dateNesans || "").toString(),
+                dateNesans: dateNesans, age: age,
                 prixMoment: prixMoment, prixNet: prixNet,
                 commissionBizen: commission, commissionPct: commissionPct,
                 description: description, isPremium: isTest,
