@@ -12,6 +12,10 @@
 <!-- Leaflet : carte Haïti (open source, sans clé API) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+.zone-count-label{background:transparent;border:none;box-shadow:none;color:#fff;font-weight:800;font-size:0.8rem;text-shadow:0 1px 3px rgba(0,0,0,0.9)}
+.zone-count-label::before{display:none}
+</style>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
@@ -1573,6 +1577,11 @@
             <div class="tc" style="margin-top:22px">
                 <div class="tc-head">
                     <div class="tc-title"><i class="fas fa-table"></i> Detay pa zòn</div>
+                    <div class="tc-filters">
+                        <button class="tf active" id="zSortPrio" onclick="setZoneSort('prio',this)">Priyorite</button>
+                        <button class="tf" id="zSortMost" onclick="setZoneSort('most',this)">Plis kliyan</button>
+                        <button class="tf" id="zSortLeast" onclick="setZoneSort('least',this)">Mwens kliyan</button>
+                    </div>
                     <input class="srch" placeholder="Chache zòn..." oninput="srchTbl('tbZones',this.value)">
                 </div>
                 <div class="tscroll">
@@ -2110,10 +2119,13 @@ function renderUsersTable(list) {
         h += '<td>';
         h += actBtn("ab-viw", "viewAccountDetail('" + u.id + "')", "fa-eye", "Voir");
 
+        /* On peut PASSER quelqu'un Premium, mais plus le RETIRER (évite les fausses
+           manips coûteuses). Pour sanctionner un Premium qui enfreint les règles,
+           on gèle le compte à la place. */
         if (!u.isPremium) {
             h += actBtn("ab-pre", "admAction('premium','" + u.id + "')", "fa-crown", "Premium");
         } else {
-            h += actBtn("ab-rpr", "admAction('unpremium','" + u.id + "')", "fa-times", "-Premium");
+            h += '<span class="sbadge gold" title="Peman konfime — pa ka retire" style="opacity:0.85"><i class="fas fa-crown"></i> Premium peye</span>';
         }
 
         if (u.status !== "frozen") {
@@ -2323,7 +2335,9 @@ function renderPremiumTable(list) {
         h += '<td>' + (u.email || 'N/A') + '</td>';
         h += '<td>' + (u.telephone || 'N/A') + '</td>';
         h += '<td>' + date + '</td>';
-        h += '<td>' + actBtn("ab-rpr", "admAction('unpremium','" + u.id + "')", "fa-times", "Retire Premium") + '</td></tr>';
+        h += '<td>' + (u.status === "frozen"
+            ? actBtn("ab-ufrz", "admAction('unfreeze','" + u.id + "')", "fa-check", "Debloke")
+            : actBtn("ab-frz", "admAction('freeze','" + u.id + "')", "fa-ban", "Jele")) + '</td></tr>';
     });
 
     tb.innerHTML = h;
@@ -3560,10 +3574,27 @@ function loadZones() {
         setVal("zZones", list.filter(function (z) { return z.users > 0; }).length);
         setVal("zGaps", gaps.length);
 
+        /* Mémorise pour le tri dynamique du tableau */
+        zoneList = list;
+
         renderZoneGaps(gaps);
-        renderZoneTable(list);
-        renderZoneMap(list);
+        renderZoneTable();
+        renderZoneMap(list, totUsers, totPrem);
     }).catch(function (e) { console.error("loadZones:", e); });
+}
+
+/* Tri courant du tableau : "prio" | "most" | "least" */
+var zoneList = [];
+var zoneSort = "prio";
+
+function setZoneSort(mode, btn) {
+    zoneSort = mode;
+    if (btn) {
+        var sibs = btn.parentElement.querySelectorAll(".tf");
+        sibs.forEach(function (s) { s.classList.remove("active"); });
+        btn.classList.add("active");
+    }
+    renderZoneTable();
 }
 
 function renderZoneGaps(gaps) {
@@ -3586,10 +3617,27 @@ function renderZoneGaps(gaps) {
     box.innerHTML = h;
 }
 
-function renderZoneTable(list) {
+function renderZoneTable() {
     var tb = document.getElementById("tbZones");
     if (!tb) return;
+    var list = (zoneList || []).slice();
     if (!list.length) { tb.innerHTML = emptyRow(5, "Pa gen done zòn anko"); return; }
+
+    /* Tri selon le mode choisi */
+    if (zoneSort === "most") {
+        list.sort(function (a, b) { return (b.users - a.users) || (b.prem - a.prem); });
+    } else if (zoneSort === "least") {
+        list.sort(function (a, b) { return (a.users - b.users) || (a.prem - b.prem); });
+    } else {
+        /* Priorité : zones sans Elu d'abord, puis + de premium, puis + de clients */
+        list.sort(function (a, b) {
+            var ga = (a.elus === 0 ? 1 : 0), gb = (b.elus === 0 ? 1 : 0);
+            if (ga !== gb) return gb - ga;
+            if (b.prem !== a.prem) return b.prem - a.prem;
+            return b.users - a.users;
+        });
+    }
+
     var h = "";
     list.forEach(function (z) {
         var st, cls;
@@ -3608,7 +3656,7 @@ function renderZoneTable(list) {
     tb.innerHTML = h;
 }
 
-function renderZoneMap(list) {
+function renderZoneMap(list, totUsers, totPrem) {
     if (typeof L === "undefined") return;
     var el = document.getElementById("zoneMap");
     if (!el) return;
@@ -3621,6 +3669,10 @@ function renderZoneMap(list) {
     if (zoneLayer) { zoneMap.removeLayer(zoneLayer); }
     zoneLayer = L.layerGroup().addTo(zoneMap);
 
+    /* Compteurs affichés SUR la carte : total localisé (avec zone) vs total global */
+    var localisedUsers = 0, localisedElus = 0;
+    list.forEach(function (z) { localisedUsers += z.users; localisedElus += z.elus; });
+
     list.forEach(function (z) {
         var c = ZONE_COORDS[z.key];
         if (!c || z.users === 0) return;
@@ -3630,6 +3682,8 @@ function renderZoneMap(list) {
             radius: radius, color: color, weight: 2,
             fillColor: color, fillOpacity: 0.35
         }).addTo(zoneLayer);
+        /* Étiquette permanente avec le nombre, pour lire sans cliquer */
+        m.bindTooltip(String(z.users), { permanent: true, direction: "center", className: "zone-count-label" });
         m.bindPopup(
             "<div style='color:#111;font-family:Montserrat,sans-serif'>" +
             "<b>" + escHtml(z.label) + "</b><br>" +
@@ -3640,6 +3694,24 @@ function renderZoneMap(list) {
             "</div>"
         );
     });
+
+    /* Bandeau récap total sur la carte (plus besoin de compter à la main) */
+    var tu = (typeof totUsers === "number") ? totUsers : localisedUsers;
+    var tp = (typeof totPrem === "number") ? totPrem : 0;
+    var noZone = Math.max(0, tu - localisedUsers);
+    var ctrl = L.control({ position: "topright" });
+    ctrl.onAdd = function () {
+        var div = L.DomUtil.create("div");
+        div.style.cssText = "background:rgba(10,10,16,0.9);border:1px solid #2a2a3a;border-radius:10px;padding:10px 14px;color:#fff;font-family:Montserrat,sans-serif;font-size:0.78rem;line-height:1.6;box-shadow:0 4px 14px rgba(0,0,0,0.4)";
+        div.innerHTML =
+            "<div style='font-weight:700;color:#e91e63;margin-bottom:4px'><i class='fas fa-users'></i> Total kliyan : " + tu + "</div>" +
+            "<div style='color:#ffd700'>Premium : " + tp + "</div>" +
+            "<div style='color:#4caf50'>Elu aktif : " + localisedElus + "</div>" +
+            (noZone > 0 ? "<div style='color:#6a6a80;font-size:0.72rem;margin-top:3px'>" + noZone + " san zòn</div>" : "");
+        return div;
+    };
+    ctrl.addTo(zoneLayer);
+
     setTimeout(function () { try { zoneMap.invalidateSize(); } catch (e) {} }, 200);
 }
 
@@ -4675,10 +4747,12 @@ function viewAccountDetail(uid) {
     }
 
     actions.innerHTML = "";
+    /* On peut activer Premium, mais plus le retirer (fausse manip coûteuse).
+       Pour sanctionner un Premium, on gèle le compte. */
     if (!user.isPremium) {
         actions.innerHTML += actBtn("ab-pre", "admAction('premium','" + uid + "');closeDetailModal()", "fa-crown", "Aktive Premium");
     } else {
-        actions.innerHTML += actBtn("ab-rpr", "admAction('unpremium','" + uid + "');closeDetailModal()", "fa-times", "Retire Premium");
+        actions.innerHTML += '<span class="sbadge gold" style="opacity:0.85"><i class="fas fa-crown"></i> Premium peye</span>';
     }
     if (user.status === "active") {
         actions.innerHTML += actBtn("ab-frz", "admAction('freeze','" + uid + "');closeDetailModal()", "fa-ban", "Jele Kont");
