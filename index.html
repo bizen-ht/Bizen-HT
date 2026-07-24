@@ -2347,7 +2347,7 @@ body.is-premium .pc-blur{display:none!important}
                     <input type="checkbox">
                     Sonje m
                 </label>
-                <a href="#" class="fgot">
+                <a href="#" class="fgot" onclick="forgotPassword(event)">
                     Bliye modpas?
                 </a>
             </div>
@@ -5318,6 +5318,45 @@ function sendVerifAndCooldown(user, btn) {
             }
             toast("Ere. Eseye anko pita.", "err");
         });
+}
+
+/* ====================================
+   BLIYE MODPAS — réinitialisation par e-mail (Firebase natif)
+   ==================================== */
+function forgotPassword(e) {
+    if (e) e.preventDefault();
+    if (!auth) { toast("Sèvis pa disponib pou kounye a.", "err"); return false; }
+
+    /* Pré-remplit avec l'e-mail déjà saisi dans le formulaire de connexion */
+    var emInput = document.querySelector("#lM input[type='text']");
+    var pref = emInput && emInput.value ? emInput.value.trim() : "";
+    var email = prompt("Antre imèl kont ou. N ap voye w yon lyen pou chanje modpas ou :", pref);
+    if (email === null) return false;
+    email = email.trim();
+    if (!email || email.indexOf("@") === -1 || email.indexOf(".") === -1) {
+        toast("Antre yon imèl valab.", "err");
+        return false;
+    }
+
+    auth.sendPasswordResetEmail(email).then(function () {
+        showOk("Imèl voye! 📧",
+            "Nou voye yon lyen nan " + email + " pou chanje modpas ou. Tcheke bwat imèl ou (ak dosye Spam/Endezirab). Lyen an valab pou yon ti tan.");
+    }).catch(function (err) {
+        var code = (err && err.code) ? err.code : "";
+        /* Sécurité : on ne révèle pas si l'e-mail existe ou non */
+        if (code === "auth/user-not-found") {
+            showOk("Imèl voye! 📧", "Si gen yon kont ak imèl sa a, w ap resevwa yon lyen pou chanje modpas ou. Tcheke bwat imèl ou.");
+        } else if (code === "auth/invalid-email") {
+            toast("Imèl la pa valab.", "err");
+        } else if (code === "auth/too-many-requests") {
+            toast("Twòp eseye. Tann yon ti moman epi reeseye.", "err");
+        } else if (code === "auth/network-request-failed") {
+            toast("Pwoblèm rezo. Verifye entènèt ou epi reeseye.", "err");
+        } else {
+            toast("Erè: " + ((err && err.message) ? err.message : "eseye ankò."), "err");
+        }
+    });
+    return false;
 }
 
 /* ====================================
