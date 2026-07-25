@@ -22,6 +22,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
 
     <style>
+        /* Force les contrôles natifs (menus déroulants, dates) en SOMBRE partout. */
+        :root { color-scheme: dark; }
+        select, input, textarea, option { color-scheme: dark; }
+        select option, select optgroup { background-color: #15151f !important; color: #fff !important; }
         :root {
             --primary: #e91e63;
             --secondary: #9c27b0;

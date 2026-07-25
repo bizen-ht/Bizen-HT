@@ -16,6 +16,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <style>
+        /* Force les contrôles natifs (menus déroulants, dates) en SOMBRE partout. */
+        :root { color-scheme: dark; }
+        select, input, textarea, option { color-scheme: dark; }
+        select option, select optgroup { background-color: #15151f !important; color: #fff !important; }
         :root {
             --primary: #e91e63;
             --primary-dark: #c2185b;

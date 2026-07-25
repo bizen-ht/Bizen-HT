@@ -117,6 +117,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 
     <style>
+        /* Force les contrôles natifs (menus déroulants, dates, options) en SOMBRE
+           partout : évite le texte blanc sur fond blanc illisible (iOS light mode). */
+        :root { color-scheme: dark; }
+        select, input, textarea, option { color-scheme: dark; }
+        select option, select optgroup { background-color: #15151f !important; color: #fff !important; }
+        select { background-color: rgba(255,255,255,0.05); color: #fff; }
         :root {
             --primary: #e91e63;
             --primary-dark: #c2185b;
