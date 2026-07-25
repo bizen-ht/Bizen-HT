@@ -230,18 +230,38 @@ exports.handler = async function (event) {
                         autoWelcomeSent: true,
                         unreadForUser: FieldValue.increment(1)
                     }, { merge: true });
+
+                    /* Notif au client : le message d'accueil vient de l'Élu -> son pseudo */
+                    try {
+                        var eluName = (eluUserDoc.exists && (eluUserDoc.data().pseudo || eluUserDoc.data().prenom)) || "Elu";
+                        var uDoc = await dbf.collection("users").doc(senderUid).get();
+                        var uTokens = (uDoc.exists && uDoc.data().fcmTokens) || [];
+                        if (uTokens.length) {
+                            await admin.messaging().sendEachForMulticast({
+                                tokens: uTokens,
+                                notification: { title: eluName + " · Bizen HT", body: filterContact(welcome).slice(0, 100) },
+                                data: { link: "/Dashboard.html" }
+                            });
+                        }
+                    } catch (e2) { /* ignore */ }
                 }
             } catch (e) { console.warn("[DM-SEND] welcome:", e.message); }
         }
 
-        /* ---- NOTIF PUSH au destinataire (best effort) ---- */
+        /* ---- NOTIF PUSH au destinataire (best effort) ----
+           Le TITRE porte le pseudo/nom de l'expéditeur (l'Élu quand il répond),
+           pour que le destinataire sache tout de suite qui lui a écrit sur Bizen. */
         try {
             var rcvDoc = await dbf.collection("users").doc(receiverUid).get();
             var tokens = (rcvDoc.exists && rcvDoc.data().fcmTokens) || [];
             if (tokens.length) {
+                var pushTitle = (senderName || "Bizen HT") + " · Bizen HT";
+                var pushBody = filtered
+                    ? filtered.slice(0, 100)
+                    : (okMediaType === "video" ? "🎥 Videyo" : (okMediaType === "image" ? "📷 Foto" : "Ou gen yon nouvo mesaj."));
                 await admin.messaging().sendEachForMulticast({
                     tokens: tokens,
-                    notification: { title: "Nouvo mesaj sou Bizen HT", body: "Ou gen yon nouvo mesaj." },
+                    notification: { title: pushTitle, body: pushBody },
                     data: { link: "/Dashboard.html" }
                 });
             }
