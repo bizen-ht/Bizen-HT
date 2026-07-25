@@ -39,7 +39,7 @@ self.addEventListener("notificationclick", function (e) {
     );
 });
 
-var CACHE_NAME = "bizen-ht-v1";
+var CACHE_NAME = "bizen-ht-v2";
 
 self.addEventListener("install", function (e) {
     self.skipWaiting();
@@ -57,13 +57,20 @@ self.addEventListener("activate", function (e) {
 });
 
 self.addEventListener("fetch", function (e) {
-    /* On ne gère que les requêtes GET de même origine */
     if (e.request.method !== "GET") return;
 
+    /* IMPORTANT : on NE touche PAS aux requêtes cross-origin.
+       Les images Firebase Storage, Firestore, FCM et les CDN doivent aller
+       DIRECTEMENT au réseau. Les mettre en cache (réponses opaques) cassait
+       l'affichage des photos de façon intermittente. */
+    var url;
+    try { url = new URL(e.request.url); } catch (err) { return; }
+    if (url.origin !== self.location.origin) return;
+
+    /* On ne met en cache QUE les pages/fichiers du site (HTML, CSS, JS, manifest). */
     e.respondWith(
         fetch(e.request)
             .then(function (res) {
-                /* Met en cache une copie pour le mode hors-ligne */
                 var copy = res.clone();
                 caches.open(CACHE_NAME).then(function (cache) {
                     cache.put(e.request, copy).catch(function () {});
@@ -71,7 +78,6 @@ self.addEventListener("fetch", function (e) {
                 return res;
             })
             .catch(function () {
-                /* Hors-ligne: on sert depuis le cache si possible */
                 return caches.match(e.request);
             })
     );

@@ -2326,7 +2326,12 @@ body.is-premium .pc-blur{display:none!important}
               onsubmit="return doLogin(event)">
             <div class="fg">
                 <label>Imel</label>
-                <input type="text"
+                <input type="email" id="lem"
+                       inputmode="email"
+                       autocapitalize="none"
+                       autocorrect="off"
+                       autocomplete="email"
+                       spellcheck="false"
                        placeholder="email@gmail.com"
                        required>
             </div>
@@ -5355,7 +5360,7 @@ function forgotPassword(e) {
     if (!auth) { toast("Sèvis pa disponib pou kounye a.", "err"); return false; }
 
     /* Pré-remplit avec l'e-mail déjà saisi dans le formulaire de connexion */
-    var emInput = document.querySelector("#lM input[type='text']");
+    var emInput = document.getElementById("lem") || document.querySelector("#lM input[type='email'],#lM input[type='text']");
     var pref = emInput && emInput.value ? emInput.value.trim() : "";
     var email = prompt("Antre imèl kont ou. N ap voye w yon lyen pou chanje modpas ou :", pref);
     if (email === null) return false;
@@ -5391,7 +5396,7 @@ function forgotPassword(e) {
    ==================================== */
 function doLogin(e) {
     e.preventDefault();
-    var emInput = document.querySelector("#lM input[type='text']");
+    var emInput = document.getElementById("lem") || document.querySelector("#lM input[type='email'],#lM input[type='text']");
     var em = emInput ? emInput.value.trim() : "";
     var pwEl = document.getElementById("lpw");
     var pw = pwEl ? pwEl.value : "";
@@ -5442,10 +5447,14 @@ function doLogin(e) {
         .catch(function (error) {
             clearTimeout(lgWatch);
             if (btn) { btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Konekte'; btn.disabled = false; }
-            var msg = "Imel oswa modpas pa korek.";
-            if (error.code === "auth/user-not-found") msg = "Okenn kont pa trouve.";
-            if (error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") msg = "Modpas la pa korek.";
-            if (error.code === "auth/too-many-requests") msg = "Two eseye. Tann yon moman.";
+            var msg = "Imel oswa modpas pa korek. Verifye epi eseye ankò.";
+            if (error.code === "auth/user-not-found") msg = "Okenn kont pa trouve ak imèl sa a.";
+            /* invalid-credential est ambigu (mauvais modpas OU kont ki pa egziste) :
+               on ne blâme pas le mot de passe spécifiquement. */
+            if (error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") msg = "Imel oswa modpas pa korek. Verifye byen epi eseye ankò.";
+            if (error.code === "auth/too-many-requests") msg = "Twòp eseye. Tann yon ti moman epi reeseye.";
+            if (error.code === "auth/network-request-failed") msg = "Pwoblèm rezo. Verifye entènèt ou.";
+            if (error.code === "auth/invalid-email") msg = "Imèl la pa nan bon fòm.";
             toast(msg, "err");
         });
     return false;

@@ -1554,9 +1554,16 @@ if (!auth) {
         clearTimeout(authTimeout);
 
         if (!user) {
-            /* Vraie déconnexion: on ne redirige que si on a déjà été connecté
-               (évite les fausses redirections au tout début du chargement) */
-            if (authHandled) window.location.href = "index.html";
+            /* Sur PWA iOS, Firebase émet parfois un état "null" TRANSITOIRE au
+               rafraîchissement du token, alors que l'utilisateur est toujours
+               connecté. On attend un instant et on revérifie AVANT de rediriger,
+               pour ne plus déconnecter les gens par erreur. */
+            if (authHandled) {
+                setTimeout(function () {
+                    if (auth.currentUser) return;   /* rétabli => on reste */
+                    window.location.href = "index.html";
+                }, 3000);
+            }
             return;
         }
 
