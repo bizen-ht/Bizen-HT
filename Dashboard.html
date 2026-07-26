@@ -2205,21 +2205,184 @@ function loadBossElus() {
         if (!box) return;
         if (!elus.length) { box.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><h4>Pa gen Elu nan gwoup ou anko</h4></div>'; return; }
         elus.sort(function(a, b) { return (b.confirmedTotal || 0) - (a.confirmedTotal || 0); });
+        window._bossMembers = elus;
         var h = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.86rem">';
-        h += '<thead><tr style="color:var(--text-muted);text-align:left"><th style="padding:10px">Elu</th><th style="padding:10px">Lokasyon</th><th style="padding:10px;text-align:center">Rezèvasyon</th><th style="padding:10px;text-align:center">Montan</th><th style="padding:10px;text-align:center">Deja peye</th></tr></thead><tbody>';
+        h += '<thead><tr style="color:var(--text-muted);text-align:left"><th style="padding:10px">Manm</th><th style="padding:10px">Lokasyon</th><th style="padding:10px;text-align:center">Rezèvasyon</th><th style="padding:10px;text-align:center">Montan</th><th style="padding:10px;text-align:center">Deja peye</th><th style="padding:10px;text-align:center">Aksyon</th></tr></thead><tbody>';
         elus.forEach(function(e) {
-            var nm = e.pseudo || ((e.prenom || "") + " " + (e.nom || ""));
-            h += '<tr style="border-top:1px solid var(--border)"><td style="padding:10px;font-weight:600">' + escDash(nm) + '</td>';
-            h += '<td style="padding:10px;color:var(--text-secondary)">' + escDash(e.localisation || "—") + '</td>';
+            var isK = (e.type === "krey");
+            var nm = isK ? (e.kreyName || e.prenom || "") : (e.pseudo || ((e.prenom || "") + " " + (e.nom || "")));
+            var frz = (e.status === "frozen");
+            var typeBdg = isK
+                ? '<span style="font-size:0.62rem;background:rgba(156,39,176,0.18);color:#ce93d8;padding:1px 6px;border-radius:6px;margin-left:5px">Krey</span>'
+                : '<span style="font-size:0.62rem;background:rgba(233,30,99,0.18);color:#f48fb1;padding:1px 6px;border-radius:6px;margin-left:5px">Elu</span>';
+            var frzBdg = frz ? ' <span style="font-size:0.62rem;background:#2a2a3a;color:#9a9aae;padding:1px 6px;border-radius:6px">Jele</span>' : '';
+            h += '<tr style="border-top:1px solid var(--border)"><td style="padding:10px;font-weight:600">' + escDash(nm) + typeBdg + frzBdg + '</td>';
+            h += '<td style="padding:10px;color:var(--text-secondary)">' + escDash(e.localisation || e.kreyZone || "—") + '</td>';
             h += '<td style="padding:10px;text-align:center">' + (e.confirmedCount || 0) + '</td>';
             h += '<td style="padding:10px;text-align:center;color:var(--gold,#ffd700);font-weight:600">' + ((e.confirmedTotal || 0).toLocaleString()) + ' G</td>';
-            h += '<td style="padding:10px;text-align:center;color:var(--green,#4caf50)">' + ((e.totalEarnings || 0).toLocaleString()) + ' G</td></tr>';
+            h += '<td style="padding:10px;text-align:center;color:var(--green,#4caf50)">' + ((e.totalEarnings || 0).toLocaleString()) + ' G</td>';
+            h += '<td style="padding:10px;text-align:center;white-space:nowrap">';
+            if (!isK) h += '<button onclick="bossOpenChats(\'' + e.id + '\',\'' + escAttr(nm) + '\')" title="Reponn mesaj" style="background:rgba(33,150,243,0.15);color:#42a5f5;border:1px solid rgba(33,150,243,0.35);border-radius:7px;padding:5px 9px;font-size:0.72rem;cursor:pointer;margin:2px"><i class="fas fa-comment-dots"></i></button>';
+            h += '<button onclick="bossToggleFreeze(\'' + e.id + '\',' + (frz ? 'true' : 'false') + ')" title="' + (frz ? 'Retabli' : 'Jele') + '" style="background:' + (frz ? 'rgba(76,175,80,0.15);color:#4caf50;border:1px solid rgba(76,175,80,0.35)' : 'rgba(255,152,0,0.15);color:#ff9800;border:1px solid rgba(255,152,0,0.35)') + ';border-radius:7px;padding:5px 9px;font-size:0.72rem;cursor:pointer;margin:2px"><i class="fas ' + (frz ? 'fa-unlock' : 'fa-snowflake') + '"></i></button>';
+            h += '<button onclick="bossDeleteMember(\'' + e.id + '\',\'' + escAttr(nm) + '\')" title="Efase kont" style="background:rgba(244,67,54,0.15);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:7px;padding:5px 9px;font-size:0.72rem;cursor:pointer;margin:2px"><i class="fas fa-trash"></i></button>';
+            h += '</td></tr>';
         });
         h += '</tbody></table></div>';
         box.innerHTML = h;
     }, function(err) {
         console.warn("loadBossElus:", err.code);
         if (box) box.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h4>Erè chajman</h4></div>';
+    });
+}
+
+/* ====================================
+   BOSS — Gestion des membres (Phase 2)
+   Appelle la fonction serveur boss.js (Admin SDK) qui vérifie
+   que le membre est bien sous ce Boss avant toute action.
+   ==================================== */
+function bossApi(payload) {
+    return currentUser.getIdToken().then(function(idToken) {
+        payload.idToken = idToken;
+        return fetch("/.netlify/functions/boss", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        }).then(function(r) { return r.json(); });
+    });
+}
+
+function bossToggleFreeze(memberId, frozen) {
+    var act = frozen ? "unfreeze" : "freeze";
+    var q = frozen ? "Retabli kont sa a? L ap parèt ankò sou sit la." : "Jele kont sa a? Li p ap ka resevwa rezèvasyon toutotan li jele.";
+    if (!confirm(q)) return;
+    bossApi({ action: act, memberId: memberId }).then(function(j) {
+        if (j && j.success) showToast(frozen ? "Kont retabli." : "Kont jele.", "success");
+        else showToast((j && j.error) ? j.error : "Aksyon echwe.", "error");
+    }).catch(function() { showToast("Erè rezo.", "error"); });
+}
+
+function bossDeleteMember(memberId, name) {
+    if (!confirm("Efase kont « " + name + " » nèt? Aksyon sa a PA KA anile.")) return;
+    if (!confirm("Konfime: efase " + name + " pou tout bon?")) return;
+    bossApi({ action: "delete", memberId: memberId }).then(function(j) {
+        if (j && j.success) showToast("Kont efase.", "success");
+        else showToast((j && j.error) ? j.error : "Efasman echwe.", "error");
+    }).catch(function() { showToast("Erè rezo.", "error"); });
+}
+
+/* --- Boss répond au nom d'un Elu --- */
+var _bossChatElu = null;      /* { id, name } */
+var _bossChatThread = null;   /* { id, clientUid, clientName } */
+var _bossChatPoll = null;
+
+function bossOpenChats(eluId, eluName) {
+    _bossChatElu = { id: eluId, name: eluName };
+    var old = document.getElementById("bossChatModal"); if (old) old.remove();
+    var h = '<div id="bossChatModal" style="position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center">';
+    h += '<div style="width:100%;max-width:480px;height:88vh;background:var(--bg-modal,#15151f);border-radius:16px;display:flex;flex-direction:column;overflow:hidden">';
+    h += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(156,39,176,0.08)">';
+    h += '<button onclick="bossCloseChats()" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer"><i class="fas fa-arrow-left"></i></button>';
+    h += '<div style="flex:1;font-weight:700"><i class="fas fa-comment-dots" style="color:#42a5f5"></i> Mesaj ' + escDash(eluName) + '</div></div>';
+    h += '<div style="padding:6px 16px;font-size:0.7rem;color:#ff9800;background:rgba(255,152,0,0.08);text-align:center"><i class="fas fa-user-tie"></i> Ou ap reponn nan plas Elu a. Rete pwofesyonèl.</div>';
+    h += '<div id="bossChatBody" style="flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 16px"><p style="text-align:center;color:#6a6a80;font-size:0.85rem">Chajman...</p></div>';
+    h += '</div></div>';
+    var wrap = document.createElement("div"); wrap.innerHTML = h;
+    document.body.appendChild(wrap.firstChild);
+    bossLoadThreads();
+}
+
+function bossCloseChats() {
+    if (_bossChatPoll) { clearInterval(_bossChatPoll); _bossChatPoll = null; }
+    _bossChatThread = null;
+    var m = document.getElementById("bossChatModal"); if (m) m.remove();
+}
+
+function bossLoadThreads() {
+    _bossChatThread = null;
+    if (_bossChatPoll) { clearInterval(_bossChatPoll); _bossChatPoll = null; }
+    var body = document.getElementById("bossChatBody");
+    bossApi({ action: "threads", memberId: _bossChatElu.id }).then(function(j) {
+        if (!body) return;
+        if (!j || !j.success) { body.innerHTML = '<p style="text-align:center;color:#ff6b6b;font-size:0.85rem">' + escDash((j && j.error) || "Erè") + '</p>'; return; }
+        if (!j.threads.length) { body.innerHTML = '<p style="text-align:center;color:#6a6a80;font-size:0.85rem;margin-top:30px">Pa gen konvèsasyon pou kounye a.</p>'; return; }
+        var h = "";
+        j.threads.forEach(function(t) {
+            var alive = t.lastAt && (Date.now() - t.lastAt) < 24 * 3600 * 1000;
+            if (!alive) return;
+            h += '<div onclick="bossOpenThread(\'' + t.id + '\',\'' + escAttr(t.userName) + '\',\'' + t.userUid + '\')" style="display:flex;align-items:center;gap:12px;padding:13px;background:var(--bg-card,#1c1c28);border:1px solid ' + (t.userIsPremium ? "rgba(255,215,0,0.35)" : "rgba(255,255,255,0.08)") + ';border-radius:12px;margin-bottom:10px;cursor:pointer">';
+            h += '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff"><i class="fas fa-user"></i></div>';
+            h += '<div style="flex:1;min-width:0"><div style="font-weight:700;color:#fff">' + escDash(t.userName) + (t.userIsPremium ? ' <i class="fas fa-crown" style="color:#ffd700;font-size:0.7rem"></i>' : '') + '</div><div style="font-size:0.76rem;color:#8a8a9e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escDash(t.lastMessage || "") + '</div></div>';
+            if (t.unreadForElu > 0) h += '<span style="background:#e91e63;color:#fff;font-size:0.68rem;font-weight:700;border-radius:50px;padding:2px 8px">' + t.unreadForElu + '</span>';
+            h += '</div>';
+        });
+        body.innerHTML = h || '<p style="text-align:center;color:#6a6a80;font-size:0.85rem;margin-top:30px">Pa gen konvèsasyon aktif (mesaj yo ekspire apre 24è).</p>';
+    }).catch(function() { if (body) body.innerHTML = '<p style="text-align:center;color:#ff6b6b">Erè rezo.</p>'; });
+}
+
+function bossOpenThread(threadId, clientName, clientUid) {
+    _bossChatThread = { id: threadId, clientUid: clientUid, clientName: clientName };
+    var body = document.getElementById("bossChatBody");
+    if (!body) return;
+    body.innerHTML = '<div style="display:flex;flex-direction:column;height:100%">'
+        + '<button onclick="bossLoadThreads()" style="align-self:flex-start;background:none;border:none;color:#42a5f5;font-size:0.8rem;cursor:pointer;margin-bottom:6px"><i class="fas fa-arrow-left"></i> Lis konvèsasyon</button>'
+        + '<div id="bossThreadMsgs" style="flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:8px"><p style="text-align:center;color:#6a6a80;font-size:0.85rem">Chajman...</p></div>'
+        + '<div style="display:flex;gap:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);margin-top:8px">'
+        + '<input id="bossReplyInput" type="text" placeholder="Reponn kliyan an..." maxlength="1000" onkeydown="if(event.key===\'Enter\'){event.preventDefault();bossSendReply();}" style="flex:1;min-width:0;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#fff;border-radius:50px;padding:11px 16px;font-size:16px;outline:none">'
+        + '<button id="bossReplyBtn" onclick="bossSendReply()" style="width:46px;height:46px;border-radius:50%;border:none;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;cursor:pointer;flex-shrink:0"><i class="fas fa-paper-plane"></i></button>'
+        + '</div></div>';
+    bossLoadThreadMsgs();
+    if (_bossChatPoll) clearInterval(_bossChatPoll);
+    _bossChatPoll = setInterval(bossLoadThreadMsgs, 5000);
+}
+
+function bossLoadThreadMsgs() {
+    if (!_bossChatThread) return;
+    bossApi({ action: "messages", threadId: _bossChatThread.id }).then(function(j) {
+        var box = document.getElementById("bossThreadMsgs");
+        if (!box || !_bossChatThread) return;
+        if (!j || !j.success) { box.innerHTML = '<p style="text-align:center;color:#ff6b6b;font-size:0.85rem">' + escDash((j && j.error) || "Erè") + '</p>'; return; }
+        if (!j.messages.length) { box.innerHTML = '<p style="text-align:center;color:#6a6a80;font-size:0.85rem;margin:auto">Pa gen mesaj.</p>'; return; }
+        var eluId = _bossChatElu.id;
+        var h = "";
+        j.messages.forEach(function(m) {
+            var mine = (m.senderId === eluId);   /* message envoyé par l'Elu (donc par le Boss) */
+            var t = m.createdAt ? new Date(m.createdAt).toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" }) : "";
+            h += '<div style="display:flex;justify-content:' + (mine ? "flex-end" : "flex-start") + '">';
+            h += '<div style="max-width:78%;padding:' + (m.mediaUrl ? "6px" : "9px 13px") + ';border-radius:16px;font-size:0.88rem;line-height:1.4;overflow-wrap:anywhere;word-break:break-word;' +
+                (mine ? "background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border-bottom-right-radius:4px" : "background:rgba(255,255,255,0.08);color:#eee;border-bottom-left-radius:4px") + '">';
+            if (m.mediaUrl) {
+                if (m.mediaType === "video") h += '<video src="' + escDash(m.mediaUrl) + '" controls playsinline style="max-width:240px;width:100%;border-radius:12px;display:block"></video>';
+                else h += '<img src="' + escDash(m.mediaUrl) + '" onclick="window.open(this.src,\'_blank\')" style="max-width:240px;width:100%;border-radius:12px;display:block;cursor:pointer">';
+            }
+            if (m.text) h += (m.mediaUrl ? '<div style="padding:6px 7px 0">' : '') + escDash(m.text) + (m.mediaUrl ? '</div>' : '');
+            h += '<div style="font-size:0.62rem;opacity:0.6;margin-top:3px;text-align:right' + (m.mediaUrl ? ';padding:0 7px 3px' : '') + '">' + t + '</div></div></div>';
+        });
+        var atBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 60;
+        box.innerHTML = h;
+        if (atBottom) box.scrollTop = box.scrollHeight;
+    }).catch(function() {});
+}
+
+function bossSendReply() {
+    if (!_bossChatThread || !_bossChatElu) return;
+    var input = document.getElementById("bossReplyInput");
+    var btn = document.getElementById("bossReplyBtn");
+    var text = input ? input.value.trim() : "";
+    if (!text) return;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+    currentUser.getIdToken().then(function(idToken) {
+        return fetch("/.netlify/functions/dm-send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, eluUid: _bossChatThread.clientUid, asEluUid: _bossChatElu.id, text: text })
+        });
+    }).then(function(r) { return r.json(); }).then(function(j) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i>'; }
+        if (j && j.success) { if (input) input.value = ""; bossLoadThreadMsgs(); }
+        else showToast((j && j.error) ? j.error : "Mesaj pa pati.", "error");
+    }).catch(function() {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i>'; }
+        showToast("Erè rezo.", "error");
     });
 }
 
@@ -2821,6 +2984,10 @@ function renderDmThreads(list) {
 
 function escDash(s) {
     return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+/* Sécurise une valeur passée dans un onclick='...(\'valeur\')' */
+function escAttr(s) {
+    return String(s == null ? "" : s).replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
 /* Un fil est "vivant" si son dernier message a moins de 24h.

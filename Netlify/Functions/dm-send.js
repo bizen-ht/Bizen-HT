@@ -77,11 +77,24 @@ exports.handler = async function (event) {
 
         var decoded = await admin.auth().verifyIdToken(idToken);
         var senderUid = decoded.uid;
-        /* ADMIN : peut répondre AU NOM d'un Élu (gestion des comptes test).
+        var dbf0 = admin.firestore();
+        /* IMPERSONATION « répondre AU NOM d'un Élu » :
+           - ADMIN : autorisé pour n'importe quel Élu (comptes test)
+           - BOSS  : autorisé UNIQUEMENT si l'Élu ciblé est sous lui (bossId == boss.uid)
            asEluUid = l'Élu impersonné ; eluUid = le destinataire (le client). */
         var ADMIN_EMAIL = "bizenht@gmail.com";
-        if (decoded.email === ADMIN_EMAIL && body.asEluUid) {
-            senderUid = body.asEluUid.toString();
+        if (body.asEluUid) {
+            var asUid = body.asEluUid.toString();
+            if (decoded.email === ADMIN_EMAIL) {
+                senderUid = asUid;
+            } else {
+                var eluOwnerDoc = await dbf0.collection("users").doc(asUid).get();
+                if (eluOwnerDoc.exists && eluOwnerDoc.data().bossId === decoded.uid) {
+                    senderUid = asUid;
+                } else {
+                    return err(403, "Ou pa ka reponn nan plas Elu sa a.");
+                }
+            }
         }
         if (senderUid === eluUid) return err(400, "Ou pa ka voye mesaj ba tèt ou.");
 

@@ -135,6 +135,15 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    /* -------- AGENCES PARTENAIRES (agencies) --------
+       Config publique (nom, slug, bossUid, icône) : lisible par tous pour
+       afficher la case à l'inscription, le badge, et la page dédiée.
+       Créées/gérées par l'admin uniquement. */
+    match /agencies/{slug} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
     /* Paramètres publics (ex: offre Premium à rabais) : lecture publique
        (le site affiche la bannière), écriture admin uniquement. */
     match /settings/{docId} {

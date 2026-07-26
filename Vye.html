@@ -1537,21 +1537,41 @@
             </div>
 
             <div class="tc">
-                <div class="tc-head"><div class="tc-title"><i class="fas fa-link"></i> Asiyen yon Elu bay yon Boss</div></div>
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-link"></i> Asiyen yon Elu oswa yon Gwoup Krey bay yon Boss</div></div>
                 <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;align-items:end">
                     <div>
                         <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Boss</label>
                         <select id="asgBoss" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"><option value="">Chwazi Boss...</option></select>
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Elu</label>
-                        <select id="asgElu" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"><option value="">Chwazi Elu...</option></select>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Elu / Gwoup Krey</label>
+                        <select id="asgElu" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"><option value="">Chwazi Elu / Krey...</option></select>
                     </div>
                     <div>
                         <button onclick="assignEluToBoss()" style="width:100%;background:linear-gradient(135deg,#9c27b0,#e91e63);color:#fff;border:none;border-radius:8px;padding:11px 16px;font-weight:600;cursor:pointer;font-size:0.85rem"><i class="fas fa-link"></i> Asiyen</button>
                     </div>
                 </div>
-                <p style="padding:0 18px 16px;color:#6a6a80;font-size:0.76rem">Kreye yon kont <strong>Boss</strong> nan « Ajoute Kont » anvan. Chak Elu dwe enskri nòmalman. Lajan an ap konte sou Elu a men w ap peye Boss la.</p>
+                <p style="padding:0 18px 16px;color:#6a6a80;font-size:0.76rem">Kreye yon kont <strong>Boss</strong> nan « Ajoute Kont » anvan. Yon Elu <u>oswa</u> yon Gwoup Krey ka al anba yon Boss. Lajan an ap konte sou Elu/Krey la men w ap peye Boss la.</p>
+            </div>
+
+            <!-- GESTION DES AGENCES PARTENAIRES -->
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-store"></i> Ajans Patnè (Christ Love Shop, elatriye)</div></div>
+                <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;align-items:end">
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Boss DG</label>
+                        <select id="agBoss" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"><option value="">Chwazi Boss...</option></select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Non Ajans</label>
+                        <input id="agName" placeholder="Egz: Christ Love Shop" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div>
+                        <button onclick="createAgency()" style="width:100%;background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:11px 16px;font-weight:600;cursor:pointer;font-size:0.85rem"><i class="fas fa-store"></i> Kreye Ajans</button>
+                    </div>
+                </div>
+                <p style="padding:0 18px 8px;color:#6a6a80;font-size:0.76rem">Lè w kreye yon ajans, elu ki chwazi li nan fòm enskripsyon an ap otomatikman al anba Boss sa a, epi yon badj « Patnè [Non] » ap parèt sou pwofil yo. Lyen dedye a: <strong>tonsite/agence/[slug]</strong></p>
+                <div id="agencyList" style="padding:0 18px 16px;display:flex;flex-wrap:wrap;gap:10px"></div>
             </div>
 
             <div id="bossGroups" style="margin-top:22px;display:flex;flex-direction:column;gap:18px"></div>
@@ -3733,34 +3753,140 @@ document.addEventListener("fullscreenchange", function () {
 /* ====================================
    BOSS / GWOUP ELU — gestion admin
    ==================================== */
+var _bossCache = [], _agencyCache = [];
+
+function toSlug(s) {
+    return (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+}
+
 function loadBoss() {
     if (!db) return;
-    db.collection("users").get().then(function(snap) {
+    Promise.all([
+        db.collection("users").get(),
+        db.collection("agencies").get()
+    ]).then(function(res) {
+        var snap = res[0], agSnap = res[1];
         var bosses = [], elus = [];
         snap.forEach(function(doc) {
             var d = doc.data(); d.id = doc.id;
             if (d.type === "boss") bosses.push(d);
-            else if (d.type === "freelancer") elus.push(d);
+            else if (d.type === "freelancer") { d._ptype = "elu"; elus.push(d); }
+            else if (d.type === "krey") { d._ptype = "krey"; elus.push(d); }
         });
+        var agencies = [];
+        agSnap.forEach(function(doc) { var a = doc.data(); a.slug = doc.id; agencies.push(a); });
+        _bossCache = bosses; _agencyCache = agencies;
         setBdg("bdgBoss", bosses.length);
 
-        var bSel = document.getElementById("asgBoss");
-        if (bSel) {
-            var hb = '<option value="">Chwazi Boss...</option>';
-            bosses.forEach(function(b) { hb += '<option value="' + b.id + '">' + escHtml((b.prenom || "") + " " + (b.nom || "") + " (" + (b.email || "") + ")") + '</option>'; });
-            bSel.innerHTML = hb;
-        }
+        var bossOpts = '<option value="">Chwazi Boss...</option>';
+        bosses.forEach(function(b) { bossOpts += '<option value="' + b.id + '">' + escHtml((b.prenom || "") + " " + (b.nom || "") + " (" + (b.email || "") + ")") + '</option>'; });
+        var bSel = document.getElementById("asgBoss"); if (bSel) bSel.innerHTML = bossOpts;
+        var agBossSel = document.getElementById("agBoss"); if (agBossSel) agBossSel.innerHTML = bossOpts;
+
         var eSel = document.getElementById("asgElu");
         if (eSel) {
-            var he = '<option value="">Chwazi Elu...</option>';
+            var he = '<option value="">Chwazi Elu / Krey...</option>';
             elus.forEach(function(e) {
                 var tag = e.bossId ? " — [deja nan yon boss]" : "";
-                he += '<option value="' + e.id + '">' + escHtml((e.pseudo || e.prenom || "") + " (" + (e.localisation || "") + ")" + tag) + '</option>';
+                var pfx = (e._ptype === "krey") ? "[Krey] " : "[Elu] ";
+                var nm = (e._ptype === "krey") ? (e.kreyName || e.prenom || "") : (e.pseudo || e.prenom || "");
+                var loc = (e.localisation || e.kreyZone || "");
+                he += '<option value="' + e.id + '">' + escHtml(pfx + nm + " (" + loc + ")" + tag) + '</option>';
             });
             eSel.innerHTML = he;
         }
+        renderAgencyList(agencies, elus);
         renderBossGroups(bosses, elus);
     }).catch(function(e) { console.error("loadBoss:", e); });
+}
+
+function renderAgencyList(agencies, elus) {
+    var box = document.getElementById("agencyList");
+    if (!box) return;
+    if (!agencies.length) { box.innerHTML = '<p style="color:#6a6a80;font-size:0.78rem">Pa gen ajans anko.</p>'; return; }
+    var origin = window.location.origin;
+    var h = "";
+    agencies.forEach(function(a) {
+        var count = elus.filter(function(e) { return e.bossUid ? e.bossId === a.bossUid : false; }).length;
+        var link = origin + "/agence/" + a.slug;
+        var on = (a.active !== false);
+        h += '<div style="background:rgba(255,152,0,0.08);border:1px solid rgba(255,152,0,0.3);border-radius:12px;padding:12px 14px;min-width:210px">';
+        h += '<div style="font-weight:700;color:#fff"><i class="fas fa-store" style="color:#ff9800"></i> ' + escHtml(a.name || a.slug)
+            + (on ? ' <span class="sbadge green" style="font-size:0.6rem">Vizib</span>' : ' <span class="sbadge" style="background:#2a2a3a;color:#9a9aae;font-size:0.6rem">Kache</span>') + '</div>';
+        h += '<div style="font-size:0.72rem;color:#6a6a80;margin-top:3px">' + count + ' Elu · <a href="' + link + '" target="_blank" style="color:#ce93d8">' + escHtml(a.slug) + '</a></div>';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
+        h += '<button onclick="copyAgencyLink(\'' + link + '\')" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer"><i class="fas fa-copy"></i> Lyen</button>';
+        h += '<button onclick="toggleAgencyActive(\'' + a.slug + '\',' + (on ? 'true' : 'false') + ')" style="background:' + (on ? 'rgba(255,152,0,0.12);color:#ff9800;border:1px solid rgba(255,152,0,0.35)' : 'rgba(76,175,80,0.12);color:#4caf50;border:1px solid rgba(76,175,80,0.35)') + ';border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer">' + (on ? '<i class="fas fa-eye-slash"></i> Kache' : '<i class="fas fa-eye"></i> Afiche') + '</button>';
+        h += '<button onclick="deleteAgency(\'' + a.slug + '\',\'' + a.bossUid + '\')" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.3);border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer"><i class="fas fa-trash"></i></button>';
+        h += '</div></div>';
+    });
+    box.innerHTML = h;
+}
+
+function copyAgencyLink(link) {
+    try {
+        if (navigator.clipboard) navigator.clipboard.writeText(link);
+        toast("Lyen kopye!", true);
+    } catch (e) {}
+}
+
+function createAgency() {
+    if (!db) return;
+    var bossId = document.getElementById("agBoss").value;
+    var name = (document.getElementById("agName").value || "").trim();
+    if (!bossId) { alert("Chwazi yon Boss DG."); return; }
+    if (!name) { alert("Antre non ajans lan."); return; }
+    var slug = toSlug(name);
+    if (!slug) { alert("Non pa valab."); return; }
+    var boss = _bossCache.find(function(b) { return b.id === bossId; });
+
+    db.collection("agencies").doc(slug).set({
+        name: name, slug: slug, bossUid: bossId,
+        bossName: boss ? ((boss.prenom || "") + " " + (boss.nom || "")).trim() : "",
+        icon: "fa-store", active: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function() {
+        /* Mémorise l'agence sur le compte boss */
+        return db.collection("users").doc(bossId).set({ agencyName: name, agencySlug: slug }, { merge: true });
+    }).then(function() {
+        /* Propage l'étiquette agence aux Elus déjà sous ce boss */
+        return propagateAgencyToElus(bossId, name, slug);
+    }).then(function() {
+        toast("Ajans « " + name + " » kreye!", true);
+        document.getElementById("agName").value = "";
+        loadBoss();
+    }).catch(function(e) { alert("Erè: " + (e.message || e.code)); });
+}
+
+/* Écrit agencyName/agencySlug sur le profil public + privé de tous les Elus d'un boss */
+function propagateAgencyToElus(bossId, name, slug) {
+    return db.collection("users").where("bossId", "==", bossId).get().then(function(snap) {
+        var jobs = [];
+        snap.forEach(function(doc) {
+            jobs.push(db.collection("users").doc(doc.id).set({ agencyName: name, agencySlug: slug }, { merge: true }));
+            jobs.push(db.collection("publicProfiles").doc(doc.id).set({ agencyName: name, agencySlug: slug }, { merge: true }));
+        });
+        return Promise.all(jobs);
+    });
+}
+
+function toggleAgencyActive(slug, current) {
+    if (!db) return;
+    db.collection("agencies").doc(slug).set({ active: !current }, { merge: true }).then(function() {
+        toast(!current ? "Ajans afiche sou sit la." : "Ajans kache (paj dedye a fèmen).", true);
+        loadBoss();
+    }).catch(function(e) { alert("Erè: " + (e.message || e.code)); });
+}
+
+function deleteAgency(slug, bossUid) {
+    if (!db) return;
+    if (!confirm("Efase ajans « " + slug + " » ? (Elu yo ap rete men badj la ap retire)")) return;
+    db.collection("agencies").doc(slug).delete().then(function() {
+        db.collection("users").doc(bossUid).set({ agencyName: "", agencySlug: "" }, { merge: true }).catch(function(){});
+        toast("Ajans efase.", true);
+        loadBoss();
+    }).catch(function(e) { alert("Erè: " + (e.message || e.code)); });
 }
 
 function renderBossGroups(bosses, elus) {
@@ -3779,9 +3905,15 @@ function renderBossGroups(bosses, elus) {
         h += '</div>';
         if (!group.length) { h += '<p style="color:#6a6a80;font-size:0.8rem">Pa gen Elu nan gwoup sa a.</p>'; }
         else {
-            h += '<div class="tscroll"><table style="width:100%;font-size:0.8rem"><thead><tr><th style="text-align:left">Elu</th><th>Rezèvasyon</th><th>Montan</th><th>Peye</th><th></th></tr></thead><tbody>';
+            h += '<div class="tscroll"><table style="width:100%;font-size:0.8rem"><thead><tr><th style="text-align:left">Manm</th><th>Rezèvasyon</th><th>Montan</th><th>Peye</th><th></th></tr></thead><tbody>';
             group.forEach(function(e) {
-                h += '<tr><td>' + escHtml(e.pseudo || e.prenom || "") + '</td><td style="text-align:center">' + (e.confirmedCount || 0) + '</td><td style="text-align:center;color:#ffd700">' + ((e.confirmedTotal || 0).toLocaleString()) + ' G</td><td style="text-align:center;color:#4caf50">' + ((e.totalEarnings || 0).toLocaleString()) + ' G</td><td style="text-align:right"><button onclick="unassignElu(\'' + e.id + '\')" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.3);border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer">Retire</button></td></tr>';
+                var isK = (e._ptype === "krey");
+                var nm = isK ? (e.kreyName || e.prenom || "") : (e.pseudo || e.prenom || "");
+                var typeBdg = isK
+                    ? '<span class="sbadge" style="background:rgba(156,39,176,0.15);color:#ce93d8;font-size:0.58rem;margin-left:4px">Krey</span>'
+                    : '<span class="sbadge" style="background:rgba(233,30,99,0.15);color:#f48fb1;font-size:0.58rem;margin-left:4px">Elu</span>';
+                var frz = (e.status === "frozen");
+                h += '<tr><td>' + escHtml(nm) + typeBdg + (frz ? ' <span class="sbadge" style="background:#2a2a3a;color:#9a9aae;font-size:0.58rem">Jele</span>' : '') + '</td><td style="text-align:center">' + (e.confirmedCount || 0) + '</td><td style="text-align:center;color:#ffd700">' + ((e.confirmedTotal || 0).toLocaleString()) + ' G</td><td style="text-align:center;color:#4caf50">' + ((e.totalEarnings || 0).toLocaleString()) + ' G</td><td style="text-align:right;white-space:nowrap"><button onclick="unassignElu(\'' + e.id + '\')" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.3);border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer">Retire</button></td></tr>';
             });
             h += '</tbody></table></div>';
         }
@@ -3795,7 +3927,13 @@ function assignEluToBoss() {
     var bossId = document.getElementById("asgBoss").value;
     var eluId = document.getElementById("asgElu").value;
     if (!bossId || !eluId) { alert("Chwazi yon Boss ak yon Elu."); return; }
-    db.collection("users").doc(eluId).update({ bossId: bossId }).then(function() {
+    /* Si ce boss a une agence, on ajoute aussi le badge à l'Elu */
+    var boss = _bossCache.find(function(b) { return b.id === bossId; });
+    var agName = (boss && boss.agencyName) || "";
+    var agSlug = (boss && boss.agencySlug) || "";
+    db.collection("users").doc(eluId).set({ bossId: bossId, agencyName: agName, agencySlug: agSlug }, { merge: true }).then(function() {
+        return db.collection("publicProfiles").doc(eluId).set({ agencyName: agName, agencySlug: agSlug }, { merge: true });
+    }).then(function() {
         toast("Elu asiyen bay Boss la!", true); loadBoss();
     }).catch(function(e) { alert("Erè: " + (e.message || e.code)); });
 }
@@ -3803,7 +3941,10 @@ function assignEluToBoss() {
 function unassignElu(eluId) {
     if (!db) return;
     if (!confirm("Retire Elu sa a nan gwoup Boss la?")) return;
-    db.collection("users").doc(eluId).update({ bossId: firebase.firestore.FieldValue.delete() }).then(function() {
+    var del = firebase.firestore.FieldValue.delete();
+    db.collection("users").doc(eluId).update({ bossId: del, agencyName: "", agencySlug: "" }).then(function() {
+        return db.collection("publicProfiles").doc(eluId).set({ agencyName: "", agencySlug: "" }, { merge: true });
+    }).then(function() {
         toast("Elu retire.", true); loadBoss();
     }).catch(function(e) { alert("Erè: " + (e.message || e.code)); });
 }
