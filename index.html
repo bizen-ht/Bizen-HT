@@ -5041,6 +5041,10 @@ function pT(t) {
     if (t === "user" && uF) uF.classList.remove("hidden");
     if (t === "freelancer" && fF) fF.classList.remove("hidden");
     if (t === "krey" && kF) kF.classList.remove("hidden");
+    /* Recalcule la question "ajans patnè" à l'ouverture du formulaire Elu :
+       garantit que le lien dédié du Boss (?ag=slug) affiche la question même
+       si les agences ont fini de charger APRÈS le premier rendu (fréquent sur mobile). */
+    if (t === "freelancer") { try { renderFormAgencies(); } catch (e) {} }
 }
 
 function bT() {
@@ -8117,6 +8121,12 @@ function renderFormAgencies() {
     var opts = document.getElementById("flAgencyOpts");
     var lbl = document.getElementById("flAgencyLabel");
     if (!wrap || !opts) return;
+
+    /* Filet de sécurité (surtout mobile) : si l'ordre de chargement a fait que
+       _preAg n'est pas encore posé, on le relit directement depuis l'URL (?ag=slug). */
+    if (!window._preAg) {
+        try { var _q = new URLSearchParams(location.search).get("ag"); if (_q) window._preAg = _q; } catch (e) {}
+    }
 
     /* Lien DÉDIÉ du Boss (/elu?ag=slug) : la question s'affiche pour CETTE
        agence précise, MÊME si elle est Kache sur le site. Le Boss peut ainsi
