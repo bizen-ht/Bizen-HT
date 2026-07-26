@@ -5853,6 +5853,9 @@ function doFR(e) {
     if (flZones.length === 0 && vil) flZones.push(vil);
 
     if (!pr || !nm || !gn || !em || !tel || !vil || !px || !ds || !pw) { toast("Ranpli tout chan yo.", "err"); return false; }
+    /* Pause temporaire : on n'accepte plus de nouveaux Elu GASON (Masculin).
+       Les autres (Fanm, Biseksyèl, Lòt) restent ouvertes. Aucun compte n'est créé. */
+    if (gn === "homme") { toast("Pou moman an nou poko ap pran lòt Elu gason, tounen apre.", "err"); return false; }
     var ageF = ageFromDob(dt);
     if (ageF === null) { toast("Antre yon dat nesans valab.", "err"); return false; }
     if (ageF < 18) { toast("Ou dwe gen 18 an oswa plis pou w enskri kòm Elu.", "err"); return false; }
