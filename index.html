@@ -1895,6 +1895,19 @@ body.no-screenshot * {
     </div>
 </section>
 
+<!-- AGENCES PARTENAIRES (accueil) — liens cliquables vers les pages dédiées -->
+<section class="section" id="agencyPromo" style="display:none">
+    <div class="container">
+        <div class="sec-head">
+            <p class="sec-sub"><i class="fas fa-store"></i> Ajans Patnè</p>
+            <h2 class="sec-title">Gwoup <span class="hl">Egzklizif</span></h2>
+            <div class="ubar"></div>
+            <p class="sec-desc">Klike sou yon gwoup pou wè Elu egzklizif li yo.</p>
+        </div>
+        <div id="agencyPromoGrid" style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center"></div>
+    </div>
+</section>
+
 <!-- HOMMES -->
 <section class="section alt-bg" id="hommes">
     <div class="container">
@@ -7916,14 +7929,11 @@ function initAgencyPage() {
                 return;
             }
             var nm = doc.exists ? (doc.data().name || slug) : slug;
-            showAgencyBanner(nm);
             applyAgencyTitle(nm);
-        }).catch(function () { showAgencyBanner(slug); applyAgencyTitle(slug); });
+        }).catch(function () { applyAgencyTitle(slug); });
     }
-    setTimeout(function () {
-        var el = document.getElementById("femmes");
-        if (el) el.scrollIntoView({ behavior: "smooth" });
-    }, 1400);
+    /* Pas de scroll automatique : on laisse l'en-tête (logo, menu, les 2 photos
+       Fanm/Gason) visible au chargement. L'utilisateur descend vers la liste. */
     /* Masque les sections hors-agence pour une page propre */
     setTimeout(function () {
         ["vedettes-section", "rabaisSection"].forEach(function (id) {
@@ -7934,7 +7944,9 @@ function initAgencyPage() {
     }, 300);
 }
 
-/* Grand titre "Elu [Agence]" au-dessus des filtres de zones (section Fanm) */
+/* Grand titre "Elu [Agence]" au-dessus des filtres de zones (section Fanm).
+   Pas de bandeau flottant en haut (il cachait le logo/menu) : le contexte
+   est donné par le titre de section + un lien discret "voir tous les Elus". */
 function applyAgencyTitle(name) {
     var sub = document.querySelector("#femmes .sec-sub");
     var title = document.querySelector("#femmes .sec-title");
@@ -7942,28 +7954,41 @@ function applyAgencyTitle(name) {
     if (sub) sub.innerHTML = '<i class="fas fa-store"></i> Ajans Patnè';
     if (title) title.innerHTML = 'Elu <span class="hl">' + escapeResHotel(name) + '</span>';
     if (desc) desc.textContent = 'Elu egzklizif ' + name + ' yo. Chwazi zòn ou anba a.';
+
+    /* Lien discret sous le titre : retour vers tous les Elus du site. */
+    var head = document.querySelector("#femmes .sec-head");
+    if (head && !document.getElementById("agencyTopLink")) {
+        var chip = document.createElement("div");
+        chip.id = "agencyTopLink";
+        chip.style.cssText = "margin-top:14px";
+        chip.innerHTML = '<a href="/" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:50px;padding:8px 18px;font-size:0.82rem;color:var(--text-secondary,#b0b0c0);text-decoration:none"><i class="fas fa-arrow-left"></i> Wè tout Elu Bizen yo</a>';
+        head.appendChild(chip);
+    }
+
+    /* Bouton bien visible APRÈS la liste des Elus de l'agence. */
+    var femmes = document.getElementById("femmes");
+    var container = femmes ? femmes.querySelector(".container") : null;
+    if (container && !document.getElementById("agencyBottomLink")) {
+        var box = document.createElement("div");
+        box.id = "agencyBottomLink";
+        box.style.cssText = "text-align:center;margin-top:34px";
+        box.innerHTML = '<a href="/" class="btn btn-primary btn-glow" style="display:inline-flex;align-items:center;gap:10px"><i class="fas fa-users"></i> Wè tout lòt Elu Bizen yo</a>';
+        container.appendChild(box);
+    }
+
     /* Cache la section Gason sur la page d'agence (focus sur les Elus de l'agence) */
     var hommes = document.getElementById("hommes");
     if (hommes) hommes.style.display = "none";
 }
 
-/* Agence masquée par l'admin : petit bandeau d'information */
+/* Agence masquée par l'admin : bandeau EN BAS (ne recouvre pas le header). */
 function showAgencyClosed(name) {
     if (document.getElementById("agencyBanner")) return;
     var bar = document.createElement("div");
     bar.id = "agencyBanner";
-    bar.style.cssText = "position:relative;z-index:1002;background:#2a2a3a;color:#ffb74d;text-align:center;padding:12px 16px;font-weight:600;font-size:0.88rem";
+    bar.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:9998;background:#2a2a3a;color:#ffb74d;text-align:center;padding:12px 16px;font-weight:600;font-size:0.88rem";
     bar.innerHTML = '<i class="fas fa-clock"></i> Paj <strong>' + escapeResHotel(name) + '</strong> pa disponib pou kounye a. <a href="/" style="color:#fff;text-decoration:underline">Wè tout Elu Bizen yo</a>';
-    document.body.insertBefore(bar, document.body.firstChild);
-}
-
-function showAgencyBanner(name) {
-    if (document.getElementById("agencyBanner")) return;
-    var bar = document.createElement("div");
-    bar.id = "agencyBanner";
-    bar.style.cssText = "position:relative;z-index:1002;background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;text-align:center;padding:12px 16px;font-weight:600;font-size:0.9rem";
-    bar.innerHTML = '<i class="fas fa-store"></i> Paj espesyal <strong>' + escapeResHotel(name) + '</strong> — Elu egzklizif yo. &nbsp;<a href="/" style="color:#fff;text-decoration:underline;font-weight:700">Wè tout Elu Bizen yo</a>';
-    document.body.insertBefore(bar, document.body.firstChild);
+    document.body.appendChild(bar);
 }
 
 /* ====================================
@@ -7979,7 +8004,30 @@ function loadSiteAgencies() {
             if (a.active !== false) siteAgencies.push(a);
         });
         renderFormAgencies();
+        renderSiteAgencyPromo();
     }).catch(function () {});
+}
+
+/* Sur l'accueil (PAS sur une page dédiée) : cartes cliquables vers /agence/<slug> */
+function renderSiteAgencyPromo() {
+    var sec = document.getElementById("agencyPromo");
+    var grid = document.getElementById("agencyPromoGrid");
+    if (!sec || !grid) return;
+    /* Sur une page d'agence on ne remontre pas le bloc promo */
+    if (window._agencyFilter || !siteAgencies.length) { sec.style.display = "none"; return; }
+    var h = "";
+    siteAgencies.forEach(function (a) {
+        var nm = a.name || a.slug;
+        var link = "/agence/" + a.slug;
+        h += '<a href="' + link + '" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:210px;max-width:260px;background:linear-gradient(135deg,rgba(255,152,0,0.12),rgba(233,30,99,0.12));border:1px solid rgba(255,152,0,0.35);border-radius:18px;padding:22px 20px;transition:transform .3s">';
+        h += '<div style="width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#ff9800,#e91e63);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.4rem"><i class="fas fa-store"></i></div>';
+        h += '<div style="font-family:\'Playfair Display\',serif;font-size:1.35rem;font-weight:700;color:var(--text-primary,#fff);text-align:center">' + escapeResHotel(nm) + '</div>';
+        h += '<div style="font-size:0.82rem;color:var(--text-secondary,#b0b0c0);text-align:center">Gade Elu egzklizif yo</div>';
+        h += '<span style="margin-top:4px;background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;font-weight:700;font-size:0.82rem;padding:9px 20px;border-radius:50px"><i class="fas fa-arrow-right"></i> Vizite gwoup la</span>';
+        h += '</a>';
+    });
+    grid.innerHTML = h;
+    sec.style.display = "block";
 }
 
 function renderFormAgencies() {

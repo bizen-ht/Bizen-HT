@@ -2216,7 +2216,7 @@ function loadBossElus() {
                 ? '<span style="font-size:0.62rem;background:rgba(156,39,176,0.18);color:#ce93d8;padding:1px 6px;border-radius:6px;margin-left:5px">Krey</span>'
                 : '<span style="font-size:0.62rem;background:rgba(233,30,99,0.18);color:#f48fb1;padding:1px 6px;border-radius:6px;margin-left:5px">Elu</span>';
             var frzBdg = frz ? ' <span style="font-size:0.62rem;background:#2a2a3a;color:#9a9aae;padding:1px 6px;border-radius:6px">Jele</span>' : '';
-            h += '<tr style="border-top:1px solid var(--border)"><td style="padding:10px;font-weight:600">' + escDash(nm) + typeBdg + frzBdg + '</td>';
+            h += '<tr style="border-top:1px solid var(--border)"><td style="padding:10px;font-weight:600"><span onclick="bossOpenEluStats(\'' + e.id + '\',\'' + escAttr(nm) + '\')" style="cursor:pointer;color:#42a5f5;text-decoration:underline dotted" title="Wè detay chif yo">' + escDash(nm) + '</span>' + typeBdg + frzBdg + '</td>';
             h += '<td style="padding:10px;color:var(--text-secondary)">' + escDash(e.localisation || e.kreyZone || "—") + '</td>';
             h += '<td style="padding:10px;text-align:center">' + (e.confirmedCount || 0) + '</td>';
             h += '<td style="padding:10px;text-align:center;color:var(--gold,#ffd700);font-weight:600">' + ((e.confirmedTotal || 0).toLocaleString()) + ' G</td>';
@@ -2383,6 +2383,62 @@ function bossSendReply() {
     }).catch(function() {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i>'; }
         showToast("Erè rezo.", "error");
+    });
+}
+
+/* --- Tableau de bord détaillé d'un Elu (vu par le Boss) --- */
+function bossOpenEluStats(eluId, eluName) {
+    var old = document.getElementById("bossStatsModal"); if (old) old.remove();
+    var h = '<div id="bossStatsModal" style="position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.remove()">';
+    h += '<div style="width:100%;max-width:520px;max-height:88vh;background:var(--bg-modal,#15151f);border-radius:16px;display:flex;flex-direction:column;overflow:hidden">';
+    h += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(156,39,176,0.08)">';
+    h += '<button onclick="document.getElementById(\'bossStatsModal\').remove()" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer"><i class="fas fa-arrow-left"></i></button>';
+    h += '<div style="flex:1;font-weight:700"><i class="fas fa-chart-simple" style="color:#42a5f5"></i> ' + escDash(eluName) + '</div></div>';
+    h += '<div id="bossStatsBody" style="flex:1;overflow-y:auto;padding:16px"><p style="text-align:center;color:#6a6a80;font-size:0.85rem">Chajman...</p></div>';
+    h += '</div></div>';
+    var wrap = document.createElement("div"); wrap.innerHTML = h;
+    document.body.appendChild(wrap.firstChild);
+
+    bossApi({ action: "eluStats", memberId: eluId }).then(function(j) {
+        var body = document.getElementById("bossStatsBody");
+        if (!body) return;
+        if (!j || !j.success) { body.innerHTML = '<p style="text-align:center;color:#ff6b6b">' + escDash((j && j.error) || "Erè") + '</p>'; return; }
+        var s = j.stats;
+        var net = Math.round(s.confirmed.g * 0.9);
+        function tile(lbl, val, sub, col) {
+            return '<div style="background:var(--bg-card,#1c1c28);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;text-align:center">'
+                + '<div style="font-size:1.5rem;font-weight:800;color:' + col + '">' + val + '</div>'
+                + '<div style="font-size:0.72rem;color:#8a8a9e;margin-top:3px">' + lbl + '</div>'
+                + (sub ? '<div style="font-size:0.68rem;color:#6a6a80;margin-top:2px">' + sub + '</div>' : '') + '</div>';
+        }
+        var g = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px">';
+        g += tile("An atant", s.pending.c, s.pending.g.toLocaleString() + " G", "#ff9800");
+        g += tile("Konfime", s.confirmed.c, s.confirmed.g.toLocaleString() + " G", "#4caf50");
+        g += tile("Refize/Anile", s.cancelled.c, "", "#f44336");
+        g += '</div>';
+        g += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px">';
+        g += tile("Total rezèvasyon", s.total, "", "#42a5f5");
+        g += tile("Revni konfime (net)", net.toLocaleString() + " G", "90% apre komisyon", "#ffd700");
+        g += '</div>';
+
+        if (j.list && j.list.length) {
+            g += '<div style="font-size:0.78rem;color:#8a8a9e;font-weight:600;margin:6px 0 8px"><i class="fas fa-list"></i> Dènye rezèvasyon yo</div>';
+            j.list.forEach(function(r) {
+                var col = r.status === "confirmed" ? "#4caf50" : r.status === "cancelled" ? "#f44336" : "#ff9800";
+                var txt = r.status === "confirmed" ? "Konfime" : r.status === "cancelled" ? "Refize/Anile" : "An atant";
+                var dt = r.createdAt ? new Date(r.createdAt).toLocaleDateString("fr-FR") : (r.date || "");
+                g += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;background:var(--bg-card,#1c1c28);border:1px solid rgba(255,255,255,0.06);border-radius:10px;margin-bottom:6px">';
+                g += '<div style="min-width:0"><div style="font-size:0.82rem;color:#eee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escDash(r.client) + '</div><div style="font-size:0.68rem;color:#6a6a80">' + escDash(dt) + '</div></div>';
+                g += '<div style="text-align:right;white-space:nowrap"><div style="font-size:0.8rem;color:#ffd700;font-weight:600">' + (r.price ? r.price.toLocaleString() + " G" : "—") + '</div><div style="font-size:0.66rem;color:' + col + '">' + txt + '</div></div>';
+                g += '</div>';
+            });
+        } else {
+            g += '<p style="text-align:center;color:#6a6a80;font-size:0.82rem">Pa gen rezèvasyon anko.</p>';
+        }
+        body.innerHTML = g;
+    }).catch(function() {
+        var body = document.getElementById("bossStatsBody");
+        if (body) body.innerHTML = '<p style="text-align:center;color:#ff6b6b">Erè rezo.</p>';
     });
 }
 

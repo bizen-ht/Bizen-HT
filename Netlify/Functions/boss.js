@@ -132,6 +132,39 @@ exports.handler = async function (event) {
             return ok({ success: true, messages: msgs });
         }
 
+        /* Statistiques détaillées d'un membre (réservations par statut). */
+        if (action === "eluStats") {
+            await requireOwned(memberId);
+            var rSnap = await dbf.collection("reservations")
+                .where("prestateId", "==", memberId)
+                .get();
+            var st = {
+                pending:   { c: 0, g: 0 },   /* en attente (payé, attend l'accord de l'Elu) */
+                confirmed: { c: 0, g: 0 },   /* accepté par l'Elu */
+                cancelled: { c: 0, g: 0 },   /* refusé / annulé */
+                total: 0
+            };
+            var list = [];
+            rSnap.forEach(function (d) {
+                var r = d.data();
+                var p = parseInt(String(r.price || r.amount || "0").replace(/[^0-9]/g, ""), 10) || 0;
+                st.total++;
+                if (r.status === "confirmed") { st.confirmed.c++; st.confirmed.g += p; }
+                else if (r.status === "cancelled") { st.cancelled.c++; st.cancelled.g += p; }
+                else { st.pending.c++; st.pending.g += p; }
+                list.push({
+                    id: d.id,
+                    status: r.status || "en_attente",
+                    price: p,
+                    client: r.userEmail || r.userName || "Kliyan",
+                    date: r.date || "",
+                    createdAt: (r.createdAt && r.createdAt.toMillis) ? r.createdAt.toMillis() : 0
+                });
+            });
+            list.sort(function (a, b) { return b.createdAt - a.createdAt; });
+            return ok({ success: true, stats: st, list: list.slice(0, 30) });
+        }
+
         return err(400, "Action pa rekonèt.");
     } catch (e) {
         if (e && e.code && e.msg) return err(e.code, e.msg);
