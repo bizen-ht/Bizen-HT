@@ -8117,9 +8117,18 @@ function renderFormAgencies() {
     var opts = document.getElementById("flAgencyOpts");
     var lbl = document.getElementById("flAgencyLabel");
     if (!wrap || !opts) return;
-    /* La QUESTION ne s'affiche QUE pour les agences VISIBLES (Vizib).
-       Si l'admin masque le groupe (Kache), la question disparaît. */
+
+    /* Lien DÉDIÉ du Boss (/elu?ag=slug) : la question s'affiche pour CETTE
+       agence précise, MÊME si elle est Kache sur le site. Le Boss peut ainsi
+       recruter et tagger tous ses Elus AVANT de rendre le groupe visible. */
     var list = siteAgencies;
+    if (window._preAg) {
+        var forced = siteAgenciesAll.find(function (a) { return a.slug === window._preAg; });
+        if (forced) list = [forced];
+    }
+
+    /* Sinon (formulaire principal), la QUESTION ne s'affiche QUE pour les
+       agences VISIBLES (Vizib). Si l'admin masque le groupe (Kache), elle disparaît. */
     if (!list.length) { wrap.style.display = "none"; return; }
     wrap.style.display = "block";
 
