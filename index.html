@@ -1749,7 +1749,7 @@ body.no-screenshot * {
 <section class="hero" id="top">
   <div class="hero-grid">
     <a href="#femmes" class="hero-side hero-side-f" aria-label="Gade Fanm yo">
-        <img class="hero-photo" src="images/header-fanm.jpg" alt="Fanm" loading="lazy">
+        <img class="hero-photo" src="/images/header-fanm.jpg" alt="Fanm" loading="lazy">
         <span class="hero-side-label"><i class="fas fa-venus"></i> Gade Elu Fanm yo</span>
     </a>
     <div class="hero-content">
@@ -1770,7 +1770,7 @@ body.no-screenshot * {
         </div>
     </div>
     <a href="#hommes" class="hero-side hero-side-h" aria-label="Gade Gason yo">
-        <img class="hero-photo" src="images/header-gason.jpg" alt="Gason" loading="lazy">
+        <img class="hero-photo" src="/images/header-gason.jpg" alt="Gason" loading="lazy">
         <span class="hero-side-label"><i class="fas fa-mars"></i> Gade Elu Gason yo</span>
     </a>
   </div>
@@ -1799,19 +1799,19 @@ body.no-screenshot * {
     <div class="container">
         <div class="shoot-grid">
             <div class="shoot-item sr">
-                <img src="images/Shoot_1.jpg" alt="Bizen HT" loading="lazy">
+                <img src="/images/Shoot_1.jpg" alt="Bizen HT" loading="lazy">
                 <div class="shoot-ov"><span><i class="fas fa-crown"></i> Pase Premium</span></div>
             </div>
             <div class="shoot-item sr">
-                <img src="images/Shoot_2.jpg" alt="Bizen HT" loading="lazy">
+                <img src="/images/Shoot_2.jpg" alt="Bizen HT" loading="lazy">
                 <div class="shoot-ov"><span><i class="fas fa-eye"></i> Gade Elu yo</span></div>
             </div>
             <div class="shoot-item sr">
-                <img src="images/Shoot_3.jpg" alt="Bizen HT" loading="lazy">
+                <img src="/images/Shoot_3.jpg" alt="Bizen HT" loading="lazy">
                 <div class="shoot-ov"><span><i class="fas fa-calendar-check"></i> Rezeve Elu paw lan</span></div>
             </div>
             <div class="shoot-item sr">
-                <img src="images/Shoot_4.jpg" alt="Bizen HT" loading="lazy">
+                <img src="/images/Shoot_4.jpg" alt="Bizen HT" loading="lazy">
                 <div class="shoot-ov"><span><i class="fas fa-heart"></i> Pase Moman w</span></div>
             </div>
         </div>
@@ -1828,7 +1828,7 @@ body.no-screenshot * {
         </div>
         <div class="how-grid">
             <div class="how-media">
-                <img class="how-img" src="images/kijan-couple.png" alt="Bizen HT - Moman Plezi ak Lanmou" loading="lazy">
+                <img class="how-img" src="/images/kijan-couple.png" alt="Bizen HT - Moman Plezi ak Lanmou" loading="lazy">
             </div>
             <div class="steps-wrap">
             <div class="step sr"><div class="step-n">01</div><div class="step-ico"><i class="fas fa-user-plus"></i></div><h3>Kreye Kont Ou</h3><p>Enskri gratis epi achte plan Premium lan pou 1,000 Gdes.</p></div>
@@ -4859,9 +4859,26 @@ function rebuildFemFilter(zones) {
 function renderAgencyTitles(map) {
     var box = document.getElementById("femAgencyTitles");
     if (!box) return;
-    var slugs = map ? Object.keys(map) : [];
+    /* Mémorise la dernière liste connue (les Elus arrivent parfois avant/après
+       la config des agences) pour pouvoir re-filtrer quand l'autre est prêt. */
+    if (map) window._femAgencies = map;
+    map = window._femAgencies || {};
+    /* On ne garde QUE les groupes VISIBLES (Vizib). Kache => titre retiré. */
+    var activeSlugs = {};
+    (siteAgencies || []).forEach(function (a) { activeSlugs[a.slug] = true; });
+    var slugs = Object.keys(map).filter(function (s) { return activeSlugs[s]; });
     /* Sur la page dédiée d'une agence, la grille est déjà filtrée : pas de titre. */
-    if (window._agencyFilter || !slugs.length) { box.style.display = "none"; box.innerHTML = ""; return; }
+    if (window._agencyFilter || !slugs.length) {
+        box.style.display = "none"; box.innerHTML = "";
+        /* Si le groupe actif vient d'être masqué, on revient à "Tout". */
+        if (gridState.fG && String(gridState.fG.filter).indexOf("ag:") === 0) {
+            gridState.fG.filter = "all"; gridState.fG.page = 0;
+            try { renderGridPage("fG"); } catch (e) {}
+            var tout = document.querySelector('#femFilterBar .fbtn[data-f="all"]');
+            if (tout) tout.classList.add("active");
+        }
+        return;
+    }
     var activeFilter = (gridState.fG && gridState.fG.filter) ? gridState.fG.filter : "all";
     var h = "";
     slugs.sort(function (a, b) { return String(map[a]).localeCompare(String(map[b])); });
@@ -8068,6 +8085,8 @@ function loadSiteAgencies() {
         });
         renderFormAgencies();
         renderSiteAgencyPromo();
+        /* Re-filtre les titres de groupe maintenant qu'on connaît qui est Vizib. */
+        try { renderAgencyTitles(); } catch (e) {}
     }).catch(function (e) { console.warn("loadSiteAgencies:", e && e.code); });
 }
 
@@ -8098,9 +8117,9 @@ function renderFormAgencies() {
     var opts = document.getElementById("flAgencyOpts");
     var lbl = document.getElementById("flAgencyLabel");
     if (!wrap || !opts) return;
-    /* La QUESTION s'affiche pour TOUTE agence existante (même masquée du public) :
-       le recrutement d'Elu est indépendant de la visibilité de la page dédiée. */
-    var list = siteAgenciesAll.length ? siteAgenciesAll : siteAgencies;
+    /* La QUESTION ne s'affiche QUE pour les agences VISIBLES (Vizib).
+       Si l'admin masque le groupe (Kache), la question disparaît. */
+    var list = siteAgencies;
     if (!list.length) { wrap.style.display = "none"; return; }
     wrap.style.display = "block";
 
