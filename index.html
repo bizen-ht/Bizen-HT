@@ -262,6 +262,13 @@
         .filter-bar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:40px}
         .fbtn{padding:8px 22px;border:1px solid var(--border);border-radius:var(--radius-full);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:'Montserrat',sans-serif;font-size:0.85rem;transition:var(--transition)}
         .fbtn:hover,.fbtn.active{background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border-color:var(--primary)}
+        /* Titre cliquable d'un groupe/agence (plus grand que les villes) */
+        .agency-title-btn{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-family:'Playfair Display',serif;font-weight:700;font-size:1.7rem;color:var(--text-primary);padding:8px 22px;border-radius:var(--radius-full);border:1px solid rgba(255,152,0,0.35);background:linear-gradient(135deg,rgba(255,152,0,0.08),rgba(233,30,99,0.08));margin:6px auto;transition:var(--transition)}
+        .agency-title-btn i{color:#ff9800;font-size:1.2rem}
+        .agency-title-btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(233,30,99,0.25)}
+        .agency-title-btn.active{background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border-color:transparent}
+        .agency-title-btn.active i,.agency-title-btn.active .hl{color:#fff}
+        @media(max-width:768px){.agency-title-btn{font-size:1.3rem;padding:7px 16px}}
 
         /* PROFILE CARDS */
         .pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:25px;margin-bottom:40px}
@@ -1886,6 +1893,8 @@ body.no-screenshot * {
         <div class="filter-bar" id="femFilterBar">
             <button class="fbtn active" data-f="all" onclick="applyZoneFilter(this)">Tout</button>
         </div>
+        <!-- Titres cliquables des groupes/agences (filtrent la grille comme une ville) -->
+        <div id="femAgencyTitles" style="display:none;text-align:center;margin:6px 0 4px"></div>
         <div class="pg" id="fG"></div>
         <div class="grid-pager" id="fGPager" style="display:none">
             <button class="btn btn-outline" id="fGPrev" onclick="gridNav('fG',-1)"><i class="fas fa-chevron-left"></i> Avan</button>
@@ -3687,6 +3696,7 @@ function mkCard(p, type, male) {
     var h = '';
     h += '<div class="pc' + mc + ' sr" data-f="' + p.lk + '" data-uid="' + (p.uid || "") + '"'
         + ' data-demo="' + (isDemo ? "1" : "0") + '"'
+        + ' data-agency="' + (p.agencySlug || "") + '"'
         + ' data-name="' + (p.n || "").replace(/"/g, "&quot;") + '"'
         + ' data-price="' + (p.p || "") + '">';
     h += '<div class="pc-img">';
@@ -4017,6 +4027,8 @@ function renderRealFreelancers() {
 
             /* Zones RÉELLES des Elu FEMMES -> filtre dynamique (clé -> libellé) */
             var femZones = {};
+            /* Agences présentes chez les Elu FEMMES -> titres cliquables (slug -> nom) */
+            var femAgencies = {};
 
             snap.forEach(function(doc) {
                 var d = doc.data();
@@ -4024,6 +4036,8 @@ function renderRealFreelancers() {
                 /* Page dédiée d'une agence : on ne montre QUE ses Elus. */
                 if (window._agencyFilter && (d.agencySlug || "") !== window._agencyFilter) return;
                 var male = (d.genre === "homme" || d.genre === "gason");
+                /* Un groupe apparaît comme titre dès qu'une Elu femme y appartient. */
+                if (!male && d.agencySlug) femAgencies[d.agencySlug] = d.agencyName || d.agencySlug;
 
                 /* Normalisation forte : fusionne les variantes/synonymes de zones */
                 var zc = zoneCanonical(d.localisation);
@@ -4036,6 +4050,7 @@ function renderRealFreelancers() {
                     n: d.pseudo || ((d.prenom || "") + " " + (d.nomInitial || "")),
                     age: (typeof d.age === "number" && d.age >= 18 && d.age <= 99) ? d.age : null,
                     agencyName: d.agencyName || "",
+                    agencySlug: d.agencySlug || "",
                     l: d.localisation || "Ayiti",
                     lk: locKey,
                     p: disc.newPrice.toLocaleString(),
@@ -4067,6 +4082,9 @@ function renderRealFreelancers() {
 
             /* Reconstruit le filtre de zones FEMMES à partir des vraies Elu */
             try { rebuildFemFilter(femZones); } catch(e) {}
+
+            /* Titres cliquables des groupes/agences (sous les filtres de zones) */
+            try { renderAgencyTitles(femAgencies); } catch(e) {}
 
             /* Recalcule la pagination (6 par page) avec les nouvelles cartes */
             try { refreshGrids(); } catch(e) {}
@@ -4803,6 +4821,8 @@ function applyZoneFilter(btn) {
     var sib = btn.parentElement.querySelectorAll(".fbtn");
     for (var j = 0; j < sib.length; j++) sib[j].classList.remove("active");
     btn.classList.add("active");
+    /* Un clic sur une ville désactive le filtre "groupe" (titre agence). */
+    document.querySelectorAll(".agency-title-btn.active").forEach(function (t) { t.classList.remove("active"); });
     var f = btn.getAttribute("data-f");
     var section = btn.closest(".section");
     var grid = section ? section.querySelector(".pg") : null;
@@ -4833,6 +4853,43 @@ function rebuildFemFilter(zones) {
     bar.innerHTML = h;
 }
 
+/* Grands titres cliquables des groupes/agences, SOUS les filtres de zones.
+   Un clic filtre la grille pour ne montrer que les Elu du groupe (aucune
+   nouvelle page) — exactement comme un filtre de ville. map = {slug: nom}. */
+function renderAgencyTitles(map) {
+    var box = document.getElementById("femAgencyTitles");
+    if (!box) return;
+    var slugs = map ? Object.keys(map) : [];
+    /* Sur la page dédiée d'une agence, la grille est déjà filtrée : pas de titre. */
+    if (window._agencyFilter || !slugs.length) { box.style.display = "none"; box.innerHTML = ""; return; }
+    var activeFilter = (gridState.fG && gridState.fG.filter) ? gridState.fG.filter : "all";
+    var h = "";
+    slugs.sort(function (a, b) { return String(map[a]).localeCompare(String(map[b])); });
+    slugs.forEach(function (slug) {
+        var isOn = (activeFilter === "ag:" + slug);
+        h += '<div class="agency-title-btn' + (isOn ? " active" : "") + '" onclick="filterByAgency(\'' + slug + '\',this)">'
+            + '<i class="fas fa-store"></i> Gade Elu <span class="hl">' + escapeResHotel(map[slug]) + '</span>'
+            + '</div>';
+    });
+    box.innerHTML = h;
+    box.style.display = "block";
+}
+
+/* Filtre la grille Femmes par groupe (comme un clic sur une ville). */
+function filterByAgency(slug, el) {
+    var bar = document.getElementById("femFilterBar");
+    if (bar) bar.querySelectorAll(".fbtn").forEach(function (b) { b.classList.remove("active"); });
+    document.querySelectorAll(".agency-title-btn").forEach(function (t) { t.classList.remove("active"); });
+    if (el) el.classList.add("active");
+    if (gridState.fG) {
+        gridState.fG.filter = "ag:" + slug;
+        gridState.fG.page = 0;
+        renderGridPage("fG");
+    }
+    var g = document.getElementById("fG");
+    if (g) g.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 /* ====================================
    PAGINATION GRILLES (6 par page) — filtre-aware
    ==================================== */
@@ -4849,8 +4906,11 @@ function renderGridPage(gridId) {
     /* Cartes éligibles = celles qui passent le filtre actif */
     var all = g.querySelectorAll(".pc");
     var elig = [];
+    var agFilter = (st.filter && st.filter.indexOf("ag:") === 0) ? st.filter.slice(3) : null;
     all.forEach(function (c) {
-        var match = (st.filter === "all" || c.getAttribute("data-f") === st.filter);
+        var match;
+        if (agFilter) match = (c.getAttribute("data-agency") === agFilter);
+        else match = (st.filter === "all" || c.getAttribute("data-f") === st.filter);
         if (!match) { c.style.display = "none"; }
         else elig.push(c);
     });
