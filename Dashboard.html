@@ -1096,8 +1096,10 @@
                 </div>
             </div>
             <div style="background:rgba(156,39,176,0.06);border:1px solid rgba(156,39,176,0.2);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:18px;font-size:0.84rem;color:var(--text-secondary)">
-                <i class="fas fa-info-circle" style="color:#ce93d8"></i> Ou wè chak Elu nan gwoup ou ak revni li. Lajan chak moman konte sou Elu a, men se ou (Boss la) ki touche l sou MonCash ou.
+                <i class="fas fa-info-circle" style="color:#ce93d8"></i> Ou wè chak Elu nan gwoup ou ak revni li. Lajan chak moman konte sou Elu a, men se ou (Boss la) ki touche l sou MonCash ou. <strong style="color:#ce93d8">Klike sou non yon Elu pou wè detay chif li yo.</strong>
             </div>
+            <!-- LIENS À PARTAGER (page agence + formulaire d'inscription Elu) -->
+            <div id="bossShareCard"></div>
             <div class="dash-table-wrap">
                 <div class="dash-table-head"><h3>Elu yo</h3></div>
                 <div id="bossEluList">
@@ -2182,6 +2184,7 @@ function setupBoss() {
     if (badges) badges.innerHTML = '<span class="sb-badge" style="background:linear-gradient(135deg,#9c27b0,#e91e63);color:white"><i class="fas fa-user-tie"></i> Boss</span>';
     setEl("dashUserName", "Dashboard Boss");
     loadBossElus();
+    renderBossShare();
     showSection("boss-overview", null);
     var firstLink = document.querySelector("#bossMenu .sb-link");
     if (firstLink) firstLink.classList.add("active");
@@ -2233,6 +2236,62 @@ function loadBossElus() {
         console.warn("loadBossElus:", err.code);
         if (box) box.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h4>Erè chajman</h4></div>';
     });
+}
+
+/* ====================================
+   BOSS — Liens à partager (page agence + inscription Elu)
+   ==================================== */
+function renderBossShare() {
+    var box = document.getElementById("bossShareCard");
+    if (!box) return;
+    var origin = window.location.origin;
+    var slug = (userData && userData.agencySlug) || "";
+    var name = (userData && userData.agencyName) || "";
+    var pageLink = slug ? (origin + "/agence/" + slug) : "";
+    /* Lien d'inscription Elu : pré-coche l'agence du Boss si elle existe. */
+    var joinLink = slug ? (origin + "/elu?ag=" + slug) : (origin + "/elu");
+
+    var h = '<div style="background:linear-gradient(135deg,rgba(255,152,0,0.08),rgba(233,30,99,0.08));border:1px solid rgba(255,152,0,0.3);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:18px">';
+    h += '<div style="font-weight:700;color:#fff;margin-bottom:4px"><i class="fas fa-share-nodes" style="color:#ff9800"></i> Lyen pou pataje</div>';
+
+    if (pageLink) {
+        h += '<div style="font-size:0.78rem;color:var(--text-secondary);margin:10px 0 5px"><i class="fas fa-store"></i> Paj gwoup ou' + (name ? ' (<strong>' + escDash(name) + '</strong>)' : '') + ' — pou kliyan yo</div>';
+        h += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+        h += '<input readonly value="' + escDash(pageLink) + '" onclick="this.select()" style="flex:1;min-width:180px;background:rgba(0,0,0,0.25);border:1px solid var(--border);color:#eee;border-radius:8px;padding:9px 12px;font-size:0.8rem">';
+        h += '<button onclick="bossCopy(\'' + escAttr(pageLink) + '\',this)" style="background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:0.8rem;font-weight:600;cursor:pointer"><i class="fas fa-copy"></i> Kopye</button>';
+        h += '</div>';
+    } else {
+        h += '<div style="font-size:0.78rem;color:var(--text-muted);margin:8px 0">Pa gen paj gwoup ankò. Mande admin nan pou kreye ajans ou an pou jwenn yon lyen dedye.</div>';
+    }
+
+    h += '<div style="font-size:0.78rem;color:var(--text-secondary);margin:14px 0 5px"><i class="fas fa-user-plus"></i> Lyen enskripsyon Elu — pou nouvo manm ki vle vin Elu</div>';
+    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+    h += '<input readonly value="' + escDash(joinLink) + '" onclick="this.select()" style="flex:1;min-width:180px;background:rgba(0,0,0,0.25);border:1px solid var(--border);color:#eee;border-radius:8px;padding:9px 12px;font-size:0.8rem">';
+    h += '<button onclick="bossCopy(\'' + escAttr(joinLink) + '\',this)" style="background:linear-gradient(135deg,#9c27b0,#e91e63);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:0.8rem;font-weight:600;cursor:pointer"><i class="fas fa-copy"></i> Kopye</button>';
+    h += '</div>';
+    if (slug) h += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">Lyen sa a ap otomatikman make nouvo Elu a kòm manm ' + escDash(name || "gwoup ou") + '.</div>';
+    h += '</div>';
+    box.innerHTML = h;
+}
+
+function bossCopy(txt, btn) {
+    function done() {
+        if (btn) { var old = btn.innerHTML; btn.innerHTML = '<i class="fas fa-check"></i> Kopye!'; setTimeout(function(){ btn.innerHTML = old; }, 1800); }
+        showToast("Lyen kopye!", "success");
+    }
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(txt).then(done).catch(function(){ bossCopyFallback(txt); done(); });
+        } else { bossCopyFallback(txt); done(); }
+    } catch (e) { bossCopyFallback(txt); done(); }
+}
+function bossCopyFallback(txt) {
+    try {
+        var ta = document.createElement("textarea");
+        ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select();
+        document.execCommand("copy"); document.body.removeChild(ta);
+    } catch (e) {}
 }
 
 /* ====================================

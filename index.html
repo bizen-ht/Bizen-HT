@@ -5760,7 +5760,8 @@ function doFR(e) {
     /* Agence partenaire choisie (Christ Love Shop, etc.) */
     var agEl = document.querySelector("input[name='flAgency']:checked");
     var agSlug = agEl ? agEl.value : "";
-    var chosenAgency = agSlug ? siteAgencies.find(function(a){ return a.slug === agSlug; }) : null;
+    var _agPool = siteAgenciesAll.length ? siteAgenciesAll : siteAgencies;
+    var chosenAgency = agSlug ? _agPool.find(function(a){ return a.slug === agSlug; }) : null;
     var agName = chosenAgency ? (chosenAgency.name || "") : "";
     var agBossUid = chosenAgency ? (chosenAgency.bossUid || "") : "";
     /* Zones de couverture (cases cochées) */
@@ -7994,18 +7995,20 @@ function showAgencyClosed(name) {
 /* ====================================
    AGENCES PARTENAIRES — case à l'inscription Elu
    ==================================== */
-var siteAgencies = [];
+var siteAgencies = [];       /* agences ACTIVES : promo accueil + page dédiée */
+var siteAgenciesAll = [];    /* TOUTES les agences : question à l'inscription Elu */
 function loadSiteAgencies() {
     if (!db) return;
     db.collection("agencies").get().then(function (snap) {
-        siteAgencies = [];
+        siteAgencies = []; siteAgenciesAll = [];
         snap.forEach(function (doc) {
             var a = doc.data(); a.slug = doc.id;
+            siteAgenciesAll.push(a);
             if (a.active !== false) siteAgencies.push(a);
         });
         renderFormAgencies();
         renderSiteAgencyPromo();
-    }).catch(function () {});
+    }).catch(function (e) { console.warn("loadSiteAgencies:", e && e.code); });
 }
 
 /* Sur l'accueil (PAS sur une page dédiée) : cartes cliquables vers /agence/<slug> */
@@ -8035,25 +8038,34 @@ function renderFormAgencies() {
     var opts = document.getElementById("flAgencyOpts");
     var lbl = document.getElementById("flAgencyLabel");
     if (!wrap || !opts) return;
-    if (!siteAgencies.length) { wrap.style.display = "none"; return; }
+    /* La QUESTION s'affiche pour TOUTE agence existante (même masquée du public) :
+       le recrutement d'Elu est indépendant de la visibilité de la page dédiée. */
+    var list = siteAgenciesAll.length ? siteAgenciesAll : siteAgencies;
+    if (!list.length) { wrap.style.display = "none"; return; }
     wrap.style.display = "block";
 
     /* Une seule agence => on la nomme directement dans la question. */
     if (lbl) {
-        lbl.innerHTML = (siteAgencies.length === 1)
-            ? '<i class="fas fa-store"></i> Èske w se manb <strong>' + escapeResHotel(siteAgencies[0].name || siteAgencies[0].slug) + '</strong>?'
+        lbl.innerHTML = (list.length === 1)
+            ? '<i class="fas fa-store"></i> Èske w se manb <strong>' + escapeResHotel(list[0].name || list[0].slug) + '</strong>?'
             : '<i class="fas fa-store"></i> Èske w se yon Elu nan yon ajans patnè?';
     }
 
     var optStyle = "display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer";
     var inpStyle = "width:18px;height:18px;min-width:18px;flex:0 0 18px;margin:0;accent-color:var(--primary);cursor:pointer";
     var h = '<label style="' + optStyle + '"><input type="radio" name="flAgency" value="" checked style="' + inpStyle + '"><span style="font-size:0.88rem">Non</span></label>';
-    siteAgencies.forEach(function (a) {
-        var single = (siteAgencies.length === 1);
+    list.forEach(function (a) {
+        var single = (list.length === 1);
         var txt = single ? "Wi" : ('Wi, m se Elu <strong>' + escapeResHotel(a.name || a.slug) + '</strong>');
-        h += '<label style="' + optStyle + '"><input type="radio" name="flAgency" value="' + a.slug + '" style="' + inpStyle + '"><span style="font-size:0.88rem">' + txt + '</span></label>';
+        var pre = (window._preAg && window._preAg === a.slug) ? " checked" : "";
+        h += '<label style="' + optStyle + '"><input type="radio" name="flAgency" value="' + a.slug + '"' + pre + ' style="' + inpStyle + '"><span style="font-size:0.88rem">' + txt + '</span></label>';
     });
     opts.innerHTML = h;
+    /* Si un lien pré-sélectionne une agence (?ag=slug), on décoche le "Non". */
+    if (window._preAg) {
+        var non = opts.querySelector('input[name="flAgency"][value=""]');
+        if (non) non.checked = false;
+    }
 }
 
 /* ====================================
@@ -8862,7 +8874,15 @@ document.addEventListener("DOMContentLoaded", function () {
    (sert à partager un lien unique aux personnes intéressées) */
 (function () {
     var p = (location.pathname || "").replace(/\/+$/, "").toLowerCase();
-    if (p === "/elu" || p === "/vin-elu" || p === "/enskri-elu") {
+    /* Agence pré-sélectionnée via ?ag=slug (lien partagé par un Boss). */
+    try {
+        var ag = new URLSearchParams(location.search).get("ag");
+        if (ag) { window._preAg = ag; try { renderFormAgencies(); } catch (e) {} }
+    } catch (e) {}
+    /* Ouvre directement le formulaire Elu si /elu (ou ?elu=1). */
+    var wantElu = (p === "/elu" || p === "/vin-elu" || p === "/enskri-elu");
+    try { if (new URLSearchParams(location.search).get("elu") === "1") wantElu = true; } catch (e) {}
+    if (wantElu) {
         setTimeout(function () {
             try { oM("sM"); pT("freelancer"); } catch (e) {}
         }, 800);

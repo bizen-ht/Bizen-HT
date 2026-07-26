@@ -3808,7 +3808,7 @@ function renderAgencyList(agencies, elus) {
     var origin = window.location.origin;
     var h = "";
     agencies.forEach(function(a) {
-        var count = elus.filter(function(e) { return e.bossUid ? e.bossId === a.bossUid : false; }).length;
+        var count = elus.filter(function(e) { return e.bossId && e.bossId === a.bossUid; }).length;
         var link = origin + "/agence/" + a.slug;
         var on = (a.active !== false);
         h += '<div style="background:rgba(255,152,0,0.08);border:1px solid rgba(255,152,0,0.3);border-radius:12px;padding:12px 14px;min-width:210px">';
