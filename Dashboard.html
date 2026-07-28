@@ -1752,7 +1752,7 @@ function setupUser() {
 
     /* Sidebar info */
     var fullName = ((userData.prenom || "") + " " + (userData.nom || "")).trim();
-    if (!fullName) fullName = userData.email ? userData.email.split("@")[0] : "Itilizate";
+    if (!fullName) fullName = userData.email ? userData.email.split("@")[0] : "VIP";
 
     setEl("sbName", fullName);
     setEl("sbEmail", userData.email || "");
@@ -3086,7 +3086,7 @@ function renderDmThreads(list) {
         var premBadge = t.userIsPremium ? '<span style="background:linear-gradient(135deg,#ffd700,#ff9800);color:#1a1a1a;font-size:0.62rem;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:6px"><i class="fas fa-crown"></i> Premium</span>' : '';
         var unread = (t.unreadForElu || 0) > 0 ? '<span style="background:#e91e63;color:#fff;font-size:0.65rem;padding:1px 7px;border-radius:10px;flex-shrink:0">' + t.unreadForElu + '</span>' : '';
         var when = t.lastAt && t.lastAt.toDate ? t.lastAt.toDate().toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "";
-        var nm = (t.userName || "Itilizatè");
+        var nm = (t.userName || "VIP");
         h += '<div onclick="openEluDm(\'' + t.id + '\',\'' + String(nm).replace(/'/g,"") + '\',\'' + (t.userUid||"") + '\')" style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg-card);border:1px solid ' + (t.userIsPremium ? "rgba(255,215,0,0.35)" : "var(--border)") + ';border-radius:var(--radius-lg);margin-bottom:10px;cursor:pointer">';
         h += '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0"><i class="fas fa-user"></i></div>';
         h += '<div style="flex:1;min-width:0"><div style="font-weight:600;display:flex;align-items:center;flex-wrap:wrap">' + escDash(nm) + premBadge + '</div>';

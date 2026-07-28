@@ -814,7 +814,7 @@
 
             <div class="sb-cat">Jesyon Kont</div>
             <button class="sb-link" onclick="goPage('users',this)">
-                <i class="fas fa-users"></i> Itilizate
+                <i class="fas fa-users"></i> VIP
                 <span class="sb-bdg bdg-b" id="bdgU">0</span>
             </button>
             <button class="sb-link" onclick="goPage('fl',this)">
@@ -925,7 +925,7 @@
                 <div class="sc bl">
                     <div class="sc-ico bl"><i class="fas fa-users"></i></div>
                     <div class="sc-val" id="stU">0</div>
-                    <div class="sc-lbl">Itilizate</div>
+                    <div class="sc-lbl">VIP</div>
                 </div>
                 <div class="sc rd">
                     <div class="sc-ico rd"><i class="fas fa-star"></i></div>
@@ -968,12 +968,12 @@
         <!-- USERS -->
         <div class="pg" id="pg-users">
             <div class="ph">
-                <h1 class="ph-title"><i class="fas fa-users" style="color:var(--blue)"></i> Itilizate</h1>
+                <h1 class="ph-title"><i class="fas fa-users" style="color:var(--blue)"></i> VIP</h1>
                 <input class="srch" placeholder="Chache..." oninput="srchTbl('tbU',this.value)">
             </div>
             <div class="tc">
                 <div class="tc-head">
-                    <div class="tc-title"><i class="fas fa-users"></i> Tout Itilizate</div>
+                    <div class="tc-title"><i class="fas fa-users"></i> Tout VIP</div>
                     <div class="tc-filters">
                         <button class="tf active" onclick="fltTbl('tbU','all',this)">Tout</button>
                         <button class="tf" onclick="fltTbl('tbU','premium',this)">Premium</button>
@@ -1176,7 +1176,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Itilizate</th>
+                                <th>VIP</th>
                                 <th>Metod</th>
                                 <th>Referans</th>
                                 <th>Montan</th>
@@ -1198,7 +1198,7 @@
             </div>
             <div class="tc">
                 <div class="tc-head">
-                    <div class="tc-title"><i class="fas fa-comment-dots"></i> Avi Itilizatè yo</div>
+                    <div class="tc-title"><i class="fas fa-comment-dots"></i> Avi VIP yo</div>
                     <div class="tc-filters">
                         <button class="tf active" onclick="fltTbl('tbAv','all',this)">Tout</button>
                         <button class="tf" onclick="fltTbl('tbAv','pending',this)">An Atant</button>
@@ -1212,7 +1212,7 @@
                                 <th>Non</th>
                                 <th>Nòt</th>
                                 <th>Avi</th>
-                                <th>Itilizatè</th>
+                                <th>VIP</th>
                                 <th>Estati</th>
                                 <th>Dat</th>
                                 <th>Aksyon</th>
@@ -1406,7 +1406,7 @@
             </div>
         </div>
 
-        <!-- AJOUTE KONT (Itilizatè / Elu) -->
+        <!-- AJOUTE KONT (VIP / Elu) -->
         <div class="pg" id="pg-addacc">
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-user-plus" style="color:var(--green,#4caf50)"></i> Ajoute Kont</h1>
@@ -1419,7 +1419,7 @@
                     <div>
                         <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Tip Kont *</label>
                         <select id="acType" onchange="toggleAccEluFields()" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
-                            <option value="user">Itilizatè (kliyan)</option>
+                            <option value="user">VIP (kliyan)</option>
                             <option value="freelancer">Elu</option>
                             <option value="boss">Boss (jere yon gwoup Elu)</option>
                         </select>
@@ -1691,7 +1691,7 @@
             </div>
 
             <div class="fg">
-                <div class="fc"><h4><i class="fas fa-users"></i> Total Itilizatè</h4><div class="fv" id="promoTotalUsers">0</div><div class="fs">Kont kliyan</div></div>
+                <div class="fc"><h4><i class="fas fa-users"></i> Total VIP</h4><div class="fv" id="promoTotalUsers">0</div><div class="fs">Kont kliyan</div></div>
                 <div class="fc"><h4><i class="fas fa-crown"></i> Premium</h4><div class="fv" style="color:var(--gold)" id="promoPremium">0</div><div class="fs">Kliyan peye</div></div>
                 <div class="fc"><h4><i class="fas fa-star"></i> Elu</h4><div class="fv" style="color:var(--red)" id="promoElu">0</div><div class="fs">Kont Elu</div></div>
                 <div class="fc"><h4><i class="fas fa-bell"></i> Notif Aktive</h4><div class="fv" style="color:var(--green)" id="promoPushOn">0</div><div class="fs">App enstale / engaje</div></div>
@@ -1732,9 +1732,9 @@
                     <div>
                         <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Voye bay *</label>
                         <select id="promoSegment" onchange="promoUpdateCount()" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
-                            <option value="free">Itilizatè Gratis</option>
-                            <option value="premium">Itilizatè Premium</option>
-                            <option value="users">Tout Itilizatè (gratis + peye)</option>
+                            <option value="free">VIP Gratis</option>
+                            <option value="premium">VIP Premium</option>
+                            <option value="users">Tout VIP (gratis + peye)</option>
                             <option value="elu">Elu yo</option>
                             <option value="everyone">Tout moun</option>
                         </select>
@@ -2113,7 +2113,7 @@ function renderUsersTable(list) {
     if (!tb) return;
 
     if (!list.length) {
-        tb.innerHTML = emptyRow(7, "Pa gen itilizate anko");
+        tb.innerHTML = emptyRow(7, "Pa gen VIP anko");
         return;
     }
 
@@ -3309,7 +3309,7 @@ function renderAdminMsg() {
         var when = t.lastAt && t.lastAt.toDate ? t.lastAt.toDate().toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "";
         h += '<div onclick="openAdminMsg(\'' + t.id + '\')" style="display:flex;align-items:center;gap:12px;padding:13px;background:#0f0f17;border:1px solid ' + (t.userIsPremium ? "rgba(255,215,0,0.3)" : "#2a2a3a") + ';border-radius:12px;cursor:pointer">';
         h += '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0"><i class="fas fa-comments"></i></div>';
-        h += '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:0.86rem">' + escHtml(t.userName || "Itilizatè") + ' <span style="color:#6a6a80">→</span> ' + escHtml(t.eluName || "Elu") + ' ' + prem + '</div>';
+        h += '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:0.86rem">' + escHtml(t.userName || "VIP") + ' <span style="color:#6a6a80">→</span> ' + escHtml(t.eluName || "Elu") + ' ' + prem + '</div>';
         h += '<div style="font-size:0.78rem;color:#8a8a9a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(t.lastMessage || "") + '</div>';
         h += '<div style="font-size:0.66rem;color:#6a6a80;margin-top:2px">' + when + '</div></div>' + unread + '</div>';
     });
@@ -3319,7 +3319,7 @@ function renderAdminMsg() {
 function openAdminMsg(threadId) {
     var t = adminMsgThreads.find(function(x){ return x.id === threadId; });
     if (!t) return;
-    adminMsgCur = { threadId: threadId, userUid: t.userUid, eluUid: t.eluUid, eluName: t.eluName || "Elu", userName: t.userName || "Itilizatè" };
+    adminMsgCur = { threadId: threadId, userUid: t.userUid, eluUid: t.eluUid, eluName: t.eluName || "Elu", userName: t.userName || "VIP" };
     try { db.collection("dmThreads").doc(threadId).update({ unreadForElu: 0 }).catch(function(){}); } catch(e){}
 
     var old = document.getElementById("adminMsgModal");
@@ -4136,7 +4136,7 @@ function submitAddAccount() {
         if (res.ok && res.j.success) {
             resBox.style.display = "block";
             resBox.innerHTML = '<div style="background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.3);color:#4caf50;border-radius:8px;padding:12px;font-size:0.84rem"><i class="fas fa-check-circle"></i> Kont kreye! ('
-                + escHtml(res.j.email) + ' — ' + (res.j.type === "freelancer" ? "Elu" : "Itilizatè") + '). Moun lan ka konekte dirèkteman.</div>';
+                + escHtml(res.j.email) + ' — ' + (res.j.type === "freelancer" ? "Elu" : "VIP") + '). Moun lan ka konekte dirèkteman.</div>';
             ["acEmail","acPass","acPrenom","acNom","acPhone","acLoc","acPrix","acAge","acDesc"].forEach(function(idf){ var e = document.getElementById(idf); if (e) e.value = ""; });
             var tchk = document.getElementById("acTest"); if (tchk) tchk.checked = false;
         } else {
@@ -4362,7 +4362,7 @@ function initAdminNotifs() {
 
     unsubNotifUsers = listen("users", "u", function (d) {
         if (d.type === "admin") return null;
-        var role = d.type === "freelancer" ? "Elu" : d.type === "krey" ? "Krey" : "Itilizatè";
+        var role = d.type === "freelancer" ? "Elu" : d.type === "krey" ? "Krey" : "VIP";
         return { ico: "fa-user-plus", cl: "#4caf50",
             txt: "Nouvo enskripsyon (" + role + ")",
             sub: ((d.prenom || "") + " " + (d.nom || "")).trim() + " | " + (d.email || "") };
@@ -4507,7 +4507,7 @@ function downloadReport(format) {
     rows.push(["REVNI NET TOTAL (G)", R.net]);
     rows.push([]);
     rows.push(["NOUVO ENSKRIPSYON"]);
-    rows.push(["Itilizatè", R.counts.users]);
+    rows.push(["VIP", R.counts.users]);
     rows.push(["Elu", R.counts.elu]);
     rows.push(["Krey", R.counts.krey]);
     rows.push([]);
@@ -4558,7 +4558,7 @@ function printReport(R, gen) {
         '<div><span>Komisyon (10%)</span><b>' + g(R.commission) + ' G</b></div>' +
         '<div><span>Revni Premium</span><b>' + g(R.premium) + ' G</b></div>' +
         '<div><span>Revni Net Total</span><b>' + g(R.net) + ' G</b></div></div>' +
-        '<h2>Nouvo enskripsyon</h2><p>Itilizatè : <b>' + R.counts.users + '</b> &nbsp;·&nbsp; Elu : <b>' + R.counts.elu + '</b> &nbsp;·&nbsp; Krey : <b>' + R.counts.krey + '</b> &nbsp;·&nbsp; Premium peye : <b>' + R.premiumCount + '</b></p>' +
+        '<h2>Nouvo enskripsyon</h2><p>VIP : <b>' + R.counts.users + '</b> &nbsp;·&nbsp; Elu : <b>' + R.counts.elu + '</b> &nbsp;·&nbsp; Krey : <b>' + R.counts.krey + '</b> &nbsp;·&nbsp; Premium peye : <b>' + R.premiumCount + '</b></p>' +
         '<h2>Detay pa Elu</h2><table><tr><th>Elu</th><th>Rezevasyon</th><th>Total</th><th>Komisyon</th><th>Net Elu</th></tr>' + eluRows + '</table>' +
         '<button onclick="window.print()" style="margin-top:26px;padding:11px 22px;background:#e91e63;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem">Enprime / Sove an PDF</button>' +
         '</body></html>';
@@ -4778,7 +4778,7 @@ function viewAccountDetail(uid) {
 
     title.textContent = (user.prenom || user.kreyName || "") + " " + (user.nom || "");
 
-    var typeLabel = user.type === "freelancer" ? "Prestate" : user.type === "krey" ? "Gwoup Krey" : "Itilizate";
+    var typeLabel = user.type === "freelancer" ? "Prestate" : user.type === "krey" ? "Gwoup Krey" : "VIP";
     var planBadge = user.isPremium ? '<span style="background:#ffd700;color:#000;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700">Premium</span>' : '<span style="background:#2a2a3a;color:#b0b0c0;padding:3px 10px;border-radius:20px;font-size:0.75rem">Gratis</span>';
     var statusBadge = user.status === "active" ? '<span style="background:#4caf50;color:white;padding:3px 10px;border-radius:20px;font-size:0.75rem">Aktif</span>' : user.status === "frozen" ? '<span style="background:#f44336;color:white;padding:3px 10px;border-radius:20px;font-size:0.75rem">Jele</span>' : '<span style="background:#ff9800;color:white;padding:3px 10px;border-radius:20px;font-size:0.75rem">An Atant</span>';
 

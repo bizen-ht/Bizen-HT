@@ -116,7 +116,7 @@ exports.handler = async function (event) {
 
         var senderDoc = await dbf.collection("users").doc(senderUid).get();
         var sender = senderDoc.exists ? senderDoc.data() : {};
-        var senderName = sender.pseudo || sender.prenom || "Itilizatè";
+        var senderName = sender.pseudo || sender.prenom || "VIP";
         var isPremium = sender.isPremium === true;
 
         /* ---- VÉRIFICATION DES LIMITES (seulement pour le CLIENT, pas l'Élu) ---- */
