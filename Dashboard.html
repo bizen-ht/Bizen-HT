@@ -3043,6 +3043,8 @@ var flDmThreadsUnsub = null;
 var eluDmUnsub = null;
 var eluDmThread = null;
 var eluDmOther = null;   /* { uid, name } du client */
+var eluDmThreadUnsub = null;   /* écoute le doc du fil (état éphémère) */
+var eluDmEphemeral = true;     /* état courant du mode éphémère du fil ouvert */
 
 function loadDmThreads() {
     if (!db || !currentUser) return;
@@ -3109,6 +3111,7 @@ function escAttr(s) {
    Passé ce délai les messages ont expiré => on n'affiche plus le contact
    (le nettoyage serveur le supprimera définitivement). */
 function dmThreadAlive(t) {
+    if (t && t.ephemeral === false) return true;   /* conversation permanente : toujours visible */
     var ms = (t && t.lastAt && t.lastAt.toMillis) ? t.lastAt.toMillis() : 0;
     if (!ms) return false;
     return (Date.now() - ms) < 24 * 3600 * 1000;
@@ -3143,8 +3146,9 @@ function openEluDm(threadId, otherName, otherUid, unreadField) {
     h += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(156,39,176,0.08)">';
     h += '<button onclick="closeEluDm()" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer"><i class="fas fa-arrow-left"></i></button>';
     h += '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff"><i class="fas fa-user"></i></div>';
-    h += '<div style="flex:1;font-weight:700">' + escDash(otherName) + '</div></div>';
-    h += '<div style="padding:6px 16px;font-size:0.7rem;color:#ff9800;background:rgba(255,152,0,0.08);text-align:center"><i class="fas fa-clock"></i> Mesaj yo ap disparèt apre 24è. Pa bay kontak deyò — oryante vè yon rezevasyon.</div>';
+    h += '<div style="flex:1;font-weight:700">' + escDash(otherName) + '</div>';
+    h += '<button id="eluDmEphBtn" onclick="eluDmToggleEphemeral()" title="Mesaj efemè" style="background:none;border:none;color:#ff9800;font-size:1.05rem;cursor:pointer;padding:6px;flex-shrink:0"><i class="fas fa-clock"></i></button></div>';
+    h += '<div id="eluDmBanner" style="padding:6px 16px;font-size:0.7rem;color:#ff9800;background:rgba(255,152,0,0.08);text-align:center"><i class="fas fa-clock"></i> Mesaj yo ap disparèt apre 24è. Pa bay kontak deyò — oryante vè yon rezevasyon.</div>';
     h += '<div id="eluDmBody" style="flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 16px;display:flex;flex-direction:column;gap:8px"><p style="text-align:center;color:#6a6a80;font-size:0.85rem">Chajman...</p></div>';
     h += '<div id="eluDmWarn" style="display:none;padding:7px 16px;background:rgba(244,67,54,0.12);color:#ff6b6b;font-size:0.74rem;text-align:center;border-top:1px solid rgba(244,67,54,0.3)"><i class="fas fa-ban"></i> Sa entèdi — tout bagay dwe pase sou Bizen</div>';
     h += '<div style="padding:12px 14px;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:8px">';
@@ -3155,10 +3159,76 @@ function openEluDm(threadId, otherName, otherUid, unreadField) {
     wrap.innerHTML = h;
     document.body.appendChild(wrap.firstChild);
     listenEluDm();
+
+    /* Écoute l'état éphémère du fil (partagé entre les 2 participants). */
+    eluDmEphemeral = true;
+    if (eluDmThreadUnsub) { try { eluDmThreadUnsub(); } catch(e){} }
+    eluDmThreadUnsub = db.collection("dmThreads").doc(threadId).onSnapshot(function(d) {
+        var td = d.exists ? d.data() : {};
+        eluDmEphemeral = (td.ephemeral !== false);
+        updateEluDmEphemeralUI();
+    }, function(){});
+}
+
+function updateEluDmEphemeralUI() {
+    var btn = document.getElementById("eluDmEphBtn");
+    var banner = document.getElementById("eluDmBanner");
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-clock"></i>';
+        btn.style.color = eluDmEphemeral ? "#ff9800" : "#4caf50";
+        btn.title = eluDmEphemeral ? "Mesaj efemè aktive — klike pou dezaktive" : "Konvèsasyon pèmanan — klike pou aktive efemè";
+    }
+    if (banner) {
+        banner.innerHTML = eluDmEphemeral
+            ? '<i class="fas fa-clock"></i> Mesaj yo ap disparèt apre 24è. Pa bay kontak deyò — oryante vè yon rezevasyon.'
+            : '<i class="fas fa-lock"></i> Konvèsasyon pèmanan — mesaj yo p ap efase. Pa bay kontak deyò.';
+        banner.style.color = eluDmEphemeral ? "#ff9800" : "#4caf50";
+        banner.style.background = eluDmEphemeral ? "rgba(255,152,0,0.08)" : "rgba(76,175,80,0.08)";
+    }
+}
+
+function eluDmToggleEphemeral() {
+    if (!eluDmThread || !currentUser) return;
+    var next = !eluDmEphemeral;
+    var msg = next
+        ? "Aktive mesaj efemè? Mesaj yo ap efase otomatikman 24è apre."
+        : "Dezaktive efemè? Mesaj yo ap RETE pèmanan nan konvèsasyon an.";
+    if (!confirm(msg)) return;
+    var btn = document.getElementById("eluDmEphBtn");
+    if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    currentUser.getIdToken().then(function(idToken) {
+        return fetch("/.netlify/functions/dm-action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, action: "toggleEphemeral", threadId: eluDmThread, ephemeral: next })
+        });
+    }).then(function(r) { return r.json(); }).then(function(j) {
+        if (j && j.success) {
+            eluDmEphemeral = j.ephemeral;
+            showToast(j.ephemeral ? "Mesaj efemè aktive." : "Konvèsasyon pèmanan.", "success");
+        } else { showToast((j && j.error) || "Pa ka chanje.", "error"); }
+        updateEluDmEphemeralUI();
+    }).catch(function() { showToast("Erè rezo.", "error"); updateEluDmEphemeralUI(); });
+}
+
+function eluDmDeleteMessage(id) {
+    if (!id || !currentUser) return;
+    if (!confirm("Efase mesaj sa a pou tout moun?")) return;
+    currentUser.getIdToken().then(function(idToken) {
+        return fetch("/.netlify/functions/dm-action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, action: "deleteMessage", messageId: id })
+        });
+    }).then(function(r) { return r.json(); }).then(function(j) {
+        if (!(j && j.success)) showToast((j && j.error) || "Pa ka efase.", "error");
+        /* le listener temps réel affiche le « message effacé » */
+    }).catch(function() { showToast("Erè rezo.", "error"); });
 }
 
 function closeEluDm() {
     if (eluDmUnsub) { try { eluDmUnsub(); } catch(e){} eluDmUnsub = null; }
+    if (eluDmThreadUnsub) { try { eluDmThreadUnsub(); } catch(e){} eluDmThreadUnsub = null; }
     var m = document.getElementById("eluDmModal");
     if (m) m.remove();
 }
@@ -3170,7 +3240,7 @@ function listenEluDm() {
         .where("participants", "array-contains", currentUser.uid)
         .onSnapshot(function(snap) {
             var msgs = [];
-            snap.forEach(function(doc) { var m = doc.data(); if (m.threadId === eluDmThread) msgs.push(m); });
+            snap.forEach(function(doc) { var m = doc.data(); m.id = doc.id; if (m.threadId === eluDmThread) msgs.push(m); });
             msgs.sort(function(a, b) {
                 var ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
                 var tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
@@ -3189,6 +3259,11 @@ function renderEluDm(msgs) {
     msgs.forEach(function(m) {
         var mine = m.senderId === me;
         var t = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate().toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" }) : "";
+        if (m.deleted) {
+            h += '<div style="display:flex;justify-content:' + (mine ? "flex-end" : "flex-start") + '">';
+            h += '<div style="max-width:78%;padding:8px 13px;border-radius:16px;font-size:0.82rem;font-style:italic;background:rgba(255,255,255,0.05);color:#8a8a9a;border:1px dashed rgba(255,255,255,0.18)"><i class="fas fa-ban"></i> Mesaj efase</div></div>';
+            return;
+        }
         h += '<div style="display:flex;justify-content:' + (mine ? "flex-end" : "flex-start") + '">';
         h += '<div style="max-width:78%;padding:' + (m.mediaUrl ? "6px" : "9px 13px") + ';border-radius:16px;font-size:0.88rem;line-height:1.4;overflow-wrap:anywhere;word-break:break-word;' +
             (mine ? "background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border-bottom-right-radius:4px" : "background:rgba(255,255,255,0.08);color:#eee;border-bottom-left-radius:4px") + '">';
@@ -3200,7 +3275,8 @@ function renderEluDm(msgs) {
             }
         }
         if (m.text) h += (m.mediaUrl ? '<div style="padding:6px 7px 0">' : '') + escDash(m.text) + (m.mediaUrl ? '</div>' : '');
-        h += '<div style="font-size:0.62rem;opacity:0.6;margin-top:3px;text-align:right' + (m.mediaUrl ? ';padding:0 7px 3px' : '') + '">' + t + '</div></div></div>';
+        var delBtn = (mine && m.id) ? '<i class="fas fa-trash" onclick="eluDmDeleteMessage(\'' + m.id + '\')" title="Efase pou tout moun" style="cursor:pointer;margin-right:8px;opacity:0.75"></i>' : '';
+        h += '<div style="font-size:0.62rem;opacity:0.6;margin-top:3px;text-align:right' + (m.mediaUrl ? ';padding:0 7px 3px' : '') + '">' + delBtn + t + '</div></div></div>';
     });
     body.innerHTML = h;
     body.scrollTop = body.scrollHeight;

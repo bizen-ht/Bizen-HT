@@ -52,9 +52,17 @@ exports.handler = async function () {
                 .get();
             if (tSnap.empty) break;
             var tBatch = dbf.batch();
-            tSnap.forEach(function (doc) { tBatch.delete(doc.ref); });
+            var delCount = 0;
+            tSnap.forEach(function (doc) {
+                /* On GARDE les conversations permanentes (ephemeral === false) :
+                   leurs messages n'expirent pas, le contact doit rester visible. */
+                if (doc.data().ephemeral === false) return;
+                tBatch.delete(doc.ref);
+                delCount++;
+            });
+            if (delCount === 0) break;   /* il ne reste que des fils permanents => stop */
             await tBatch.commit();
-            threadsDeleted += tSnap.size;
+            threadsDeleted += delCount;
             if (tSnap.size < 400) break;
         }
 

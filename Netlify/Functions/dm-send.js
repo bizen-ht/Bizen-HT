@@ -114,6 +114,10 @@ exports.handler = async function (event) {
         /* Détermine qui est le client et qui est l'Élu dans ce fil */
         var isEluReply = !!(thread && thread.eluUid === senderUid);
 
+        /* Mode éphémère du fil : par défaut ON (24h). Si le fil a ephemeral===false,
+           la conversation est PERMANENTE => on n'ajoute pas d'expireAt. */
+        var isEphemeral = !(thread && thread.ephemeral === false);
+
         var senderDoc = await dbf.collection("users").doc(senderUid).get();
         var sender = senderDoc.exists ? senderDoc.data() : {};
         var senderName = sender.pseudo || sender.prenom || "VIP";
@@ -153,7 +157,7 @@ exports.handler = async function (event) {
         var okMedia = (!isEluReply && mediaUrl) ? mediaUrl : "";
         var okMediaType = okMedia ? mediaType : "";
 
-        await dbf.collection("dmMessages").add({
+        var msgDoc = {
             threadId: threadId,
             participants: pair,
             senderId: senderUid,
@@ -161,9 +165,10 @@ exports.handler = async function (event) {
             text: filtered,
             mediaUrl: okMedia,
             mediaType: okMediaType,
-            createdAt: nowTs,
-            expireAt: expireTs           /* TTL Firestore supprime ~24h après */
-        });
+            createdAt: nowTs
+        };
+        if (isEphemeral) msgDoc.expireAt = expireTs;   /* cleanup supprime ~24h après (seulement si éphémère) */
+        await dbf.collection("dmMessages").add(msgDoc);
 
         /* ---- MISE À JOUR DU THREAD ---- */
         var lastPreview = filtered ? filtered.slice(0, 120)
@@ -223,7 +228,7 @@ exports.handler = async function (event) {
                 welcome = welcome.toString().trim().slice(0, 300);
                 if (welcome) {
                     var wTs = admin.firestore.Timestamp.fromMillis(now + 1000);
-                    await dbf.collection("dmMessages").add({
+                    var welcomeDoc = {
                         threadId: threadId,
                         participants: pair,
                         senderId: eluUid,          /* le message vient de l'Élu */
@@ -231,9 +236,10 @@ exports.handler = async function (event) {
                         text: filterContact(welcome),
                         mediaUrl: "", mediaType: "",
                         isAuto: true,              /* marqué comme réponse automatique */
-                        createdAt: wTs,
-                        expireAt: admin.firestore.Timestamp.fromMillis(now + 24 * 3600 * 1000)
-                    });
+                        createdAt: wTs
+                    };
+                    if (isEphemeral) welcomeDoc.expireAt = admin.firestore.Timestamp.fromMillis(now + 24 * 3600 * 1000);
+                    await dbf.collection("dmMessages").add(welcomeDoc);
                     /* Objet SÉPARÉ : ne pas réutiliser threadUpdate (il contient
                        unreadForElu: increment(1) => ça compterait 2 fois). */
                     await threadRef.set({

@@ -18,6 +18,9 @@
 [functions.dm-send]
   external_node_modules = ["firebase-admin"]
 
+[functions.dm-action]
+  external_node_modules = ["firebase-admin"]
+
 [functions.dm-cleanup]
   external_node_modules = ["firebase-admin"]
   schedule = "@hourly"
