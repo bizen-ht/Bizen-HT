@@ -3733,14 +3733,15 @@ function mkCard(p, type, male) {
     h += '<p class="pc-blur"><span class="blt">';
     h += 'Detay konple disponib selman pou manm Premium...';
     h += '</span></p>';
-    h += '<div class="hotel-notice">';
-    h += '<i class="fas fa-hotel"></i> Hotel patne inclus';
+    var cardNoHotel = (p.hotelNotIncluded === true);
+    h += '<div class="hotel-notice"' + (cardNoHotel ? ' style="background:rgba(255,152,0,0.1);border-color:rgba(255,152,0,0.4)"' : '') + '>';
+    h += '<i class="fas fa-hotel"' + (cardNoHotel ? ' style="color:#ff9800"' : '') + '></i> ' + (cardNoHotel ? 'Hotel non inclus' : 'Hotel patne inclus');
     h += '</div>';
     h += '<div class="pc-price">';
     h += '<i class="fas fa-tag"></i>';
     if (p.origP) h += '<span style="text-decoration:line-through;color:#6a6a80;font-size:0.8rem;margin-right:6px">' + p.origP + '</span>';
     h += '<span class="pv">' + p.p + ' Gdes</span>';
-    h += '<span class="pp">/ Moman (Hotel inclus)</span>';
+    h += '<span class="pp">/ Moman (' + (cardNoHotel ? 'Hotel non inclus' : 'Hotel inclus') + ')</span>';
     h += '</div>';
     h += '<div class="pc-tags">' + tg + '</div>';
     /* Bouton "Pale an prive" (messagerie) — visible pour TOUS (gratuit inclus),
@@ -4051,13 +4052,14 @@ function renderRealFreelancers() {
                     age: (typeof d.age === "number" && d.age >= 18 && d.age <= 99) ? d.age : null,
                     agencyName: d.agencyName || "",
                     agencySlug: d.agencySlug || "",
+                    hotelNotIncluded: (d.hotelNotIncluded === true),
                     l: d.localisation || "Ayiti",
                     lk: locKey,
                     p: disc.newPrice.toLocaleString(),
                     origP: disc.active ? disc.base.toLocaleString() : "",
                     discountBadge: disc.active ? ('Rabè -' + disc.amount.toLocaleString() + ' Gdes · ' + disc.daysLeft + ' jou') : "",
                     d: d.description || "Elu verifye Bizen HT.",
-                    t: ["Verifye", "Hotel inclus"],
+                    t: ["Verifye", (d.hotelNotIncluded === true) ? "Hotel non inclus" : "Hotel inclus"],
                     b: d.isOnline ? "An Liy" : "Verifye",
                     g: "linear-gradient(135deg,#e91e63,#9c27b0)",
                     demo: false,
@@ -5845,6 +5847,8 @@ function doFR(e) {
     var chosenAgency = agSlug ? _agPool.find(function(a){ return a.slug === agSlug; }) : null;
     var agName = chosenAgency ? (chosenAgency.name || "") : "";
     var agBossUid = chosenAgency ? (chosenAgency.bossUid || "") : "";
+    /* Agence où l'hôtel n'est PAS inclus => on marque l'Elu pour l'afficher sur sa fiche */
+    var agHotelOff = !!(chosenAgency && chosenAgency.hotelNotIncluded === true);
     /* Zones de couverture (cases cochées) */
     var flZones = [];
     var zoneBoxes = document.querySelectorAll("#flZones input[type='checkbox']:checked");
@@ -5920,7 +5924,7 @@ function doFR(e) {
                 type: "freelancer", genre: gn, localisation: vil,
                 zones: flZones,
                 age: ageF,
-                agencyName: agName, agencySlug: agSlug,
+                agencyName: agName, agencySlug: agSlug, hotelNotIncluded: agHotelOff,
                 prixMoment: parseInt(px), description: ds,
                 photoUrl: "", bizenCode: bizenCode, isPremium: false,
                 status: "en_attente", isOnline: false, lastSeen: null,
@@ -5938,7 +5942,7 @@ function doFR(e) {
                 emailVerified: false,
                 bizenCode: bizenCode,
                 zones: flZones,
-                agencyName: agName, agencySlug: agSlug,
+                agencyName: agName, agencySlug: agSlug, hotelNotIncluded: agHotelOff,
                 bossId: agBossUid || null,
                 isOnline: false, lastSeen: null,
                 solde: 0, totalEarnings: 0, reservations: 0,
@@ -6745,7 +6749,12 @@ function openEluProfile(btnOrUid) {
             }
         }
         var origPriceHtml = disc.active ? '<span style="text-decoration:line-through;color:#6a6a80;font-size:0.95rem;margin-right:6px">' + disc.base.toLocaleString() + '</span>' : '';
-        h += '<div style="display:flex;align-items:center;gap:8px;padding:14px;background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.2);border-radius:12px;margin-bottom:16px"><i class="fas fa-tag" style="color:#ffd700"></i>' + origPriceHtml + '<span style="font-weight:700;font-size:1.3rem;color:#ffd700">' + price.toLocaleString() + ' Gdes</span><span style="color:#6a6a80;font-size:0.8rem">/ Moman (Hotel inclus)</span></div>';
+        /* Elu d'une agence marquée « Hotel non inclus » : avis sur la fiche (le client paie son hôtel). */
+        var noHotel = (d.hotelNotIncluded === true);
+        if (noHotel) {
+            h += '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,152,0,0.1);border:1px solid rgba(255,152,0,0.4);border-radius:12px;margin-bottom:12px;font-size:0.85rem;color:#ff9800"><i class="fas fa-hotel"></i><span><strong>Hotel non inclus</strong> — se ou k ap peye pwòp hotel ou.</span></div>';
+        }
+        h += '<div style="display:flex;align-items:center;gap:8px;padding:14px;background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.2);border-radius:12px;margin-bottom:16px"><i class="fas fa-tag" style="color:#ffd700"></i>' + origPriceHtml + '<span style="font-weight:700;font-size:1.3rem;color:#ffd700">' + price.toLocaleString() + ' Gdes</span><span style="color:#6a6a80;font-size:0.8rem">/ Moman (' + (noHotel ? 'Hotel non inclus' : 'Hotel inclus') + ')</span></div>';
         h += '<h4 style="font-size:0.9rem;margin-bottom:10px"><i class="fas fa-images" style="color:#9c27b0"></i> Galri</h4>';
         h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">' + galHtml + '</div>';
         /* MESSAGERIE : tout le monde peut écrire (les gratuits "à l'aveugle"). */

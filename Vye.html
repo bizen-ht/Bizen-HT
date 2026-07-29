@@ -3818,6 +3818,8 @@ function renderAgencyList(agencies, elus) {
         h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
         h += '<button onclick="copyAgencyLink(\'' + link + '\')" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer"><i class="fas fa-copy"></i> Lyen</button>';
         h += '<button onclick="toggleAgencyActive(\'' + a.slug + '\',' + (on ? 'true' : 'false') + ')" style="background:' + (on ? 'rgba(255,152,0,0.12);color:#ff9800;border:1px solid rgba(255,152,0,0.35)' : 'rgba(76,175,80,0.12);color:#4caf50;border:1px solid rgba(76,175,80,0.35)') + ';border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer">' + (on ? '<i class="fas fa-eye-slash"></i> Kache' : '<i class="fas fa-eye"></i> Afiche') + '</button>';
+        var hotelOff = (a.hotelNotIncluded === true);
+        h += '<button onclick="toggleAgencyHotel(\'' + a.slug + '\',\'' + (a.bossUid || "") + '\',' + (hotelOff ? 'true' : 'false') + ')" title="Hotel enkli nan pri Elu yo oswa non" style="background:' + (hotelOff ? 'rgba(255,152,0,0.12);color:#ff9800;border:1px solid rgba(255,152,0,0.35)' : 'rgba(76,175,80,0.12);color:#4caf50;border:1px solid rgba(76,175,80,0.35)') + ';border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer"><i class="fas fa-hotel"></i> ' + (hotelOff ? 'Hotel: Pa enkli' : 'Hotel: Enkli') + '</button>';
         h += '<button onclick="deleteAgency(\'' + a.slug + '\',\'' + a.bossUid + '\')" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.3);border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer"><i class="fas fa-trash"></i></button>';
         h += '</div></div>';
     });
@@ -3844,14 +3846,14 @@ function createAgency() {
     db.collection("agencies").doc(slug).set({
         name: name, slug: slug, bossUid: bossId,
         bossName: boss ? ((boss.prenom || "") + " " + (boss.nom || "")).trim() : "",
-        icon: "fa-store", active: true,
+        icon: "fa-store", active: true, hotelNotIncluded: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }).then(function() {
         /* Mémorise l'agence sur le compte boss */
         return db.collection("users").doc(bossId).set({ agencyName: name, agencySlug: slug }, { merge: true });
     }).then(function() {
         /* Propage l'étiquette agence aux Elus déjà sous ce boss */
-        return propagateAgencyToElus(bossId, name, slug);
+        return propagateAgencyToElus(bossId, name, slug, false);
     }).then(function() {
         toast("Ajans « " + name + " » kreye!", true);
         document.getElementById("agName").value = "";
@@ -3859,16 +3861,44 @@ function createAgency() {
     }).catch(function(e) { alert("Erè: " + (e.message || e.code)); });
 }
 
-/* Écrit agencyName/agencySlug sur le profil public + privé de tous les Elus d'un boss */
-function propagateAgencyToElus(bossId, name, slug) {
+/* Écrit agencyName/agencySlug (+ hotelNotIncluded si fourni) sur le profil
+   public + privé de tous les Elus d'un boss */
+function propagateAgencyToElus(bossId, name, slug, hotelNotIncluded) {
     return db.collection("users").where("bossId", "==", bossId).get().then(function(snap) {
         var jobs = [];
         snap.forEach(function(doc) {
-            jobs.push(db.collection("users").doc(doc.id).set({ agencyName: name, agencySlug: slug }, { merge: true }));
-            jobs.push(db.collection("publicProfiles").doc(doc.id).set({ agencyName: name, agencySlug: slug }, { merge: true }));
+            var payload = { agencyName: name, agencySlug: slug };
+            if (typeof hotelNotIncluded === "boolean") payload.hotelNotIncluded = hotelNotIncluded;
+            jobs.push(db.collection("users").doc(doc.id).set(payload, { merge: true }));
+            jobs.push(db.collection("publicProfiles").doc(doc.id).set(payload, { merge: true }));
         });
         return Promise.all(jobs);
     });
+}
+
+/* Propage UNIQUEMENT le flag « hotel non inclus » aux Elus d'un boss */
+function propagateAgencyHotel(bossId, hotelNotIncluded) {
+    if (!bossId) return Promise.resolve();
+    return db.collection("users").where("bossId", "==", bossId).get().then(function(snap) {
+        var jobs = [];
+        snap.forEach(function(doc) {
+            jobs.push(db.collection("users").doc(doc.id).set({ hotelNotIncluded: hotelNotIncluded }, { merge: true }));
+            jobs.push(db.collection("publicProfiles").doc(doc.id).set({ hotelNotIncluded: hotelNotIncluded }, { merge: true }));
+        });
+        return Promise.all(jobs);
+    });
+}
+
+/* Active/désactive « Hotel non inclus » pour une agence + propage aux Elus */
+function toggleAgencyHotel(slug, bossUid, current) {
+    if (!db) return;
+    var next = !current;
+    db.collection("agencies").doc(slug).set({ hotelNotIncluded: next }, { merge: true }).then(function() {
+        return propagateAgencyHotel(bossUid, next);
+    }).then(function() {
+        toast(next ? "Hotel make « pa enkli » pou ajans sa a." : "Hotel make « enkli » pou ajans sa a.", true);
+        loadBoss();
+    }).catch(function(e) { alert("Erè: " + (e.message || e.code)); });
 }
 
 function toggleAgencyActive(slug, current) {
@@ -3931,8 +3961,11 @@ function assignEluToBoss() {
     var boss = _bossCache.find(function(b) { return b.id === bossId; });
     var agName = (boss && boss.agencyName) || "";
     var agSlug = (boss && boss.agencySlug) || "";
-    db.collection("users").doc(eluId).set({ bossId: bossId, agencyName: agName, agencySlug: agSlug }, { merge: true }).then(function() {
-        return db.collection("publicProfiles").doc(eluId).set({ agencyName: agName, agencySlug: agSlug }, { merge: true });
+    /* Récupère le flag « hotel non inclus » depuis l'agence (si elle en a une) */
+    var ag = _agencyCache.find(function(a) { return a.slug === agSlug; });
+    var hotelOff = !!(ag && ag.hotelNotIncluded === true);
+    db.collection("users").doc(eluId).set({ bossId: bossId, agencyName: agName, agencySlug: agSlug, hotelNotIncluded: hotelOff }, { merge: true }).then(function() {
+        return db.collection("publicProfiles").doc(eluId).set({ agencyName: agName, agencySlug: agSlug, hotelNotIncluded: hotelOff }, { merge: true });
     }).then(function() {
         toast("Elu asiyen bay Boss la!", true); loadBoss();
     }).catch(function(e) { alert("Erè: " + (e.message || e.code)); });
@@ -3942,8 +3975,8 @@ function unassignElu(eluId) {
     if (!db) return;
     if (!confirm("Retire Elu sa a nan gwoup Boss la?")) return;
     var del = firebase.firestore.FieldValue.delete();
-    db.collection("users").doc(eluId).update({ bossId: del, agencyName: "", agencySlug: "" }).then(function() {
-        return db.collection("publicProfiles").doc(eluId).set({ agencyName: "", agencySlug: "" }, { merge: true });
+    db.collection("users").doc(eluId).update({ bossId: del, agencyName: "", agencySlug: "", hotelNotIncluded: false }).then(function() {
+        return db.collection("publicProfiles").doc(eluId).set({ agencyName: "", agencySlug: "", hotelNotIncluded: false }, { merge: true });
     }).then(function() {
         toast("Elu retire.", true); loadBoss();
     }).catch(function(e) { alert("Erè: " + (e.message || e.code)); });
