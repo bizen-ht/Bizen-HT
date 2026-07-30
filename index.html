@@ -8187,8 +8187,13 @@ function renderSiteAgencyPromo() {
     var sec = document.getElementById("agencyPromo");
     var grid = document.getElementById("agencyPromoGrid");
     if (!sec || !grid) return;
-    /* Sur une page d'agence on ne remontre pas le bloc promo */
-    if (window._agencyFilter || !siteAgencies.length) { sec.style.display = "none"; return; }
+    /* Section « Ajans Patnè / Gwoup Egzklizif » DÉSACTIVÉE (décision 2026-07-29) :
+       on garde uniquement le grand titre cliquable « Gade Elu <gwoup> » sous les
+       filtres de villes (renderAgencyTitles). Ça évite d'avoir les deux à l'écran. */
+    sec.style.display = "none";
+    grid.innerHTML = "";
+    return;
+    /* eslint-disable no-unreachable */
     var h = "";
     siteAgencies.forEach(function (a) {
         var nm = a.name || a.slug;
