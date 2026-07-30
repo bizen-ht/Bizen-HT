@@ -2470,7 +2470,8 @@ function renderResTable(list) {
     var h = "";
     list.forEach(function(r) {
         var stCl = r.status === "confirmed" ? "green" : r.status === "cancelled" ? "red" : "orange";
-        var stTxt = r.status === "confirmed" ? "Konfime" : r.status === "cancelled" ? "Anile" : "An Atant";
+        var stTxt = r.status === "confirmed" ? "Konfime" : r.status === "cancelled" ? "Anile" : (r.status === "en_attente_peman" ? "An atant peman" : "An Atant");
+        var paidBadge = (r.paid && r.status !== "confirmed" && r.status !== "cancelled") ? ' <span class="sbadge green" style="font-size:0.6rem">Peye</span>' : '';
         var typTxt = r.type === "krey" ? "Krey" : "Endividyel";
         var typCl = r.type === "krey" ? "purple" : "blue";
         var kote = r.type === "krey" ? (r.locationName || "Prive") : (r.hotelName || "Hotel");
@@ -2484,9 +2485,9 @@ function renderResTable(list) {
         h += '<td>' + (r.price || 'N/A') + '</td>';
         h += '<td><span class="sbadge ' + typCl + '">' + typTxt + '</span></td>';
         var metBadge = r.paidOut ? ' <span class="sbadge green">Elu Peye</span>' : (r.met ? ' <span class="sbadge gold">Rankont konfime</span>' : '');
-        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span>' + metBadge + '</td>';
+        h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span>' + paidBadge + metBadge + '</td>';
         h += '<td>';
-        if (r.status === "en_attente") {
+        if (r.status === "en_attente" || r.status === "en_attente_peman") {
             h += actBtn("ab-app", "resAction('confirm','" + r.id + "')", "fa-check", "Konfime");
         }
         if (r.met && !r.paidOut) {
@@ -2793,9 +2794,16 @@ function admAction(action, uid) {
 function resAction(action, id) {
     if (!db) return;
     var status = action === "confirm" ? "confirmed" : "cancelled";
-    var msg = action === "confirm" ? "Konfime rezevasyon sa a?" : "Anile rezevasyon sa a?";
+    var msg = action === "confirm" ? "Konfime rezevasyon sa a? (li pral make PEYE tou)" : "Anile rezevasyon sa a?";
     if (!confirm(msg)) return;
-    db.collection("reservations").doc(id).update({ status: status })
+    /* Confirmer manuellement = régler AUSSI le paiement (utile quand l'argent est
+       sur Bazik mais que la réservation est restée « en attente de paiement »). */
+    var updates = { status: status };
+    if (action === "confirm") {
+        updates.paid = true;
+        updates.paidAt = firebase.firestore.FieldValue.serverTimestamp();
+    }
+    db.collection("reservations").doc(id).update(updates)
         .then(function() {
             toast(action === "confirm" ? "Konfime!" : "Anile!", true);
             /* À la confirmation, comptabilise sur l'Elu (nombre + montant) — visible par le Boss.

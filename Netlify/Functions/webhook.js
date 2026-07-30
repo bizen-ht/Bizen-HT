@@ -315,6 +315,26 @@ async function processPaidWebhook(body) {
         }).catch(function(e) { console.log("[WEBHOOK] premium:", e.message); });
     }
 
+    /* RÉSERVATION : refléter le paiement sur la réservation liée.
+       Sans ça, si le client ne revient pas sur le site après avoir payé
+       (redirection MonCash ratée), la réservation reste bloquée en
+       "en_attente_peman" alors que l'argent est bien sur Bazik. */
+    if (pay.purpose === "reservation" && pay.reservationId) {
+        try {
+            var resRef = db.collection("reservations").doc(pay.reservationId);
+            var resSnap = await resRef.get();
+            if (resSnap.exists) {
+                var rd = resSnap.data();
+                var upd = { paid: true, paidAt: admin.firestore.FieldValue.serverTimestamp() };
+                /* On sort de "en attente de paiement" vers "en attente (de confirmation)".
+                   On ne touche pas un statut déjà confirmé/annulé. */
+                if (rd.status === "en_attente_peman") upd.status = "en_attente";
+                await resRef.update(upd);
+                console.log("[WEBHOOK] Rezèvasyon make peye:", pay.reservationId);
+            }
+        } catch (e) { console.log("[WEBHOOK] reservation:", e.message); }
+    }
+
     /* Commission affilié (si code valide + actif + pas déjà crédité) */
     if (pay.promoCode && !pay.promoCredited && pay.purpose !== "reservation") {
         var code = String(pay.promoCode).trim().toUpperCase();
