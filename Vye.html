@@ -877,6 +877,10 @@
                 <i class="fas fa-user-friends"></i> Afilye
                 <span class="sb-bdg bdg-o" id="bdgAf">0</span>
             </button>
+            <button class="sb-link" onclick="goPage('anbasade',this)">
+                <i class="fas fa-medal"></i> Anbasadè
+                <span class="sb-bdg bdg-o" id="bdgAmb">0</span>
+            </button>
 
             <div class="sb-cat">Maketing</div>
             <button class="sb-link" onclick="goPage('vedette',this)">
@@ -1345,6 +1349,49 @@
             <div class="tc" style="margin-top:22px">
                 <div class="tc-head"><div class="tc-title"><i class="fas fa-money-check-alt"></i> Demann Retrè</div></div>
                 <div class="tscroll"><table><thead><tr><th>Dat</th><th>Kòd</th><th>Pwopriyetè</th><th>Montan</th><th>Estati</th><th>Aksyon</th></tr></thead><tbody id="tbAfWd"></tbody></table></div>
+            </div>
+        </div>
+
+        <!-- ANBASADÈ -->
+        <div class="pg" id="pg-anbasade">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-medal" style="color:var(--orange,#ff9800)"></i> Anbasadè (rekrite Elu)</h1>
+            </div>
+
+            <div class="tc">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-stopwatch"></i> Challenge Anbasadè (peryòd limite)</div></div>
+                <div style="padding:18px">
+                    <div id="ambChallengeStatus" style="font-size:0.85rem;color:#6a6a80;margin-bottom:14px">Chajman...</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+                        <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Kantite jou</label><input id="ambChDays" type="number" min="1" max="365" value="30" style="width:110px;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
+                        <button onclick="setAmbChDays(7)" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:10px 14px;font-size:0.8rem;cursor:pointer">7</button>
+                        <button onclick="setAmbChDays(15)" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:10px 14px;font-size:0.8rem;cursor:pointer">15</button>
+                        <button onclick="setAmbChDays(30)" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:10px 14px;font-size:0.8rem;cursor:pointer">30</button>
+                        <button onclick="launchAmbChallenge()" style="background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:11px 18px;font-weight:600;cursor:pointer;font-size:0.85rem"><i class="fas fa-rocket"></i> Lanse Challenge</button>
+                        <button onclick="stopAmbChallenge()" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.3);border-radius:8px;padding:11px 16px;font-size:0.85rem;cursor:pointer"><i class="fas fa-stop"></i> Arete</button>
+                    </div>
+                    <p style="color:#6a6a80;font-size:0.76rem;margin-top:12px">Lè challenge la aktif, anbasadè yo wè yon kont-a-rebour (konbyen jou ki rete). Sa pa reset kantite Elu — se yon dat limit pou kreye ijans.</p>
+                </div>
+            </div>
+
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-plus-circle"></i> Kreye yon Anbasadè (manyèl)</div></div>
+                <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px">
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Kòd</label><input id="ambCode" placeholder="Egz: JEAN-ANBA" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem;text-transform:uppercase"></div>
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Non pwopriyetè</label><input id="ambName" placeholder="Non konplè" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Imel pwopriyetè (kont Bizen)</label><input id="ambEmail" placeholder="imel@..." style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Telefòn</label><input id="ambPhone" placeholder="+509..." style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
+                    <div style="display:flex;align-items:flex-end"><button onclick="createAmbassador()" style="width:100%;background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:11px 16px;font-weight:600;cursor:pointer;font-size:0.85rem"><i class="fas fa-plus"></i> Kreye Anbasadè</button></div>
+                </div>
+                <p style="padding:0 18px 16px;color:#6a6a80;font-size:0.76rem">L'imel dwe se imel kont Bizen an (se konsa l ap wè dashboard anbasadè li). Elu yo mete kòd sa a nan fòm enskripsyon an. Yon Elu konte « konfime » SÈLMAN lè ou apwouve pwofil li.</p>
+            </div>
+
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-list"></i> Tout Anbasadè yo</div>
+                    <button onclick="loadAmbassadors()" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:6px;padding:6px 12px;font-size:0.75rem;cursor:pointer"><i class="fas fa-sync"></i> Refrechi</button>
+                </div>
+                <div class="tscroll"><table><thead><tr><th>Kòd</th><th>Pwopriyetè</th><th>Enskri</th><th>Konfime</th><th>Nivo</th><th>Rekonpans</th><th>Estati</th></tr></thead><tbody id="tbAmb"></tbody></table></div>
             </div>
         </div>
 
@@ -2218,6 +2265,20 @@ function syncEluAges() {
     }).catch(function (e) { alert("Erè: " + (e.message || e.code)); });
 }
 
+/* Active/désactive « hotel non inclus » sur N'IMPORTE QUEL Elu (indépendant
+   d'une agence). Écrit dans users + publicProfiles ; la fiche/carte se met à jour. */
+function toggleEluHotel(id, current) {
+    if (!db) return;
+    var next = !current;
+    Promise.all([
+        db.collection("users").doc(id).set({ hotelNotIncluded: next }, { merge: true }),
+        db.collection("publicProfiles").doc(id).set({ hotelNotIncluded: next }, { merge: true })
+    ]).then(function () {
+        toast(next ? "Hotel make « non inclus » pou Elu sa a." : "Hotel make « inclus » pou Elu sa a.", true);
+        /* La table se rafraîchit toute seule via onSnapshot */
+    }).catch(function (e) { alert("Erè: " + (e.message || e.code)); });
+}
+
 function renderFLTable(list) {
     var tb = document.getElementById("tbF");
     if (!tb) return;
@@ -2243,6 +2304,8 @@ function renderFLTable(list) {
         h += '<td>';
         h += actBtn("ab-viw", "viewAccountDetail('" + f.id + "')", "fa-eye", "Voir");
         h += actBtn("ab-pre", "setEluAge('" + f.id + "'," + (f.age || 0) + ")", "fa-birthday-cake", "Laj" + (f.age ? " (" + f.age + ")" : ""));
+        var hotelOff = (f.hotelNotIncluded === true);
+        h += actBtn(hotelOff ? "ab-frz" : "ab-app", "toggleEluHotel('" + f.id + "'," + (hotelOff ? 'true' : 'false') + ")", "fa-hotel", hotelOff ? "Hotel: Non enkli" : "Hotel: Enkli");
 
         if (f.status === "en_attente") {
             h += actBtn("ab-app", "admAction('approve','" + f.id + "')", "fa-check", "Apwouve");
@@ -2964,6 +3027,7 @@ function goPage(id, btn) {
     if (id === "msg") loadAdminMsg();
     if (id === "promo") loadPromo();
     if (id === "vedette") loadVedetteAdmin();
+    if (id === "anbasade") { loadAmbassadors(); loadAmbChallenge(); }
 }
 
 /* ====================================
@@ -4611,6 +4675,157 @@ function afDateStr(ts) {
     if (!ts) return "";
     var d = ts.toDate ? ts.toDate() : (ts.seconds ? new Date(ts.seconds * 1000) : null);
     return d ? d.toLocaleDateString("fr-FR") : "";
+}
+
+/* ====================================================
+   ANBASADÈ (admin) — création + suivi des Elus recrutés.
+   Le comptage se fait via publicProfiles (champ ambassadorCode). */
+function ambTiersAdmin() {
+    return [
+        { n: 2,  icon: "🥉", label: "1 premium gratis" },
+        { n: 4,  icon: "🥈", label: "1 250 G kach" },
+        { n: 6,  icon: "🥇", label: "2 000 G kach" },
+        { n: 8,  icon: "💎", label: "3 500 G kach" },
+        { n: 10, icon: "🏆", label: "JACKPOT 5 000 G + premium" }
+    ];
+}
+
+function createAmbassador() {
+    if (!db) return;
+    var code = (document.getElementById("ambCode").value || "").trim().toUpperCase().replace(/\s+/g, "");
+    var name = (document.getElementById("ambName").value || "").trim();
+    var email = (document.getElementById("ambEmail").value || "").trim().toLowerCase();
+    var phone = (document.getElementById("ambPhone").value || "").trim();
+    if (!code) { toast("Antre yon kòd.", false); return; }
+    if (!name || !email) { toast("Antre non ak imel pwopriyetè a.", false); return; }
+    db.collection("ambassadors").doc(code).get().then(function (snap) {
+        if (snap.exists) { toast("Kòd sa a egziste deja.", false); return; }
+        db.collection("ambassadors").doc(code).set({
+            code: code, ownerName: name, ownerEmail: email, ownerPhone: phone,
+            active: true, claimed: {},
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function () {
+            toast("Anbasadè " + code + " kreye!", true);
+            ["ambCode", "ambName", "ambEmail", "ambPhone"].forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ""; });
+            loadAmbassadors();
+        }).catch(function (e) { toast("Ere: " + e.message, false); });
+    });
+}
+
+function loadAmbassadors() {
+    var tb = document.getElementById("tbAmb");
+    if (!tb || !db) return;
+    tb.innerHTML = emptyRow(7, "Chajman...");
+    db.collection("ambassadors").get().then(function (snap) {
+        var ambs = [];
+        snap.forEach(function (d) { var a = d.data(); a.code = d.id; ambs.push(a); });
+        var bdg = document.getElementById("bdgAmb"); if (bdg) bdg.textContent = ambs.length;
+        if (!ambs.length) { tb.innerHTML = emptyRow(7, "Pa gen anbasadè"); return; }
+        var jobs = ambs.map(function (a) {
+            return db.collection("publicProfiles").where("ambassadorCode", "==", a.code).get().then(function (ps) {
+                var reg = 0, conf = 0;
+                ps.forEach(function (p) { reg++; if (p.data().status === "active") conf++; });
+                a._reg = reg; a._conf = conf; return a;
+            }).catch(function () { a._reg = 0; a._conf = 0; return a; });
+        });
+        Promise.all(jobs).then(function (listArr) { renderAmbassadors(listArr); });
+    }).catch(function (e) { tb.innerHTML = emptyRow(7, "Ere: " + (e.code || e.message)); });
+}
+
+function renderAmbassadors(list) {
+    var tb = document.getElementById("tbAmb");
+    if (!tb) return;
+    var tiers = ambTiersAdmin();
+    var h = "";
+    list.forEach(function (a) {
+        var conf = a._conf || 0;
+        var claimed = a.claimed || {};
+        var current = null;
+        tiers.forEach(function (t) { if (conf >= t.n) current = t; });
+        var rw = "";
+        tiers.forEach(function (t) {
+            if (conf >= t.n) {
+                if (claimed[String(t.n)]) {
+                    rw += '<div style="font-size:0.72rem;color:#4caf50;margin-bottom:3px">' + t.icon + ' ' + t.label + ' <i class="fas fa-check-circle"></i></div>';
+                } else {
+                    rw += '<div style="font-size:0.72rem;color:#ffd700;margin-bottom:3px">' + t.icon + ' ' + t.label + ' <button onclick="markAmbReward(\'' + a.code + '\',' + t.n + ')" style="background:rgba(76,175,80,0.15);color:#4caf50;border:1px solid rgba(76,175,80,0.35);border-radius:5px;padding:2px 8px;font-size:0.68rem;cursor:pointer;margin-left:4px">Peye</button></div>';
+                }
+            }
+        });
+        if (!rw) rw = '<span style="color:#6a6a80;font-size:0.72rem">—</span>';
+        var st = (a.active !== false) ? '<span style="color:#4caf50">Aktif</span>' : '<span style="color:#f44336">Dezaktive</span>';
+        h += '<tr>';
+        h += '<td><code style="color:#ff9800;font-weight:700">' + escHtml(a.code) + '</code></td>';
+        h += '<td><strong>' + escHtml(a.ownerName || "") + '</strong><br><small style="color:#6a6a80">' + escHtml(a.ownerEmail || "") + '</small></td>';
+        h += '<td>' + (a._reg || 0) + '</td>';
+        h += '<td style="color:#4caf50;font-weight:700">' + conf + '</td>';
+        h += '<td style="font-size:1.1rem">' + (current ? current.icon : "—") + '</td>';
+        h += '<td>' + rw + '</td>';
+        h += '<td>' + st + '</td>';
+        h += '</tr>';
+    });
+    tb.innerHTML = h;
+}
+
+function markAmbReward(code, tierN) {
+    if (!db) return;
+    if (!confirm("Make rekonpans palye " + tierN + " Élu a kòm PEYE pou " + code + " ?")) return;
+    var upd = {};
+    upd["claimed." + tierN] = true;
+    db.collection("ambassadors").doc(code).update(upd).then(function () {
+        toast("Rekonpans make kòm peye.", true);
+        loadAmbassadors();
+    }).catch(function (e) { toast("Ere: " + (e.message || e.code), false); });
+}
+
+/* ---- CHALLENGE ANBASADÈ (période limite, settings/ambassadorChallenge) ---- */
+function setAmbChDays(n) { var el = document.getElementById("ambChDays"); if (el) el.value = n; }
+
+function loadAmbChallenge() {
+    if (!db) return;
+    db.collection("settings").doc("ambassadorChallenge").get().then(function (d) {
+        var el = document.getElementById("ambChallengeStatus");
+        if (!el) return;
+        if (!d.exists || !d.data().active) { el.innerHTML = '<span style="color:#6a6a80">Pa gen challenge aktif.</span>'; return; }
+        var c = d.data();
+        var end = c.endAt && c.endAt.toDate ? c.endAt.toDate() : null;
+        var now = new Date();
+        if (end && end > now) {
+            var ms = end - now;
+            var days = Math.floor(ms / 86400000);
+            var hrs = Math.floor((ms % 86400000) / 3600000);
+            el.innerHTML = '<span style="color:#4caf50;font-weight:700"><i class="fas fa-circle" style="font-size:0.5rem"></i> Aktif</span> — fini ' + end.toLocaleString("fr-FR") + ' &nbsp;(' + days + ' jou ' + hrs + ' èdtan ki rete)';
+        } else {
+            el.innerHTML = '<span style="color:#ff9800">Challenge la fini' + (end ? ' (' + end.toLocaleString("fr-FR") + ')' : '') + '. Relanse oswa Arete.</span>';
+        }
+    }).catch(function (e) { var el = document.getElementById("ambChallengeStatus"); if (el) el.textContent = "Ere: " + (e.code || e.message); });
+}
+
+function launchAmbChallenge() {
+    if (!db) return;
+    var el = document.getElementById("ambChDays");
+    var days = parseInt(el ? el.value : "0") || 0;
+    if (days < 1 || days > 365) { toast("Antre yon kantite jou valab (1-365).", false); return; }
+    if (!confirm("Lanse challenge la pou " + days + " jou?")) return;
+    var now = Date.now();
+    db.collection("settings").doc("ambassadorChallenge").set({
+        active: true, days: days,
+        startAt: firebase.firestore.Timestamp.fromMillis(now),
+        endAt: firebase.firestore.Timestamp.fromMillis(now + days * 86400000),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).then(function () {
+        toast("Challenge lanse pou " + days + " jou!", true);
+        loadAmbChallenge();
+    }).catch(function (e) { toast("Ere: " + e.message, false); });
+}
+
+function stopAmbChallenge() {
+    if (!db) return;
+    if (!confirm("Arete challenge la?")) return;
+    db.collection("settings").doc("ambassadorChallenge").set({ active: false }, { merge: true }).then(function () {
+        toast("Challenge arete.", true);
+        loadAmbChallenge();
+    }).catch(function (e) { toast("Ere: " + e.message, false); });
 }
 
 function createPromoCode() {

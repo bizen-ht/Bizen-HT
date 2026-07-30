@@ -2660,6 +2660,8 @@ body.is-premium .pc-blur{display:none!important}
     <label id="flAgencyLabel" style="display:block;font-size:0.85rem;color:#ffb74d;font-weight:600;margin-bottom:8px"><i class="fas fa-store"></i> Èske w se yon Elu nan yon ajans patnè?</label>
     <div id="flAgencyOpts"></div>
 </div>
+<!-- KÒD ANBASADÈ (opsyonel) : si yon anbasadè voye w, mete kòd li pou l jwenn kredi -->
+<div class="fg"><label>Kòd Anbasadè (opsyonèl)</label><input type="text" id="flAmbCode" placeholder="Si yon moun voye w, mete kòd li a" style="text-transform:uppercase"><p class="fhint"><i class="fas fa-user-friends"></i> Si se yon anbasadè Bizen ki fè w enskri, mete kòd li a pou l ka jwenn rekonpans li.</p></div>
 <label class="ckl"><input type="checkbox" id="flAgree" required> Mwen dako ak kondisyon yo, 10% komisyon, mwen gen 18+, e mwen konprann kont mwen ap pase nan validasyon.</label><button type="submit" class="btn btn-secondary fw"><i class="fas fa-paper-plane"></i> Voye Demann Mwen</button></form>
 <!-- KREY FORM -->
 <form class="mform hidden"
@@ -5840,6 +5842,8 @@ function doFR(e) {
     var px = gv("priceInput");
     var ds = gv("flDescTxt").trim();
     var pw = gv("fpw");
+    /* Code ambassadeur optionnel (traque l'inscription jusqu'à approbation) */
+    var ambCode = gv("flAmbCode").trim().toUpperCase().replace(/\s+/g, "");
     /* Agence partenaire choisie (Christ Love Shop, etc.) */
     var agEl = document.querySelector("input[name='flAgency']:checked");
     var agSlug = agEl ? agEl.value : "";
@@ -5925,6 +5929,7 @@ function doFR(e) {
                 zones: flZones,
                 age: ageF,
                 agencyName: agName, agencySlug: agSlug, hotelNotIncluded: agHotelOff,
+                ambassadorCode: ambCode,
                 prixMoment: parseInt(px), description: ds,
                 photoUrl: "", bizenCode: bizenCode, isPremium: false,
                 status: "en_attente", isOnline: false, lastSeen: null,
@@ -5943,6 +5948,7 @@ function doFR(e) {
                 bizenCode: bizenCode,
                 zones: flZones,
                 agencyName: agName, agencySlug: agSlug, hotelNotIncluded: agHotelOff,
+                ambassadorCode: ambCode,
                 bossId: agBossUid || null,
                 isOnline: false, lastSeen: null,
                 solde: 0, totalEarnings: 0, reservations: 0,

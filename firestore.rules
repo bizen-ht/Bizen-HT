@@ -205,6 +205,16 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    /* -------- ANBASADÈ : recrutement d'Elus (chaîne de récompenses) --------
+       Créés manuellement par l'admin, liés au compte Bizen (email) de l'ambassadeur.
+       Le propriétaire lit SON doc (par email). Le comptage des Elus recrutés se
+       fait via publicProfiles (déjà public), pas ici. */
+    match /ambassadors/{code} {
+      allow read:  if isAdmin()
+        || (isSignedIn() && resource.data.ownerEmail == request.auth.token.email);
+      allow write: if isAdmin();
+    }
+
     /* -------- TOUT LE RESTE : interdit par défaut --------
        (Aucune collection oubliée ne reste ouverte.) */
     match /{document=**} {
