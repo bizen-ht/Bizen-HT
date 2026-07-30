@@ -153,8 +153,8 @@ exports.handler = async function (event) {
         var receiverUid = isEluReply ? thread.userUid : eluUid;
         var filtered = filterContact(text);
 
-        /* Seul le CLIENT peut envoyer un média (pas l'Élu / pas l'admin-pour-Élu) */
-        var okMedia = (!isEluReply && mediaUrl) ? mediaUrl : "";
+        /* Le CLIENT et l'Élu peuvent envoyer un média (photo/vidéo). */
+        var okMedia = mediaUrl ? mediaUrl : "";
         var okMediaType = okMedia ? mediaType : "";
 
         var msgDoc = {
