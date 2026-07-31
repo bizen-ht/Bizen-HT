@@ -852,6 +852,7 @@
             <button class="sb-link" onclick="goPage('res',this)">
                 <i class="fas fa-calendar-check"></i> Rezevasyon
                 <span class="sb-bdg bdg-g" id="bdgR">0</span>
+                <span class="sb-bdg" id="bdgRPay" title="Rankont konfime — pare pou peye Elu" style="display:none;background:#ffd700;color:#1a1a1a">0</span>
             </button>
             <button class="sb-link" onclick="goPage('pay',this)">
                 <i class="fas fa-credit-card"></i> Peman
@@ -1132,6 +1133,7 @@
                 <h1 class="ph-title"><i class="fas fa-calendar-check" style="color:var(--green)"></i> Rezevasyon</h1>
                 <button onclick="deleteTestReservations()" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:0.82rem"><i class="fas fa-trash"></i> Efase tout rezevasyon test</button>
             </div>
+            <div id="resPayoutAlert" style="display:none;margin-bottom:16px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.45);border-radius:12px;padding:14px 18px;color:#ffd700;font-weight:600;align-items:center;gap:10px"></div>
             <div class="tc">
                 <div class="tc-head">
                     <div class="tc-title"><i class="fas fa-calendar"></i> Tout Rezevasyon</div>
@@ -2500,6 +2502,24 @@ function renderResTable(list) {
     });
 
     tb.innerHTML = h;
+
+    /* Signal « rankont konfime → pare pou peye Elu » : rencontre confirmée par
+       le client (met) mais paiement Elu pas encore versé (paidOut). */
+    var pendingPayout = list.filter(function (r) {
+        return r.met === true && r.paidOut !== true && r.status !== "cancelled";
+    }).length;
+    var alertEl = document.getElementById("resPayoutAlert");
+    if (alertEl) {
+        if (pendingPayout > 0) {
+            alertEl.style.display = "flex";
+            alertEl.innerHTML = '<i class="fas fa-hand-holding-usd"></i> <span>' + pendingPayout + ' rankont konfime — pare pou peye Elu (klike « Peye Elu » sou liy lan).</span>';
+        } else { alertEl.style.display = "none"; }
+    }
+    var payBdg = document.getElementById("bdgRPay");
+    if (payBdg) {
+        if (pendingPayout > 0) { payBdg.style.display = "inline-block"; payBdg.textContent = pendingPayout; }
+        else payBdg.style.display = "none";
+    }
 }
 
 /* ====================================
@@ -4479,11 +4499,29 @@ function initAdminNotifs() {
             sub: (d.email || d.userEmail || "N/A") + " | " + (d.reference || d.method || "") };
     });
 
-    unsubNotifRes = listen("reservations", "r", function (d) {
-        return { ico: "fa-calendar-check", cl: "#2196f3",
-            txt: "Nouvo rezevasyon",
-            sub: (d.prestateName || "N/A") + " | " + (d.userEmail || "") };
-    });
+    /* Réservations : notifie les NOUVELLES demandes ET les rankont confirmés
+       (met passe à true) — ce dernier est une MODIFICATION, pas un ajout. */
+    var _resNotifFirst = true;
+    var _metNotified = {};
+    unsubNotifRes = db.collection("reservations").onSnapshot(function (snap) {
+        snap.docChanges().forEach(function (ch) {
+            var d = ch.doc.data();
+            if (ch.type === "added") {
+                if (_resNotifFirst) return;
+                pushNotif({ ico: "fa-calendar-check", cl: "#2196f3",
+                    txt: "Nouvo rezevasyon",
+                    sub: (d.prestateName || "N/A") + " | " + (d.userEmail || "") });
+            } else if (ch.type === "modified") {
+                if (d.met === true && d.paidOut !== true && !_metNotified[ch.doc.id]) {
+                    _metNotified[ch.doc.id] = true;
+                    pushNotif({ ico: "fa-hand-holding-usd", cl: "#ffd700",
+                        txt: "Rankont konfime — pare pou peye Elu",
+                        sub: (d.prestateName || "N/A") + " | " + (d.userEmail || "") });
+                }
+            }
+        });
+        _resNotifFirst = false;
+    }, function (err) { console.warn("notif reservations:", err.code); });
 
     unsubNotifRev = listen("siteReviews", "rev", function (d) {
         return { ico: "fa-star", cl: "#e91e63",
