@@ -1577,14 +1577,13 @@ var userData = null;
    FORCE STOP LOADER (BACKUP)
    ==================================== */
 function stopLoader() {
+    try { clearTimeout(authTimeout); } catch (e) {}
     var loader = document.getElementById("dashLoad");
-    if (loader) {
-        loader.classList.add("done");
-    }
+    if (loader) loader.classList.add("done");
 }
 
-/* Timeout 15s - show error */
-var authTimeout = setTimeout(function () {
+/* Écran d'erreur (connexion lente / données bloquées) : bouton Rechaje. */
+function showLoaderError() {
     var loader = document.getElementById("dashLoad");
     if (loader && !loader.classList.contains("done")) {
         loader.innerHTML =
@@ -1598,7 +1597,29 @@ var authTimeout = setTimeout(function () {
             '<a href="index.html" style="color:#6a6a80;font-size:0.8rem">Retounen sou sit la</a>' +
             '</div>';
     }
-}, 15000);
+}
+
+/* Watchdog GLOBAL : couvre l'auth ET le chargement des données. Il n'est nettoyé
+   que par stopLoader() (quand tout est prêt). Donc si la lecture des données reste
+   bloquée, l'utilisateur voit un bouton « Rechaje » au lieu d'un écran figé. */
+var authTimeout = setTimeout(showLoaderError, 18000);
+
+/* Firestore .get() qui peut se bloquer sur connexion instable : on ajoute un
+   délai limite + réessais pour récupérer tout seul avant le watchdog. */
+function getWithTimeout(promise, ms) {
+    return new Promise(function (resolve, reject) {
+        var to = setTimeout(function () { reject(new Error("timeout")); }, ms);
+        promise.then(function (r) { clearTimeout(to); resolve(r); },
+                     function (e) { clearTimeout(to); reject(e); });
+    });
+}
+function getUserDocRetry(uid, attempt) {
+    attempt = attempt || 1;
+    return getWithTimeout(db.collection("users").doc(uid).get(), 8000).catch(function (e) {
+        if (attempt < 2) return getUserDocRetry(uid, attempt + 1);
+        throw e;
+    });
+}
 
 /* ====================================
    AUTH CHECK - UNIQUE ET CORRECT
@@ -1609,8 +1630,8 @@ if (!auth) {
 } else {
     var authHandled = false;   /* Empêche la re-vérification à chaque refresh de token */
     auth.onAuthStateChanged(function (user) {
-        clearTimeout(authTimeout);
-
+        /* NB : on NE nettoie PAS le watchdog ici — il couvre aussi le chargement
+           des données (stopLoader() le nettoie quand tout est réellement prêt). */
         if (!user) {
             /* Sur PWA iOS, Firebase émet parfois un état "null" TRANSITOIRE au
                rafraîchissement du token, alors que l'utilisateur est toujours
@@ -1680,9 +1701,7 @@ if (!auth) {
             return;
         }
 
-        db.collection("users")
-            .doc(user.uid)
-            .get()
+        getUserDocRetry(user.uid)
             .then(function (doc) {
                 if (doc.exists) {
                     userData = doc.data();
@@ -1727,7 +1746,7 @@ if (!auth) {
                     }).catch(function(){});
 
                     /* Synchronise / backfill le profil PUBLIC (sans imel ni telefòn) */
-                    syncPublicProfile(user.uid, userData, true);
+                    try { syncPublicProfile(user.uid, userData, true); } catch (e) { console.warn("syncPublicProfile:", e); }
 
                     /* Mark offline on page close */
                     window.addEventListener("beforeunload", function() {
@@ -1754,40 +1773,33 @@ if (!auth) {
                     }, 120000);
 
                     /* Notifications temps réel: nouvelles réservations */
-                    initFreelancerNotifications(user.uid, userData);
+                    try { initFreelancerNotifications(user.uid, userData); } catch (e) { console.warn("initFreelancerNotifications:", e); }
                 }
                 /* === END ONLINE STATUS === */
 
                 stopLoader();
 
-                /* Route by account type */
+                /* Route by account type (protégé : une erreur de setup ne doit
+                   pas laisser un dashboard cassé). */
                 var type = userData.type || "user";
                 console.log("Account type:", type);
-
-                if (type === "freelancer") {
-                    setupFreelancer();
-                } else if (type === "krey") {
-                    setupKrey();
-                } else if (type === "boss") {
-                    setupBoss();
-                } else {
-                    setupUser();
-                }
+                try {
+                    if (type === "freelancer") {
+                        setupFreelancer();
+                    } else if (type === "krey") {
+                        setupKrey();
+                    } else if (type === "boss") {
+                        setupBoss();
+                    } else {
+                        setupUser();
+                    }
+                } catch (e) { console.error("setup error:", e); }
             })
             .catch(function (err) {
                 console.error("Firestore error:", err);
-                /* Fallback */
-                userData = {
-                    prenom: user.email.split("@")[0],
-                    nom: "", email: user.email,
-                    telephone: "", isPremium: false,
-                    type: "user", status: "active",
-                    favorites: [], solde: 0,
-                    totalEarnings: 0, prixMoment: 0
-                };
-                userData.uid = user.uid;
-                stopLoader();
-                setupUser();
+                /* Le profil n'a pas pu se charger (connexion bloquée) : on montre
+                   un bouton « Rechaje » plutôt qu'un mauvais dashboard ou un écran figé. */
+                showLoaderError();
             });
     });
 }
