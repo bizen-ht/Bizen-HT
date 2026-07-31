@@ -948,6 +948,15 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-card-top">
+                        <div class="stat-card-ico green">
+                            <i class="fas fa-hand-holding-usd"></i>
+                        </div>
+                    </div>
+                    <div class="stat-val" id="flTouche">0 G</div>
+                    <div class="stat-label">Total Touche</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-top">
                         <div class="stat-card-ico pink">
                             <i class="fas fa-calendar-check"></i>
                         </div>
@@ -2846,24 +2855,40 @@ function loadFlSoldeByPeriod() {
         .get()
         .then(function (snap) {
             var today = 0, week = 0, month = 0;
+            var soldeDispo = 0, totalRevni = 0, totalTouche = 0;
             var now = new Date();
             snap.forEach(function (doc) {
                 var r = doc.data();
                 if (r.status === "cancelled") return;
                 var p = parseInt(String(r.price || "0").replace(/[^0-9]/g, "")) || 0;
                 var net = Math.round(p * 0.9);
-                if (r.createdAt && r.createdAt.toDate) {
-                    var d = r.createdAt.toDate();
-                    var diff = (now - d) / 86400000;
-                    if (diff <= 1) today += net;
-                    if (diff <= 7) week += net;
-                    if (diff <= 30) month += net;
+                var met = (r.met === true);        /* rankont confirmé par le VIP */
+                var paid = (r.paidOut === true);   /* Elu déjà payé */
+                if (met) {
+                    totalRevni += net;                  /* revenu réalisé (cumul, ne baisse jamais) */
+                    if (paid) totalTouche += net;       /* déjà versé -> Total Touche */
+                    else soldeDispo += net;             /* confirmé non payé -> Solde Disponib */
+                    /* Historique par période = revenu réalisé */
+                    if (r.createdAt && r.createdAt.toDate) {
+                        var d = r.createdAt.toDate();
+                        var diff = (now - d) / 86400000;
+                        if (diff <= 1) today += net;
+                        if (diff <= 7) week += net;
+                        if (diff <= 30) month += net;
+                    }
                 }
             });
+            /* Solde Disponib et Total Touche/Revni sont calculés depuis les
+               réservations (le VIP confirme -> le net entre en Solde Disponib ;
+               le paiement -> il passe en Total Touche). */
+            setEl("flSolde", soldeDispo.toLocaleString() + " G");
+            setEl("flSoldeMain", soldeDispo.toLocaleString() + " Gdes");
+            setEl("flTotal", totalRevni.toLocaleString() + " G");
+            setEl("flTouche", totalTouche.toLocaleString() + " G");
             setEl("flSoldeToday", today.toLocaleString() + " G");
             setEl("flSoldeWeek", week.toLocaleString() + " G");
             setEl("flSoldeMonth", month.toLocaleString() + " G");
-        });
+        }).catch(function (e) { console.warn("loadFlSoldeByPeriod:", e.code || e.message); });
 }
 
 /* ====================================
