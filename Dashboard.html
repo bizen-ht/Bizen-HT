@@ -1291,6 +1291,9 @@
                     </div>
                 </div>
 
+                <!-- Statut de téléchargement (progression + connexion lente) -->
+                <div id="flUploadStatus" style="display:none;margin-bottom:14px;padding:10px 14px;background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.35);border-radius:10px;color:#64b5f6;font-size:0.82rem;font-weight:600"></div>
+
                 <!-- Galerie photos -->
                 <div style="margin-bottom:20px">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -1308,7 +1311,7 @@
                         <input type="file" id="flVideoInput" accept="video/*" multiple style="display:none" onchange="uploadFlVideos(this)">
                         <button onclick="document.getElementById('flVideoInput').click()" style="padding:6px 14px;border:none;border-radius:20px;background:rgba(33,150,243,0.15);color:#2196f3;font-size:0.75rem;cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600"><i class="fas fa-plus"></i> Ajoute Videyo</button>
                     </div>
-                    <div id="flVideoList" style="display:flex;flex-direction:column;gap:8px"></div>
+                    <div id="flVideoList" style="display:flex;flex-wrap:wrap;gap:10px"></div>
                 </div>
             </div>
         </div>
@@ -4677,14 +4680,80 @@ function syncPublicProfile(uid, data, isLogin) {
 /* ====================================
    GESTION MÉDIAS ELU (Dashboard)
    ==================================== */
-function flStorageUpload(file, folder) {
-    var safe = Date.now() + "_" + file.name.replace(/\s+/g, "_");
+/* Upload résilient (connexion lente) : upload résumable + progression + réessais. */
+function flStorageUploadRetry(file, folder, onProgress) {
+    var safe = Date.now() + "_" + Math.random().toString(36).slice(2, 7) + "_" + file.name.replace(/\s+/g, "_");
     var path = "Elu/" + currentUser.uid + "/" + folder + "/" + safe;
-    var ref = storage.ref(path);
-    return ref.put(file).then(function() {
-        return ref.getDownloadURL().then(function(url) {
-            return { name: file.name, url: url, path: path, createdAt: new Date().toISOString() };
+    var maxAttempts = 3, attempt = 0;
+    function tryOnce() {
+        return new Promise(function (resolve, reject) {
+            var task = storage.ref(path).put(file);
+            task.on("state_changed",
+                function (s) { if (onProgress && s.totalBytes) onProgress(Math.round(s.bytesTransferred / s.totalBytes * 100)); },
+                function (err) { reject(err); },
+                function () {
+                    task.snapshot.ref.getDownloadURL().then(function (url) {
+                        resolve({ name: file.name, url: url, path: path, createdAt: new Date().toISOString() });
+                    }).catch(reject);
+                }
+            );
         });
+    }
+    function run() {
+        attempt++;
+        return tryOnce().catch(function (err) {
+            if (attempt < maxAttempts) {
+                return new Promise(function (r) { setTimeout(r, 1500 * attempt); }).then(run);   /* backoff, puis on réessaie */
+            }
+            throw err;
+        });
+    }
+    return run();
+}
+
+/* Compat : ancien nom, sans progression. */
+function flStorageUpload(file, folder) { return flStorageUploadRetry(file, folder, null); }
+
+function flSetUploadStatus(html) {
+    var el = document.getElementById("flUploadStatus");
+    if (!el) return;
+    if (!html) { el.style.display = "none"; el.innerHTML = ""; }
+    else { el.style.display = "block"; el.innerHTML = html; }
+}
+
+/* Upload d'un lot : les fichiers réussis sont TOUJOURS gardés même si d'autres
+   échouent (crucial en connexion lente). Progression fichier par fichier. */
+function flUploadBatch(files, folder, kind) {
+    var label = (kind === "videos") ? "Videyo" : "Foto";
+    flSetUploadStatus('<i class="fas fa-spinner fa-spin"></i> Telechajman ' + label + ' 1/' + files.length + '...');
+    var results = [], failed = 0;
+    var seq = Promise.resolve();
+    files.forEach(function (f, idx) {
+        seq = seq.then(function () {
+            return flStorageUploadRetry(f, folder, function (pct) {
+                flSetUploadStatus('<i class="fas fa-spinner fa-spin"></i> ' + label + ' ' + (idx + 1) + '/' + files.length + ' — ' + pct + '%');
+            }).then(function (m) { results.push(m); })
+              .catch(function (e) { failed++; console.warn("[FL upload]", (e && (e.code || e.message)) || e); });
+        });
+    });
+    return seq.then(function () {
+        if (!results.length) {
+            flSetUploadStatus('');
+            showToast("Telechajman echwe. Koneksyon ou fèb — eseye ankò.", "error");
+            return;
+        }
+        userData.media = userData.media || {};
+        userData.media[kind] = (userData.media[kind] || []).concat(results);
+        var upd = {}; upd["media." + kind] = userData.media[kind];
+        return db.collection("users").doc(currentUser.uid).update(upd).then(function () {
+            syncGalleryToPublic();
+            loadFlMedia();
+            flSetUploadStatus('');
+            showToast(results.length + " " + label.toLowerCase() + " ajoute" + (failed ? (" · " + failed + " echwe") : "") + "!", "success");
+        });
+    }).catch(function (e) {
+        flSetUploadStatus('');
+        showToast("Ere. " + (e.message || ""), "error");
     });
 }
 
@@ -4693,79 +4762,54 @@ function uploadFlProfilePhoto(input) {
     if (!storage || !db || !currentUser) return;
     if (!input.files || !input.files[0]) return;
     var file = input.files[0];
+    input.value = "";
     if (file.size > 5 * 1024 * 1024) { showToast("Foto two gwo (max 5MB).", "error"); return; }
-    showToast("Telechaje foto pwofil...", "success");
-
-    flStorageUpload(file, "profile").then(function(m) {
+    flSetUploadStatus('<i class="fas fa-spinner fa-spin"></i> Telechaje foto pwofil...');
+    flStorageUploadRetry(file, "profile", function (pct) {
+        flSetUploadStatus('<i class="fas fa-spinner fa-spin"></i> Foto pwofil — ' + pct + '%');
+    }).then(function (m) {
         userData.profilePhoto = m.url;
         return db.collection("users").doc(currentUser.uid).update({ profilePhoto: m.url });
-    }).then(function() {
-        db.collection("publicProfiles").doc(currentUser.uid).set({ photoUrl: userData.profilePhoto }, { merge: true }).catch(function(){});
+    }).then(function () {
+        db.collection("publicProfiles").doc(currentUser.uid).set({ photoUrl: userData.profilePhoto }, { merge: true }).catch(function () {});
         loadFlMedia();
+        flSetUploadStatus('');
         showToast("Foto pwofil chanje!", "success");
-    }).catch(function(e) {
+    }).catch(function (e) {
         console.error(e);
-        showToast("Ere telechajman. Verifye Storage Rules.", "error");
+        flSetUploadStatus('');
+        showToast("Ere telechajman. Koneksyon ou fèb — eseye ankò.", "error");
     });
-    input.value = "";
 }
 
 /* --- Galerie photos --- */
 function uploadFlGallery(input) {
     if (!storage || !db || !currentUser) return;
     if (!input.files || !input.files.length) return;
-    showToast("Telechaje foto yo...", "success");
-
-    var ups = [];
+    var files = [];
     for (var i = 0; i < input.files.length; i++) {
         var f = input.files[i];
         if (!f.type.startsWith("image/")) continue;
         if (f.size > 5 * 1024 * 1024) { showToast("Yon foto two gwo, sote.", "error"); continue; }
-        ups.push(flStorageUpload(f, "photos"));
+        files.push(f);
     }
     input.value = "";
-
-    Promise.all(ups).then(function(list) {
-        userData.media = userData.media || {};
-        userData.media.photos = (userData.media.photos || []).concat(list);
-        return db.collection("users").doc(currentUser.uid).update({ "media.photos": userData.media.photos });
-    }).then(function() {
-        syncGalleryToPublic();
-        loadFlMedia();
-        showToast("Foto yo ajoute!", "success");
-    }).catch(function(e) {
-        console.error(e);
-        showToast("Ere telechajman. Verifye Storage Rules.", "error");
-    });
+    if (files.length) flUploadBatch(files, "photos", "photos");
 }
 
 /* --- Vidéos --- */
 function uploadFlVideos(input) {
     if (!storage || !db || !currentUser) return;
     if (!input.files || !input.files.length) return;
-    showToast("Telechaje videyo yo...", "success");
-
-    var ups = [];
+    var files = [];
     for (var i = 0; i < input.files.length; i++) {
         var f = input.files[i];
         if (!f.type.startsWith("video/")) continue;
         if (f.size > 50 * 1024 * 1024) { showToast("Yon videyo two gwo (max 50MB), sote.", "error"); continue; }
-        ups.push(flStorageUpload(f, "videos"));
+        files.push(f);
     }
     input.value = "";
-
-    Promise.all(ups).then(function(list) {
-        userData.media = userData.media || {};
-        userData.media.videos = (userData.media.videos || []).concat(list);
-        return db.collection("users").doc(currentUser.uid).update({ "media.videos": userData.media.videos });
-    }).then(function() {
-        syncGalleryToPublic();
-        loadFlMedia();
-        showToast("Videyo yo ajoute!", "success");
-    }).catch(function(e) {
-        console.error(e);
-        showToast("Ere telechajman. Verifye Storage Rules.", "error");
-    });
+    if (files.length) flUploadBatch(files, "videos", "videos");
 }
 
 /* --- Supprimer un média --- */
@@ -4832,9 +4876,10 @@ function loadFlMedia() {
         } else {
             var hv = "";
             videos.forEach(function(v, i) {
-                hv += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid #2a2a3a;border-radius:10px">' +
-                      '<a href="' + v.url + '" target="_blank" style="font-size:0.78rem;color:#2196f3"><i class="fas fa-play-circle"></i> ' + (v.name || "Videyo") + '</a>' +
-                      '<button onclick="deleteFlMedia(\'videos\',' + i + ')" style="padding:5px 10px;border:none;border-radius:20px;background:rgba(244,67,54,0.15);color:#f44336;font-size:0.7rem;cursor:pointer"><i class="fas fa-trash"></i></button></div>';
+                hv += '<div style="position:relative;width:140px;border-radius:10px;overflow:hidden;border:1px solid #2a2a3a;background:#000">' +
+                      '<video src="' + v.url + '#t=0.1" preload="metadata" controls playsinline style="width:140px;height:96px;object-fit:cover;display:block;background:#000"></video>' +
+                      '<button onclick="deleteFlMedia(\'videos\',' + i + ')" title="Efase" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(244,67,54,0.92);color:#fff;font-size:0.62rem;cursor:pointer;z-index:2"><i class="fas fa-times"></i></button>' +
+                      '</div>';
             });
             vl.innerHTML = hv;
         }
