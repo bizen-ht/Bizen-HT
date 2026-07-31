@@ -2936,7 +2936,8 @@ function buildResRow(r, isFL, ratedSet) {
     }
 
     /* === NOTATION (côté CLIENT uniquement) ===
-       Visible si: réservation confirmée + date passée + vrai Elu (prestateId) */
+       Visible dès que le rankont est confirmé (met) — ou, à défaut, quand la
+       date de la réservation est passée (compat anciennes réservations). */
     var rateBlock = "";
     if (!isFL && r.status === "confirmed" && r.prestateId) {
         var datePassed = false;
@@ -2944,7 +2945,7 @@ function buildResRow(r, isFL, ratedSet) {
             var rd = new Date(r.date + "T23:59:59");
             if (!isNaN(rd.getTime()) && rd.getTime() < Date.now()) datePassed = true;
         }
-        if (datePassed) {
+        if (r.met === true || datePassed) {
             var already = ratedSet && ratedSet[r.id];
             if (already) {
                 rateBlock = '<div style="margin-top:8px;font-size:0.72rem;color:#ffd700">' + starsHtml(already) + ' <span style="color:#6a6a80">Ou note deja</span></div>';
