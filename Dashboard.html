@@ -2824,6 +2824,9 @@ function loadFlReservations() {
             var now = new Date();
 
             items.forEach(function (r) {
+                /* On ne compte QUE les paiements confirmés (rankont fèt = met).
+                   Les réservations en attente (pas encore rankontre) ne comptent pas. */
+                if (r.status === "cancelled" || r.met !== true) return;
                 var p = parseInt(String(r.price || "0").replace(/[^0-9]/g, "")) || 0;
                 var net = Math.round(p * 0.9);
                 total += net;
@@ -2836,6 +2839,8 @@ function loadFlReservations() {
                 }
             });
 
+            /* Revenu total (accueil) = tous les paiements confirmés ; les cartes
+               Jodi/Semèn/Mwa = paiements confirmés par période. */
             setEl("flTotal", total.toLocaleString() + " G");
             setEl("flToday", today.toLocaleString() + " G");
             setEl("flWeek", week.toLocaleString() + " G");

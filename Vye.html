@@ -1690,6 +1690,7 @@
         <div class="pg" id="pg-msg">
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-comment-dots" style="color:#9c27b0"></i> Mesaj (repons pou Elu)</h1>
+                <button onclick="cleanOrphanThreads()" title="Efase konvèsasyon Elu ki pa egziste ankò" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:0.82rem"><i class="fas fa-broom"></i> Netwaye konvèsasyon san Elu</button>
             </div>
             <div class="tc">
                 <div class="tc-head">
@@ -2267,6 +2268,23 @@ function syncEluAges() {
     }).catch(function (e) { alert("Erè: " + (e.message || e.code)); });
 }
 
+/* Règle le RANG d'affichage d'un Elu sur le site (pi gwo = pi devan). Écrit
+   dans users + publicProfiles ; le catalogue trie par sortRank (décroissant). */
+function setEluRank(id, current) {
+    if (!db) return;
+    var input = prompt("Rang afichaj sou sit la (pi gwo nimewo = pi devan / premye paj ; 0 = nòmal) :", (current || 0));
+    if (input === null) return;
+    var rank = parseInt(input, 10);
+    if (isNaN(rank)) { alert("Antre yon nimewo valab."); return; }
+    Promise.all([
+        db.collection("users").doc(id).set({ sortRank: rank }, { merge: true }),
+        db.collection("publicProfiles").doc(id).set({ sortRank: rank }, { merge: true })
+    ]).then(function () {
+        toast("Rang anrejistre (" + rank + "). Rechaje sit la pou wè lòd la.", true);
+        /* La table admin se rafraîchit via onSnapshot. */
+    }).catch(function (e) { alert("Erè: " + (e.message || e.code)); });
+}
+
 /* Active/désactive « hotel non inclus » sur N'IMPORTE QUEL Elu (indépendant
    d'une agence). Écrit dans users + publicProfiles ; la fiche/carte se met à jour. */
 function toggleEluHotel(id, current) {
@@ -2308,6 +2326,7 @@ function renderFLTable(list) {
         h += actBtn("ab-pre", "setEluAge('" + f.id + "'," + (f.age || 0) + ")", "fa-birthday-cake", "Laj" + (f.age ? " (" + f.age + ")" : ""));
         var hotelOff = (f.hotelNotIncluded === true);
         h += actBtn(hotelOff ? "ab-frz" : "ab-app", "toggleEluHotel('" + f.id + "'," + (hotelOff ? 'true' : 'false') + ")", "fa-hotel", hotelOff ? "Hotel: Non enkli" : "Hotel: Enkli");
+        h += actBtn("ab-viw", "setEluRank('" + f.id + "'," + (f.sortRank || 0) + ")", "fa-sort", "Rang" + (f.sortRank ? " (" + f.sortRank + ")" : ""));
 
         if (f.status === "en_attente") {
             h += actBtn("ab-app", "admAction('approve','" + f.id + "')", "fa-check", "Apwouve");
@@ -2773,7 +2792,9 @@ function admAction(action, uid) {
             .then(function() {
                 /* Retire aussi le profil public */
                 db.collection("publicProfiles").doc(uid).delete().catch(function(){});
-                toast("Kont efase!", true);
+                /* Efase TOUTES les conversations DM de ce compte (avec n'importe quel VIP) */
+                purgeUserDMs(uid).catch(function(){});
+                toast("Kont efase (ak konvèsasyon li yo)!", true);
                 loadAll();
             });
         return;
@@ -3358,6 +3379,59 @@ var adminMsgUnsub = null;
 var adminMsgFilter = "all";
 var adminMsgCur = null;     /* { threadId, userUid, eluUid, eluName, userName } */
 var adminMsgChatUnsub = null;
+
+/* Efase TOUTES les conversations (threads + messages) où `uid` est participant.
+   Appelé quand on supprime un compte, pour ne pas laisser de fils orphelins. */
+function purgeUserDMs(uid) {
+    if (!db || !uid) return Promise.resolve();
+    var delThreads = db.collection("dmThreads").where("participants", "array-contains", uid).get()
+        .then(function (snap) {
+            if (snap.empty) return null;
+            var b = db.batch();
+            snap.forEach(function (d) { b.delete(d.ref); });
+            return b.commit();
+        }).catch(function (e) { console.warn("purge threads:", e.code || e.message); });
+    var delMsgs = db.collection("dmMessages").where("participants", "array-contains", uid).get()
+        .then(function (snap) {
+            var refs = []; snap.forEach(function (d) { refs.push(d.ref); });
+            var chain = Promise.resolve();
+            for (var i = 0; i < refs.length; i += 400) {
+                (function (slice) {
+                    chain = chain.then(function () {
+                        var b = db.batch(); slice.forEach(function (r) { b.delete(r); }); return b.commit();
+                    });
+                })(refs.slice(i, i + 400));
+            }
+            return chain;
+        }).catch(function (e) { console.warn("purge msgs:", e.code || e.message); });
+    return Promise.all([delThreads, delMsgs]);
+}
+
+/* Nettoie les conversations dont l'Élu n'existe plus (comptes déjà supprimés,
+   ex: après suppression d'une agence + ses Elus). */
+function cleanOrphanThreads() {
+    if (!db) return;
+    if (!confirm("Efase tout konvèsasyon kote Elu a pa egziste ankò?")) return;
+    toast("N ap tcheke konvèsasyon yo...", true);
+    db.collection("dmThreads").get().then(function (snap) {
+        var eluIds = {};
+        snap.forEach(function (d) { var t = d.data(); if (t.eluUid) eluIds[t.eluUid] = true; });
+        var ids = Object.keys(eluIds);
+        if (!ids.length) { toast("Pa gen konvèsasyon.", true); return; }
+        return Promise.all(ids.map(function (id) {
+            return db.collection("users").doc(id).get()
+                .then(function (u) { return { id: id, exists: u.exists }; })
+                .catch(function () { return { id: id, exists: true }; });   /* en cas d'erreur, on ne supprime pas */
+        })).then(function (res) {
+            var dead = res.filter(function (r) { return !r.exists; }).map(function (r) { return r.id; });
+            if (!dead.length) { toast("Tout Elu yo egziste toujou. Anyen efase.", true); return; }
+            return Promise.all(dead.map(purgeUserDMs)).then(function () {
+                toast(dead.length + " Elu efase → konvèsasyon yo netwaye!", true);
+                loadAdminMsg();
+            });
+        });
+    }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+}
 
 function loadAdminMsg() {
     if (!db) return;

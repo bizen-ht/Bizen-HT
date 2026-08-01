@@ -77,6 +77,16 @@ exports.handler = async function (event) {
             try { await admin.auth().deleteUser(memberId); } catch (e) { /* déjà supprimé / inexistant */ }
             await dbf.collection("users").doc(memberId).delete().catch(function(){});
             await dbf.collection("publicProfiles").doc(memberId).delete().catch(function(){});
+            /* Efase toutes les conversations DM du membre (threads + messages). */
+            try {
+                var tS = await dbf.collection("dmThreads").where("participants", "array-contains", memberId).get();
+                if (!tS.empty) { var tb = dbf.batch(); tS.forEach(function (d) { tb.delete(d.ref); }); await tb.commit(); }
+                var mS = await dbf.collection("dmMessages").where("participants", "array-contains", memberId).get();
+                var refs = []; mS.forEach(function (d) { refs.push(d.ref); });
+                for (var i = 0; i < refs.length; i += 400) {
+                    var mb = dbf.batch(); refs.slice(i, i + 400).forEach(function (r) { mb.delete(r); }); await mb.commit();
+                }
+            } catch (e) { console.warn("[BOSS] purge DMs:", e.message); }
             return ok({ success: true, deleted: true });
         }
 

@@ -114,6 +114,16 @@ exports.handler = async function (event) {
         /* Détermine qui est le client et qui est l'Élu dans ce fil */
         var isEluReply = !!(thread && thread.eluUid === senderUid);
 
+        /* Anti-fil-orphelin : si le CLIENT écrit à un Élu dont le compte n'existe
+           plus (supprimé), on refuse et on nettoie le fil résiduel. */
+        if (!isEluReply) {
+            var targetDoc = await dbf.collection("users").doc(eluUid).get();
+            if (!targetDoc.exists) {
+                if (threadSnap.exists) { try { await threadRef.delete(); } catch (e) {} }
+                return err(404, "Elu sa a pa disponib ankò.");
+            }
+        }
+
         /* Mode éphémère du fil : par défaut ON (24h). Si le fil a ephemeral===false,
            la conversation est PERMANENTE => on n'ajoute pas d'expireAt. */
         var isEphemeral = !(thread && thread.ephemeral === false);

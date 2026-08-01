@@ -4032,6 +4032,8 @@ function renderRealFreelancers() {
             var femZones = {};
             /* Agences présentes chez les Elu FEMMES -> titres cliquables (slug -> nom) */
             var femAgencies = {};
+            /* Cartes collectées puis triées par rang admin (sortRank). */
+            var femCards = [], gasonCards = [];
 
             snap.forEach(function(doc) {
                 var d = doc.data();
@@ -4073,9 +4075,26 @@ function renderRealFreelancers() {
                 };
 
                 var cardHtml = mkCard(cardData, male ? "Gason" : "Fanm", male);
-                var grid = male ? hG : fG;
-                if (grid) grid.insertAdjacentHTML("afterbegin", cardHtml);
+                var _item = {
+                    html: cardHtml,
+                    rank: (typeof d.sortRank === "number" ? d.sortRank : 0),
+                    online: !!d.isOnline,
+                    last: (d.lastSeen && d.lastSeen.toMillis) ? d.lastSeen.toMillis() : 0
+                };
+                (male ? gasonCards : femCards).push(_item);
             });
+
+            /* CLASSEMENT : rang admin (sortRank) décroissant, puis en-ligne d'abord,
+               puis récence. Détermine aussi la PAGE où l'Elu apparaît (pagination 6/page). */
+            var sortCards = function (a, b) {
+                if ((b.rank || 0) !== (a.rank || 0)) return (b.rank || 0) - (a.rank || 0);
+                if ((b.online ? 1 : 0) !== (a.online ? 1 : 0)) return (b.online ? 1 : 0) - (a.online ? 1 : 0);
+                return (b.last || 0) - (a.last || 0);
+            };
+            femCards.sort(sortCards);
+            gasonCards.sort(sortCards);
+            if (fG) fG.insertAdjacentHTML("afterbegin", femCards.map(function (c) { return c.html; }).join(""));
+            if (hG) hG.insertAdjacentHTML("afterbegin", gasonCards.map(function (c) { return c.html; }).join(""));
 
             /* IMPORTANT: les cartes insérées dynamiquement ont la classe "sr"
                (opacity:0) mais ne sont pas observées par le scroll-reveal.
