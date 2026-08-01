@@ -143,12 +143,12 @@ exports.handler = async function (event) {
             counter = cSnap.exists ? cSnap.data() : { people: [], count: 0, date: dstr };
             var people = counter.people || [];
             var alreadyTalking = people.indexOf(eluUid) !== -1;
-            var maxPeople = isPremium ? 3 : 2;
+            var maxPeople = isPremium ? 5 : 2;
             var maxMessages = isPremium ? Infinity : 5;
 
             if (!alreadyTalking && people.length >= maxPeople) {
                 return err(429, isPremium
-                    ? "Kòm Premium ou ka pale ak 3 moun pa jou (mesaj san limit). Retounen demen pou yon lòt."
+                    ? "Kòm Premium ou ka pale ak 5 moun pa jou (mesaj san limit). Retounen demen pou yon lòt."
                     : "Ou rive nan limit 2 moun pa jou a. Vin Premium pou plis, oswa tann demen.",
                     { reason: "people", premiumInvite: !isPremium });
             }
@@ -222,7 +222,7 @@ exports.handler = async function (event) {
             remaining = {
                 isPremium: isPremium,
                 peopleUsed: people2.length,
-                peopleMax: isPremium ? 3 : 2,
+                peopleMax: isPremium ? 5 : 2,
                 messagesUsed: newCount,
                 messagesMax: isPremium ? null : 5
             };
