@@ -5067,7 +5067,7 @@ function pT(t) {
     /* Recalcule la question "ajans patnè" à l'ouverture du formulaire Elu :
        garantit que le lien dédié du Boss (?ag=slug) affiche la question même
        si les agences ont fini de charger APRÈS le premier rendu (fréquent sur mobile). */
-    if (t === "freelancer") { try { renderFormAgencies(); } catch (e) {} }
+    if (t === "freelancer") { try { renderFormAgencies(); } catch (e) {} try { applyPreAmb(); } catch (e) {} }
 }
 
 function bT() {
@@ -9088,12 +9088,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
 /* Lien dédié /elu : ouvre directement le formulaire Elu dans le popup Inskri.
    (sert à partager un lien unique aux personnes intéressées) */
+/* Pré-remplit le champ « Kòd Anbasadè » du formulaire Elu depuis window._preAmb. */
+function applyPreAmb() {
+    if (!window._preAmb) return;
+    var el = document.getElementById("flAmbCode");
+    if (el) el.value = window._preAmb;
+}
+
 (function () {
     var p = (location.pathname || "").replace(/\/+$/, "").toLowerCase();
     /* Agence pré-sélectionnée via ?ag=slug (lien partagé par un Boss). */
     try {
         var ag = new URLSearchParams(location.search).get("ag");
         if (ag) { window._preAg = ag; try { renderFormAgencies(); } catch (e) {} }
+    } catch (e) {}
+    /* Code ambassadeur pré-rempli via ?amb=CODE (lien partagé par un ambassadeur). */
+    try {
+        var amb = new URLSearchParams(location.search).get("amb");
+        if (amb) { window._preAmb = amb.toUpperCase(); applyPreAmb(); }
     } catch (e) {}
     /* Ouvre directement le formulaire Elu si /elu (ou ?elu=1). */
     var wantElu = (p === "/elu" || p === "/vin-elu" || p === "/enskri-elu");

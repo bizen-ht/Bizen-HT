@@ -883,6 +883,7 @@
                 <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px">Kòd Anbasadè ou</div>
                 <div id="ambMyCode" style="font-size:1.8rem;font-weight:700;color:#ff9800;letter-spacing:3px;margin-bottom:8px">—</div>
                 <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.6">Pataje kòd sa a ak moun ou vle fè vin Elu. Lè yo mete kòd ou nan fòm enskripsyon an epi <strong>administrasyon an apwouve</strong> yo, yo konte kòm « konfime » e ou monte nan chèn rekonpans lan.</p>
+                <div id="ambShareBox" style="margin-top:16px"></div>
             </div>
             <!-- Stats : inscriptions vs confirmés -->
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;max-width:680px;margin-bottom:18px">
@@ -3735,6 +3736,19 @@ function initAmbassador(email) {
             if (menu) menu.style.display = "block";
             var cd = document.getElementById("ambMyCode");
             if (cd) cd.textContent = myAmbCode;
+            /* Lien d'inscription Elu pré-rempli avec le code de l'ambassadeur :
+               chaque recrue qui s'inscrit via ce lien est automatiquement traquée. */
+            var box = document.getElementById("ambShareBox");
+            if (box) {
+                var joinLink = window.location.origin + "/elu?amb=" + encodeURIComponent(myAmbCode);
+                var bh = '<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px"><i class="fas fa-user-plus"></i> Lyen enskripsyon Elu — pou nouvo recrus ou yo</div>';
+                bh += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+                bh += '<input readonly value="' + joinLink + '" onclick="this.select()" style="flex:1;min-width:200px;background:rgba(0,0,0,0.25);border:1px solid var(--border);color:#eee;border-radius:8px;padding:9px 12px;font-size:0.8rem">';
+                bh += '<button onclick="bossCopy(\'' + joinLink + '\',this)" style="background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:0.8rem;font-weight:600;cursor:pointer"><i class="fas fa-copy"></i> Kopye</button>';
+                bh += '</div>';
+                bh += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">Lyen sa a ap otomatikman mete kòd ou nan fòm nan pou ou jwenn kredi.</div>';
+                box.innerHTML = bh;
+            }
             loadAmbassadorRecruits();
             loadAmbChallengeBanner();
         }).catch(function (e) { console.warn("initAmbassador:", e.code || e.message); });
