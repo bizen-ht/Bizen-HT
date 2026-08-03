@@ -1393,7 +1393,7 @@
                     <div class="tc-title"><i class="fas fa-list"></i> Tout Anbasadè yo</div>
                     <button onclick="loadAmbassadors()" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:6px;padding:6px 12px;font-size:0.75rem;cursor:pointer"><i class="fas fa-sync"></i> Refrechi</button>
                 </div>
-                <div class="tscroll"><table><thead><tr><th>Kòd</th><th>Pwopriyetè</th><th>Enskri</th><th>Konfime</th><th>Nivo</th><th>Rekonpans</th><th>Estati</th></tr></thead><tbody id="tbAmb"></tbody></table></div>
+                <div class="tscroll"><table><thead><tr><th>Kòd</th><th>Pwopriyetè</th><th>Enskri</th><th>Konfime</th><th>Nivo</th><th>Rekonpans</th><th>Estati</th><th>Aksyon</th></tr></thead><tbody id="tbAmb"></tbody></table></div>
             </div>
         </div>
 
@@ -4810,6 +4810,16 @@ function ambTiersAdmin() {
     ];
 }
 
+/* Cherche l'UID du compte Bizen qui a cet email (insensible à la casse dans la
+   mesure du possible). Renvoie "" si aucun compte. */
+function findUserUidByEmail(email) {
+    if (!db || !email) return Promise.resolve("");
+    var e = String(email).trim().toLowerCase();
+    return db.collection("users").where("email", "==", e).limit(1).get()
+        .then(function (s) { return s.empty ? "" : s.docs[0].id; })
+        .catch(function () { return ""; });
+}
+
 function createAmbassador() {
     if (!db) return;
     var code = (document.getElementById("ambCode").value || "").trim().toUpperCase().replace(/\s+/g, "");
@@ -4820,36 +4830,79 @@ function createAmbassador() {
     if (!name || !email) { toast("Antre non ak imel pwopriyetè a.", false); return; }
     db.collection("ambassadors").doc(code).get().then(function (snap) {
         if (snap.exists) { toast("Kòd sa a egziste deja.", false); return; }
-        db.collection("ambassadors").doc(code).set({
-            code: code, ownerName: name, ownerEmail: email, ownerPhone: phone,
-            active: true, claimed: {},
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(function () {
-            toast("Anbasadè " + code + " kreye!", true);
-            ["ambCode", "ambName", "ambEmail", "ambPhone"].forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ""; });
+        /* On lie l'ambassadeur au compte Bizen (par UID). Sans compte => PAS actif. */
+        findUserUidByEmail(email).then(function (uid) {
+            var hasAccount = !!uid;
+            db.collection("ambassadors").doc(code).set({
+                code: code, ownerName: name, ownerEmail: email, ownerPhone: phone,
+                ownerUid: uid, active: hasAccount, pendingAccount: !hasAccount,
+                claimed: {},
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(function () {
+                if (hasAccount) toast("Anbasadè " + code + " kreye e lye ak kont Bizen an!", true);
+                else toast("Kreye, men PA GEN kont Bizen ak imel sa a → PA aktif. Lè moun nan kreye kont li, klike « Verifye ».", false);
+                ["ambCode", "ambName", "ambEmail", "ambPhone"].forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ""; });
+                loadAmbassadors();
+            }).catch(function (e) { toast("Ere: " + e.message, false); });
+        });
+    });
+}
+
+/* Retire un ambassadeur de la liste. */
+function removeAmbassador(code) {
+    if (!db || !code) return;
+    if (!confirm("Retire anbasadè « " + code + " » ? (Elu yo ki deja rekrite ap rete, men kòd sa a ap disparèt.)")) return;
+    db.collection("ambassadors").doc(code).delete().then(function () {
+        toast("Anbasadè retire.", true);
+        loadAmbassadors();
+    }).catch(function (e) { toast("Ere: " + (e.message || e.code), false); });
+}
+
+/* Re-vérifie si un compte Bizen existe maintenant pour cet ambassadeur et l'active. */
+function verifyAmbassador(code, email) {
+    if (!db) return;
+    findUserUidByEmail(email).then(function (uid) {
+        if (!uid) { toast("Toujou pa gen kont Bizen ak imel sa a.", false); return; }
+        db.collection("ambassadors").doc(code).set({ ownerUid: uid, active: true, pendingAccount: false }, { merge: true }).then(function () {
+            toast("Kont jwenn! Anbasadè aktive. L ap wè espas li lè l konekte.", true);
             loadAmbassadors();
-        }).catch(function (e) { toast("Ere: " + e.message, false); });
+        }).catch(function (e) { toast("Ere: " + (e.message || e.code), false); });
     });
 }
 
 function loadAmbassadors() {
     var tb = document.getElementById("tbAmb");
     if (!tb || !db) return;
-    tb.innerHTML = emptyRow(7, "Chajman...");
+    tb.innerHTML = emptyRow(8, "Chajman...");
     db.collection("ambassadors").get().then(function (snap) {
         var ambs = [];
         snap.forEach(function (d) { var a = d.data(); a.code = d.id; ambs.push(a); });
         var bdg = document.getElementById("bdgAmb"); if (bdg) bdg.textContent = ambs.length;
-        if (!ambs.length) { tb.innerHTML = emptyRow(7, "Pa gen anbasadè"); return; }
-        var jobs = ambs.map(function (a) {
-            return db.collection("publicProfiles").where("ambassadorCode", "==", a.code).get().then(function (ps) {
-                var reg = 0, conf = 0;
-                ps.forEach(function (p) { reg++; if (p.data().status === "active") conf++; });
-                a._reg = reg; a._conf = conf; return a;
-            }).catch(function () { a._reg = 0; a._conf = 0; return a; });
+        if (!ambs.length) { tb.innerHTML = emptyRow(8, "Pa gen anbasadè"); return; }
+        /* Auto-reliaison : pour les ambassadeurs sans ownerUid (compte pas encore
+           créé au moment de l'ajout), on re-cherche le compte. S'il existe
+           maintenant, on le lie et on l'active — donc un simple « Refrechi » suffit. */
+        var relinkJobs = ambs.map(function (a) {
+            if (a.ownerUid) return Promise.resolve(a);
+            return findUserUidByEmail(a.ownerEmail).then(function (uid) {
+                if (uid) {
+                    a.ownerUid = uid; a.active = true; a.pendingAccount = false;
+                    return db.collection("ambassadors").doc(a.code).set({ ownerUid: uid, active: true, pendingAccount: false }, { merge: true }).then(function () { return a; }).catch(function () { return a; });
+                }
+                a.pendingAccount = true; a.active = false; return a;
+            });
         });
-        Promise.all(jobs).then(function (listArr) { renderAmbassadors(listArr); });
-    }).catch(function (e) { tb.innerHTML = emptyRow(7, "Ere: " + (e.code || e.message)); });
+        Promise.all(relinkJobs).then(function (ambs2) {
+            var jobs = ambs2.map(function (a) {
+                return db.collection("publicProfiles").where("ambassadorCode", "==", a.code).get().then(function (ps) {
+                    var reg = 0, conf = 0;
+                    ps.forEach(function (p) { reg++; if (p.data().status === "active") conf++; });
+                    a._reg = reg; a._conf = conf; return a;
+                }).catch(function () { a._reg = 0; a._conf = 0; return a; });
+            });
+            Promise.all(jobs).then(function (listArr) { renderAmbassadors(listArr); });
+        });
+    }).catch(function (e) { tb.innerHTML = emptyRow(8, "Ere: " + (e.code || e.message)); });
 }
 
 function renderAmbassadors(list) {
@@ -4873,7 +4926,10 @@ function renderAmbassadors(list) {
             }
         });
         if (!rw) rw = '<span style="color:#6a6a80;font-size:0.72rem">—</span>';
-        var st = (a.active !== false) ? '<span style="color:#4caf50">Aktif</span>' : '<span style="color:#f44336">Dezaktive</span>';
+        var linked = !!a.ownerUid;
+        var st = linked
+            ? '<span style="color:#4caf50"><i class="fas fa-check-circle"></i> Aktif · lye</span>'
+            : '<span style="color:#f44336"><i class="fas fa-exclamation-triangle"></i> Pa gen kont Bizen</span>';
         h += '<tr>';
         h += '<td><code style="color:#ff9800;font-weight:700">' + escHtml(a.code) + '</code></td>';
         h += '<td><strong>' + escHtml(a.ownerName || "") + '</strong><br><small style="color:#6a6a80">' + escHtml(a.ownerEmail || "") + '</small></td>';
@@ -4882,6 +4938,10 @@ function renderAmbassadors(list) {
         h += '<td style="font-size:1.1rem">' + (current ? current.icon : "—") + '</td>';
         h += '<td>' + rw + '</td>';
         h += '<td>' + st + '</td>';
+        h += '<td style="white-space:nowrap">';
+        if (!linked) h += '<button onclick="verifyAmbassador(\'' + a.code + '\',\'' + escHtml(a.ownerEmail || "") + '\')" title="Re-tcheke si kont Bizen an egziste kounye a" style="background:rgba(33,150,243,0.15);color:#42a5f5;border:1px solid rgba(33,150,243,0.35);border-radius:6px;padding:5px 9px;font-size:0.72rem;cursor:pointer;margin:2px"><i class="fas fa-sync"></i> Verifye</button>';
+        h += '<button onclick="removeAmbassador(\'' + a.code + '\')" title="Retire" style="background:rgba(244,67,54,0.15);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:6px;padding:5px 9px;font-size:0.72rem;cursor:pointer;margin:2px"><i class="fas fa-trash"></i></button>';
+        h += '</td>';
         h += '</tr>';
     });
     tb.innerHTML = h;

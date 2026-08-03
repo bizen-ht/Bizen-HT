@@ -3723,11 +3723,18 @@ function ambTiers() {
 }
 
 function initAmbassador(email) {
-    if (!db || !email) return;
-    email = String(email).toLowerCase();
-    db.collection("ambassadors").where("ownerEmail", "==", email).limit(1).get()
+    if (!db || !currentUser) return;
+    email = String(email || "").toLowerCase();
+    /* Rattachement robuste : par UID d'abord (insensible à la casse de l'email),
+       puis par email en secours. */
+    db.collection("ambassadors").where("ownerUid", "==", currentUser.uid).limit(1).get()
         .then(function (snap) {
-            if (snap.empty) return;    /* pas ambassadeur -> on ne montre rien */
+            if (snap && !snap.empty) return snap;
+            if (!email) return snap;
+            return db.collection("ambassadors").where("ownerEmail", "==", email).limit(1).get();
+        })
+        .then(function (snap) {
+            if (!snap || snap.empty) return;    /* pas ambassadeur -> on ne montre rien */
             var doc = snap.docs[0];
             var a = doc.data();
             myAmbCode = a.code || doc.id;

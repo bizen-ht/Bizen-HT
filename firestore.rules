@@ -211,6 +211,7 @@ service cloud.firestore {
        fait via publicProfiles (déjà public), pas ici. */
     match /ambassadors/{code} {
       allow read:  if isAdmin()
+        || (isSignedIn() && resource.data.ownerUid == request.auth.uid)
         || (isSignedIn() && resource.data.ownerEmail == request.auth.token.email);
       allow write: if isAdmin();
     }
