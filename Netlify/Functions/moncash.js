@@ -382,12 +382,16 @@ exports.handler = async function(
                     .toUpperCase();
 
             /* Montant : Premium => prix calculé serveur (avec rabais éventuel).
-               Réservation => montant dynamique fourni (prix de l'Elu). */
+               Réservation / Dépôt wallet => montant dynamique fourni. */
             let finalAmount;
-            if (body.purpose === "reservation") {
-                finalAmount = parseFloat(body.amount) || 0;
+            if (body.purpose === "reservation" || body.purpose === "wallet") {
+                finalAmount = Math.round(parseFloat(body.amount) || 0);
             } else {
                 finalAmount = await premiumPrice();
+            }
+            /* Dépôt wallet : montant minimum de sécurité. */
+            if (body.purpose === "wallet" && finalAmount < 50) {
+                return { statusCode: 400, headers: CORS, body: JSON.stringify({ success: false, error: "Montan depo minimòm se 50 Gdes." }) };
             }
 
             const result =
@@ -420,6 +424,28 @@ exports.handler = async function(
                 result.link ||
                 result.token ||
                 null;
+
+            /* Dépôt WALLET : on crée le doc `payments` CÔTÉ SERVEUR avec le montant
+               réel (le webhook créditera ce montant). Le client ne peut donc pas
+               gonfler la somme créditée. */
+            if (body.purpose === "wallet" && paymentUrl && body.userId) {
+                try {
+                    initFb();
+                    if (admin.apps.length) {
+                        await admin.firestore().collection("payments").add({
+                            userId: body.userId,
+                            email: body.userEmail || "",
+                            method: "moncash",
+                            referenceId: referenceId,
+                            amount: finalAmount,
+                            purpose: "wallet",
+                            status: "en_attente",
+                            walletCredited: false,
+                            createdAt: admin.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                } catch (e) { console.warn("[WALLET] payments doc:", e.message); }
+            }
 
             return {
                 statusCode: 200,

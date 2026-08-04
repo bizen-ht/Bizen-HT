@@ -491,6 +491,11 @@
                 </div>
                 <div class="sb-nav-group">
                     <div class="sb-nav-label">Kont</div>
+                    <button class="sb-link" id="walletMenuBtn" style="display:none"
+                            onclick="showSection('wallet',this)">
+                        <i class="fas fa-wallet"></i>
+                        Wallet Mwen
+                    </button>
                     <button class="sb-link"
                             onclick="showSection('plan',this)">
                         <i class="fas fa-crown"></i>
@@ -808,6 +813,35 @@
                 <div style="text-align:center;padding:40px;color:var(--text-muted)">
                     <i class="fas fa-spinner fa-spin" style="font-size:2rem"></i>
                 </div>
+            </div>
+        </div>
+
+        <!-- WALLET (VIP Premium) -->
+        <div class="dash-section" id="sec-wallet">
+            <div class="dash-top">
+                <h1><i class="fas fa-wallet" style="color:var(--gold)"></i> Wallet <span>Mwen</span></h1>
+            </div>
+            <div class="solde-card" style="max-width:640px">
+                <div class="solde-amount" id="walletBalanceMain">0 Gdes</div>
+                <div class="solde-label">Balans wallet ou</div>
+            </div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:640px;margin-top:18px">
+                <h3 style="font-family:'Playfair Display',serif;margin-bottom:6px;font-size:1.05rem"><i class="fas fa-plus-circle" style="color:#4caf50"></i> Depoze nan wallet ou</h3>
+                <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px">Rechaje wallet ou ak MonCash. Lè w gen kòb sou wallet ou, ou ka peye yon rezèvasyon dirèkteman ak li — men se opsyonèl, ou ka toujou peye dirèk tou.</p>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+                    <div style="flex:1;min-width:160px">
+                        <label style="display:block;font-size:0.78rem;color:var(--text-muted);margin-bottom:5px">Montan (Gdes)</label>
+                        <input type="number" id="walletAmount" min="50" placeholder="Egz: 5000" style="width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif;font-size:1rem">
+                    </div>
+                    <button id="walletDepositBtn" onclick="walletDeposit()" style="padding:12px 24px;background:linear-gradient(135deg,#4caf50,#2e7d32);color:white;border:none;border-radius:var(--radius-full);cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600"><i class="fas fa-mobile-alt"></i> Depoze ak MonCash</button>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                    <button onclick="document.getElementById('walletAmount').value=1000" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.78rem;cursor:pointer">1 000</button>
+                    <button onclick="document.getElementById('walletAmount').value=2500" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.78rem;cursor:pointer">2 500</button>
+                    <button onclick="document.getElementById('walletAmount').value=5000" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.78rem;cursor:pointer">5 000</button>
+                    <button onclick="document.getElementById('walletAmount').value=10000" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.78rem;cursor:pointer">10 000</button>
+                </div>
+                <p style="font-size:0.72rem;color:#ff9800;margin-top:12px"><i class="fas fa-info-circle"></i> Depo a ap parèt sou balans ou apre MonCash konfime peman an (kèk segond).</p>
             </div>
         </div>
 
@@ -1856,12 +1890,54 @@ function setupUser() {
     loadUserReservations();
     loadUserFavorites();
     loadUserDmThreads();   /* écoute des messages (badge live) */
+    renderWallet();        /* Wallet (VIP Premium) */
 
     /* Show overview */
     showSection("overview", null);
     /* Activate first user menu link */
     var firstLink = document.querySelector("#userMenu .sb-link");
     if (firstLink) firstLink.classList.add("active");
+}
+
+/* ====================================
+   WALLET (VIP Premium) — dépôt MonCash + solde
+   ==================================== */
+function renderWallet() {
+    var isPrem = !!(userData && userData.isPremium);
+    var btn = document.getElementById("walletMenuBtn");
+    if (btn) btn.style.display = isPrem ? "flex" : "none";
+    var bal = (userData && parseFloat(userData.walletBalance)) || 0;
+    setEl("walletBalanceMain", bal.toLocaleString() + " Gdes");
+}
+
+function walletDeposit() {
+    if (!auth || !auth.currentUser) return;
+    if (!userData || !userData.isPremium) { showToast("Wallet la se pou VIP Premium.", "error"); return; }
+    var amtEl = document.getElementById("walletAmount");
+    var amount = parseInt(amtEl ? amtEl.value : "0") || 0;
+    if (amount < 50) { showToast("Montan minimòm depo se 50 Gdes.", "error"); return; }
+    var btn = document.getElementById("walletDepositBtn");
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chaje...'; }
+    var user = auth.currentUser;
+    fetch("/.netlify/functions/moncash", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "create", purpose: "wallet", amount: amount,
+            userId: user.uid, userEmail: user.email || "",
+            firstName: (userData.prenom || "Client"), lastName: (userData.nom || "Bizen")
+        })
+    }).then(function (r) { return r.json(); }).then(function (data) {
+        var url = data.paymentUrl || (data.rawResponse && data.rawResponse.redirectUrl);
+        if (data.success && url) { window.location.href = url; }
+        else {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-mobile-alt"></i> Depoze ak MonCash'; }
+            showToast((data && data.error) || "Depo echwe. Eseye ankò.", "error");
+        }
+    }).catch(function () {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-mobile-alt"></i> Depoze ak MonCash'; }
+        showToast("Erè rezo.", "error");
+    });
 }
 
 /* ====================================
@@ -3032,6 +3108,13 @@ function eluConfirmRes(reservationId, newStatus) {
         confirmedAt: firebase.firestore.FieldValue.serverTimestamp()
     }).then(function() {
         showToast(newStatus === "confirmed" ? "Rezevasyon aksepte! Ou ka chat ak kliyan an." : "Rezevasyon refize.", "success");
+        /* Si la réservation était payée par WALLET, on rembourse le VIP (le serveur
+           vérifie que c'était bien un paiement wallet non déjà remboursé). */
+        if (newStatus === "cancelled" && currentUser) {
+            currentUser.getIdToken().then(function (idToken) {
+                fetch("/.netlify/functions/wallet-refund", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idToken: idToken, reservationId: reservationId }) }).catch(function () {});
+            }).catch(function () {});
+        }
         /* Comptabilise sur l'Elu dès l'acceptation (nombre + montant) — visible par le Boss.
            On marque la réservation "countedForElu" pour ne jamais compter 2 fois. */
         if (newStatus === "confirmed" && currentUser) {

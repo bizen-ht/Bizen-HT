@@ -299,7 +299,10 @@ async function processPaidWebhook(body) {
     var docRef = snap.docs[0].ref;
     var pay = snap.docs[0].data();
 
-    if (pay.status === "confirmed") { console.log("[WEBHOOK] Déjà confirmé:", refId); return; }
+    /* Idempotence : déjà traité (pour le wallet, on exige aussi le crédit fait). */
+    if (pay.status === "confirmed" && (pay.purpose !== "wallet" || pay.walletCredited === true)) {
+        console.log("[WEBHOOK] Déjà traité:", refId); return;
+    }
 
     await docRef.update({
         status: "confirmed",
@@ -307,12 +310,24 @@ async function processPaidWebhook(body) {
         webhookConfirmedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    /* Premium uniquement (les réservations n'activent pas Premium) */
-    if (pay.purpose !== "reservation" && pay.userId) {
+    /* Premium : uniquement pour un achat Premium (ni réservation, ni dépôt wallet). */
+    if (pay.purpose !== "reservation" && pay.purpose !== "wallet" && pay.userId) {
         await db.collection("users").doc(pay.userId).update({
             isPremium: true,
             premiumActivatedAt: admin.firestore.FieldValue.serverTimestamp()
         }).catch(function(e) { console.log("[WEBHOOK] premium:", e.message); });
+    }
+
+    /* DÉPÔT WALLET : on crédite le solde du VIP (montant fiable du doc serveur).
+       Idempotent via walletCredited. */
+    if (pay.purpose === "wallet" && pay.userId && pay.walletCredited !== true) {
+        try {
+            await db.collection("users").doc(pay.userId).set({
+                walletBalance: admin.firestore.FieldValue.increment(pay.amount || 0)
+            }, { merge: true });
+            await docRef.update({ walletCredited: true });
+            console.log("[WEBHOOK] Wallet kredite:", pay.amount, "->", pay.userId);
+        } catch (e) { console.log("[WEBHOOK] wallet:", e.message); }
     }
 
     /* RÉSERVATION : refléter le paiement sur la réservation liée.
@@ -336,7 +351,7 @@ async function processPaidWebhook(body) {
     }
 
     /* Commission affilié (si code valide + actif + pas déjà crédité) */
-    if (pay.promoCode && !pay.promoCredited && pay.purpose !== "reservation") {
+    if (pay.promoCode && !pay.promoCredited && pay.purpose !== "reservation" && pay.purpose !== "wallet") {
         var code = String(pay.promoCode).trim().toUpperCase();
         var codeSnap = await db.collection("promoCodes").doc(code).get();
         if (codeSnap.exists) {

@@ -882,6 +882,10 @@
                 <i class="fas fa-medal"></i> Anbasadè
                 <span class="sb-bdg bdg-o" id="bdgAmb">0</span>
             </button>
+            <button class="sb-link" onclick="goPage('wallet',this)">
+                <i class="fas fa-wallet"></i> Wallet VIP
+                <span class="sb-bdg bdg-g" id="bdgWallet">0</span>
+            </button>
 
             <div class="sb-cat">Maketing</div>
             <button class="sb-link" onclick="goPage('vedette',this)">
@@ -1394,6 +1398,34 @@
                     <button onclick="loadAmbassadors()" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:6px;padding:6px 12px;font-size:0.75rem;cursor:pointer"><i class="fas fa-sync"></i> Refrechi</button>
                 </div>
                 <div class="tscroll"><table><thead><tr><th>Kòd</th><th>Pwopriyetè</th><th>Enskri</th><th>Konfime</th><th>Nivo</th><th>Rekonpans</th><th>Estati</th><th>Aksyon</th></tr></thead><tbody id="tbAmb"></tbody></table></div>
+            </div>
+        </div>
+
+        <!-- WALLET VIP -->
+        <div class="pg" id="pg-wallet">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-wallet" style="color:var(--gold,#ffd700)"></i> Wallet VIP</h1>
+                <button onclick="loadWallets()" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:9px 16px;font-size:0.82rem;cursor:pointer"><i class="fas fa-sync"></i> Refrechi</button>
+            </div>
+
+            <div class="fg">
+                <div class="fc"><h4><i class="fas fa-piggy-bank"></i> Total Wallet</h4><div class="fv" style="color:var(--gold)" id="walletGrandTotal">0 G</div><div class="fs">Lajan Bizen dwe kenbe</div></div>
+                <div class="fc"><h4><i class="fas fa-users"></i> Kont ak balans</h4><div class="fv" id="walletUserCount">0</div><div class="fs">VIP ki gen kòb</div></div>
+            </div>
+
+            <div class="tc" style="margin-top:22px;border:1px solid rgba(255,152,0,0.4)">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-flask" style="color:#ff9800"></i> Mete montan TEST sou yon kont (pou screenshot — n ap retire l apre)</div></div>
+                <div style="padding:18px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+                    <div style="flex:1;min-width:200px"><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Imel kont lan</label><input id="walletTestEmail" placeholder="imel@..." style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Montan (Gdes)</label><input id="walletTestAmount" type="number" min="0" placeholder="Egz: 5000" style="width:140px;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
+                    <button onclick="creditWalletTest()" style="background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:11px 16px;font-weight:600;cursor:pointer;font-size:0.85rem"><i class="fas fa-plus"></i> Mete balans</button>
+                </div>
+                <p style="padding:0 18px 16px;color:#6a6a80;font-size:0.76rem">Sa ranplase (fè egal) balans wallet kont lan ak montan sa a. Se pou tès sèlman — mete 0 pou vide l apre screenshot la.</p>
+            </div>
+
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-list"></i> Utilizatè ki gen balans (yon pa yon)</div></div>
+                <div class="tscroll"><table><thead><tr><th>Imel</th><th>Non</th><th>Balans</th><th>Aksyon</th></tr></thead><tbody id="tbWallet"></tbody></table></div>
             </div>
         </div>
 
@@ -2847,6 +2879,12 @@ function resAction(action, id) {
     db.collection("reservations").doc(id).update(updates)
         .then(function() {
             toast(action === "confirm" ? "Konfime!" : "Anile!", true);
+            /* Annulation : rembourse le VIP si la résa avait été payée par wallet. */
+            if (action !== "confirm" && auth && auth.currentUser) {
+                auth.currentUser.getIdToken().then(function (idToken) {
+                    fetch("/.netlify/functions/wallet-refund", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idToken: idToken, reservationId: id }) }).catch(function () {});
+                }).catch(function () {});
+            }
             /* À la confirmation, comptabilise sur l'Elu (nombre + montant) — visible par le Boss.
                countedForElu évite tout double comptage (Elu OU admin qui confirme). */
             if (action === "confirm") {
@@ -3077,6 +3115,7 @@ function goPage(id, btn) {
     if (id === "promo") loadPromo();
     if (id === "vedette") loadVedetteAdmin();
     if (id === "anbasade") { loadAmbassadors(); loadAmbChallenge(); }
+    if (id === "wallet") loadWallets();
 }
 
 /* ====================================
@@ -5006,6 +5045,62 @@ function stopAmbChallenge() {
         toast("Challenge arete.", true);
         loadAmbChallenge();
     }).catch(function (e) { toast("Ere: " + e.message, false); });
+}
+
+/* ====================================================
+   WALLET VIP (admin) — soldes + total + crédit test
+   ==================================================== */
+function loadWallets() {
+    var tb = document.getElementById("tbWallet");
+    if (!tb || !db) return;
+    tb.innerHTML = emptyRow(4, "Chajman...");
+    db.collection("users").where("walletBalance", ">", 0).get().then(function (snap) {
+        var list = [];
+        snap.forEach(function (d) { var u = d.data(); u.id = d.id; list.push(u); });
+        list.sort(function (a, b) { return (parseFloat(b.walletBalance) || 0) - (parseFloat(a.walletBalance) || 0); });
+        var total = 0;
+        list.forEach(function (u) { total += (parseFloat(u.walletBalance) || 0); });
+        setVal("walletGrandTotal", total.toLocaleString() + " G");
+        setVal("walletUserCount", list.length);
+        var bdg = document.getElementById("bdgWallet"); if (bdg) bdg.textContent = list.length;
+        if (!list.length) { tb.innerHTML = emptyRow(4, "Pa gen VIP ak balans."); return; }
+        var h = "";
+        list.forEach(function (u) {
+            var nm = ((u.prenom || "") + " " + (u.nom || "")).trim() || "—";
+            h += '<tr>';
+            h += '<td><small>' + escHtml(u.email || "") + '</small></td>';
+            h += '<td>' + escHtml(nm) + '</td>';
+            h += '<td style="color:var(--gold,#ffd700);font-weight:700">' + (parseFloat(u.walletBalance) || 0).toLocaleString() + ' G</td>';
+            h += '<td><button onclick="clearWallet(\'' + u.id + '\',\'' + escHtml(u.email || "") + '\')" style="background:rgba(244,67,54,0.15);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:6px;padding:5px 9px;font-size:0.72rem;cursor:pointer"><i class="fas fa-eraser"></i> Vide</button></td>';
+            h += '</tr>';
+        });
+        tb.innerHTML = h;
+    }).catch(function (e) { tb.innerHTML = emptyRow(4, "Ere: " + (e.code || e.message)); });
+}
+
+function creditWalletTest() {
+    if (!db) return;
+    var email = (document.getElementById("walletTestEmail").value || "").trim().toLowerCase();
+    var amount = Math.round(parseFloat((document.getElementById("walletTestAmount").value || "0")) || 0);
+    if (!email) { toast("Antre yon imel.", false); return; }
+    if (amount < 0) { toast("Montan pa valab.", false); return; }
+    findUserUidByEmail(email).then(function (uid) {
+        if (!uid) { toast("Pa gen kont Bizen ak imel sa a.", false); return; }
+        db.collection("users").doc(uid).set({ walletBalance: amount }, { merge: true }).then(function () {
+            toast("Balans wallet mete a " + amount.toLocaleString() + " G pou " + email + ".", true);
+            var el = document.getElementById("walletTestAmount"); if (el) el.value = "";
+            loadWallets();
+        }).catch(function (e) { toast("Ere: " + (e.message || e.code), false); });
+    });
+}
+
+function clearWallet(uid, email) {
+    if (!db) return;
+    if (!confirm("Vide balans wallet " + (email || "kont sa a") + " (mete 0)?")) return;
+    db.collection("users").doc(uid).set({ walletBalance: 0 }, { merge: true }).then(function () {
+        toast("Balans vide.", true);
+        loadWallets();
+    }).catch(function (e) { toast("Ere: " + (e.message || e.code), false); });
 }
 
 function createPromoCode() {

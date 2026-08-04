@@ -27,7 +27,12 @@ service cloud.firestore {
         || (isSignedIn() && request.auth.uid == userId)
         || (isSignedIn() && resource.data.bossId == request.auth.uid);   /* le Boss lit ses Elu */
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      /* Le propriétaire peut éditer son profil, MAIS jamais son solde wallet :
+         l'argent ne bouge que via le serveur (webhook / wallet-pay / wallet-refund
+         en Admin SDK, qui contourne les règles) ou l'admin. */
+      allow update: if isAdmin()
+        || (isSignedIn() && request.auth.uid == userId
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['walletBalance', 'solde']));
       allow delete: if isAdmin();
     }
 

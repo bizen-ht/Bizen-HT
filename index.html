@@ -4599,6 +4599,9 @@ try {
                                 }).catch(function() {});
                             }
                             showOk("Peman Reyisi!", "Peman ou konfime! Elu a ap konfime rezevasyon w lan byento.");
+                        } else if (latest && latest.purpose === "wallet") {
+                            /* === DÉPÔT WALLET === (le webhook crédite le solde côté serveur) */
+                            showOk("Depo Reyisi! 💳", "Depo ou konfime! Balans wallet ou ap mete ajou nan kèk segond. Ale nan Dashboard > Wallet Mwen.");
                         } else {
                             /* === PAIEMENT PREMIUM === (le webhook l'active déjà côté serveur;
                                ici message + rafraîchissement de l'écran) */
@@ -6326,6 +6329,7 @@ function submitDiaspora(e) {
    ==================================== */
 var currentUserType = null;   /* "user" | "freelancer" | "krey" */
 var isPremiumViewer = false;  /* le visiteur actuel est-il Premium ? */
+var viewerWalletBalance = 0;  /* solde wallet du visiteur (VIP Premium) */
 var isTestViewer = false;     /* compte test (démo) : réservations sans paiement réel */
 
 /* ====================================
@@ -6365,6 +6369,7 @@ function chkPrem(uid) {
             if (d.exists) {
                 currentUserType = d.data().type || "user";
                 isPremiumViewer = (d.data().isPremium === true);
+                viewerWalletBalance = parseFloat(d.data().walletBalance) || 0;
                 isTestViewer = (d.data().isTest === true);
                 if (isPremiumViewer) unlockUI();
                 /* Recharge l'affichage des notes (visibles aux Premium) */
@@ -7333,8 +7338,13 @@ function confirmRes() {
                 if (payNow) {
                     /* Mémorise la réservation à confirmer après le paiement */
                     try { localStorage.setItem("bizenPendingBooking", ref.id); } catch(e) {}
-                    showOk("Redireksyon Peman...", "Ou pral peye " + amountNum.toLocaleString() + " Gdes via MonCash pou konfime rezevasyon ak " + nm + ".");
-                    payReservationMonCash(amountNum, ref.id, nm);
+                    /* VIP Premium avec assez sur le wallet => on propose le choix. */
+                    if (isPremiumViewer && viewerWalletBalance >= amountNum) {
+                        askPayChoice(ref.id, amountNum, nm);
+                    } else {
+                        showOk("Redireksyon Peman...", "Ou pral peye " + amountNum.toLocaleString() + " Gdes via MonCash pou konfime rezevasyon ak " + nm + ".");
+                        payReservationMonCash(amountNum, ref.id, nm);
+                    }
                 } else if (isTestViewer) {
                     showOk("Rezevasyon Test Konfime!", "[MOD TEST] Rezevasyon demo pou " + nm + " le " + date.value + " kreye san peman. Hotel: " + hotelName + ".");
                 } else {
@@ -7426,6 +7436,43 @@ function payReservationMonCash(amount, reservationId, prestateName) {
         console.error("payReservationMonCash:", err);
         toast("Ere koneksyon MonCash. Verifye fonksyon Netlify a.", "err");
     });
+}
+
+/* ====================================
+   CHOIX DU MODE DE PAIEMENT (Wallet vs MonCash direct)
+   Proposé seulement aux VIP Premium qui ont assez sur leur wallet.
+   ==================================== */
+function askPayChoice(resId, amount, name) {
+    var old = document.getElementById("payChoiceM"); if (old) old.remove();
+    var safeName = String(name || "").replace(/'/g, "\\'");
+    var h = '<div class="mbg show" id="payChoiceM" style="z-index:10006">';
+    h += '<div class="modal" style="max-width:420px;text-align:center">';
+    h += '<h2 style="margin-bottom:8px">Kijan ou vle peye?</h2>';
+    h += '<p style="color:#b0b0c0;font-size:0.9rem;margin-bottom:18px"><strong>' + amount.toLocaleString() + ' Gdes</strong> pou rezevasyon ak ' + escapeResHotel(name) + '.</p>';
+    h += '<button class="btn btn-primary fw btn-glow" style="margin-bottom:10px" onclick="cM(\'payChoiceM\');payReservationWallet(\'' + resId + '\',' + amount + ',\'' + safeName + '\')"><i class="fas fa-wallet"></i> Peye ak Wallet (balans: ' + viewerWalletBalance.toLocaleString() + ' G)</button>';
+    h += '<button class="btn btn-outline fw" onclick="cM(\'payChoiceM\');payReservationMonCash(' + amount + ',\'' + resId + '\',\'' + safeName + '\')"><i class="fas fa-mobile-alt"></i> Peye dirèk ak MonCash</button>';
+    h += '</div></div>';
+    var wrap = document.createElement("div"); wrap.innerHTML = h; document.body.appendChild(wrap.firstChild);
+}
+
+function payReservationWallet(resId, amount, name) {
+    if (!auth || !auth.currentUser) { oM("lM"); return; }
+    showOk("Peman Wallet...", "N ap peye " + amount.toLocaleString() + " Gdes depi wallet ou.");
+    auth.currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/wallet-pay", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, reservationId: resId })
+        });
+    }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.success) {
+            if (typeof j.newBalance === "number") viewerWalletBalance = j.newBalance;
+            try { localStorage.removeItem("bizenPendingBooking"); } catch (e) {}
+            showOk("Rezevasyon Konfime! 💳", "Peman fèt depi wallet ou. Nouvo balans: " + viewerWalletBalance.toLocaleString() + " Gdes. " + escapeResHotel(name) + " ap resevwa demann ou.");
+        } else {
+            var msg = (j && j.error) || "Peman wallet echwe.";
+            showOk("Peman Wallet Echwe", msg + "\n\nOu ka eseye peye dirèk ak MonCash (retounen sou pwofil la).");
+        }
+    }).catch(function () { toast("Erè rezo. Eseye ankò.", "err"); });
 }
 
 /* ====================================
