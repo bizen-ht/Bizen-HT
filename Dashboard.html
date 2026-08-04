@@ -3726,12 +3726,16 @@ function initAmbassador(email) {
     if (!db || !currentUser) return;
     email = String(email || "").toLowerCase();
     /* Rattachement robuste : par UID d'abord (insensible à la casse de l'email),
-       puis par email en secours. */
+       puis par email en secours. CHAQUE requête a son propre .catch : si les
+       règles ne permettent pas encore la lecture par UID, on essaie quand même
+       par email (sinon le membre ne verrait jamais son espace). */
     db.collection("ambassadors").where("ownerUid", "==", currentUser.uid).limit(1).get()
+        .catch(function () { return { empty: true }; })
         .then(function (snap) {
             if (snap && !snap.empty) return snap;
-            if (!email) return snap;
-            return db.collection("ambassadors").where("ownerEmail", "==", email).limit(1).get();
+            if (!email) return null;
+            return db.collection("ambassadors").where("ownerEmail", "==", email).limit(1).get()
+                .catch(function () { return null; });
         })
         .then(function (snap) {
             if (!snap || snap.empty) return;    /* pas ambassadeur -> on ne montre rien */
