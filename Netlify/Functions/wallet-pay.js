@@ -62,11 +62,17 @@ exports.handler = async function (event) {
         if (r.paid === true || r.paidVia === "wallet") return err(409, "Rezèvasyon sa a deja peye.");
         if (r.status === "cancelled") return err(409, "Rezèvasyon sa a anile.");
 
-        /* Prix RÉEL de l'Elu (côté serveur). Repli : montant enregistré sur la résa. */
+        /* Prix RÉEL de l'Elu (côté serveur) selon le type choisi (moman / domi).
+           Repli : montant enregistré sur la résa. */
         var amount = 0;
         if (r.prestateId) {
             var ppSnap = await dbf.collection("publicProfiles").doc(r.prestateId).get();
-            if (ppSnap.exists) amount = effectivePrice(ppSnap.data());
+            if (ppSnap.exists) {
+                var pp = ppSnap.data();
+                amount = (r.resType === "domi")
+                    ? Math.round(parseFloat(pp.prixDomi) || 0)
+                    : effectivePrice(pp);
+            }
         }
         if (!amount) amount = Math.round(parseFloat(r.amount || String(r.price || "0").replace(/[^0-9]/g, "")) || 0);
         if (amount <= 0) return err(400, "Pri rezèvasyon an pa valab.");

@@ -962,6 +962,15 @@
                     <a href="https://wa.me/50947464283?text=Bonjou%2C%20kont%20Elu%20mwen%20jele.%20M%20vle%20konn%20rezon%20an." target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;margin-top:10px;background:#25d366;color:#fff;padding:9px 18px;border-radius:50px;font-weight:600;font-size:0.84rem;text-decoration:none"><i class="fab fa-whatsapp"></i> Ekri Asistans lan</a>
                 </div>
             </div>
+            <!-- Rappel : ajoute ton pri domi (Elu actif sans pri domi) -->
+            <div id="domiPrompt" style="display:none;background:linear-gradient(135deg,rgba(156,39,176,0.12),rgba(233,30,99,0.10));border:1px solid rgba(156,39,176,0.4);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+                <div style="width:44px;height:44px;border-radius:50%;background:rgba(156,39,176,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-moon" style="color:#b9a9e6;font-size:1.2rem"></i></div>
+                <div style="flex:1;min-width:200px">
+                    <div style="font-weight:700;color:#ce93d8;font-size:0.98rem">Si w ka domi, ajoute pri domi w</div>
+                    <p style="font-size:0.84rem;color:var(--text-secondary);line-height:1.5;margin-top:3px">Ofri yon pri pou domi (nwit) an plis de pri moman ou — plis chans pou plis rezèvasyon.</p>
+                </div>
+                <button onclick="showSection('fl-profile',this)" style="background:linear-gradient(135deg,#9c27b0,#e91e63);color:#fff;border:none;border-radius:50px;padding:10px 20px;font-weight:600;font-size:0.84rem;cursor:pointer"><i class="fas fa-plus"></i> Ajoute pri domi</button>
+            </div>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-card-top">
@@ -1267,6 +1276,12 @@
                     <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px">Pri pa Moman (Gdes)</label>
                     <input type="number" id="flPrice"
                            style="width:100%;padding:10px 15px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif">
+                </div>
+                <div style="margin-bottom:15px">
+                    <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px"><i class="fas fa-moon" style="color:#9c8bd8"></i> Pri Domi / Nwit (opsyonèl)</label>
+                    <input type="number" id="flPriceDomi" min="0" placeholder="Si w ka domi, mete pri a"
+                           style="width:100%;padding:10px 15px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif">
+                    <p style="font-size:0.74rem;color:#6a6a80;margin-top:6px">Kite l vid (oswa 0) si w pa ofri domi.</p>
                 </div>
                 <div style="margin-bottom:15px">
                     <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px"><i class="fas fa-mobile-alt" style="color:#ffcc00"></i> Nimewo MonCash (pou resevwa peman ou)</label>
@@ -2047,8 +2062,12 @@ function setupFreelancer() {
     var moncashElLoad = document.getElementById("flMoncash");
     if (descEl) descEl.value = userData.description || "";
     if (priceEl) priceEl.value = userData.prixMoment || "";
+    var priceDomiEl = document.getElementById("flPriceDomi");
+    if (priceDomiEl) priceDomiEl.value = userData.prixDomi ? userData.prixDomi : "";
     if (pseudoElLoad) pseudoElLoad.value = userData.pseudo || "";
     if (moncashElLoad) moncashElLoad.value = userData.moncashNumber || "";
+    /* Rappel "ajoute pri domi" pour les Elu actifs qui n'en ont pas encore. */
+    try { renderDomiPrompt(); } catch (e) {}
 
     /* Settings */
     var setNameEl = document.getElementById("setName");
@@ -2075,6 +2094,15 @@ function isFemaleEluUser() {
     if (!userData) return false;
     var g = userData.genre;
     return !(g === "homme" || g === "gason");
+}
+
+/* Affiche le rappel "ajoute pri domi" pour un Elu actif qui n'a pas encore de pri domi. */
+function renderDomiPrompt() {
+    var el = document.getElementById("domiPrompt");
+    if (!el || !userData) return;
+    var isActive = userData.status === "active";
+    var hasDomi = (parseFloat(userData.prixDomi) || 0) > 0;
+    el.style.display = (isActive && !hasDomi) ? "flex" : "none";
 }
 
 function renderRegMode() {
@@ -3622,18 +3650,22 @@ function saveFlProfile() {
     var p = parseInt(price.value) || 0;
     var net = Math.round(p * 0.9);
     var comm = p - net;
+    var domiEl = document.getElementById("flPriceDomi");
+    var pDomi = domiEl ? (parseInt(domiEl.value) || 0) : 0;
 
     db.collection("users").doc(currentUser.uid)
         .update({
             description: desc.value.trim(), pseudo: pseudo,
             moncashNumber: moncash,
-            prixMoment: p, prixNet: net, commissionBizen: comm
+            prixMoment: p, prixDomi: pDomi, prixNet: net, commissionBizen: comm
         })
         .then(function () {
             /* Reflète sur le profil public (catalogue) */
             db.collection("publicProfiles").doc(currentUser.uid).set({
-                description: desc.value.trim(), prixMoment: p, pseudo: pseudo
+                description: desc.value.trim(), prixMoment: p, prixDomi: pDomi, pseudo: pseudo
             }, { merge: true }).catch(function(){});
+            if (userData) userData.prixDomi = pDomi;
+            try { renderDomiPrompt(); } catch (e) {}
             showToast("Pwofil sove!", "success");
             setEl("flPrixEx", p.toLocaleString() + " Gdes");
             setEl("flNetEx", net.toLocaleString() + " Gdes");
