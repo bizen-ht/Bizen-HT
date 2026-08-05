@@ -1940,6 +1940,14 @@ function walletDeposit() {
     });
 }
 
+/* Réinitialise le bouton de dépôt (il reste "Chaje..." si l'utilisateur revient
+   en arrière depuis MonCash — page restaurée par le bfcache, JS non relancé). */
+function resetWalletDepositBtn() {
+    var btn = document.getElementById("walletDepositBtn");
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-mobile-alt"></i> Depoze ak MonCash'; }
+}
+window.addEventListener("pageshow", resetWalletDepositBtn);
+
 /* ====================================
    SETUP FREELANCER
    ==================================== */

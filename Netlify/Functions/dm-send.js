@@ -133,30 +133,52 @@ exports.handler = async function (event) {
         var senderName = sender.pseudo || sender.prenom || "VIP";
         var isPremium = sender.isPremium === true;
 
-        /* ---- VÉRIFICATION DES LIMITES (seulement pour le CLIENT, pas l'Élu) ---- */
-        var counterRef = null;
-        var counter = null;
+        /* ---- LIMITES + RÉSERVATION ATOMIQUE (client uniquement) ----
+           On vérifie ET on réserve le slot dans une TRANSACTION. Sans ça, deux
+           envois simultanés lisaient tous les deux "4 personnes", passaient, puis
+           écrasaient le tableau => la limite (5) était contournée (7-8 Elus). */
+        var remaining = null;
         if (!isEluReply) {
             var dstr = haitiDate();
-            counterRef = dbf.collection("dmCounters").doc(senderUid + "_" + dstr);
-            var cSnap = await counterRef.get();
-            counter = cSnap.exists ? cSnap.data() : { people: [], count: 0, date: dstr };
-            var people = counter.people || [];
-            var alreadyTalking = people.indexOf(eluUid) !== -1;
+            var counterRef = dbf.collection("dmCounters").doc(senderUid + "_" + dstr);
             var maxPeople = isPremium ? 5 : 2;
             var maxMessages = isPremium ? Infinity : 5;
-
-            if (!alreadyTalking && people.length >= maxPeople) {
+            var limit;
+            try {
+                limit = await dbf.runTransaction(async function (t) {
+                    var cSnap = await t.get(counterRef);
+                    var c = cSnap.exists ? cSnap.data() : { people: [], count: 0, date: dstr };
+                    var ppl = c.people || [];
+                    var cnt = c.count || 0;
+                    var already = ppl.indexOf(eluUid) !== -1;
+                    if (!already && ppl.length >= maxPeople) return { blocked: "people" };
+                    if (cnt >= maxMessages) return { blocked: "messages" };
+                    if (!already) ppl.push(eluUid);
+                    t.set(counterRef, { people: ppl, count: cnt + 1, date: dstr, updatedAt: nowTs }, { merge: true });
+                    return { peopleUsed: ppl.length, count: cnt + 1 };
+                });
+            } catch (e) {
+                console.error("[DM-SEND] counter tx:", e.message);
+                return err(500, "Erè kontè. Eseye ankò.");
+            }
+            if (limit.blocked === "people") {
                 return err(429, isPremium
                     ? "Kòm Premium ou ka pale ak 5 moun pa jou (mesaj san limit). Retounen demen pou yon lòt."
                     : "Ou rive nan limit 2 moun pa jou a. Vin Premium pou plis, oswa tann demen.",
                     { reason: "people", premiumInvite: !isPremium });
             }
-            if (counter.count >= maxMessages) {
+            if (limit.blocked === "messages") {
                 return err(429,
                     "Ou voye 5 mesaj jodi a (limit gratis la). Vin Premium pou mesaj san limit, oswa tann demen.",
                     { reason: "messages", premiumInvite: true });
             }
+            remaining = {
+                isPremium: isPremium,
+                peopleUsed: limit.peopleUsed,
+                peopleMax: isPremium ? 5 : 2,
+                messagesUsed: limit.count,
+                messagesMax: isPremium ? null : 5
+            };
         }
 
         /* ---- ÉCRITURE DU MESSAGE (filtré, éphémère 24h) ---- */
@@ -209,24 +231,7 @@ exports.handler = async function (event) {
         }
         await threadRef.set(threadUpdate, { merge: true });
 
-        /* ---- MISE À JOUR DU COMPTEUR (client uniquement) ---- */
-        var remaining = null;
-        if (!isEluReply && counterRef) {
-            var people2 = counter.people || [];
-            if (people2.indexOf(eluUid) === -1) people2.push(eluUid);
-            var newCount = (counter.count || 0) + 1;
-            await counterRef.set({
-                people: people2, count: newCount, date: counter.date,
-                updatedAt: nowTs
-            }, { merge: true });
-            remaining = {
-                isPremium: isPremium,
-                peopleUsed: people2.length,
-                peopleMax: isPremium ? 5 : 2,
-                messagesUsed: newCount,
-                messagesMax: isPremium ? null : 5
-            };
-        }
+        /* (Le compteur a déjà été vérifié + réservé de façon atomique plus haut.) */
 
         /* ---- MESSAGE D'ACCUEIL AUTOMATIQUE DE L'ÉLU ----
            Envoyé UNE SEULE FOIS : au tout premier message d'un client dans ce fil.
