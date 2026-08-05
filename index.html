@@ -9248,7 +9248,9 @@ window.addEventListener("beforeinstallprompt", function (e) {
     showPwaBanner();
 });
 
-/* Clic "Telechaje" : Android installe directement, iPhone ouvre les étapes */
+/* Clic "Telechaje" : Android installe directement. La bannière n'apparaît plus
+   sur iPhone Safari (install native), seulement dans les navigateurs intégrés
+   pour les guider à ouvrir dans Safari/Chrome. */
 document.getElementById("pwaInstallBtn").addEventListener("click", function () {
     if (deferredPrompt) {
         deferredPrompt.prompt();
@@ -9267,17 +9269,17 @@ document.getElementById("pwaInstallBtn").addEventListener("click", function () {
 });
 
 /* Cas où beforeinstallprompt ne se déclenche JAMAIS :
-   - iPhone/iPad (Apple ne le supporte pas)
-   - navigateurs intégrés Android (Instagram, Facebook, TikTok...) : l'install
-     y est impossible, il faut ouvrir dans Chrome. Sans ça ces gens ne voyaient
-     aucune bannière du tout. */
+   - iPhone/iPad (Apple ne le supporte pas) : on NE montre PLUS la bannière ni les
+     "3 étapes" — l'utilisateur ajoute l'app directement via Safari (Pataje → Sou
+     Ekran Akèy), ça s'affiche normalement. (Décision 2026-08-05.)
+   - navigateurs intégrés (Instagram, Facebook, TikTok...) : l'install y est
+     impossible, il faut ouvrir dans Safari/Chrome. On garde la bannière POUR EUX
+     seulement (sinon ils ne verraient rien). */
 (function () {
     var ua = navigator.userAgent || "";
-    var isIOS = /iphone|ipad|ipod/i.test(ua) ||
-                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     var inApp = /\bfban\b|\bfbav\b|fb_iab|instagram|musical_ly|tiktok|micromessenger|\bline\b|snapchat|pinterest|messenger/i.test(ua.toLowerCase());
     if (pwaAlreadyInstalled()) return;
-    if (isIOS || inApp) {
+    if (inApp) {
         setTimeout(function () { showPwaBanner(true); }, 3000);
     }
 })();
