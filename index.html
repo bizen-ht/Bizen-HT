@@ -2307,7 +2307,7 @@ body.is-premium .pc-blur{display:none!important}
         <li><a href="faq.html">FAQ</a></li>
     </ul>
 </div>
-            <div class="foot-col"><h4>Legal</h4><ul><li><a href="/kondisyon">Kondisyon Itilizasyon</a></li><li><a href="/konfidansyalite">Konfidansyalite</a></li><li><a href="/regleman">Regleman</a></li></ul></div>
+            <div class="foot-col"><h4>Legal</h4><ul><li><a href="/kontra-elu">Kontra Adezyon Elu</a></li><li><a href="/kondisyon">Kondisyon Itilizasyon</a></li><li><a href="/konfidansyalite">Konfidansyalite</a></li><li><a href="/regleman">Regleman</a></li></ul></div>
             <div class="foot-col"><h4>Kontak</h4><ul><li><a href="#">bizenht@gmail.com</a></li><li><a href="https://wa.me/50947464283" target="_blank" rel="noopener">WhatsApp</a></li><li><a href="https://whatsapp.com/channel/0029Vb7o41xFy72Jo1LGtU3X" target="_blank" rel="noopener">Channel WhatsApp</a></li></ul></div>
         </div>
        <div class="foot-bot">
@@ -2663,6 +2663,7 @@ body.is-premium .pc-blur{display:none!important}
 </div>
 <!-- KÒD ANBASADÈ (opsyonel) : si yon anbasadè voye w, mete kòd li pou l jwenn kredi -->
 <div class="fg"><label>Kòd Anbasadè (opsyonèl)</label><input type="text" id="flAmbCode" placeholder="Si yon moun voye w, mete kòd li a" style="text-transform:uppercase"><p class="fhint"><i class="fas fa-user-friends"></i> Si se yon anbasadè Bizen ki fè w enskri, mete kòd li a pou l ka jwenn rekonpans li.</p></div>
+<label class="ckl"><input type="checkbox" id="flContract" required> Mwen li epi mwen aksepte <a href="/kontra-elu" target="_blank" rel="noopener" style="color:#f48fb1;text-decoration:underline">Kontra Adezyon Elu a</a> (wòl abitraj Bizen, mwen responsab tèt mwen, granmoun 18+).</label>
 <label class="ckl"><input type="checkbox" id="flAgree" required> Mwen dako ak kondisyon yo, 10% komisyon, mwen gen 18+, e mwen konprann kont mwen ap pase nan validasyon.</label><button type="submit" class="btn btn-secondary fw"><i class="fas fa-paper-plane"></i> Voye Demann Mwen</button></form>
 <!-- KREY FORM -->
 <form class="mform hidden"
@@ -5896,6 +5897,8 @@ function doFR(e) {
     if (flZones.length === 0) { toast("Chwazi omwen yon zòn ou ka ale.", "err"); return false; }
     if (pw.length < 6) { toast("Modpas dwe gen omwen 6 karakte.", "err"); return false; }
     if (em.indexOf("@") === -1 || em.indexOf(".") === -1) { toast("Imel la pa valab.", "err"); return false; }
+    var flContractEl = document.getElementById("flContract");
+    if (flContractEl && !flContractEl.checked) { toast("Ou dwe aksepte Kontra Adezyon Elu a pou w kontinye.", "err"); return false; }
     var flAgreeEl = document.getElementById("flAgree");
     if (flAgreeEl && !flAgreeEl.checked) { toast("Ou dwe dako ak kondisyon yo (18+).", "err"); return false; }
     if (isDisposableEmail(em)) { toast("Imel tanpore pa aksepte.", "err"); return false; }
@@ -5972,6 +5975,8 @@ function doFR(e) {
                 type: "freelancer", status: "en_attente",
                 emailVerified: false,
                 bizenCode: bizenCode,
+                contractAccepted: true, contractVersion: "1.0",
+                contractAcceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
                 zones: flZones,
                 agencyName: agName, agencySlug: agSlug, hotelNotIncluded: agHotelOff,
                 ambassadorCode: ambCode,

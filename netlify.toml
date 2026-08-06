@@ -89,6 +89,11 @@
   status = 200
 
 [[redirects]]
+  from = "/kontra-elu"
+  to = "/kontra-elu.html"
+  status = 200
+
+[[redirects]]
   from = "/konfidansyalite"
   to = "/konfidansyalite.html"
   status = 200
