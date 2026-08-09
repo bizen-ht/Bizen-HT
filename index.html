@@ -4545,9 +4545,14 @@ if (auth) {
                     "User disconnected"
                 );
                 renderNavOut();
+                /* Auth résolue (déconnecté) : gérer un profil partagé en attente. */
+                window._authReady = true;
+                try { maybeOpenSharedProfile(); } catch (e) {}
             }
         }
     );
+    /* Lien de profil partagé ?p=<kòd> */
+    try { loadSharedProfile(); } catch (e) {}
 }
 
     var cf = document.getElementById("cForm");
@@ -5163,6 +5168,14 @@ function showHotel() {
     if (!val) { picker.style.display = "none"; listEl.innerHTML = ""; return; }
 
     picker.style.display = "block";
+
+    /* Hotel NON inclus (Elu marqué, ou zone) : on NE montre PAS la liste des hôtels
+       Bizen. Le client indique son propre hôtel (qu'il paie lui-même). */
+    if (window._bookingNoHotel) {
+        renderHotelChoices([]);
+        return;
+    }
+
     listEl.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;padding:8px 0">Chajman hotels...</p>';
 
     if (!db) {
@@ -5188,7 +5201,9 @@ function renderHotelChoices(list) {
     if (!listEl) return;
     var h = "";
     if (!list.length) {
-        h += '<p style="color:#ff9800;font-size:0.82rem;padding:4px 0 8px"><i class="fas fa-info-circle"></i> Pa gen hotel patnè nan zòn sa a pou kounye a. Ou ka antre pa ou anba a.</p>';
+        h += window._bookingNoHotel
+            ? '<p style="color:#ff9800;font-size:0.82rem;padding:4px 0 8px"><i class="fas fa-info-circle"></i> Hotel pa enkli pou Elu sa a. Mete pwòp hotel ou anba a — <strong>se ou k ap peye l</strong>.</p>'
+            : '<p style="color:#ff9800;font-size:0.82rem;padding:4px 0 8px"><i class="fas fa-info-circle"></i> Pa gen hotel patnè nan zòn sa a pou kounye a. Ou ka antre pa ou anba a.</p>';
     }
     list.forEach(function(d, i) {
         var logo = d.logoUrl
@@ -6384,7 +6399,45 @@ function chkPrem(uid) {
                 /* Recharge l'affichage des notes (visibles aux Premium) */
                 try { decorateRatings(); } catch(e) {}
             }
-        });
+            /* Statut premium connu => on peut ouvrir un profil partagé en attente. */
+            window._authReady = true;
+            try { maybeOpenSharedProfile(); } catch(e) {}
+        }).catch(function(){ window._authReady = true; try { maybeOpenSharedProfile(); } catch(e){} });
+}
+
+/* ====================================
+   LIEN DE PROFIL PARTAGÉ  (/pwofil/<kòd>  ->  /?p=<kòd>)
+   Résout le code -> uid, puis ouvre le profil AVEC le gating de openEluProfile :
+   pas connecté -> modale login ; non-premium -> aperçu + CTA premium ; premium -> tout.
+   ==================================== */
+window._sharedProfileUid = null;
+window._authReady = false;
+
+function loadSharedProfile() {
+    try {
+        var code = new URLSearchParams(location.search).get("p");
+        if (!code) return;
+        if (!db) { setTimeout(loadSharedProfile, 500); return; }
+        db.collection("publicProfiles").where("bizenCode", "==", code.trim().toUpperCase()).limit(1).get()
+            .then(function (snap) {
+                if (snap.empty) { try { toast("Pwofil sa a pa jwenn.", "err"); } catch(e){} return; }
+                window._sharedProfileUid = snap.docs[0].id;
+                maybeOpenSharedProfile();
+            }).catch(function (e) { console.warn("loadSharedProfile:", e && e.code); });
+    } catch (e) {}
+}
+
+function maybeOpenSharedProfile() {
+    if (!window._sharedProfileUid || !window._authReady) return;
+    var uid = window._sharedProfileUid;
+    if (auth && auth.currentUser) {
+        window._sharedProfileUid = null;
+        try { openEluProfile(uid); } catch (e) {}
+    } else {
+        /* Pas connecté : on demande de se connecter / créer un compte. On GARDE le
+           uid pour rouvrir le profil automatiquement après la connexion. */
+        try { oM("lM"); } catch (e) {}
+    }
 }
 
 /* ====================================
@@ -6726,6 +6779,7 @@ function openEluProfile(btnOrUid) {
         var videos = d.videos || [];
         window._eluProfileZones = d.zones || [];   /* zones de couverture */
         window._eluProfileLoc = d.localisation || "";   /* localisation principale */
+        window._eluProfileHotelNotIncluded = (d.hotelNotIncluded === true);   /* hotel non inclus pour cet Elu */
 
         var mediaList = [];
         gallery.forEach(function(u) { mediaList.push({ type: "image", url: u }); });
@@ -7214,8 +7268,9 @@ function startEluBooking(uid, name, price, priceType) {
     var eluLoc = window._eluProfileLoc || "";
     var eluZones = window._eluProfileZones || [];
     priceType = (priceType === "domi") ? "domi" : "moman";
-    /* Hôtel non inclus si l'Elu est à Cap-Haïtien ou aux Cayes */
-    var noHotel = isNoHotelZone(eluLoc) || eluZones.some(function(z){ return isNoHotelZone(z); });
+    /* Hôtel non inclus : Elu marqué "hotel non inclus", OU zone Cap-Haïtien/Les Cayes */
+    var noHotel = (window._eluProfileHotelNotIncluded === true)
+        || isNoHotelZone(eluLoc) || eluZones.some(function(z){ return isNoHotelZone(z); });
     window._bookingNoHotel = noHotel;
     bookingTarget = { uid: uid, name: name, price: price, zones: eluZones, noHotel: noHotel, priceType: priceType };
     cM("eluProfM");
