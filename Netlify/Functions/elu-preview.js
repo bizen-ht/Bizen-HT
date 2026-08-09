@@ -29,9 +29,16 @@ function esc(s) {
 }
 
 exports.handler = async function (event) {
-    var code = ((event.queryStringParameters && event.queryStringParameters.code) || "").toString().trim().toUpperCase();
-    var appUrl = SITE + "/?p=" + encodeURIComponent(code);
+    /* Code : d'abord ?code=..., sinon on l'extrait du chemin (/pwofil/<code> ou
+       /.netlify/functions/elu-preview/<code>) — plus robuste que le :splat en query. */
+    var code = ((event.queryStringParameters && event.queryStringParameters.code) || "").toString();
+    if (!code && event.path) {
+        var m = String(event.path).match(/\/(?:pwofil|elu-preview)\/([^\/?#]+)/i);
+        if (m) { try { code = decodeURIComponent(m[1]); } catch (e) { code = m[1]; } }
+    }
+    code = code.trim().toUpperCase();
 
+    var appUrl = SITE + "/";                 /* défaut : accueil si rien trouvé */
     var title = "Pwofil Elu sou Bizen HT";
     var desc = "Dekouvri pwofil sa a sou Bizen HT — sit rankont #1 an Ayiti. Granmoun 18 an+.";
     var image = SITE + "/images/header-fanm.jpg";
@@ -43,17 +50,16 @@ exports.handler = async function (event) {
                 .where("bizenCode", "==", code).limit(1).get();
             if (!snap.empty) {
                 var d = snap.docs[0].data();
+                /* On redirige avec l'UID (pas le code) : le client ouvre direct,
+                   sans avoir besoin de re-résoudre le code. */
+                appUrl = SITE + "/?p=" + encodeURIComponent(snap.docs[0].id);
                 var name = (d.pseudo || ((d.prenom || "") + " " + (d.nomInitial || "")).trim() || "Elu");
                 title = name + " — Elu sou Bizen HT";
                 var loc = d.localisation ? (" · " + d.localisation) : "";
                 var prix = d.prixMoment ? (" · " + Number(d.prixMoment).toLocaleString() + " Gdes") : "";
                 desc = "Gade pwofil " + name + loc + prix + " sou Bizen HT. Granmoun 18 an+. Diskresyon total.";
                 if (d.photoUrl) image = d.photoUrl;
-            } else {
-                appUrl = SITE + "/";   /* kòd pa jwenn -> paj dakèy */
             }
-        } else {
-            appUrl = SITE + "/";
         }
     } catch (e) {
         console.warn("[ELU-PREVIEW]", e.message);

@@ -6415,15 +6415,24 @@ window._authReady = false;
 
 function loadSharedProfile() {
     try {
-        var code = new URLSearchParams(location.search).get("p");
-        if (!code) return;
+        var p = new URLSearchParams(location.search).get("p");
+        if (!p) return;
         if (!db) { setTimeout(loadSharedProfile, 500); return; }
-        db.collection("publicProfiles").where("bizenCode", "==", code.trim().toUpperCase()).limit(1).get()
-            .then(function (snap) {
-                if (snap.empty) { try { toast("Pwofil sa a pa jwenn.", "err"); } catch(e){} return; }
-                window._sharedProfileUid = snap.docs[0].id;
+        p = p.trim();
+        /* p vient d'elu-preview = un UID direct. Repli : ansyen lyen ak bizenCode. */
+        db.collection("publicProfiles").doc(p).get().then(function (doc) {
+            if (doc.exists) {
+                window._sharedProfileUid = doc.id;
                 maybeOpenSharedProfile();
-            }).catch(function (e) { console.warn("loadSharedProfile:", e && e.code); });
+                return;
+            }
+            db.collection("publicProfiles").where("bizenCode", "==", p.toUpperCase()).limit(1).get()
+                .then(function (snap) {
+                    if (snap.empty) { try { toast("Pwofil sa a pa jwenn.", "err"); } catch(e){} return; }
+                    window._sharedProfileUid = snap.docs[0].id;
+                    maybeOpenSharedProfile();
+                }).catch(function (e) { console.warn("loadSharedProfile code:", e && e.code); });
+        }).catch(function (e) { console.warn("loadSharedProfile:", e && e.code); });
     } catch (e) {}
 }
 
@@ -6432,6 +6441,10 @@ function maybeOpenSharedProfile() {
     var uid = window._sharedProfileUid;
     if (auth && auth.currentUser) {
         window._sharedProfileUid = null;
+        /* On ferme la modale login/inscription si elle était ouverte, puis on
+           ouvre DIRECTEMENT le profil partagé (on ne perd pas la personne). */
+        try { cM("lM"); } catch (e) {}
+        try { cM("sM"); } catch (e) {}
         try { openEluProfile(uid); } catch (e) {}
     } else {
         /* Pas connecté : on demande de se connecter / créer un compte. On GARDE le
