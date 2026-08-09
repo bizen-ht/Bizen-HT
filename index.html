@@ -9268,18 +9268,19 @@ function pwaAlreadyInstalled() {
            window.navigator.standalone === true;
 }
 
-function showPwaBanner(force) {
-    if (pwaAlreadyInstalled()) return;
-    /* force = true : on ignore le "déjà fermé" (utilisé pour iPhone, toujours visible) */
-    if (!force && localStorage.getItem("pwaBannerClosed") === "1") return;
+function showPwaBanner() {
+    if (pwaAlreadyInstalled()) return;      /* déjà installé (standalone) => jamais */
+    if (window._pwaDismissed) return;       /* fermé pour cette vue seulement (revient au rechargement) */
     var b = document.getElementById("pwaInstallBanner");
     if (b) b.style.display = "flex";
 }
 
 function dismissPwaBanner() {
+    /* PAS de localStorage : la bannière DOIT revenir à chaque réouverture du site
+       tant que l'app n'est pas installée. On la cache juste pour la vue actuelle. */
+    window._pwaDismissed = true;
     var b = document.getElementById("pwaInstallBanner");
     if (b) b.style.display = "none";
-    try { localStorage.setItem("pwaBannerClosed", "1"); } catch (e) {}
 }
 
 /* ===== iPhone : feuille d'instructions (Apple n'autorise pas l'install auto) ===== */
@@ -9321,9 +9322,9 @@ window.addEventListener("beforeinstallprompt", function (e) {
     showPwaBanner();
 });
 
-/* Clic "Telechaje" : Android installe directement. La bannière n'apparaît plus
-   sur iPhone Safari (install native), seulement dans les navigateurs intégrés
-   pour les guider à ouvrir dans Safari/Chrome. */
+/* Clic "Telechaje" : Android installe directement (si beforeinstallprompt armé).
+   Sinon (iPhone, ou Android sans prompt) on montre les instructions "ajoute sou
+   ekran akèy" — c'est la seule façon d'installer sur iPhone. */
 document.getElementById("pwaInstallBtn").addEventListener("click", function () {
     if (deferredPrompt) {
         deferredPrompt.prompt();
@@ -9341,20 +9342,15 @@ document.getElementById("pwaInstallBtn").addEventListener("click", function () {
     else openAndroidSheet();
 });
 
-/* Cas où beforeinstallprompt ne se déclenche JAMAIS :
-   - iPhone/iPad (Apple ne le supporte pas) : on NE montre PLUS la bannière ni les
-     "3 étapes" — l'utilisateur ajoute l'app directement via Safari (Pataje → Sou
-     Ekran Akèy), ça s'affiche normalement. (Décision 2026-08-05.)
-   - navigateurs intégrés (Instagram, Facebook, TikTok...) : l'install y est
-     impossible, il faut ouvrir dans Safari/Chrome. On garde la bannière POUR EUX
-     seulement (sinon ils ne verraient rien). */
+/* NOTICE D'INSTALLATION — montrée à CHAQUE ouverture pour TOUT visiteur qui n'a
+   pas encore installé l'app (Android ET iPhone/iPad, tous navigateurs). Ceux qui
+   ont installé (mode standalone) ne la voient JAMAIS. Sur Android, beforeinstallprompt
+   active en plus l'install direct au clic ; ici on garantit que la bannière apparaît
+   partout, même quand beforeinstallprompt ne se déclenche pas (iPhone, etc.). */
 (function () {
-    var ua = navigator.userAgent || "";
-    var inApp = /\bfban\b|\bfbav\b|fb_iab|instagram|musical_ly|tiktok|micromessenger|\bline\b|snapchat|pinterest|messenger/i.test(ua.toLowerCase());
     if (pwaAlreadyInstalled()) return;
-    if (inApp) {
-        setTimeout(function () { showPwaBanner(true); }, 3000);
-    }
+    /* petit délai pour laisser beforeinstallprompt s'armer sur Android */
+    setTimeout(function () { showPwaBanner(); }, 2000);
 })();
 
 /* Instructions Android quand l'installation auto n'est pas possible
