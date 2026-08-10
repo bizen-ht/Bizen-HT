@@ -4545,9 +4545,10 @@ if (auth) {
                     "User disconnected"
                 );
                 renderNavOut();
-                /* Auth résolue (déconnecté) : gérer un profil partagé en attente. */
+                /* Auth résolue (déconnecté) : gérer un profil partagé / avis en attente. */
                 window._authReady = true;
                 try { maybeOpenSharedProfile(); } catch (e) {}
+                try { maybeOpenReview(); } catch (e) {}
             }
         }
     );
@@ -6399,10 +6400,11 @@ function chkPrem(uid) {
                 /* Recharge l'affichage des notes (visibles aux Premium) */
                 try { decorateRatings(); } catch(e) {}
             }
-            /* Statut premium connu => on peut ouvrir un profil partagé en attente. */
+            /* Statut premium connu => on peut ouvrir un profil partagé / avis en attente. */
             window._authReady = true;
             try { maybeOpenSharedProfile(); } catch(e) {}
-        }).catch(function(){ window._authReady = true; try { maybeOpenSharedProfile(); } catch(e){} });
+            try { maybeOpenReview(); } catch(e) {}
+        }).catch(function(){ window._authReady = true; try { maybeOpenSharedProfile(); } catch(e){} try { maybeOpenReview(); } catch(e){} });
 }
 
 /* ====================================
@@ -6449,6 +6451,21 @@ function maybeOpenSharedProfile() {
     } else {
         /* Pas connecté : on demande de se connecter / créer un compte. On GARDE le
            uid pour rouvrir le profil automatiquement après la connexion. */
+        try { oM("lM"); } catch (e) {}
+    }
+}
+
+/* Lien direct "bay yon avi" (/bay-avi ou ?avis=1) : ouvre le popup d'avis.
+   Pas connecté => on demande de se connecter, puis on rouvre l'avis tout seul. */
+window._wantReview = false;
+function maybeOpenReview() {
+    if (!window._wantReview || !window._authReady) return;
+    if (auth && auth.currentUser) {
+        window._wantReview = false;
+        try { cM("lM"); } catch (e) {}
+        try { cM("sM"); } catch (e) {}
+        try { openReviewModal(); } catch (e) {}
+    } else {
         try { oM("lM"); } catch (e) {}
     }
 }
@@ -9251,6 +9268,10 @@ function applyPreAmb() {
             try { oM("sM"); pT("freelancer"); } catch (e) {}
         }, 800);
     }
+    /* Lien direct "bay yon avi" (/bay-avi ou ?avis=1) : ouvre le popup d'avis. */
+    var wantAvis = (p === "/bay-avi" || p === "/avi");
+    try { if (new URLSearchParams(location.search).get("avis") === "1") wantAvis = true; } catch (e) {}
+    if (wantAvis) { window._wantReview = true; try { maybeOpenReview(); } catch (e) {} }
 })();
 
 if ("serviceWorker" in navigator) {

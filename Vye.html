@@ -1206,6 +1206,16 @@
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-star" style="color:var(--gold)"></i> Avi sou Sit la</h1>
             </div>
+            <div class="tc" style="margin-bottom:18px;border:1px solid rgba(233,30,99,0.35)">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-share-nodes" style="color:#e91e63"></i> Lyen pou VIP yo bay avi dirèk</div></div>
+                <div style="padding:16px 18px">
+                    <p style="font-size:0.82rem;color:#6a6a80;margin-bottom:10px">Pataje lyen sa a ak VIP yo (WhatsApp, elatriye). Lè yo klike, popup avi a ouvri <strong>dirèkteman</strong> — yo konekte (si sa nesesè) epi yo ekri avi yo. Avi a rive an atant pou ou apwouve.</p>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                        <input id="avisShareLink" readonly onclick="this.select()" style="flex:1;min-width:220px;background:#0f0f17;border:1px solid #2a2a3a;color:#eee;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                        <button onclick="copyAvisLink()" style="background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer;font-size:0.85rem"><i class="fas fa-copy"></i> Kopye lyen</button>
+                    </div>
+                </div>
+            </div>
             <div class="tc">
                 <div class="tc-head">
                     <div class="tc-title"><i class="fas fa-comment-dots"></i> Avi VIP yo</div>
@@ -1293,6 +1303,11 @@
         <div class="pg" id="pg-comm">
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-percentage" style="color:var(--purple)"></i> Komisyon Elu</h1>
+            </div>
+            <div class="fg">
+                <div class="fc"><h4><i class="fas fa-coins"></i> Grand Total Komisyon Bizen</h4><div class="fv" style="color:var(--gold)" id="commGrandTotal">0 G</div><div class="fs">10% sou rezevasyon KONFIME</div></div>
+                <div class="fc"><h4><i class="fas fa-hand-holding-usd"></i> Total Net Elu</h4><div class="fv" style="color:var(--green)" id="commGrandNet">0 G</div><div class="fs">90% pou Elu yo</div></div>
+                <div class="fc"><h4><i class="fas fa-wallet"></i> Solde Total Dû</h4><div class="fv" style="color:var(--gold,#ffd700)" id="commGrandSolde">0 G</div><div class="fs">Poko peye Elu yo</div></div>
             </div>
             <div class="tc">
                 <div class="tc-head">
@@ -2067,8 +2082,10 @@ function startRealtimeSync() {
 
         renderResTable(adminRes);
         loadFinance();
-        renderCommissions();
+        renderCommissions();   /* construit window._eluResStats */
         renderRecent();
+        /* Re-render la liste des Elus pour mettre à jour la colonne Solde. */
+        try { renderFLTable(adminFL); } catch (e) {}
     }, function(err) {
         console.error("RESERVATIONS error:", err.code);
         if (err.code === "permission-denied") showFirebaseRulesError();
@@ -2341,7 +2358,9 @@ function renderFLTable(list) {
         h += '<td>' + (f.genre === "femme" ? "Fanm" : (f.genre === "fanm" ? "Fanm" : "Gason")) + '</td>';
         h += '<td>' + escHtml(f.localisation || 'N/A') + '</td>';
         h += '<td>' + ((f.prixMoment || 0).toLocaleString()) + ' G</td>';
-        h += '<td>' + ((f.solde || 0).toLocaleString()) + ' G</td>';
+        /* Solde = net (90%) des rezevasyon KONFIME pa ankò peye — kalkile depi rezevasyon yo. */
+        var _st = (window._eluResStats && window._eluResStats[f.id]) ? window._eluResStats[f.id].solde : 0;
+        h += '<td style="color:' + (_st > 0 ? '#ffd700' : 'inherit') + '">' + _st.toLocaleString() + ' G</td>';
         h += '<td><span class="sbadge ' + stCl + '">' + stTxt + '</span></td>';
         h += '<td>';
         h += actBtn("ab-viw", "viewAccountDetail('" + f.id + "')", "fa-eye", "Voir");
@@ -2753,51 +2772,61 @@ function loadRecent() {
 /* ====================================
    LOAD COMMISSIONS
    ==================================== */
+/* Stats par Elu à partir des réservations CONFIRMÉES uniquement (clé = prestateId).
+   solde = net (90%) pas encore versé à l'Elu (paidOut != true). */
+function buildEluResStats() {
+    var map = {};
+    (adminRes || []).forEach(function (r) {
+        if (r.status !== "confirmed") return;   /* SEULEMENT les confirmées */
+        var id = r.prestateId || ("nm:" + (r.prestateName || "?"));
+        var price = parseInt(String(r.price || r.amount || "0").replace(/[^0-9]/g, "")) || 0;
+        var net = Math.round(price * 0.90);
+        var comm = price - net;
+        if (!map[id]) map[id] = { name: r.prestateName || "Elu", count: 0, total: 0, comm: 0, net: 0, solde: 0 };
+        map[id].count++;
+        map[id].total += price;
+        map[id].comm += comm;
+        map[id].net += net;
+        if (r.paidOut !== true) map[id].solde += net;   /* pas encore payé => dû à l'Elu */
+    });
+    return map;
+}
+
 function loadCommissions() {
     var tb = document.getElementById("tbComm");
     if (!tb) return;
+    var map = buildEluResStats();
+    window._eluResStats = map;   /* réutilisé par la liste des Elus (colonne Solde) */
+    var ids = Object.keys(map);
 
-    var commByFL = {};
+    var gCount = 0, gTotal = 0, gComm = 0, gNet = 0, gSolde = 0;
+    ids.forEach(function (id) { var d = map[id]; gCount += d.count; gTotal += d.total; gComm += d.comm; gNet += d.net; gSolde += d.solde; });
+    /* Grands totaux (cartes en haut) */
+    setVal("commGrandTotal", gComm.toLocaleString() + " G");
+    setVal("commGrandNet", gNet.toLocaleString() + " G");
+    setVal("commGrandSolde", gSolde.toLocaleString() + " G");
 
-    adminRes.forEach(function(r) {
-        if (r.status === "cancelled") return;
-        var name = r.prestateName || "Unknown";
-        var price = parseInt(String(r.price || "0").replace(/[^0-9]/g, "")) || 0;
-
-        if (!commByFL[name]) {
-            commByFL[name] = {
-                count: 0,
-                total: 0,
-                comm: 0,
-                net: 0
-            };
-        }
-
-        commByFL[name].count++;
-        commByFL[name].total += price;
-        commByFL[name].comm += Math.round(price * 0.10);
-        commByFL[name].net += Math.round(price * 0.90);
-    });
-
-    var keys = Object.keys(commByFL);
-    if (!keys.length) {
-        tb.innerHTML = emptyRow(6, "Pa gen done komisyon anko");
-        return;
-    }
+    if (!ids.length) { tb.innerHTML = emptyRow(6, "Pa gen rezevasyon konfime anko"); return; }
+    ids.sort(function (a, b) { return map[b].net - map[a].net; });
 
     var h = "";
-    keys.forEach(function(name) {
-        var d = commByFL[name];
+    ids.forEach(function (id) {
+        var d = map[id];
         h += '<tr>';
-        h += '<td><strong>' + name + '</strong></td>';
+        h += '<td><strong>' + escHtml(d.name) + '</strong></td>';
         h += '<td>' + d.count + '</td>';
         h += '<td>' + d.total.toLocaleString() + ' G</td>';
         h += '<td style="color:var(--gold)">' + d.comm.toLocaleString() + ' G</td>';
         h += '<td style="color:var(--green)">' + d.net.toLocaleString() + ' G</td>';
-        h += '<td>N/A</td>';
+        h += '<td style="color:#ffd700">' + d.solde.toLocaleString() + ' G</td>';
         h += '</tr>';
     });
-
+    /* Ligne TOTAL */
+    h += '<tr style="border-top:2px solid var(--gold);background:rgba(255,215,0,0.06);font-weight:700">';
+    h += '<td>TOTAL</td><td>' + gCount + '</td><td>' + gTotal.toLocaleString() + ' G</td>';
+    h += '<td style="color:var(--gold)">' + gComm.toLocaleString() + ' G</td>';
+    h += '<td style="color:var(--green)">' + gNet.toLocaleString() + ' G</td>';
+    h += '<td style="color:#ffd700">' + gSolde.toLocaleString() + ' G</td></tr>';
     tb.innerHTML = h;
 }
 
@@ -4390,7 +4419,16 @@ function escHtml(s) {
 
 var adminReviews = [];
 
+/* Lien direct pour que les VIP laissent un avis (à partager par l'admin). */
+function copyAvisLink() {
+    var link = window.location.origin + "/bay-avi";
+    try { if (navigator.clipboard) navigator.clipboard.writeText(link); } catch (e) {}
+    toast("Lyen avi kopye!", true);
+}
+
 function loadReviews() {
+    var la = document.getElementById("avisShareLink");
+    if (la) la.value = window.location.origin + "/bay-avi";
     if (!db) return;
     db.collection("siteReviews").get().then(function(snap) {
         adminReviews = [];

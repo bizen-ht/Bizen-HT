@@ -1810,17 +1810,18 @@ if (!auth) {
                         }).catch(function(){});
                     });
 
-                    /* Heartbeat every 2 minutes */
+                    /* Heartbeat présence — RÉDUIT pour économiser le quota Firestore :
+                       toutes les 5 min, SEULEMENT si l'onglet est visible, et on
+                       n'écrit que le profil public (le badge en ligne du catalogue).
+                       (Avant: 2 docs toutes les 2 min => ~20k écritures/jour à ~15 Elu,
+                       ça épuisait le quota gratuit tout seul.) */
                     setInterval(function() {
-                        db.collection("users").doc(user.uid).update({
-                            isOnline: true,
-                            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-                        }).catch(function(){});
+                        if (document.hidden) return;   /* onglet en arrière-plan => pas d'écriture */
                         db.collection("publicProfiles").doc(user.uid).update({
                             isOnline: true,
                             lastSeen: firebase.firestore.FieldValue.serverTimestamp()
                         }).catch(function(){});
-                    }, 120000);
+                    }, 300000);
 
                     /* Notifications temps réel: nouvelles réservations */
                     try { initFreelancerNotifications(user.uid, userData); } catch (e) { console.warn("initFreelancerNotifications:", e); }

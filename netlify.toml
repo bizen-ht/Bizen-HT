@@ -96,6 +96,12 @@
   to = "/kontra-elu.html"
   status = 200
 
+# Lien direct pour laisser un avis (ouvre le popup d'avis sur l'accueil)
+[[redirects]]
+  from = "/bay-avi"
+  to = "/index.html"
+  status = 200
+
 # Lien de partage du profil Elu : aperçu (og) via fonction, puis redirection vers l'app
 [[redirects]]
   from = "/pwofil/*"
