@@ -5413,6 +5413,8 @@ function viewAccountDetail(uid) {
             starsHtml +
             '<div id="admRatingSummary_' + uid + '" style="font-size:0.78rem;color:#ce93d8;margin:10px 0 12px"></div>' +
             '<button onclick="saveAdmRatings(\'' + uid + '\')" style="width:100%;padding:10px;background:linear-gradient(135deg,#9c27b0,#e91e63);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.85rem"><i class="fas fa-save"></i> Sove Nòt yo</button>' +
+            '<button onclick="resetEluRatings(\'' + uid + '\')" style="width:100%;margin-top:8px;padding:9px;background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;font-weight:600;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.82rem"><i class="fas fa-trash-can"></i> Reset — efase TOUT avi (VIP + admin) sou 0</button>' +
+            '<p style="font-size:0.7rem;color:#6a6a80;margin-top:8px">Reset efase tout zetwal (VIP + admin) pou Elu sa a, pou w ka mete nouvo nòt apre.</p>' +
             '</div>';
     }
 
@@ -5486,6 +5488,32 @@ function saveAdmRatings(uid) {
         toast(total + " nòt admin sove!", true);
         renderAdmRatingSummary(uid, newCounts);
     }).catch(function(e) { toast("Erè: " + e.message, false); });
+}
+
+/* Efase TOUS les avis (VIP + admin) d'un Elu -> remet les étoiles à 0.
+   Ensuite l'admin peut mettre de nouvelles notes. */
+function resetEluRatings(uid) {
+    if (!db) return;
+    if (!confirm("Efase TOUT avi/zetwal (VIP + admin) pou Elu sa a epi remèt li sou 0? Aksyon sa a definitif.")) return;
+    db.collection("ratings").where("prestateId", "==", uid).get().then(function(snap) {
+        if (snap.empty) { toast("Pa gen avi pou efase.", true); return; }
+        var refs = []; snap.forEach(function(d) { refs.push(d.ref); });
+        /* Supprime par lots de 400 (limite batch = 500). */
+        var chain = Promise.resolve();
+        for (var i = 0; i < refs.length; i += 400) {
+            (function(slice) {
+                chain = chain.then(function() {
+                    var b = db.batch(); slice.forEach(function(r) { b.delete(r); }); return b.commit();
+                });
+            })(refs.slice(i, i + 400));
+        }
+        return chain.then(function() {
+            toast(refs.length + " avi efase. Etwal yo sou 0 — ou ka mete nouvo nòt kounye a.", true);
+            /* Remet les compteurs admin de la fiche à 0 */
+            [1,2,3,4,5].forEach(function(s) { var inp = document.getElementById("admQty_" + uid + "_" + s); if (inp) inp.value = 0; });
+            renderAdmRatingSummary(uid, {1:0,2:0,3:0,4:0,5:0});
+        });
+    }).catch(function(e) { toast("Erè: " + (e.message || e.code), false); });
 }
 
 /* ====================================
