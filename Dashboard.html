@@ -3083,13 +3083,16 @@ function buildResRow(r, isFL, ratedSet) {
                 rateBlock = '<div style="margin-top:8px;font-size:0.72rem;color:#ffd700">' + starsHtml(already) + ' <span style="color:#6a6a80">Ou note deja</span></div>';
             } else {
                 var pName = (r.prestateName || "Elu").replace(/'/g, "");
-                rateBlock = '<div style="margin-top:8px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);border-radius:10px;padding:8px 12px">' +
-                    '<div style="font-size:0.72rem;color:#ffd700;margin-bottom:5px"><i class="fas fa-star"></i> Note Elu sa a:</div>' +
-                    '<div class="rate-stars" data-res="' + r.id + '" data-elu="' + r.prestateId + '">' +
+                rateBlock = '<div style="margin-top:8px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);border-radius:10px;padding:10px 12px">' +
+                    '<div style="font-size:0.72rem;color:#ffd700;margin-bottom:6px"><i class="fas fa-star"></i> Note Elu sa a:</div>' +
+                    '<div class="rate-stars" id="rate_' + r.id + '" data-res="' + r.id + '" data-elu="' + r.prestateId + '" data-sel="0">' +
                     [1,2,3,4,5].map(function(n){
-                        return '<i class="far fa-star" style="color:#ffd700;font-size:1.1rem;cursor:pointer;margin-right:4px" onclick="submitRating(\'' + r.id + '\',\'' + r.prestateId + '\',' + n + ',this)"></i>';
+                        return '<i class="far fa-star rstar" data-n="' + n + '" style="color:#ffd700;font-size:1.6rem;cursor:pointer;margin-right:7px;padding:2px" ' +
+                            'onclick="pickStar(\'' + r.id + '\',this)" onmouseover="hoverStar(\'' + r.id + '\',' + n + ')" onmouseout="hoverStar(\'' + r.id + '\',0)"></i>';
                     }).join("") +
-                    '</div></div>';
+                    '</div>' +
+                    '<button id="rateSend_' + r.id + '" onclick="submitRating(\'' + r.id + '\',\'' + r.prestateId + '\')" style="display:none;margin-top:8px;padding:7px 18px;border:none;border-radius:20px;background:linear-gradient(135deg,#ffd700,#f0a500);color:#12121a;font-size:0.74rem;font-weight:700;cursor:pointer"></button>' +
+                    '</div>';
             }
         }
     }
@@ -3203,8 +3206,49 @@ function starsHtml(n) {
 /* ====================================
    SOUMETTRE UNE NOTE
    ==================================== */
-function submitRating(reservationId, prestateId, stars, el) {
+/* Peint les étoiles 1..n dans un conteneur donné (fas=pleine, far=vide) */
+function paintStars(box, n) {
+    if (!box) return;
+    var stars = box.querySelectorAll(".rstar");
+    for (var i = 0; i < stars.length; i++) {
+        var full = (i + 1) <= n;
+        stars[i].classList.toggle("fas", full);
+        stars[i].classList.toggle("far", !full);
+    }
+}
+
+/* Survol : aperçu de la note (revient à la sélection quand n=0) */
+function hoverStar(resId, n) {
+    var box = document.getElementById("rate_" + resId);
+    if (!box) return;
+    paintStars(box, n > 0 ? n : parseInt(box.getAttribute("data-sel"), 10) || 0);
+}
+
+/* Clic sur une étoile : SÉLECTIONNE (ne soumet pas encore) + affiche le bouton Voye */
+function pickStar(resId, el) {
+    var box = document.getElementById("rate_" + resId);
+    if (!box || !el) return;
+    var n = parseInt(el.getAttribute("data-n"), 10) || 0;
+    box.setAttribute("data-sel", n);
+    paintStars(box, n);
+    var btn = document.getElementById("rateSend_" + resId);
+    if (btn) {
+        btn.style.display = "inline-block";
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Voye ' + n + ' zetwal';
+    }
+}
+
+/* ====================================
+   SOUMETTRE UNE NOTE (après sélection + clic sur "Voye")
+   ==================================== */
+function submitRating(reservationId, prestateId) {
     if (!db || !currentUser) return;
+    var box = document.getElementById("rate_" + reservationId);
+    var stars = box ? (parseInt(box.getAttribute("data-sel"), 10) || 0) : 0;
+    if (stars < 1) { showToast("Chwazi konbyen zetwal anvan ou voye.", "error"); return; }
+
+    var btn = document.getElementById("rateSend_" + reservationId);
+    if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
 
     /* Une seule note par réservation (doc id = reservationId) */
     db.collection("ratings").doc(reservationId).set({
@@ -3216,11 +3260,13 @@ function submitRating(reservationId, prestateId, stars, el) {
     }).then(function() {
         showToast("Mèsi! Ou bay " + stars + " zetwal.", "success");
         /* Remplace l'UI par la note donnée */
-        if (el && el.parentElement) {
-            el.parentElement.parentElement.innerHTML =
+        var wrap = box ? box.parentElement : null;
+        if (wrap) {
+            wrap.innerHTML =
                 '<div style="font-size:0.72rem;color:#ffd700">' + starsHtml(stars) + ' <span style="color:#6a6a80">Mèsi pou nòt ou!</span></div>';
         }
     }).catch(function(e) {
+        if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
         showToast("Ou deja note rezevasyon sa a.", "error");
     });
 }
