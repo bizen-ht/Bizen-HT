@@ -539,6 +539,12 @@
                         <i class="fas fa-chart-line"></i>
                         Revni
                     </button>
+                    <button class="sb-link"
+                            onclick="showSection('fl-views',this)">
+                        <i class="fas fa-eye"></i>
+                        Vizit Pwofil
+                        <span id="flViewsBadge" style="display:none;background:#e91e63;color:#fff;font-size:0.65rem;padding:1px 7px;border-radius:10px;margin-left:auto">0</span>
+                    </button>
                 </div>
                 <div class="sb-nav-group">
                     <div class="sb-nav-label">Kont</div>
@@ -1266,6 +1272,26 @@
             </div>
         </div>
 
+        <!-- FL PROFILE VIEWS (qui a vu ton profil) -->
+        <div class="dash-section" id="sec-fl-views">
+            <div class="dash-top">
+                <h1>
+                    <i class="fas fa-eye" style="color:#e91e63"></i>
+                    <span>Ki moun ki gade pwofil ou</span>
+                </h1>
+            </div>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;max-width:640px">
+                <i class="fas fa-crown" style="color:#ffd700"></i> Sèlman manm <strong>Premium</strong> yo parèt isit la. Chak fwa yon VIP Premium gade pwofil ou, w ap wè non l ak lè a.
+            </p>
+            <div id="flViewsList" style="max-width:680px">
+                <div class="empty-state">
+                    <i class="fas fa-eye-slash"></i>
+                    <h4>Pa gen vizit anko</h4>
+                    <p style="color:var(--text-muted);font-size:0.82rem">Lè yon VIP Premium gade pwofil ou, l ap parèt la.</p>
+                </div>
+            </div>
+        </div>
+
         <!-- FL PROFILE -->
         <div class="dash-section" id="sec-fl-profile">
             <div class="dash-top">
@@ -1812,6 +1838,18 @@ if (!auth) {
                     /* Synchronise / backfill le profil PUBLIC (sans imel ni telefòn) */
                     try { syncPublicProfile(user.uid, userData, true); } catch (e) { console.warn("syncPublicProfile:", e); }
 
+                    /* Notifie les VIP qui ont mis cet Elu en favori qu'il/elle est
+                       en ligne (le serveur throttle à 6h pour ne pas spammer). */
+                    if (userData.status === "active") {
+                        user.getIdToken().then(function (idToken) {
+                            return fetch("/.netlify/functions/favorite-online", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ idToken: idToken })
+                            });
+                        }).catch(function () {});
+                    }
+
                     /* Mark offline on page close */
                     window.addEventListener("beforeunload", function() {
                         db.collection("users").doc(user.uid).update({
@@ -2099,6 +2137,7 @@ function setupFreelancer() {
     loadFlReservations();
     loadFlSoldeByPeriod();
     loadDmThreads();   /* écoute des messages (badge live) */
+    try { loadFlProfileViews(); } catch (e) { console.warn("loadFlProfileViews:", e); }
 
     /* Show overview */
     showSection("fl-overview", null);
@@ -3045,6 +3084,82 @@ function loadFlSoldeByPeriod() {
 }
 
 /* ====================================
+   VUES DE PROFIL — "Ki moun ki gade pwofil ou"
+   Liste les VIP Premium qui ont vu le profil de l'Elu (temps réel).
+   ==================================== */
+var _flViewsUnsub = null;
+function flViewTimeAgo(ms) {
+    if (!ms) return "";
+    var diff = Math.max(0, Date.now() - ms);
+    var mn = Math.floor(diff / 60000);
+    if (mn < 1) return "kounye a";
+    if (mn < 60) return "gen " + mn + " min";
+    var hr = Math.floor(mn / 60);
+    if (hr < 24) return "gen " + hr + " èdtan";
+    var jr = Math.floor(hr / 24);
+    if (jr < 30) return "gen " + jr + " jou";
+    return new Date(ms).toLocaleDateString();
+}
+function loadFlProfileViews() {
+    if (!db || !currentUser) return;
+    if (_flViewsUnsub) { try { _flViewsUnsub(); } catch (e) {} }
+    _flViewsUnsub = db.collection("profileViews")
+        .where("eluUid", "==", currentUser.uid)
+        .onSnapshot(function (snap) {
+            var rows = [];
+            snap.forEach(function (d) { rows.push(d.data()); });
+            /* Tri par dernière visite (récent d'abord) */
+            rows.sort(function (a, b) {
+                var am = a.lastAt && a.lastAt.toMillis ? a.lastAt.toMillis() : 0;
+                var bm = b.lastAt && b.lastAt.toMillis ? b.lastAt.toMillis() : 0;
+                return bm - am;
+            });
+
+            var list = document.getElementById("flViewsList");
+            var badge = document.getElementById("flViewsBadge");
+            var unseen = rows.filter(function (r) { return r.seenByElu !== true; }).length;
+            if (badge) {
+                if (unseen > 0) { badge.textContent = unseen; badge.style.display = "inline-block"; }
+                else badge.style.display = "none";
+            }
+            if (!list) return;
+            if (!rows.length) {
+                list.innerHTML = '<div class="empty-state"><i class="fas fa-eye-slash"></i><h4>Pa gen vizit anko</h4>' +
+                    '<p style="color:var(--text-muted);font-size:0.82rem">Lè yon VIP Premium gade pwofil ou, l ap parèt la.</p></div>';
+                return;
+            }
+            var h = "";
+            rows.forEach(function (r) {
+                var ms = r.lastAt && r.lastAt.toMillis ? r.lastAt.toMillis() : 0;
+                var isNew = r.seenByElu !== true;
+                h += '<div style="display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid ' + (isNew ? 'rgba(233,30,99,0.4)' : 'var(--border)') + ';border-radius:14px;padding:14px 16px;margin-bottom:10px">';
+                h += '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff"><i class="fas fa-user"></i></div>';
+                h += '<div style="flex:1;min-width:0">';
+                h += '<div style="font-weight:600;color:#fff">' + escDash(r.viewerName || "VIP") + ' <span style="display:inline-block;background:rgba(255,215,0,0.15);color:#ffd700;font-size:0.6rem;font-weight:700;padding:1px 7px;border-radius:50px;border:1px solid rgba(255,215,0,0.35);vertical-align:middle"><i class="fas fa-crown"></i> Premium</span></div>';
+                h += '<div style="font-size:0.76rem;color:var(--text-muted)"><i class="fas fa-clock"></i> ' + flViewTimeAgo(ms) + (r.count > 1 ? ' · ' + r.count + ' fwa' : '') + '</div>';
+                h += '</div>';
+                if (isNew) h += '<span style="width:9px;height:9px;background:#e91e63;border-radius:50%;flex-shrink:0;box-shadow:0 0 6px #e91e63"></span>';
+                h += '</div>';
+            });
+            list.innerHTML = h;
+        }, function (e) { console.warn("profileViews:", e.code || e.message); });
+}
+/* Marque les visites comme "vues" quand l'Elu ouvre la section (enlève le badge). */
+function markProfileViewsSeen() {
+    if (!db || !currentUser) return;
+    db.collection("profileViews").where("eluUid", "==", currentUser.uid).where("seenByElu", "==", false).get()
+        .then(function (snap) {
+            if (snap.empty) return;
+            var refs = []; snap.forEach(function (d) { refs.push(d.ref); });
+            for (var i = 0; i < refs.length; i += 400) {
+                var b = db.batch();
+                refs.slice(i, i + 400).forEach(function (ref) { b.update(ref, { seenByElu: true }); });
+                b.commit().catch(function () {});
+            }
+        }).catch(function () {});
+}
+
+/* ====================================
    BUILD RESERVATION ROW
    ==================================== */
 function buildResRow(r, isFL, ratedSet) {
@@ -3307,6 +3422,7 @@ function showSection(id, btn) {
     if (btn) btn.classList.add("active");
     if (id === "fl-messages") loadDmThreads();
     if (id === "messages") loadUserDmThreads();
+    if (id === "fl-views") { try { markProfileViewsSeen(); } catch (e) {} }
     closeSidebar();
 }
 

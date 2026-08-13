@@ -221,6 +221,19 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    /* -------- VUES DE PROFIL (profileViews) : "qui a vu ton profil" --------
+       Écrites UNIQUEMENT par la fonction profile-view (Admin SDK) quand un VIP
+       Premium ouvre un profil. L'Elu concerné lit SES visites et peut seulement
+       les marquer comme "vues" (seenByElu) — rien d'autre. */
+    match /profileViews/{viewId} {
+      allow read:   if isAdmin()
+        || (isSignedIn() && resource.data.eluUid == request.auth.uid);
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isSignedIn() && resource.data.eluUid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seenByElu']));
+    }
+
     /* -------- TOUT LE RESTE : interdit par défaut --------
        (Aucune collection oubliée ne reste ouverte.) */
     match /{document=**} {

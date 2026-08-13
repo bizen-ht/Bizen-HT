@@ -4767,25 +4767,28 @@ function tFav(btn, e) {
     var i = btn.querySelector("i");
     var card = btn.closest(".pc");
     var name = "";
+    var uid = "";
     if (card) {
         var nm = card.querySelector(".pc-name");
         if (nm) name = nm.textContent;
+        uid = card.getAttribute("data-uid") || "";
     }
     if (i.classList.contains("far")) {
         i.classList.replace("far", "fas");
         i.style.color = "#e91e63";
         if (auth && auth.currentUser && db && name) {
-            db.collection("users").doc(auth.currentUser.uid).update({
-                favorites: firebase.firestore.FieldValue.arrayUnion(name)
-            }).catch(function () {});
+            var addUpd = { favorites: firebase.firestore.FieldValue.arrayUnion(name) };
+            /* On stocke AUSSI l'UID (fiable) pour la notif "favori en ligne". */
+            if (uid) addUpd.favoriteUids = firebase.firestore.FieldValue.arrayUnion(uid);
+            db.collection("users").doc(auth.currentUser.uid).update(addUpd).catch(function () {});
         }
     } else {
         i.classList.replace("fas", "far");
         i.style.color = "";
         if (auth && auth.currentUser && db && name) {
-            db.collection("users").doc(auth.currentUser.uid).update({
-                favorites: firebase.firestore.FieldValue.arrayRemove(name)
-            }).catch(function () {});
+            var remUpd = { favorites: firebase.firestore.FieldValue.arrayRemove(name) };
+            if (uid) remUpd.favoriteUids = firebase.firestore.FieldValue.arrayRemove(uid);
+            db.collection("users").doc(auth.currentUser.uid).update(remUpd).catch(function () {});
         }
     }
 }
@@ -6781,6 +6784,16 @@ var currentResCard = null;
    ==================================== */
 var bookingTarget = null;
 
+/* Partage le profil d'un Elu sur WhatsApp — le lien /pwofil/<kòd> génère
+   un bel aperçu (photo + nom) via la fonction elu-preview.js. */
+function shareEluWhatsApp(code, name) {
+    var url = code
+        ? ("https://bizenht.com/pwofil/" + encodeURIComponent(code))
+        : "https://bizenht.com/";
+    var txt = "Gade pwofil " + (name || "Elu sa a") + " sou Bizen HT 💗\n" + url;
+    window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank", "noopener");
+}
+
 function openEluProfile(btnOrUid) {
     if (!auth || !auth.currentUser) { oM("lM"); return; }
     var uid = (typeof btnOrUid === "string") ? btnOrUid : (btnOrUid.closest(".pc") ? btnOrUid.closest(".pc").getAttribute("data-uid") : "");
@@ -6810,6 +6823,19 @@ function openEluProfile(btnOrUid) {
         window._eluProfileZones = d.zones || [];   /* zones de couverture */
         window._eluProfileLoc = d.localisation || "";   /* localisation principale */
         window._eluProfileHotelNotIncluded = (d.hotelNotIncluded === true);   /* hotel non inclus pour cet Elu */
+
+        /* Vue de profil : si le visiteur est Premium, on prévient l'Elu (il verra
+           le nom du VIP dans son dashboard). Le serveur revérifie le statut Premium
+           et déduplique les notifs (max 1/12h par VIP). Fire-and-forget. */
+        if (isPremiumViewer && auth && auth.currentUser) {
+            auth.currentUser.getIdToken().then(function (idToken) {
+                return fetch("/.netlify/functions/profile-view", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ idToken: idToken, eluUid: uid })
+                });
+            }).catch(function () {});
+        }
 
         var mediaList = [];
         gallery.forEach(function(u) { mediaList.push({ type: "image", url: u }); });
@@ -6884,8 +6910,19 @@ function openEluProfile(btnOrUid) {
             h += '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.12)"><i class="fas fa-moon" style="color:#9c8bd8;font-size:0.85rem"></i><span style="font-weight:700;font-size:1rem;color:#b9a9e6">' + domiPrice.toLocaleString() + ' Gdes</span><span style="color:#6a6a80;font-size:0.75rem">/ Domi (nwit)</span></div>';
         }
         h += '</div>';
-        h += '<h4 style="font-size:0.9rem;margin-bottom:10px"><i class="fas fa-images" style="color:#9c27b0"></i> Galri</h4>';
-        h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">' + galHtml + '</div>';
+        /* GALERIE : réservée aux Premium. Les gratuits (même via lien partagé)
+           ne voient PAS les médias — juste une invitation à passer Premium. */
+        if (isPremiumViewer) {
+            h += '<h4 style="font-size:0.9rem;margin-bottom:10px"><i class="fas fa-images" style="color:#9c27b0"></i> Galri</h4>';
+            h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">' + galHtml + '</div>';
+        } else if (mediaList.length) {
+            h += '<h4 style="font-size:0.9rem;margin-bottom:10px"><i class="fas fa-images" style="color:#9c27b0"></i> Galri</h4>';
+            h += '<div style="padding:26px 18px;text-align:center;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);border-radius:12px;margin-bottom:20px">'
+               + '<i class="fas fa-lock" style="color:#ffd700;font-size:1.5rem"></i>'
+               + '<p style="color:#ffd700;font-size:0.85rem;margin-top:10px;line-height:1.5">Foto ak videyo galri ' + name + ' yo disponib sèlman pou manm <strong>Premium</strong>.</p>'
+               + '<button class="btn btn-primary" style="margin-top:12px;padding:8px 18px;font-size:0.8rem" onclick="cM(\'eluProfM\');oM(\'pM\')"><i class="fas fa-crown"></i> Vin Premium</button>'
+               + '</div>';
+        }
         /* MESSAGERIE : tout le monde peut écrire (les gratuits "à l'aveugle"). */
         var safeName = name.replace(/'/g, "\\'");
         h += '<button class="btn btn-outline fw" style="margin-bottom:10px;border-color:#9c27b0;color:#ce93d8" onclick="openDM(\'' + uid + '\',\'' + safeName + '\')"><i class="fas fa-comment-dots"></i> Pale ak ' + name + ' an prive</button>';
@@ -6904,6 +6941,10 @@ function openEluProfile(btnOrUid) {
             /* Gratuit : pas de réservation -> invitation Premium */
             h += '<button class="btn btn-primary fw btn-glow" onclick="cM(\'eluProfM\');oM(\'pM\')"><i class="fas fa-crown"></i> Vin Premium pou rezève</button>';
         }
+        /* Partage WhatsApp — DISCRET et en DERNIER (aperçu photo+nom via /pwofil/<kòd>) */
+        h += '<div style="text-align:center;margin-top:16px">'
+           + '<button onclick="shareEluWhatsApp(\'' + (d.bizenCode || "") + '\',\'' + safeName + '\')" style="background:transparent;border:1px solid rgba(37,211,102,0.4);color:#25D366;font-size:0.72rem;padding:6px 16px;border-radius:20px;cursor:pointer;font-family:inherit"><i class="fab fa-whatsapp"></i> Pataje pwofil sa a</button>'
+           + '</div>';
         h += '</div></div>';
 
         var wrap = document.createElement("div");
