@@ -872,6 +872,20 @@
                     <i class="fas fa-save"></i> Sove
                 </button>
             </div>
+
+            <!-- ZONE DANJE : efase kont (VIP sèlman) -->
+            <div id="dangerZone" style="display:none;background:var(--bg-card);border:1px solid rgba(244,67,54,0.35);border-radius:var(--radius-lg);padding:26px 30px;max-width:500px;margin-top:22px">
+                <h3 style="font-family:'Playfair Display',serif;margin-bottom:10px;color:#f44336">
+                    <i class="fas fa-triangle-exclamation"></i> Zòn Danje
+                </h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:18px">
+                    Efase kont ou pou tout bon. Sa ap retire pwofil ou, favori ou yo ak tout konvèsasyon (mesaj) ou yo. <strong style="color:#f44336">Aksyon sa a definitif — ou pa ka defèt li.</strong>
+                </p>
+                <button id="delAccBtn" onclick="deleteMyAccount()"
+                        style="padding:10px 22px;background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.4);border-radius:var(--radius-full);cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:700">
+                    <i class="fas fa-user-slash"></i> Efase kont mwen
+                </button>
+            </div>
         </div>
 
         <!-- ESPAS AFILYE -->
@@ -1898,6 +1912,10 @@ function setupUser() {
     var setTelEl = document.getElementById("setTel");
     if (setNameEl) setNameEl.value = fullName;
     if (setTelEl) setTelEl.value = userData.telephone || "";
+
+    /* Zone danger : suppression de compte réservée au VIP */
+    var dz = document.getElementById("dangerZone");
+    if (dz) dz.style.display = "block";
 
     /* Build plan section */
     buildPlanSection();
@@ -3757,6 +3775,40 @@ function saveSettings() {
 function doLogout() {
     auth.signOut().then(function () {
         window.location.href = "index.html";
+    });
+}
+
+/* ====================================
+   EFACER SON PROPRE COMPTE (VIP)
+   ==================================== */
+function deleteMyAccount() {
+    if (!currentUser) return;
+    if (!confirm("Èske w SETEN ou vle efase kont ou pou tout bon? Ou ap pèdi favori w yo ak tout mesaj ou yo.")) return;
+    if (!confirm("Dènye konfimasyon: aksyon sa a DEFINITIF epi ou pa ka defèt li. Kontinye?")) return;
+
+    var btn = document.getElementById("delAccBtn");
+    if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> N ap efase...'; }
+
+    currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/delete-account", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken })
+        });
+    }).then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+    }).then(function (r) {
+        if (!r.ok || !r.data.success) throw new Error(r.data && r.data.error ? r.data.error : "Erè");
+        showToast("Kont ou efase. N ap voye w sou paj dakèy la.", "success");
+        /* Le compte Auth est déjà supprimé côté serveur : on déconnecte + redirige. */
+        setTimeout(function () {
+            auth.signOut().catch(function () {}).then(function () {
+                window.location.href = "index.html";
+            });
+        }, 1200);
+    }).catch(function (e) {
+        if (btn) { btn.disabled = false; btn.style.opacity = "1"; btn.innerHTML = '<i class="fas fa-user-slash"></i> Efase kont mwen'; }
+        showToast("Pa t kapab efase kont lan: " + (e.message || "erè"), "error");
     });
 }
 
