@@ -54,15 +54,9 @@ exports.handler = async function (event) {
 
         var name = elu.pseudo || ((elu.prenom || "") + " " + (elu.nomInitial || elu.nom || "")).trim() || "Yon Elu";
 
-        /* Throttle par Elu (stocké sur le profil public). */
-        var pubRef = dbf.collection("publicProfiles").doc(eluUid);
-        var pubSnap = await pubRef.get();
-        var last = pubSnap.exists && pubSnap.data().onlineNotifiedAt && pubSnap.data().onlineNotifiedAt.toMillis
-            ? pubSnap.data().onlineNotifiedAt.toMillis() : 0;
-        if (Date.now() - last < THROTTLE_MS) return ok({ throttled: true });
-        await pubRef.set({ onlineNotifiedAt: admin.firestore.Timestamp.now() }, { merge: true });
-
-        /* VIP qui ont mis cet Elu en favori (par UID fiable). */
+        /* 1) D'ABORD les fans : VIP qui ont mis cet Elu en favori (par UID fiable).
+           On collecte leurs jetons AVANT de toucher au throttle, pour ne pas
+           « brûler » la fenêtre 6h quand l'Elu n'a aucun fan à notifier. */
         var favSnap = await dbf.collection("users").where("favoriteUids", "array-contains", eluUid).limit(400).get();
         var tokens = [];
         favSnap.forEach(function (d) {
@@ -70,7 +64,15 @@ exports.handler = async function (event) {
             if (d.id === eluUid) return;
             (u.fcmTokens || []).forEach(function (t) { if (t) tokens.push(t); });
         });
-        if (!tokens.length) return ok({ sent: 0, fans: favSnap.size });
+        if (!tokens.length) return ok({ sent: 0, fans: favSnap.size });   /* aucun fan joignable => throttle intact */
+
+        /* 2) Throttle par Elu (posé SEULEMENT s'il y a vraiment qui notifier). */
+        var pubRef = dbf.collection("publicProfiles").doc(eluUid);
+        var pubSnap = await pubRef.get();
+        var last = pubSnap.exists && pubSnap.data().onlineNotifiedAt && pubSnap.data().onlineNotifiedAt.toMillis
+            ? pubSnap.data().onlineNotifiedAt.toMillis() : 0;
+        if (Date.now() - last < THROTTLE_MS) return ok({ throttled: true });
+        await pubRef.set({ onlineNotifiedAt: admin.firestore.Timestamp.now() }, { merge: true });
 
         var link = "/?p=" + encodeURIComponent(eluUid);
         var sent = 0;
