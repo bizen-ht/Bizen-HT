@@ -271,7 +271,7 @@ if (!bizenCode) {
             } else {
                 var doc = snap.docs[0];
                 showProfile(doc.data());
-                loadProfileRating(doc.id);
+                loadProfileRating(doc.id, doc.data().confirmedMeetings || 0);
             }
         })
         .catch(function(err) {
@@ -280,21 +280,26 @@ if (!bizenCode) {
         });
 }
 
-function eluLevel(count, avg) {
-    if (count >= 50 && avg >= 4.8) return { name: "Elit VIP", color: "#7df9ff", icon: "fa-gem" };
-    if (count >= 20 && avg >= 4.5) return { name: "Premium", color: "#ffd700", icon: "fa-crown" };
-    if (count >= 5  && avg >= 4.0) return { name: "Konfime", color: "#c0c0c0", icon: "fa-medal" };
+/* NIVEAU = mérite (rankont confirmées = met:true), stocké dans
+   publicProfiles.confirmedMeetings. Même échelle que le site. */
+function eluLevel(merit) {
+    merit = merit || 0;
+    if (merit >= 60) return { name: "Lejand", color: "#b388ff", icon: "fa-trophy" };
+    if (merit >= 30) return { name: "Elit",   color: "#7df9ff", icon: "fa-gem" };
+    if (merit >= 15) return { name: "Etwal",  color: "#ffd700", icon: "fa-crown" };
+    if (merit >= 5)  return { name: "Popilè", color: "#ffb300", icon: "fa-star" };
+    if (merit >= 1)  return { name: "Konfime",color: "#c0c0c0", icon: "fa-circle-check" };
     return { name: "Nouvo Elu", color: "#cd9b6a", icon: "fa-seedling" };
 }
 
-function loadProfileRating(uid) {
+function loadProfileRating(uid, merit) {
     if (!db || !uid) return;
     db.collection("ratings").where("prestateId", "==", uid).get()
         .then(function(snap) {
             var sum = 0, count = 0;
             snap.forEach(function(d) { sum += (d.data().stars || 0); count++; });
             var avg = count ? (sum / count) : 0;
-            var lvl = eluLevel(count, avg);
+            var lvl = eluLevel(merit || 0);
 
             var starsStr = "";
             for (var i = 1; i <= 5; i++) {

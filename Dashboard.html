@@ -969,6 +969,9 @@
                 </div>
             </div>
 
+            <!-- NIVEAU DE MÉRITE DE L'ELU (par rankont confirmées) -->
+            <div id="flLevelBox" style="display:none;margin-bottom:20px"></div>
+
             <!-- NOTIFICATION COMPTE GELÉ -->
             <div id="flFrozenNotice" style="display:none;background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.4);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start">
                 <div style="width:44px;height:44px;border-radius:50%;background:rgba(244,67,54,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -3039,6 +3042,45 @@ function loadFlReservations() {
 /* ====================================
    LOAD FL SOLDE BY PERIOD
    ==================================== */
+/* ====================================
+   NIVEAUX DE MÉRITE (basés sur les rankont CONFIRMÉES = met:true)
+   Échelle commune au site (index.html / profil.html) :
+     Nouvo(0) → Konfime(1) → Popilè(5) → Etwal(15) → Elit(30) → Lejand(60)
+   ==================================== */
+function eluLevelDash(merit) {
+    merit = merit || 0;
+    if (merit >= 60) return { name: "Lejand", color: "#b388ff", bg: "rgba(179,136,255,0.14)", icon: "fa-trophy", next: null };
+    if (merit >= 30) return { name: "Elit",   color: "#7df9ff", bg: "rgba(125,249,255,0.12)", icon: "fa-gem", next: 60 };
+    if (merit >= 15) return { name: "Etwal",  color: "#ffd700", bg: "rgba(255,215,0,0.12)", icon: "fa-crown", next: 30 };
+    if (merit >= 5)  return { name: "Popilè", color: "#ffb300", bg: "rgba(255,179,0,0.12)", icon: "fa-star", next: 15 };
+    if (merit >= 1)  return { name: "Konfime",color: "#c0c0c0", bg: "rgba(192,192,192,0.14)", icon: "fa-circle-check", next: 5 };
+    return { name: "Nouvo", color: "#cd9b6a", bg: "rgba(205,155,106,0.12)", icon: "fa-seedling", next: 1 };
+}
+
+function renderFlLevel(merit) {
+    var box = document.getElementById("flLevelBox");
+    if (!box) return;
+    var lvl = eluLevelDash(merit);
+    var progress = "";
+    if (lvl.next) {
+        var remain = lvl.next - merit;
+        progress = '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:6px">Ankò <strong style="color:' + lvl.color + '">' + remain + '</strong> rankont konfime pou rive nan pwochen nivo a.</div>';
+    } else {
+        progress = '<div style="font-size:0.8rem;color:' + lvl.color + ';margin-top:6px">Ou nan nivo ki pi wo a. Bravo! 🏆</div>';
+    }
+    box.style.display = "block";
+    box.innerHTML =
+        '<div style="background:' + lvl.bg + ';border:1px solid ' + lvl.color + '55;border-radius:var(--radius-lg);padding:18px 22px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
+            '<div style="width:52px;height:52px;border-radius:50%;background:' + lvl.color + '22;border:1px solid ' + lvl.color + '66;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas ' + lvl.icon + '" style="color:' + lvl.color + ';font-size:1.4rem"></i></div>' +
+            '<div style="flex:1;min-width:200px">' +
+                '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Nivo ou</div>' +
+                '<div style="font-family:\'Playfair Display\',serif;font-size:1.5rem;color:' + lvl.color + ';font-weight:700">' + lvl.name + '</div>' +
+                '<div style="font-size:0.82rem;color:var(--text-secondary)">' + merit + ' rankont konfime</div>' +
+                progress +
+            '</div>' +
+        '</div>';
+}
+
 function loadFlSoldeByPeriod() {
     if (!db || !userData) return;
 
@@ -3048,6 +3090,7 @@ function loadFlSoldeByPeriod() {
         .then(function (snap) {
             var today = 0, week = 0, month = 0;
             var soldeDispo = 0, totalRevni = 0, totalTouche = 0;
+            var metCount = 0;   /* nombre de rankont CONFIRMÉES (met:true) = mérite */
             var now = new Date();
             snap.forEach(function (doc) {
                 var r = doc.data();
@@ -3057,6 +3100,7 @@ function loadFlSoldeByPeriod() {
                 var met = (r.met === true);        /* rankont confirmé par le VIP */
                 var paid = (r.paidOut === true);   /* Elu déjà payé */
                 if (met) {
+                    metCount++;
                     totalRevni += net;                  /* revenu réalisé (cumul, ne baisse jamais) */
                     if (paid) totalTouche += net;       /* déjà versé -> Total Touche */
                     else soldeDispo += net;             /* confirmé non payé -> Solde Disponib */
@@ -3070,6 +3114,16 @@ function loadFlSoldeByPeriod() {
                     }
                 }
             });
+
+            /* MÉRITE : on stocke le nombre de rankont confirmées sur users +
+               publicProfiles (public) pour que le site calcule le NIVEAU de l'Elu.
+               On n'écrit QUE si ça a changé (économie d'écritures Firestore). */
+            if (metCount !== (userData.confirmedMeetings || 0)) {
+                userData.confirmedMeetings = metCount;
+                db.collection("users").doc(currentUser.uid).set({ confirmedMeetings: metCount }, { merge: true }).catch(function () {});
+                db.collection("publicProfiles").doc(currentUser.uid).set({ confirmedMeetings: metCount }, { merge: true }).catch(function () {});
+            }
+            try { renderFlLevel(metCount); } catch (e) {}
             /* Solde Disponib et Total Touche/Revni sont calculés depuis les
                réservations (le VIP confirme -> le net entre en Solde Disponib ;
                le paiement -> il passe en Total Touche). */

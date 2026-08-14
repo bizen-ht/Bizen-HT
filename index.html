@@ -3702,6 +3702,7 @@ function mkCard(p, type, male) {
         + ' data-demo="' + (isDemo ? "1" : "0") + '"'
         + ' data-agency="' + (p.agencySlug || "") + '"'
         + ' data-name="' + (p.n || "").replace(/"/g, "&quot;") + '"'
+        + ' data-merit="' + (p.merit || 0) + '"'
         + ' data-price="' + (p.p || "") + '">';
     h += '<div class="pc-img">';
     h += '<div class="pc-bg" style="background:' + p.g + '">';
@@ -4075,7 +4076,8 @@ function renderRealFreelancers() {
                     uid: doc.id,
                     photoUrl: d.photoUrl || "",
                     online: !!d.isOnline,
-                    lastSeen: d.lastSeen || null
+                    lastSeen: d.lastSeen || null,
+                    merit: (typeof d.confirmedMeetings === "number" ? d.confirmedMeetings : 0)
                 };
 
                 var cardHtml = mkCard(cardData, male ? "Gason" : "Fanm", male);
@@ -6476,10 +6478,17 @@ function maybeOpenReview() {
 /* ====================================
    NIVEAUX ELU (basé sur notes)
    ==================================== */
-function eluLevel(count, avg) {
-    if (count >= 50 && avg >= 4.8) return { name: "Elit VIP", color: "#7df9ff", bg: "rgba(125,249,255,0.12)", icon: "fa-gem", vedette: true };
-    if (count >= 20 && avg >= 4.5) return { name: "Premium", color: "#ffd700", bg: "rgba(255,215,0,0.12)", icon: "fa-crown", vedette: false };
-    if (count >= 5  && avg >= 4.0) return { name: "Konfime", color: "#c0c0c0", bg: "rgba(192,192,192,0.12)", icon: "fa-medal", vedette: false };
+/* NIVEAUX DE MÉRITE — basés sur le nombre de RANKONT CONFIRMÉES (met:true),
+   stocké dans publicProfiles.confirmedMeetings. Un Elu passe "Konfime" dès sa
+   1ère rankont confirmée, puis monte par mérite. (Les étoiles/notes restent
+   affichées à part — elles ne déterminent plus le niveau.) */
+function eluLevel(merit) {
+    merit = merit || 0;
+    if (merit >= 60) return { name: "Lejand", color: "#b388ff", bg: "rgba(179,136,255,0.14)", icon: "fa-trophy", vedette: true };
+    if (merit >= 30) return { name: "Elit",   color: "#7df9ff", bg: "rgba(125,249,255,0.12)", icon: "fa-gem", vedette: true };
+    if (merit >= 15) return { name: "Etwal",  color: "#ffd700", bg: "rgba(255,215,0,0.12)", icon: "fa-crown", vedette: false };
+    if (merit >= 5)  return { name: "Popilè", color: "#ffb300", bg: "rgba(255,179,0,0.12)", icon: "fa-star", vedette: false };
+    if (merit >= 1)  return { name: "Konfime",color: "#c0c0c0", bg: "rgba(192,192,192,0.14)", icon: "fa-circle-check", vedette: false };
     return { name: "Nouvo", color: "#cd9b6a", bg: "rgba(205,155,106,0.12)", icon: "fa-seedling", vedette: false };
 }
 
@@ -6507,10 +6516,13 @@ function decorateRatings() {
             if (!uid) return;
             var a = agg[uid] || { sum: 0, count: 0 };
             var avg = a.count ? (a.sum / a.count) : 0;
-            var lvl = eluLevel(a.count, avg);
+            /* NIVEAU = mérite (rankont confirmées), pas les notes. Le mérite est
+               posé sur la carte (data-merit) par mkCard depuis publicProfiles. */
+            var merit = parseInt(card.getAttribute("data-merit"), 10) || 0;
+            var lvl = eluLevel(merit);
 
-            /* Tri: stocke un score de niveau pour réordonner */
-            var score = (lvl.vedette ? 4 : lvl.name === "Premium" ? 3 : lvl.name === "Konfime" ? 2 : 1) * 1000 + Math.round(avg * 100);
+            /* Tri: score de niveau (mérite d'abord) puis moyenne des notes */
+            var score = merit * 1000 + Math.round(avg * 100);
             card.setAttribute("data-level-score", score);
 
             /* Évite les doublons d'injection */
@@ -6808,11 +6820,13 @@ function openEluProfile(btnOrUid) {
         if (!doc.exists) { toast("Pwofil pa disponib.", "err"); return; }
         var d = doc.data();
 
-        /* Agrège les notes (même logique que decorateRatings) */
+        /* Agrège les notes (étoiles, affichées à part) */
         var sum = 0, count = 0;
         results[1].forEach(function(r) { sum += (r.data().stars || 0); count++; });
         var avg = count ? (sum / count) : 0;
-        var lvl = eluLevel(count, avg);
+        /* NIVEAU = mérite (rankont confirmées), pas les notes */
+        var merit = (typeof d.confirmedMeetings === "number" ? d.confirmedMeetings : 0);
+        var lvl = eluLevel(merit);
 
         var name = d.pseudo || ((d.prenom || "") + " " + (d.nomInitial || ""));
         var disc = eluDiscount(d);
