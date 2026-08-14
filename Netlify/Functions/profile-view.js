@@ -62,6 +62,7 @@ exports.handler = async function (event) {
         var elu = eluSnap.data();
         if (elu.type !== "freelancer" && elu.type !== "krey") return ok({ skipped: "pa elu" });
 
+        /* Nom visible : le PSEUDO du VIP en priorité (vrai nom reste privé). */
         var viewerName = (viewer.pseudo || ((viewer.prenom || "") + " " + (viewer.nom || "")).trim() || "Yon VIP").slice(0, 60);
 
         /* 1 doc par paire => dédup + historique. */

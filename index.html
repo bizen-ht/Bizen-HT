@@ -2530,6 +2530,12 @@ body.is-premium .pc-blur{display:none!important}
         </div>
     </div>
     <div class="fg">
+        <label>Pseudo <span style="color:#6a6a80;font-weight:400">(non ki ap parèt — opsyonèl)</span></label>
+        <input type="text" id="urPseudo"
+               placeholder="Egz: King, Boss, JR...">
+        <p style="font-size:0.72rem;color:#f48fb1;margin-top:4px"><i class="fas fa-eye"></i> Se pseudo sa a Elu yo ap wè (lè w gade yon pwofil oswa nan mesaj). Vrè non w rete prive.</p>
+    </div>
+    <div class="fg">
         <label>Imel</label>
         <input type="email" id="urEmail"
                placeholder="email@gmail.com"
@@ -5680,6 +5686,7 @@ function doUR(e) {
     var gv = function(id) { var el = document.getElementById(id); return el ? (el.value || "") : ""; };
     var pr = gv("urPrenom").trim();
     var nm = gv("urNom").trim();
+    var ps = gv("urPseudo").trim().slice(0, 30);   /* pseudo visible (optionnel) */
     var em = gv("urEmail").trim();
     var tel = gv("urTel").trim();
     var pw = gv("rpw");
@@ -5732,7 +5739,7 @@ function doUR(e) {
             /* --- ARRIÈRE-PLAN --- */
             user.sendEmailVerification().catch(function () {});
             bgSet("users", user.uid, {
-                prenom: pr, nom: nm, email: em, telephone: tel,
+                prenom: pr, nom: nm, pseudo: ps, email: em, telephone: tel,
                 localisation: uloc,
                 dateNesans: dt, isPremium: false, type: "user",
                 status: "active", emailVerified: false, favorites: [],

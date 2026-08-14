@@ -650,6 +650,21 @@
                 </div>
             </div>
 
+            <!-- RAPPEL PSEUDO (VIP sans pseudo) -->
+            <div id="pseudoPrompt" style="display:none;background:linear-gradient(135deg,rgba(233,30,99,0.10),rgba(156,39,176,0.10));border:1px solid rgba(233,30,99,0.35);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:20px">
+                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px">
+                    <div style="width:46px;height:46px;border-radius:50%;background:rgba(233,30,99,0.16);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-user-tag" style="color:#f48fb1;font-size:1.2rem"></i></div>
+                    <div style="flex:1;min-width:200px">
+                        <div style="font-weight:700;font-size:1rem">Chwazi yon pseudo</div>
+                        <p style="font-size:0.84rem;color:var(--text-secondary);line-height:1.5;margin-top:2px">Se non sa a Elu yo ap wè (lè w gade yon pwofil oswa nan mesaj). <strong>Vrè non w rete prive.</strong></p>
+                    </div>
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                    <input type="text" id="vipPseudoInput" maxlength="30" placeholder="Egz: King, Boss, JR..." style="flex:1;min-width:180px;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem;font-family:'Montserrat',sans-serif">
+                    <button onclick="saveVipPseudo('vipPseudoInput')" style="background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:600;font-size:0.86rem;cursor:pointer;white-space:nowrap"><i class="fas fa-check"></i> Anrejistre</button>
+                </div>
+            </div>
+
             <!-- RAPPEL ZONE (utilisateurs inscrits avant l'ajout du champ) -->
             <div id="userZoneCard" style="display:none;background:rgba(233,30,99,0.07);border:1px solid rgba(233,30,99,0.28);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px">
                 <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
@@ -872,6 +887,12 @@
                     <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px">Telefon</label>
                     <input type="tel" id="setTel"
                            style="width:100%;padding:10px 15px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif">
+                </div>
+                <div style="margin-bottom:15px">
+                    <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px">Pseudo <span style="color:#6a6a80">(non ki ap parèt bay Elu yo)</span></label>
+                    <input type="text" id="setPseudo" maxlength="30" placeholder="Egz: King, Boss, JR..."
+                           style="width:100%;padding:10px 15px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif">
+                    <p style="font-size:0.72rem;color:#f48fb1;margin-top:5px"><i class="fas fa-eye"></i> Vrè non w rete prive. Se pseudo a Elu yo wè.</p>
                 </div>
                 <button onclick="saveSettings()"
                         style="padding:10px 25px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:var(--radius-full);cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600">
@@ -1953,6 +1974,12 @@ function setupUser() {
     var setTelEl = document.getElementById("setTel");
     if (setNameEl) setNameEl.value = fullName;
     if (setTelEl) setTelEl.value = userData.telephone || "";
+    var setPseudoEl = document.getElementById("setPseudo");
+    if (setPseudoEl) setPseudoEl.value = userData.pseudo || "";
+
+    /* Rappel pseudo : s'affiche au login si le VIP n'a pas encore de pseudo */
+    var pseudoPrompt = document.getElementById("pseudoPrompt");
+    if (pseudoPrompt) pseudoPrompt.style.display = (userData.pseudo && userData.pseudo.trim()) ? "none" : "block";
 
     /* Zone danger : suppression de compte réservée au VIP */
     var dz = document.getElementById("dangerZone");
@@ -3937,6 +3964,42 @@ function saveSettings() {
         .catch(function () {
             showToast("Ere. Eseye anko.", "error");
         });
+
+    /* Pseudo : passe par le serveur (met aussi à jour les vues déjà enregistrées). */
+    var sp = document.getElementById("setPseudo");
+    if (sp && sp.value.trim() && sp.value.trim() !== (userData.pseudo || "")) {
+        saveVipPseudo("setPseudo", true);
+    }
+}
+
+/* ====================================
+   PSEUDO VIP (nom visible aux Elus)
+   Passe par set-pseudo (Admin SDK) : écrit le pseudo ET met à jour
+   rétroactivement le nom dans les vues de profil déjà enregistrées.
+   ==================================== */
+function saveVipPseudo(inputId, silent) {
+    if (!currentUser) return;
+    var inp = document.getElementById(inputId || "vipPseudoInput");
+    var pseudo = inp ? inp.value.trim().slice(0, 30) : "";
+    if (!pseudo) { if (!silent) showToast("Antre yon pseudo.", "error"); return; }
+
+    currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/set-pseudo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, pseudo: pseudo })
+        });
+    }).then(function (r) {
+        return r.json().then(function (d) { return { ok: r.ok, d: d }; });
+    }).then(function (res) {
+        if (!res.ok || !res.d.success) throw new Error(res.d && res.d.error ? res.d.error : "Erè");
+        userData.pseudo = pseudo;
+        var pp = document.getElementById("pseudoPrompt"); if (pp) pp.style.display = "none";
+        var setP = document.getElementById("setPseudo"); if (setP) setP.value = pseudo;
+        showToast("Pseudo anrejistre: " + pseudo, "success");
+    }).catch(function (e) {
+        showToast("Pa t kapab anrejistre pseudo a: " + (e.message || "eseye ankò"), "error");
+    });
 }
 
 /* ====================================
