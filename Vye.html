@@ -748,6 +748,39 @@
             text-align: center;
             text-decoration: none;
         }
+        /* Classement Elu par glisser-déposer */
+        .ord-list {
+            min-height: 60px;
+            background: rgba(255,255,255,0.02);
+            border: 1px dashed #2a2a3a;
+            border-radius: 12px;
+            padding: 8px;
+        }
+        .ord-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #12121a;
+            border: 1px solid #2a2a3a;
+            border-radius: 10px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            cursor: grab;
+            user-select: none;
+        }
+        .ord-item:last-child { margin-bottom: 0; }
+        .ord-item.dragging { opacity: 0.4; cursor: grabbing; }
+        .ord-item .ord-num {
+            width: 24px; height: 24px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(233,30,99,0.15); color: #f48fb1;
+            border-radius: 6px; font-size: 0.72rem; font-weight: 700;
+        }
+        .ord-item .ord-av {
+            width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%;
+            object-fit: cover; background: #2a2a3a;
+        }
+        .ord-item .ord-grip { color: #6a6a80; margin-left: auto; }
     </style>
 </head>
 <body>
@@ -1012,8 +1045,32 @@
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-star" style="color:var(--red)"></i> Elu</h1>
                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                    <button onclick="toggleEluOrderPanel()" id="eluOrderToggle" title="Klase Elu yo sou sit la ak glise-depoze (pa kategori)" style="background:rgba(233,30,99,0.14);color:#f48fb1;border:1px solid rgba(233,30,99,0.4);border-radius:8px;padding:9px 14px;font-weight:600;cursor:pointer;font-size:0.8rem"><i class="fas fa-arrows-up-down-left-right"></i> Klasman sit la</button>
                     <button onclick="syncEluAges()" title="Kalkile laj tout Elu ki gen dat nesans" style="background:rgba(156,39,176,0.12);color:#ce93d8;border:1px solid rgba(156,39,176,0.35);border-radius:8px;padding:9px 14px;font-weight:600;cursor:pointer;font-size:0.8rem"><i class="fas fa-calculator"></i> Kalkile laj yo</button>
                     <input class="srch" placeholder="Chache..." oninput="srchTbl('tbF',this.value)">
+                </div>
+            </div>
+
+            <!-- PANNEAU DE CLASSEMENT (glisser-déposer) par catégorie -->
+            <div id="eluOrderPanel" style="display:none;margin-bottom:18px">
+                <div style="background:rgba(233,30,99,0.06);border:1px solid rgba(233,30,99,0.25);border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:0.82rem;color:#f48fb1">
+                    <i class="fas fa-circle-info"></i> Glise-depoze Elu yo nan lòd ou vle yo parèt sou sit la (an premye = an tèt). Chak kategori gen pwòp lòd li. Klike <strong>Sove lòd la</strong> apre. Sèlman Elu <strong>Aktif</strong> yo parèt isit.
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px">
+                    <div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                            <h3 style="font-size:0.95rem;color:#f48fb1;margin:0"><i class="fas fa-venus"></i> Fanm</h3>
+                            <button onclick="saveEluOrder('fanm')" style="background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:0.76rem"><i class="fas fa-save"></i> Sove lòd la</button>
+                        </div>
+                        <div id="orderListFanm" class="ord-list" data-genre="fanm"></div>
+                    </div>
+                    <div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                            <h3 style="font-size:0.95rem;color:#64b5f6;margin:0"><i class="fas fa-mars"></i> Gason</h3>
+                            <button onclick="saveEluOrder('gason')" style="background:linear-gradient(135deg,#1976d2,#0d47a1);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:0.76rem"><i class="fas fa-save"></i> Sove lòd la</button>
+                        </div>
+                        <div id="orderListGason" class="ord-list" data-genre="gason"></div>
+                    </div>
                 </div>
             </div>
             <div class="tc">
@@ -2336,6 +2393,125 @@ function toggleEluHotel(id, current) {
         toast(next ? "Hotel make « non inclus » pou Elu sa a." : "Hotel make « inclus » pou Elu sa a.", true);
         /* La table se rafraîchit toute seule via onSnapshot */
     }).catch(function (e) { alert("Erè: " + (e.message || e.code)); });
+}
+
+/* ====================================
+   CLASSEMENT DES ELU (glisser-déposer par catégorie)
+   Écrit un sortRank UNIQUE par Elu dans chaque catégorie => l'ordre du site
+   devient déterministe (le catalogue trie par sortRank décroissant).
+   ==================================== */
+var _ordDragEl = null;
+function isFanm(g) { return !(g === "homme" || g === "gason"); }
+
+function toggleEluOrderPanel() {
+    var panel = document.getElementById("eluOrderPanel");
+    var btn = document.getElementById("eluOrderToggle");
+    if (!panel) return;
+    var show = panel.style.display === "none";
+    panel.style.display = show ? "block" : "none";
+    if (btn) btn.style.background = show ? "rgba(233,30,99,0.3)" : "rgba(233,30,99,0.14)";
+    if (show) renderEluOrderLists();
+}
+
+function renderEluOrderLists() {
+    var listF = document.getElementById("orderListFanm");
+    var listG = document.getElementById("orderListGason");
+    if (!listF || !listG) return;
+
+    /* Seuls les Elu ACTIFS apparaissent sur le site => on ne classe qu'eux. */
+    var actives = (adminFL || []).filter(function (f) { return f.status === "active"; });
+    var fanm = actives.filter(function (f) { return isFanm(f.genre); });
+    var gason = actives.filter(function (f) { return !isFanm(f.genre); });
+
+    /* Tri initial = ordre actuel du site (sortRank décroissant, puis nom). */
+    var byRank = function (a, b) {
+        var ra = (typeof a.sortRank === "number" ? a.sortRank : 0);
+        var rb = (typeof b.sortRank === "number" ? b.sortRank : 0);
+        if (rb !== ra) return rb - ra;
+        return (a.prenom || "").localeCompare(b.prenom || "");
+    };
+    fanm.sort(byRank);
+    gason.sort(byRank);
+
+    listF.innerHTML = fanm.map(ordItemHtml).join("") || '<div style="color:#6a6a80;font-size:0.8rem;padding:12px;text-align:center">Pa gen Elu fanm aktif.</div>';
+    listG.innerHTML = gason.map(ordItemHtml).join("") || '<div style="color:#6a6a80;font-size:0.8rem;padding:12px;text-align:center">Pa gen Elu gason aktif.</div>';
+    attachOrdHandlers(listF);
+    attachOrdHandlers(listG);
+    refreshOrdNumbers(listF);
+    refreshOrdNumbers(listG);
+}
+
+function ordItemHtml(f) {
+    var name = escHtml((f.prenom || "") + " " + (f.nom || "")).trim() || "Elu";
+    var av = f.photoUrl
+        ? '<img class="ord-av" src="' + escHtml(f.photoUrl) + '" onerror="this.style.visibility=\'hidden\'">'
+        : '<span class="ord-av" style="display:flex;align-items:center;justify-content:center;color:#6a6a80"><i class="fas fa-user"></i></span>';
+    return '<div class="ord-item" draggable="true" data-id="' + f.id + '">' +
+        '<span class="ord-num">?</span>' + av +
+        '<div style="min-width:0"><div style="font-weight:600;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div>' +
+        '<div style="font-size:0.68rem;color:#6a6a80">' + escHtml(f.localisation || "Ayiti") + '</div></div>' +
+        '<i class="fas fa-grip-lines ord-grip"></i></div>';
+}
+
+/* Renumérote 1..N (1 = en tête) après chaque changement d'ordre. */
+function refreshOrdNumbers(list) {
+    var items = list.querySelectorAll(".ord-item");
+    for (var i = 0; i < items.length; i++) {
+        var n = items[i].querySelector(".ord-num");
+        if (n) n.textContent = (i + 1);
+    }
+}
+
+function attachOrdHandlers(list) {
+    var items = list.querySelectorAll(".ord-item");
+    items.forEach(function (it) {
+        it.addEventListener("dragstart", function () { _ordDragEl = it; it.classList.add("dragging"); });
+        it.addEventListener("dragend", function () {
+            it.classList.remove("dragging"); _ordDragEl = null; refreshOrdNumbers(list);
+        });
+    });
+    list.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        if (!_ordDragEl || _ordDragEl.parentNode !== list) return;   /* on ne déplace pas entre catégories */
+        var after = ordAfterElement(list, e.clientY);
+        if (after == null) list.appendChild(_ordDragEl);
+        else list.insertBefore(_ordDragEl, after);
+        refreshOrdNumbers(list);
+    });
+}
+
+/* Trouve l'élément juste après la position du curseur (algorithme classique HTML5 DnD). */
+function ordAfterElement(list, y) {
+    var els = Array.prototype.slice.call(list.querySelectorAll(".ord-item:not(.dragging)"));
+    var closest = null, closestOffset = -Infinity;
+    els.forEach(function (child) {
+        var box = child.getBoundingClientRect();
+        var offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closestOffset) { closestOffset = offset; closest = child; }
+    });
+    return closest;
+}
+
+function saveEluOrder(genre) {
+    if (!db) return;
+    var listId = (genre === "fanm") ? "orderListFanm" : "orderListGason";
+    var list = document.getElementById(listId);
+    if (!list) return;
+    var ids = Array.prototype.slice.call(list.querySelectorAll(".ord-item")).map(function (it) { return it.getAttribute("data-id"); });
+    if (!ids.length) { toast("Pa gen anyen pou sove.", true); return; }
+
+    /* sortRank UNIQUE et décroissant : le 1er de la liste = le plus grand rang
+       (donc en tête sur le site). */
+    var total = ids.length;
+    var batch = db.batch();
+    ids.forEach(function (id, i) {
+        var rank = total - i;   /* 1er => total, dernier => 1 */
+        batch.set(db.collection("users").doc(id), { sortRank: rank }, { merge: true });
+        batch.set(db.collection("publicProfiles").doc(id), { sortRank: rank }, { merge: true });
+    });
+    batch.commit().then(function () {
+        toast("Lòd " + (genre === "fanm" ? "Fanm" : "Gason") + " sove! Sit la ap respekte lòd sa a.", true);
+    }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
 }
 
 function renderFLTable(list) {
