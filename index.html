@@ -2111,7 +2111,7 @@ body.no-screenshot * {
 /* Contenu promo réservé aux comptes gratuits : masqué pour les Premium */
 body.is-premium .premium-hide{display:none!important}
 body.is-premium .pc-blur{display:none!important}
-/* Pagination des grilles (6 par page) */
+/* Pagination des grilles (10 par page) */
 .grid-pager{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:34px}
 .grid-pager-info{font-family:'Montserrat',sans-serif;font-size:0.9rem;color:#b0b0c0;min-width:60px;text-align:center;font-weight:600}
 .grid-pager button:disabled{opacity:0.4;cursor:not-allowed}
@@ -4097,7 +4097,7 @@ function renderRealFreelancers() {
             });
 
             /* CLASSEMENT : rang admin (sortRank) décroissant, puis en-ligne d'abord,
-               puis récence. Détermine aussi la PAGE où l'Elu apparaît (pagination 6/page). */
+               puis récence. Détermine aussi la PAGE où l'Elu apparaît (pagination 10/page). */
             var sortCards = function (a, b) {
                 if ((b.rank || 0) !== (a.rank || 0)) return (b.rank || 0) - (a.rank || 0);
                 if ((b.online ? 1 : 0) !== (a.online ? 1 : 0)) return (b.online ? 1 : 0) - (a.online ? 1 : 0);
@@ -4121,7 +4121,7 @@ function renderRealFreelancers() {
             /* Titres cliquables des groupes/agences (sous les filtres de zones) */
             try { renderAgencyTitles(femAgencies); } catch(e) {}
 
-            /* Recalcule la pagination (6 par page) avec les nouvelles cartes */
+            /* Recalcule la pagination (10 par page) avec les nouvelles cartes */
             try { refreshGrids(); } catch(e) {}
 
             /* Notes + niveaux sur les vraies cartes */
@@ -4955,9 +4955,9 @@ function filterByAgency(slug, el) {
 }
 
 /* ====================================
-   PAGINATION GRILLES (6 par page) — filtre-aware
+   PAGINATION GRILLES (10 par page) — filtre-aware
    ==================================== */
-var GRID_PER_PAGE = 6;
+var GRID_PER_PAGE = 10;
 var gridState = {
     fG: { page: 0, filter: "all" },
     hG: { page: 0, filter: "all" }
