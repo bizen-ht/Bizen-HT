@@ -559,7 +559,7 @@
                     <button class="sb-link"
                             onclick="showSection('fl-stories',this)">
                         <i class="fas fa-circle-play"></i>
-                        Estòri
+                        Story
                     </button>
                 </div>
                 <div class="sb-nav-group">
@@ -951,12 +951,23 @@
             <div id="demannForm" style="display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:560px">
                 <div style="margin-bottom:14px">
                     <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px">Zòn</label>
+                    <!-- IMPORTANT : mêmes libellés EXACTS que les zones des Elus (userZoneSel /
+                         inscription Elu) — sinon le matching de zone échoue silencieusement. -->
                     <select id="demZone" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem">
                         <option value="">Chwazi zòn...</option>
-                        <option>Pòtoprens</option><option>Pétion-Ville</option><option>Delmas</option>
-                        <option>Tabarre</option><option>Kwadèboukè</option><option>Karfou</option>
-                        <option>Kanaran</option><option>Kap Ayisyen</option><option>Gonayiv</option>
-                        <option>Okap</option><option>Jakmèl</option><option>Lòt</option>
+                        <option value="Pétion-Ville">Pétion-Ville</option>
+                        <option value="Delmas">Delmas</option>
+                        <option value="Tabarre">Tabarre</option>
+                        <option value="Pòtoprens">Pòtoprens</option>
+                        <option value="Carrefour">Carrefour</option>
+                        <option value="Route de Frères">Route de Frères</option>
+                        <option value="Croix-des-Bouquets">Croix-des-Bouquets</option>
+                        <option value="Thomassin">Thomassin</option>
+                        <option value="Kenscoff">Kenscoff</option>
+                        <option value="Cap-Haïtien">Cap-Haïtien</option>
+                        <option value="Gonaïves">Gonaïves</option>
+                        <option value="Les Cayes">Les Cayes</option>
+                        <option value="Jacmel">Jacmel</option>
                     </select>
                 </div>
                 <div style="margin-bottom:14px">
@@ -1401,7 +1412,7 @@
         <!-- FL STORIES (l'Elu poste des stories texte/photo) -->
         <div class="dash-section" id="sec-fl-stories">
             <div class="dash-top">
-                <h1><i class="fas fa-circle-play" style="color:#e91e63"></i> <span>Estòri mwen</span></h1>
+                <h1><i class="fas fa-circle-play" style="color:#e91e63"></i> <span>Story mwen</span></h1>
             </div>
             <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;max-width:640px">
                 Poste yon tèks (ak emoji) oswa yon foto ak yon ti deskripsyon. Tout VIP wè estòri w. W ap wè kantite <strong>vi</strong>, <strong>like</strong> ak <strong>kòmantè</strong> an tan reyèl. Estòri san limit.

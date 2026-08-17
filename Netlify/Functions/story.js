@@ -81,6 +81,9 @@ exports.handler = async function (event) {
             var u = uSnap.data();
             if (u.type !== "freelancer" && u.type !== "krey") return err(403, "Sèlman Elu ka poste estòri.");
             if (u.status && u.status !== "active") return err(403, "Kont ou poko aktif.");
+            /* La PHOTO et le pseudo publics sont sur publicProfiles (pas sur users). */
+            var pubSnap = await dbf.collection("publicProfiles").doc(uid).get();
+            var pub = pubSnap.exists ? pubSnap.data() : {};
 
             var stype = (body.type === "photo") ? "photo" : "text";
             var stext = filterContact((body.text || "").toString().trim().slice(0, 400));
@@ -91,8 +94,8 @@ exports.handler = async function (event) {
 
             var ref = await dbf.collection("stories").add({
                 eluUid: uid,
-                eluPseudo: (u.pseudo || u.prenom || "Elu"),
-                eluPhotoUrl: (u.photoUrl || ""),
+                eluPseudo: (u.pseudo || pub.pseudo || u.prenom || "Elu"),
+                eluPhotoUrl: (pub.photoUrl || u.photoUrl || ""),
                 type: stype,
                 text: stext,
                 photoUrl: (stype === "photo") ? photoUrl : "",

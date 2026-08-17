@@ -884,6 +884,9 @@
                 <i class="fas fa-bullhorn"></i> Demann VIP
                 <span class="sb-bdg bdg-r" id="bdgDem">0</span>
             </button>
+            <button class="sb-link" onclick="goPage('story',this)">
+                <i class="fas fa-circle-play"></i> Story
+            </button>
 
             <div class="sb-cat">Aktivite</div>
             <button class="sb-link" onclick="goPage('res',this)">
@@ -1116,6 +1119,19 @@
                     <div class="tc-title"><i class="fas fa-bullhorn"></i> Demann aktif yo</div>
                 </div>
                 <div id="demannModList" style="padding:14px"></div>
+            </div>
+        </div>
+
+        <!-- MODÉRATION STORY -->
+        <div class="pg" id="pg-story">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-circle-play" style="color:var(--red)"></i> Story Elu</h1>
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-circle-play"></i> Story aktif yo (24h)</div>
+                </div>
+                <div id="storyModList" style="padding:14px"></div>
             </div>
         </div>
 
@@ -2462,6 +2478,60 @@ function deleteDemann(id) {
 }
 
 /* ====================================
+   MODÉRATION DES STORY (admin)
+   ==================================== */
+function loadStoryMod() {
+    if (!db) return;
+    var box = document.getElementById("storyModList");
+    if (box) box.innerHTML = '<p style="color:#6a6a80;font-size:0.85rem">Chajman...</p>';
+    db.collection("stories").orderBy("createdAt", "desc").limit(100).get().then(function (snap) {
+        var now = Date.now();
+        var rows = [];
+        snap.forEach(function (d) {
+            var x = d.data(); x._id = d.id;
+            var exp = x.expiresAt && x.expiresAt.toMillis ? x.expiresAt.toMillis() : 0;
+            if (!exp || exp > now) rows.push(x);   /* on montre les story encore actives */
+        });
+        if (!box) return;
+        if (!rows.length) { box.innerHTML = '<p style="color:#6a6a80;font-size:0.85rem;text-align:center;padding:20px">Pa gen story aktif.</p>'; return; }
+        var h = "";
+        rows.forEach(function (x) {
+            var thumb = (x.type === "photo" && x.photoUrl)
+                ? '<img src="' + x.photoUrl + '" style="width:54px;height:54px;border-radius:8px;object-fit:cover;flex-shrink:0">'
+                : '<div style="width:54px;height:54px;border-radius:8px;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0"><i class="fas fa-font"></i></div>';
+            h += '<div style="display:flex;gap:12px;align-items:center;background:#12121a;border:1px solid #2a2a3a;border-radius:10px;padding:12px 14px;margin-bottom:10px">' +
+                thumb +
+                '<div style="flex:1;min-width:0">' +
+                '<div style="color:#f48fb1;font-weight:600;font-size:0.85rem"><i class="fas fa-star"></i> ' + escHtml(x.eluPseudo || "Elu") + '</div>' +
+                '<div style="color:#ccc;font-size:0.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml((x.text || "").slice(0, 90)) + (x.type === "photo" && !x.text ? "(foto)" : "") + '</div>' +
+                '<div style="font-size:0.72rem;color:#6a6a80;margin-top:4px"><i class="fas fa-eye"></i> ' + (x.viewCount || 0) + ' · <i class="fas fa-heart"></i> ' + (x.likeCount || 0) + ' · <i class="fas fa-comment"></i> ' + (x.commentCount || 0) + '</div>' +
+                '</div>' +
+                '<button onclick="deleteStoryAdmin(\'' + x._id + '\')" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:6px 14px;font-size:0.78rem;font-weight:600;cursor:pointer;flex-shrink:0"><i class="fas fa-trash"></i> Efase</button>' +
+                '</div>';
+        });
+        box.innerHTML = h;
+    }).catch(function (e) {
+        if (box) box.innerHTML = '<p style="color:#f44336;font-size:0.85rem">Erè: ' + (e.code || e.message) + '</p>';
+    });
+}
+
+/* Suppression admin : passe par story.js (Admin SDK) pour effacer AUSSI la photo Storage. */
+function deleteStoryAdmin(id) {
+    if (!auth || !auth.currentUser) { alert("Sesyon admin pa valab."); return; }
+    if (!confirm("Efase story sa a? (foto a ap efase tou)")) return;
+    auth.currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/story", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, action: "delete", storyId: id })
+        });
+    }).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d.success) throw new Error(d.error || "Erè");
+        toast("Story efase.", true);
+        loadStoryMod();
+    }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+}
+
+/* ====================================
    CLASSEMENT DES ELU (glisser-déposer par catégorie)
    Écrit un sortRank UNIQUE par Elu dans chaque catégorie => l'ordre du site
    devient déterministe (le catalogue trie par sortRank décroissant).
@@ -3372,6 +3442,7 @@ function goPage(id, btn) {
     if (id === "dyaspora") loadDiaspora();
     if (id === "boss") loadBoss();
     if (id === "demann") loadDemannMod();
+    if (id === "story") loadStoryMod();
     if (id === "zones") loadZones();
     if (id === "msg") loadAdminMsg();
     if (id === "promo") loadPromo();
