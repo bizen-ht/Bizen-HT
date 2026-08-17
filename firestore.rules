@@ -234,6 +234,28 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seenByElu']));
     }
 
+    /* -------- DEMANDES VIP (vipDemands) : "Post yon demann" --------
+       Un VIP Premium publie une demande ciblée par zone ; les Elus la voient.
+       Écriture UNIQUEMENT via la fonction demand (Admin SDK) — vérifie Premium,
+       filtre les coordonnées, impose 1 active + expiration. Lecture par tout
+       utilisateur connecté (contient un pseudo, pas de vrai nom). */
+    match /vipDemands/{demandId} {
+      allow read:  if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* -------- STORIES DES ELU (stories) --------
+       L'Elu poste ses propres stories (texte+emoji ou photo+caption).
+       Tous les utilisateurs connectés les voient. Les compteurs
+       (vues/likes/commentaires) sont écrits UNIQUEMENT par la fonction story
+       (Admin SDK) — un viewer ne peut pas modifier le doc. L'Elu (ou l'admin)
+       peut supprimer sa story. */
+    match /stories/{storyId} {
+      allow read:   if isSignedIn();
+      allow create, update: if isAdmin();   /* créé/compté par la fonction story (Admin SDK) */
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.eluUid == request.auth.uid);
+    }
+
     /* -------- TOUT LE RESTE : interdit par défaut --------
        (Aucune collection oubliée ne reste ouverte.) */
     match /{document=**} {

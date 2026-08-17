@@ -55,6 +55,16 @@
 [functions.set-pseudo]
   external_node_modules = ["firebase-admin"]
 
+[functions.demand]
+  external_node_modules = ["firebase-admin"]
+
+[functions.story]
+  external_node_modules = ["firebase-admin"]
+
+[functions.story-cleanup]
+  external_node_modules = ["firebase-admin"]
+  schedule = "@hourly"
+
 # Pages dédiées des agences partenaires : /agence/<slug> -> index avec filtre
 [[redirects]]
   from = "/agence/*"

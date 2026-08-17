@@ -880,6 +880,10 @@
             <button class="sb-link" onclick="goPage('zones',this)">
                 <i class="fas fa-map-marked-alt"></i> Manm pa Zòn
             </button>
+            <button class="sb-link" onclick="goPage('demann',this)">
+                <i class="fas fa-bullhorn"></i> Demann VIP
+                <span class="sb-bdg bdg-r" id="bdgDem">0</span>
+            </button>
 
             <div class="sb-cat">Aktivite</div>
             <button class="sb-link" onclick="goPage('res',this)">
@@ -1099,6 +1103,19 @@
                         <tbody id="tbF"></tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- DEMANN VIP (modération) -->
+        <div class="pg" id="pg-demann">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-bullhorn" style="color:var(--red)"></i> Demann VIP</h1>
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-bullhorn"></i> Demann aktif yo</div>
+                </div>
+                <div id="demannModList" style="padding:14px"></div>
             </div>
         </div>
 
@@ -2396,6 +2413,55 @@ function toggleEluHotel(id, current) {
 }
 
 /* ====================================
+   MODÉRATION DES DEMANDES VIP
+   ==================================== */
+function loadDemannMod() {
+    if (!db) return;
+    var box = document.getElementById("demannModList");
+    if (box) box.innerHTML = '<p style="color:#6a6a80;font-size:0.85rem">Chajman...</p>';
+    db.collection("vipDemands").where("status", "==", "active").get().then(function (snap) {
+        var now = Date.now();
+        var rows = [];
+        snap.forEach(function (d) {
+            var x = d.data(); x._id = d.id;
+            var exp = x.expiresAt && x.expiresAt.toMillis ? x.expiresAt.toMillis() : 0;
+            if (exp > now) rows.push(x);
+        });
+        rows.sort(function (a, b) {
+            var am = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+            var bm = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+            return bm - am;
+        });
+        setBdg("bdgDem", rows.length);
+        if (!box) return;
+        if (!rows.length) { box.innerHTML = '<p style="color:#6a6a80;font-size:0.85rem;text-align:center;padding:20px">Pa gen demann aktif.</p>'; return; }
+        var h = "";
+        rows.forEach(function (x) {
+            var lf = x.lookingFor === "gason" ? "Gason" : (x.lookingFor === "fanm" ? "Fanm" : "Tou de");
+            h += '<div style="background:#12121a;border:1px solid #2a2a3a;border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">' +
+                '<strong style="color:#f48fb1"><i class="fas fa-user"></i> ' + escHtml(x.vipPseudo || "VIP") + '</strong>' +
+                '<span style="font-size:0.72rem;color:#6a6a80"><i class="fas fa-map-marker-alt"></i> ' + escHtml(x.zone || "") + ' · ' + lf + ' · ' + (x.replyCount || 0) + ' repons</span></div>' +
+                '<p style="color:#ccc;font-size:0.86rem;margin-bottom:10px">' + escHtml(x.text || "") + '</p>' +
+                '<button onclick="deleteDemann(\'' + x._id + '\')" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:6px 14px;font-size:0.78rem;font-weight:600;cursor:pointer"><i class="fas fa-trash"></i> Efase</button>' +
+                '</div>';
+        });
+        box.innerHTML = h;
+    }).catch(function (e) {
+        if (box) box.innerHTML = '<p style="color:#f44336;font-size:0.85rem">Erè: ' + (e.code || e.message) + '</p>';
+    });
+}
+
+function deleteDemann(id) {
+    if (!db) return;
+    if (!confirm("Efase demann VIP sa a?")) return;
+    db.collection("vipDemands").doc(id).delete().then(function () {
+        toast("Demann efase.", true);
+        loadDemannMod();
+    }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+}
+
+/* ====================================
    CLASSEMENT DES ELU (glisser-déposer par catégorie)
    Écrit un sortRank UNIQUE par Elu dans chaque catégorie => l'ordre du site
    devient déterministe (le catalogue trie par sortRank décroissant).
@@ -3305,6 +3371,7 @@ function goPage(id, btn) {
     try { closeSB(); } catch (e) {}   /* referme le menu mobile après navigation */
     if (id === "dyaspora") loadDiaspora();
     if (id === "boss") loadBoss();
+    if (id === "demann") loadDemannMod();
     if (id === "zones") loadZones();
     if (id === "msg") loadAdminMsg();
     if (id === "promo") loadPromo();

@@ -488,6 +488,11 @@
                         Mesaj
                         <span id="userMsgBadge" style="display:none;background:#e91e63;color:#fff;font-size:0.65rem;padding:1px 7px;border-radius:10px;margin-left:auto">0</span>
                     </button>
+                    <button class="sb-link"
+                            onclick="showSection('demann',this)">
+                        <i class="fas fa-bullhorn"></i>
+                        Post yon demann
+                    </button>
                 </div>
                 <div class="sb-nav-group">
                     <div class="sb-nav-label">Kont</div>
@@ -544,6 +549,17 @@
                         <i class="fas fa-eye"></i>
                         Vizit Pwofil
                         <span id="flViewsBadge" style="display:none;background:#e91e63;color:#fff;font-size:0.65rem;padding:1px 7px;border-radius:10px;margin-left:auto">0</span>
+                    </button>
+                    <button class="sb-link"
+                            onclick="showSection('fl-demann',this)">
+                        <i class="fas fa-bullhorn"></i>
+                        Demann VIP
+                        <span id="flDemannBadge" style="display:none;background:#e91e63;color:#fff;font-size:0.65rem;padding:1px 7px;border-radius:10px;margin-left:auto">0</span>
+                    </button>
+                    <button class="sb-link"
+                            onclick="showSection('fl-stories',this)">
+                        <i class="fas fa-circle-play"></i>
+                        Estòri
                     </button>
                 </div>
                 <div class="sb-nav-group">
@@ -913,6 +929,55 @@
                     <i class="fas fa-user-slash"></i> Efase kont mwen
                 </button>
             </div>
+        </div>
+
+        <!-- POST YON DEMANN (VIP Premium) -->
+        <div class="dash-section" id="sec-demann">
+            <div class="dash-top">
+                <h1><i class="fas fa-bullhorn" style="color:#e91e63"></i> Post yon <span>demann</span></h1>
+            </div>
+            <p style="color:var(--text-muted);font-size:0.86rem;max-width:640px;margin-bottom:18px">
+                Dekri ki kalite Elu w ap chèche. Elu ki nan <strong>zòn ou chwazi a</strong> ap wè demann ou epi sa ki enterese ap reponn ou an prive. <strong style="color:#f48fb1">Se pseudo w ki parèt</strong> — vrè non w rete prive.
+            </p>
+
+            <!-- Gate Premium -->
+            <div id="demannPremiumGate" style="display:none;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.3);border-radius:var(--radius-lg);padding:24px;max-width:560px;text-align:center">
+                <i class="fas fa-crown" style="color:#ffd700;font-size:1.6rem"></i>
+                <p style="color:#ffd700;font-size:0.9rem;margin:10px 0 14px">Poste yon demann se yon fonksyon <strong>Premium</strong>.</p>
+                <button onclick="showSection('plan',null)" style="background:linear-gradient(135deg,#ffd700,#f0a500);color:#12121a;border:none;border-radius:var(--radius-full);padding:10px 22px;font-weight:700;cursor:pointer"><i class="fas fa-crown"></i> Vin Premium</button>
+            </div>
+
+            <!-- Formulaire (Premium) -->
+            <div id="demannForm" style="display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:560px">
+                <div style="margin-bottom:14px">
+                    <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px">Zòn</label>
+                    <select id="demZone" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem">
+                        <option value="">Chwazi zòn...</option>
+                        <option>Pòtoprens</option><option>Pétion-Ville</option><option>Delmas</option>
+                        <option>Tabarre</option><option>Kwadèboukè</option><option>Karfou</option>
+                        <option>Kanaran</option><option>Kap Ayisyen</option><option>Gonayiv</option>
+                        <option>Okap</option><option>Jakmèl</option><option>Lòt</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:14px">
+                    <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px">Kalite Elu</label>
+                    <select id="demLookingFor" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem">
+                        <option value="fanm">Fanm</option>
+                        <option value="gason">Gason</option>
+                        <option value="tou">Tou de (pa enpòtan)</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:6px">
+                    <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px">Sa w ap chèche</label>
+                    <textarea id="demText" rows="3" maxlength="300" placeholder="Egz: M ap chèche yon moun cool pou aswè a nan zòn nan..."
+                              style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem;resize:vertical;font-family:'Montserrat',sans-serif"></textarea>
+                    <p style="font-size:0.72rem;color:#ff9800;margin-top:5px"><i class="fas fa-triangle-exclamation"></i> Pa mete okenn nimewo, WhatsApp, ni imel — l ap kache otomatikman. Kominikasyon rete sou Bizen.</p>
+                </div>
+                <button id="demPostBtn" onclick="postDemann()" style="margin-top:6px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:var(--radius-full);padding:11px 24px;font-weight:700;cursor:pointer"><i class="fas fa-bullhorn"></i> Pibliye demann lan</button>
+            </div>
+
+            <!-- Demande active -->
+            <div id="demActiveBox" style="display:none;max-width:560px;margin-top:18px"></div>
         </div>
 
         <!-- ESPAS AFILYE -->
@@ -1313,6 +1378,55 @@
                     <h4>Pa gen vizit anko</h4>
                     <p style="color:var(--text-muted);font-size:0.82rem">Lè yon VIP Premium gade pwofil ou, l ap parèt la.</p>
                 </div>
+            </div>
+        </div>
+
+        <!-- FL DEMANN VIP (demandes VIP dans la zone de l'Elu) -->
+        <div class="dash-section" id="sec-fl-demann">
+            <div class="dash-top">
+                <h1><i class="fas fa-bullhorn" style="color:#e91e63"></i> <span>Demann VIP nan zòn ou</span></h1>
+            </div>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;max-width:640px">
+                VIP yo ki nan zòn ou ap chèche yon Elu. Si yon demann enterese w, klike <strong>Reponn</strong> pou w pale ak li an prive.
+            </p>
+            <div id="flDemannList" style="max-width:680px">
+                <div class="empty-state">
+                    <i class="fas fa-bullhorn"></i>
+                    <h4>Pa gen demann pou kounye a</h4>
+                    <p style="color:var(--text-muted);font-size:0.82rem">Lè yon VIP nan zòn ou poste yon demann, l ap parèt la.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- FL STORIES (l'Elu poste des stories texte/photo) -->
+        <div class="dash-section" id="sec-fl-stories">
+            <div class="dash-top">
+                <h1><i class="fas fa-circle-play" style="color:#e91e63"></i> <span>Estòri mwen</span></h1>
+            </div>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;max-width:640px">
+                Poste yon tèks (ak emoji) oswa yon foto ak yon ti deskripsyon. Tout VIP wè estòri w. W ap wè kantite <strong>vi</strong>, <strong>like</strong> ak <strong>kòmantè</strong> an tan reyèl. Estòri san limit.
+            </p>
+
+            <!-- Composer -->
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;max-width:560px;margin-bottom:22px">
+                <div style="display:flex;gap:8px;margin-bottom:12px">
+                    <button id="stTabText" onclick="storyTab('text')" style="flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:rgba(233,30,99,0.15);color:#f48fb1;font-weight:600;cursor:pointer"><i class="fas fa-font"></i> Tèks</button>
+                    <button id="stTabPhoto" onclick="storyTab('photo')" style="flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text-muted);font-weight:600;cursor:pointer"><i class="fas fa-image"></i> Foto</button>
+                </div>
+                <div id="stPhotoWrap" style="display:none;margin-bottom:12px">
+                    <input type="file" id="stPhoto" accept="image/*" onchange="storyPhotoPreview(this)" style="width:100%;color:var(--text-secondary);font-size:0.84rem">
+                    <div id="stPhotoPreview" style="margin-top:10px"></div>
+                </div>
+                <textarea id="stText" rows="3" maxlength="400" placeholder="Ki sa w vle di? 😊✨"
+                          style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem;resize:vertical;font-family:'Montserrat',sans-serif"></textarea>
+                <p style="font-size:0.72rem;color:#ff9800;margin:6px 0 12px"><i class="fas fa-triangle-exclamation"></i> Pa mete nimewo, WhatsApp ni imel — l ap kache. Pa gen videyo.</p>
+                <button id="stPostBtn" onclick="postStory()" style="background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:var(--radius-full);padding:11px 24px;font-weight:700;cursor:pointer"><i class="fas fa-paper-plane"></i> Pibliye estòri</button>
+                <span id="stUploadMsg" style="margin-left:12px;font-size:0.8rem;color:var(--text-muted)"></span>
+            </div>
+
+            <!-- Liste des stories de l'Elu (compteurs live) -->
+            <div id="flStoriesList" style="max-width:680px">
+                <div class="empty-state"><i class="fas fa-circle-play"></i><h4>Ou poko gen estòri</h4></div>
             </div>
         </div>
 
@@ -1993,6 +2107,7 @@ function setupUser() {
     loadUserFavorites();
     loadUserDmThreads();   /* écoute des messages (badge live) */
     renderWallet();        /* Wallet (VIP Premium) */
+    try { setupDemannSection(); } catch (e) {}   /* Post yon demann (Premium) */
 
     /* Show overview */
     showSection("overview", null);
@@ -2168,6 +2283,9 @@ function setupFreelancer() {
     loadFlSoldeByPeriod();
     loadDmThreads();   /* écoute des messages (badge live) */
     try { loadFlProfileViews(); } catch (e) { console.warn("loadFlProfileViews:", e); }
+    try { loadFlDemann(); } catch (e) { console.warn("loadFlDemann:", e); }
+    try { loadFlStories(); } catch (e) { console.warn("loadFlStories:", e); }
+    try { storyTab("text"); } catch (e) {}
 
     /* Show overview */
     showSection("fl-overview", null);
@@ -3504,6 +3622,9 @@ function showSection(id, btn) {
     if (id === "fl-messages") loadDmThreads();
     if (id === "messages") loadUserDmThreads();
     if (id === "fl-views") { try { markProfileViewsSeen(); } catch (e) {} }
+    if (id === "demann") { try { setupDemannSection(); } catch (e) {} }
+    if (id === "fl-demann") { try { loadFlDemann(); } catch (e) {} }
+    if (id === "fl-stories") { try { loadFlStories(); } catch (e) {} }
     closeSidebar();
 }
 
@@ -4000,6 +4121,309 @@ function saveVipPseudo(inputId, silent) {
     }).catch(function (e) {
         showToast("Pa t kapab anrejistre pseudo a: " + (e.message || "eseye ankò"), "error");
     });
+}
+
+/* ====================================
+   POST YON DEMANN — CÔTÉ VIP
+   ==================================== */
+function setupDemannSection() {
+    if (!userData) return;
+    var isPrem = userData.isPremium === true;
+    var gate = document.getElementById("demannPremiumGate");
+    var form = document.getElementById("demannForm");
+    if (gate) gate.style.display = isPrem ? "none" : "block";
+    if (form) form.style.display = isPrem ? "block" : "none";
+    /* Pré-sélectionne la zone du VIP si elle existe dans la liste */
+    var z = document.getElementById("demZone");
+    if (z && userData.localisation && !z.value) {
+        for (var i = 0; i < z.options.length; i++) {
+            if (z.options[i].value === userData.localisation || z.options[i].text === userData.localisation) { z.value = z.options[i].value; break; }
+        }
+    }
+    if (isPrem) loadMyDemann();
+}
+
+function postDemann() {
+    if (!currentUser) return;
+    var zone = (document.getElementById("demZone") || {}).value || "";
+    var lookingFor = (document.getElementById("demLookingFor") || {}).value || "tou";
+    var text = ((document.getElementById("demText") || {}).value || "").trim();
+    if (!zone) { showToast("Chwazi yon zòn.", "error"); return; }
+    if (!text) { showToast("Ekri sa w ap chèche.", "error"); return; }
+    var btn = document.getElementById("demPostBtn");
+    if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
+    currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/demand", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, action: "post", zone: zone, lookingFor: lookingFor, text: text })
+        });
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) {
+        if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
+        if (!res.ok || !res.d.success) throw new Error(res.d && res.d.error ? res.d.error : "Erè");
+        showToast("Demann ou pibliye! Elu nan zòn nan ap wè l.", "success");
+        var t = document.getElementById("demText"); if (t) t.value = "";
+        loadMyDemann();
+    }).catch(function (e) {
+        if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
+        showToast("Pa t kapab pibliye: " + (e.message || "eseye ankò"), "error");
+    });
+}
+
+function loadMyDemann() {
+    if (!db || !currentUser) return;
+    db.collection("vipDemands").where("vipUid", "==", currentUser.uid).get()
+      .then(function (snap) {
+        var box = document.getElementById("demActiveBox");
+        if (!box) return;
+        var now = Date.now();
+        var active = [];
+        snap.forEach(function (d) {
+            var x = d.data(); x._id = d.id;
+            var exp = x.expiresAt && x.expiresAt.toMillis ? x.expiresAt.toMillis() : 0;
+            if (x.status === "active" && exp > now) active.push(x);
+        });
+        if (!active.length) { box.style.display = "none"; box.innerHTML = ""; return; }
+        var x = active[0];
+        var lf = x.lookingFor === "gason" ? "Gason" : (x.lookingFor === "fanm" ? "Fanm" : "Tou de");
+        box.style.display = "block";
+        box.innerHTML = '<div style="background:var(--bg-card);border:1px solid rgba(233,30,99,0.35);border-radius:var(--radius-lg);padding:18px 20px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px"><strong style="color:#f48fb1"><i class="fas fa-bullhorn"></i> Demann aktif ou</strong>' +
+            '<span style="font-size:0.72rem;color:var(--text-muted)">' + (x.replyCount || 0) + ' repons</span></div>' +
+            '<div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:6px"><i class="fas fa-map-marker-alt"></i> ' + escDash(x.zone || "") + ' · ' + lf + '</div>' +
+            '<p style="color:#fff;font-size:0.9rem;margin-bottom:12px">' + escDash(x.text || "") + '</p>' +
+            '<button onclick="closeDemann(\'' + x._id + '\')" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.4);border-radius:20px;padding:7px 16px;font-size:0.78rem;font-weight:600;cursor:pointer"><i class="fas fa-xmark"></i> Fèmen demann lan</button>' +
+            '</div>';
+      }).catch(function (e) { console.warn("loadMyDemann:", e.code || e.message); });
+}
+
+function closeDemann(id) {
+    if (!currentUser) return;
+    if (!confirm("Fèmen demann sa a?")) return;
+    currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/demand", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, action: "close", demandId: id })
+        });
+    }).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d.success) throw new Error(d.error || "Erè");
+        showToast("Demann fèmen.", "success"); loadMyDemann();
+    }).catch(function (e) { showToast("Erè: " + (e.message || "eseye ankò"), "error"); });
+}
+
+/* ====================================
+   DEMANN VIP — CÔTÉ ELU (feed par zone)
+   ==================================== */
+function eluZoneSet() {
+    var set = {};
+    if (userData) {
+        (userData.zones || []).forEach(function (z) { if (z) set[String(z).toLowerCase().trim()] = 1; });
+        if (userData.localisation) set[String(userData.localisation).toLowerCase().trim()] = 1;
+        if (userData.kreyZone) set[String(userData.kreyZone).toLowerCase().trim()] = 1;
+    }
+    return set;
+}
+
+function loadFlDemann() {
+    if (!db || !currentUser) return;
+    db.collection("vipDemands").where("status", "==", "active").limit(100).get()
+      .then(function (snap) {
+        var now = Date.now();
+        var zs = eluZoneSet();
+        var isFanmElu = userData && !(userData.genre === "homme" || userData.genre === "gason");
+        var rows = [];
+        snap.forEach(function (d) {
+            var x = d.data(); x._id = d.id;
+            var exp = x.expiresAt && x.expiresAt.toMillis ? x.expiresAt.toMillis() : 0;
+            if (exp <= now) return;
+            if (!zs[String(x.zone || "").toLowerCase().trim()]) return;   /* zone match */
+            if (x.lookingFor === "fanm" && !isFanmElu) return;            /* préférence genre */
+            if (x.lookingFor === "gason" && isFanmElu) return;
+            rows.push(x);
+        });
+        rows.sort(function (a, b) {
+            var am = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+            var bm = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+            return bm - am;
+        });
+
+        var list = document.getElementById("flDemannList");
+        var badge = document.getElementById("flDemannBadge");
+        var unreplied = rows.filter(function (r) { return (r.repliedBy || []).indexOf(currentUser.uid) === -1; }).length;
+        if (badge) {
+            if (unreplied > 0) { badge.textContent = unreplied; badge.style.display = "inline-block"; }
+            else badge.style.display = "none";
+        }
+        if (!list) return;
+        if (!rows.length) {
+            list.innerHTML = '<div class="empty-state"><i class="fas fa-bullhorn"></i><h4>Pa gen demann pou kounye a</h4>' +
+                '<p style="color:var(--text-muted);font-size:0.82rem">Lè yon VIP nan zòn ou poste yon demann, l ap parèt la.</p></div>';
+            return;
+        }
+        var h = "";
+        rows.forEach(function (x) {
+            var replied = (x.repliedBy || []).indexOf(currentUser.uid) !== -1;
+            var lf = x.lookingFor === "gason" ? "Gason" : (x.lookingFor === "fanm" ? "Fanm" : "Tou de");
+            h += '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px">' +
+                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0"><i class="fas fa-user"></i></div>' +
+                '<div style="min-width:0"><div style="font-weight:600;color:#fff">' + escDash(x.vipPseudo || "VIP") + '</div>' +
+                '<div style="font-size:0.72rem;color:var(--text-muted)"><i class="fas fa-map-marker-alt"></i> ' + escDash(x.zone || "") + ' · ' + lf + '</div></div></div>' +
+                '<p style="color:var(--text-secondary);font-size:0.9rem;line-height:1.5;margin-bottom:12px">' + escDash(x.text || "") + '</p>' +
+                (replied
+                    ? '<span style="font-size:0.8rem;color:#4caf50"><i class="fas fa-check"></i> Ou deja reponn</span>'
+                    : '<button onclick="replyDemann(\'' + x._id + '\')" style="background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:20px;padding:8px 20px;font-size:0.82rem;font-weight:700;cursor:pointer"><i class="fas fa-reply"></i> Reponn an prive</button>') +
+                '</div>';
+        });
+        list.innerHTML = h;
+      }).catch(function (e) { console.warn("loadFlDemann:", e.code || e.message); });
+}
+
+function replyDemann(id) {
+    if (!currentUser) return;
+    var note = prompt("Ekri yon ti mesaj bay VIP la (opsyonèl):", "");
+    if (note === null) return;   /* annulé */
+    currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/demand", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, action: "reply", demandId: id, text: note })
+        });
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) {
+        if (!res.ok || !res.d.success) throw new Error(res.d && res.d.error ? res.d.error : "Erè");
+        showToast("Ou reponn! Ale nan Mesaj pou kontinye pale.", "success");
+        loadFlDemann();
+    }).catch(function (e) { showToast("Pa t kapab reponn: " + (e.message || "eseye ankò"), "error"); });
+}
+
+/* ====================================
+   ESTÒRI — CÔTÉ ELU (publier + compteurs live)
+   ==================================== */
+function storyTab(mode) {
+    window._storyMode = mode;
+    var tText = document.getElementById("stTabText"), tPhoto = document.getElementById("stTabPhoto");
+    var pw = document.getElementById("stPhotoWrap");
+    var ta = document.getElementById("stText");
+    var on = "rgba(233,30,99,0.15)", off = "rgba(255,255,255,0.05)";
+    if (mode === "photo") {
+        if (pw) pw.style.display = "block";
+        if (ta) ta.placeholder = "Deskripsyon foto a (opsyonèl) 😊";
+        if (tPhoto) { tPhoto.style.background = on; tPhoto.style.color = "#f48fb1"; }
+        if (tText) { tText.style.background = off; tText.style.color = "var(--text-muted)"; }
+    } else {
+        if (pw) pw.style.display = "none";
+        if (ta) ta.placeholder = "Ki sa w vle di? 😊✨";
+        if (tText) { tText.style.background = on; tText.style.color = "#f48fb1"; }
+        if (tPhoto) { tPhoto.style.background = off; tPhoto.style.color = "var(--text-muted)"; }
+    }
+}
+
+function storyPhotoPreview(input) {
+    var box = document.getElementById("stPhotoPreview");
+    if (!box) return;
+    var f = input.files && input.files[0];
+    if (!f) { box.innerHTML = ""; return; }
+    box.innerHTML = '<img src="' + URL.createObjectURL(f) + '" style="max-width:150px;border-radius:10px">';
+}
+
+function clearStoryComposer() {
+    var ta = document.getElementById("stText"); if (ta) ta.value = "";
+    var inp = document.getElementById("stPhoto"); if (inp) inp.value = "";
+    var pv = document.getElementById("stPhotoPreview"); if (pv) pv.innerHTML = "";
+}
+
+function postStoryDoc(payload) {
+    return currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/story", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(Object.assign({ idToken: idToken, action: "post" }, payload))
+        });
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) { if (!res.ok || !res.d.success) throw new Error(res.d && res.d.error ? res.d.error : "Erè"); return res.d; });
+}
+
+function postStory() {
+    if (!currentUser) return;
+    var mode = window._storyMode || "text";
+    var text = ((document.getElementById("stText") || {}).value || "").trim();
+    var btn = document.getElementById("stPostBtn");
+    var msg = document.getElementById("stUploadMsg");
+    var done = function () { if (btn) { btn.disabled = false; btn.style.opacity = "1"; } if (msg) msg.textContent = ""; };
+
+    if (mode === "photo") {
+        var input = document.getElementById("stPhoto");
+        var file = input && input.files && input.files[0];
+        if (!file) { showToast("Chwazi yon foto.", "error"); return; }
+        if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
+        if (msg) msg.textContent = "Chajman foto...";
+        flStorageUploadRetry(file, "stories", function (p) { if (msg) msg.textContent = "Chajman " + p + "%"; })
+            .then(function (res) { return postStoryDoc({ type: "photo", photoUrl: res.url, storagePath: res.path, text: text }); })
+            .then(function () { done(); clearStoryComposer(); showToast("Estòri pibliye!", "success"); })
+            .catch(function (e) { done(); showToast("Erè: " + (e.message || "eseye ankò"), "error"); });
+    } else {
+        if (!text) { showToast("Ekri kichòy.", "error"); return; }
+        if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
+        postStoryDoc({ type: "text", text: text })
+            .then(function () { done(); clearStoryComposer(); showToast("Estòri pibliye!", "success"); })
+            .catch(function (e) { done(); showToast("Erè: " + (e.message || "eseye ankò"), "error"); });
+    }
+}
+
+var _flStoriesUnsub = null;
+function loadFlStories() {
+    if (!db || !currentUser) return;
+    if (_flStoriesUnsub) { try { _flStoriesUnsub(); } catch (e) {} }
+    _flStoriesUnsub = db.collection("stories").where("eluUid", "==", currentUser.uid)
+      .onSnapshot(function (snap) {
+        var now = Date.now();
+        var rows = [];
+        snap.forEach(function (d) {
+            var x = d.data(); x._id = d.id;
+            var exp = x.expiresAt && x.expiresAt.toMillis ? x.expiresAt.toMillis() : 0;
+            if (exp && exp <= now) return;   /* éphémère : on masque les expirées */
+            rows.push(x);
+        });
+        rows.sort(function (a, b) {
+            var am = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+            var bm = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+            return bm - am;
+        });
+        var list = document.getElementById("flStoriesList");
+        if (!list) return;
+        if (!rows.length) { list.innerHTML = '<div class="empty-state"><i class="fas fa-circle-play"></i><h4>Ou poko gen estòri</h4></div>'; return; }
+        var h = "";
+        rows.forEach(function (x) {
+            var thumb = (x.type === "photo" && x.photoUrl)
+                ? '<img src="' + x.photoUrl + '" style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0">'
+                : '<div style="width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0"><i class="fas fa-font"></i></div>';
+            var preview = escDash((x.text || "").slice(0, 70)) || (x.type === "photo" ? "Foto" : "");
+            h += '<div style="display:flex;gap:12px;align-items:center;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:10px">' +
+                thumb +
+                '<div style="flex:1;min-width:0"><div style="font-size:0.86rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + preview + '</div>' +
+                '<div style="display:flex;gap:14px;margin-top:6px;font-size:0.78rem;color:var(--text-muted)">' +
+                '<span title="Vi"><i class="fas fa-eye" style="color:#64b5f6"></i> ' + (x.viewCount || 0) + '</span>' +
+                '<span title="Like"><i class="fas fa-heart" style="color:#e91e63"></i> ' + (x.likeCount || 0) + '</span>' +
+                '<span title="Kòmantè"><i class="fas fa-comment" style="color:#ffb300"></i> ' + (x.commentCount || 0) + '</span>' +
+                '</div></div>' +
+                '<button onclick="deleteStory(\'' + x._id + '\')" title="Efase" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:8px 10px;cursor:pointer"><i class="fas fa-trash"></i></button>' +
+                '</div>';
+        });
+        list.innerHTML = h;
+      }, function (e) { console.warn("loadFlStories:", e.code || e.message); });
+}
+
+function deleteStory(id) {
+    if (!currentUser) return;
+    if (!confirm("Efase estòri sa a?")) return;
+    /* Passe par le serveur : supprime AUSSI la photo dans Storage. */
+    currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/story", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, action: "delete", storyId: id })
+        });
+    }).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d.success) throw new Error(d.error || "Erè");
+        showToast("Estòri efase.", "success");   /* la liste se rafraîchit via onSnapshot */
+    }).catch(function (e) { showToast("Erè: " + (e.message || "eseye ankò"), "error"); });
 }
 
 /* ====================================

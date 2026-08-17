@@ -1881,6 +1881,17 @@ body.no-screenshot * {
 </section>
 
 <!-- FEMMES -->
+<!-- BARRE DE STORIES DES ELU -->
+<section class="section" id="storiesSection" style="display:none;padding-top:24px;padding-bottom:0">
+    <div class="container">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <i class="fas fa-circle-play" style="color:#e91e63"></i>
+            <h2 style="font-family:'Playfair Display',serif;font-size:1.3rem;color:#fff;margin:0">Estòri</h2>
+        </div>
+        <div id="storiesBar" style="display:flex;gap:14px;overflow-x:auto;padding:4px 2px 10px"></div>
+    </div>
+</section>
+
 <section class="section" id="femmes">
     <div class="container">
         <div class="sec-head">
@@ -4548,6 +4559,7 @@ if (auth) {
                     );
                 }
                 try { initUserPush(); } catch (e) {}
+                try { loadStoriesBar(); } catch (e) {}
             } else {
                 console.log(
                     "User disconnected"
@@ -6811,6 +6823,170 @@ function shareEluWhatsApp(code, name) {
         : "https://bizenht.com/";
     var txt = "Gade pwofil " + (name || "Elu sa a") + " sou Bizen HT 💗\n" + url;
     window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank", "noopener");
+}
+
+/* ====================================
+   STORIES DES ELU (côté site)
+   Barre d'avatars + visualiseur (like / commentaire privé Premium / vues).
+   ==================================== */
+var _storiesByElu = {};
+var _storyView = { eluUid: null, list: [], idx: 0 };
+
+function loadStoriesBar() {
+    if (!db || !auth || !auth.currentUser) return;
+    db.collection("stories").orderBy("createdAt", "desc").limit(80).get().then(function (snap) {
+        var now = Date.now();
+        var map = {};
+        snap.forEach(function (d) {
+            var x = d.data(); x._id = d.id;
+            /* Éphémère 24h : on n'affiche que les stories NON expirées.
+               (Repli pour d'éventuels anciens docs sans expiresAt : createdAt + 24h.) */
+            var cms = x.createdAt && x.createdAt.toMillis ? x.createdAt.toMillis() : 0;
+            var exp = x.expiresAt && x.expiresAt.toMillis ? x.expiresAt.toMillis() : (cms + 24 * 3600 * 1000);
+            if (exp <= now) return;
+            if (!map[x.eluUid]) map[x.eluUid] = { eluUid: x.eluUid, pseudo: x.eluPseudo || "Elu", photo: x.eluPhotoUrl || "", stories: [] };
+            map[x.eluUid].stories.push(x);
+        });
+        var elus = Object.keys(map).map(function (k) { return map[k]; });
+        elus.forEach(function (e) {
+            e.stories.sort(function (a, b) {   /* ordre chrono dans le viewer */
+                var am = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+                var bm = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+                return am - bm;
+            });
+        });
+        elus.sort(function (a, b) {   /* Elu avec la story la plus récente en tête */
+            var al = a.stories[a.stories.length - 1], bl = b.stories[b.stories.length - 1];
+            var am = al.createdAt && al.createdAt.toMillis ? al.createdAt.toMillis() : 0;
+            var bm = bl.createdAt && bl.createdAt.toMillis ? bl.createdAt.toMillis() : 0;
+            return bm - am;
+        });
+        _storiesByElu = {};
+        elus.forEach(function (e) { _storiesByElu[e.eluUid] = e.stories; });
+
+        var bar = document.getElementById("storiesBar");
+        var sec = document.getElementById("storiesSection");
+        if (!bar) return;
+        if (!elus.length) { if (sec) sec.style.display = "none"; return; }
+        if (sec) sec.style.display = "block";
+        var h = "";
+        elus.forEach(function (e) {
+            var av = e.photo ? '<img src="' + e.photo + '" style="width:100%;height:100%;object-fit:cover">' : '<i class="fas fa-user" style="color:#fff"></i>';
+            h += '<div onclick="openStoryViewer(\'' + e.eluUid + '\')" style="flex-shrink:0;width:72px;text-align:center;cursor:pointer">' +
+                '<div style="width:66px;height:66px;border-radius:50%;padding:3px;background:linear-gradient(135deg,#e91e63,#9c27b0);margin:0 auto"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#12121a;display:flex;align-items:center;justify-content:center;border:2px solid #12121a">' + av + '</div></div>' +
+                '<div style="font-size:0.68rem;color:#b0b0c0;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeResHotel(e.pseudo) + '</div></div>';
+        });
+        bar.innerHTML = h;
+    }).catch(function (e) { console.warn("loadStoriesBar:", e && e.code); });
+}
+
+function openStoryViewer(eluUid) {
+    if (!auth || !auth.currentUser) { oM("lM"); return; }
+    var list = _storiesByElu[eluUid];
+    if (!list || !list.length) return;
+    _storyView = { eluUid: eluUid, list: list, idx: 0 };
+    var old = document.getElementById("storyM"); if (old) old.remove();
+    var m = document.createElement("div");
+    m.id = "storyM"; m.className = "mbg show"; m.style.cssText = "z-index:10005";
+    m.innerHTML = '<div class="modal" style="max-width:440px;padding:0;overflow:hidden">' +
+        '<button class="mx" onclick="closeStoryViewer()" style="z-index:2"><i class="fas fa-times"></i></button>' +
+        '<div id="storyBody"></div></div>';
+    document.body.appendChild(m);
+    m.addEventListener("click", function (ev) { if (ev.target === m) closeStoryViewer(); });
+    renderStoryAt(0);
+}
+function closeStoryViewer() { var m = document.getElementById("storyM"); if (m) m.remove(); }
+function storyNext() { renderStoryAt(_storyView.idx + 1); }
+function storyPrev() { renderStoryAt(_storyView.idx - 1); }
+
+function renderStoryAt(i) {
+    var v = _storyView;
+    if (i < 0) i = 0;
+    if (i >= v.list.length) { closeStoryViewer(); return; }
+    v.idx = i;
+    var s = v.list[i];
+    var body = document.getElementById("storyBody");
+    if (!body) return;
+    recordStoryView(s._id);
+    var media = (s.type === "photo" && s.photoUrl)
+        ? '<img src="' + s.photoUrl + '" style="width:100%;max-height:60vh;object-fit:cover;display:block">'
+        : '<div style="min-height:230px;display:flex;align-items:center;justify-content:center;padding:40px 24px;background:linear-gradient(135deg,#e91e63,#9c27b0)"><p style="color:#fff;font-size:1.35rem;text-align:center;line-height:1.5;font-weight:600">' + escapeResHotel(s.text || "") + '</p></div>';
+    var caption = (s.type === "photo" && s.text) ? '<p style="padding:12px 16px;color:#e0e0e0;font-size:0.9rem">' + escapeResHotel(s.text) + '</p>' : '';
+    var dots = "";
+    for (var k = 0; k < v.list.length; k++) { dots += '<span style="flex:1;height:3px;border-radius:2px;background:' + (k <= i ? '#fff' : 'rgba(255,255,255,0.3)') + '"></span>'; }
+    var liked = (s.likedBy || []).indexOf(auth.currentUser.uid) !== -1;
+    body.innerHTML =
+        '<div style="display:flex;gap:6px;padding:10px 12px 0">' + dots + '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px">' +
+            '<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;background:#333;flex-shrink:0">' + (s.eluPhotoUrl ? '<img src="' + s.eluPhotoUrl + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</div>' +
+            '<strong style="color:#fff;font-size:0.9rem">' + escapeResHotel(s.eluPseudo || "Elu") + '</strong></div>' +
+        '<div style="position:relative">' + media +
+            '<div onclick="storyPrev()" style="position:absolute;left:0;top:0;bottom:0;width:35%;cursor:pointer"></div>' +
+            '<div onclick="storyNext()" style="position:absolute;right:0;top:0;bottom:0;width:35%;cursor:pointer"></div>' +
+        '</div>' + caption +
+        '<div style="display:flex;align-items:center;gap:16px;padding:12px 16px 16px">' +
+            '<button onclick="likeStory(\'' + s._id + '\')" style="background:none;border:none;color:' + (liked ? '#e91e63' : '#b0b0c0') + ';font-size:1.2rem;cursor:pointer"><i class="fas fa-heart"></i> <span style="font-size:0.85rem">' + (s.likeCount || 0) + '</span></button>' +
+            '<button onclick="commentStory(\'' + s._id + '\')" style="background:none;border:none;color:#b0b0c0;font-size:1.2rem;cursor:pointer"><i class="fas fa-comment"></i> <span style="font-size:0.85rem">' + (s.commentCount || 0) + '</span></button>' +
+            '<span style="margin-left:auto;color:#6a6a80;font-size:0.82rem"><i class="fas fa-eye"></i> ' + (s.viewCount || 0) + '</span>' +
+        '</div>' +
+        '<div id="stCommentBox" style="display:none;padding:0 16px 16px"></div>';
+}
+
+function recordStoryView(id) {
+    if (!auth || !auth.currentUser) return;
+    var s = _storyView.list[_storyView.idx];
+    if (s && (s.viewedBy || []).indexOf(auth.currentUser.uid) !== -1) return;
+    auth.currentUser.getIdToken().then(function (t) {
+        return fetch("/.netlify/functions/story", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idToken: t, action: "view", storyId: id }) });
+    }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.success && s) { s.viewedBy = (s.viewedBy || []).concat([auth.currentUser.uid]); s.viewCount = d.viewCount || ((s.viewCount || 0) + 1); }
+    }).catch(function () {});
+}
+
+function likeStory(id) {
+    if (!auth || !auth.currentUser) { oM("lM"); return; }
+    var s = _storyView.list[_storyView.idx];
+    auth.currentUser.getIdToken().then(function (t) {
+        return fetch("/.netlify/functions/story", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idToken: t, action: "like", storyId: id }) });
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); }).then(function (res) {
+        if (!res.ok || !res.d.success) throw new Error(res.d && res.d.error ? res.d.error : "Erè");
+        if (s) {
+            s.likeCount = res.d.likeCount;
+            var lb = s.likedBy || [], me = auth.currentUser.uid;
+            if (res.d.liked) { if (lb.indexOf(me) === -1) lb.push(me); } else { lb = lb.filter(function (x) { return x !== me; }); }
+            s.likedBy = lb;
+        }
+        renderStoryAt(_storyView.idx);
+    }).catch(function (e) { toast(e.message || "Erè", "err"); });
+}
+
+function commentStory(id) {
+    if (!auth || !auth.currentUser) { oM("lM"); return; }
+    var box = document.getElementById("stCommentBox");
+    if (!box) return;
+    box.style.display = "block";
+    if (!isPremiumViewer) {
+        box.innerHTML = '<div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:12px;text-align:center;color:#ffd700;font-size:0.82rem"><i class="fas fa-lock"></i> Komantè se pou manm Premium. <a href="#" onclick="closeStoryViewer();oM(\'pM\');return false" style="color:#ffd700;text-decoration:underline">Vin Premium</a></div>';
+        return;
+    }
+    box.innerHTML = '<div style="display:flex;gap:8px">' +
+        '<input id="stCommentInput" maxlength="500" placeholder="Ekri yon kòmantè... 😊" style="flex:1;background:rgba(255,255,255,0.08);border:1px solid #2a2a3a;color:#fff;border-radius:20px;padding:9px 14px;font-size:0.88rem">' +
+        '<button onclick="sendStoryComment(\'' + id + '\')" style="background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:20px;padding:9px 16px;cursor:pointer"><i class="fas fa-paper-plane"></i></button></div>';
+    var inp = document.getElementById("stCommentInput"); if (inp) inp.focus();
+}
+
+function sendStoryComment(id) {
+    var inp = document.getElementById("stCommentInput");
+    var text = inp ? inp.value.trim() : "";
+    if (!text) return;
+    auth.currentUser.getIdToken().then(function (t) {
+        return fetch("/.netlify/functions/story", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idToken: t, action: "comment", storyId: id, text: text }) });
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); }).then(function (res) {
+        if (!res.ok || !res.d.success) throw new Error(res.d && res.d.error ? res.d.error : "Erè");
+        var s = _storyView.list[_storyView.idx]; if (s) s.commentCount = (s.commentCount || 0) + 1;
+        var box = document.getElementById("stCommentBox");
+        if (box) box.innerHTML = '<div style="color:#4caf50;font-size:0.85rem;text-align:center"><i class="fas fa-check"></i> Kòmantè voye an prive!</div>';
+    }).catch(function (e) { toast(e.message || "Erè", "err"); });
 }
 
 function openEluProfile(btnOrUid) {
