@@ -100,6 +100,52 @@ exports.handler = async function (event) {
                 createdAt: nowTs,
                 expiresAt: admin.firestore.Timestamp.fromMillis(now + DEMAND_TTL_MS)
             });
+
+            /* ---- NOTIF PUSH aux Elus de la ZONE (best effort) ----
+               On cible les Elus ACTIFS dont une zone (zones[] / localisation /
+               kreyZone) correspond, en respectant la préférence de genre. Le clic
+               atterrit direct sur la demande (Dashboard.html?demann=<id>). */
+            try {
+                var zoneLc = zone.toLowerCase();
+                var pcSnap = await dbf.collection("publicProfiles").where("status", "==", "active").get();
+                var targetUids = [];
+                pcSnap.forEach(function (d) {
+                    var p = d.data();
+                    var isFanm = !(p.genre === "homme" || p.genre === "gason");
+                    if (lookingFor === "fanm" && !isFanm) return;
+                    if (lookingFor === "gason" && isFanm) return;
+                    var zs = {};
+                    (p.zones || []).forEach(function (z) { if (z) zs[String(z).toLowerCase().trim()] = 1; });
+                    if (p.localisation) zs[String(p.localisation).toLowerCase().trim()] = 1;
+                    if (p.kreyZone) zs[String(p.kreyZone).toLowerCase().trim()] = 1;
+                    if (zs[zoneLc]) targetUids.push(d.id);
+                });
+
+                if (targetUids.length) {
+                    /* Récupère les jetons FCM (sur users) par lots de 30 (getAll). */
+                    var tokens = [];
+                    for (var i = 0; i < targetUids.length; i += 30) {
+                        var refs = targetUids.slice(i, i + 30).map(function (id) { return dbf.collection("users").doc(id); });
+                        var udocs = await dbf.getAll.apply(dbf, refs);
+                        udocs.forEach(function (ud) {
+                            if (ud.exists) (ud.data().fcmTokens || []).forEach(function (t) { if (t) tokens.push(t); });
+                        });
+                    }
+                    if (tokens.length) {
+                        var link = "/Dashboard.html?demann=" + ref.id;
+                        var body2 = (text.length > 90 ? text.slice(0, 90) + "…" : text);
+                        for (var j = 0; j < tokens.length; j += 500) {
+                            await admin.messaging().sendEachForMulticast({
+                                tokens: tokens.slice(j, j + 500),
+                                notification: { title: "Nouvo demann nan " + zone + " 📢", body: body2 },
+                                data: { link: link },
+                                webpush: { fcmOptions: { link: link } }
+                            });
+                        }
+                    }
+                }
+            } catch (e) { console.warn("[DEMAND] notify:", e.message); }
+
             return ok({ success: true, id: ref.id });
         }
 

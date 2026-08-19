@@ -2320,6 +2320,11 @@ function setupFreelancer() {
     try { loadFlDemann(); } catch (e) { console.warn("loadFlDemann:", e); }
     try { loadFlStories(); } catch (e) { console.warn("loadFlStories:", e); }
     try { storyTab("text"); } catch (e) {}
+    /* Deep-link notif push "nouvo demann" : ouvre direct la section Demann VIP. */
+    try {
+        var _dl = new URLSearchParams(location.search).get("demann");
+        if (_dl) { _pendingDemann = _dl; showSection("fl-demann", null); }
+    } catch (e) {}
 
     /* Show overview */
     showSection("fl-overview", null);
@@ -4249,6 +4254,8 @@ function closeDemann(id) {
 /* ====================================
    DEMANN VIP — CÔTÉ ELU (feed par zone)
    ==================================== */
+var _pendingDemann = null;   /* id de demande à ouvrir (deep-link notif push) */
+
 function eluZoneSet() {
     var set = {};
     if (userData) {
@@ -4299,7 +4306,7 @@ function loadFlDemann() {
         rows.forEach(function (x) {
             var replied = (x.repliedBy || []).indexOf(currentUser.uid) !== -1;
             var lf = x.lookingFor === "gason" ? "Gason" : (x.lookingFor === "fanm" ? "Fanm" : "Tou de");
-            h += '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px">' +
+            h += '<div data-demand-id="' + x._id + '" style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px">' +
                 '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0"><i class="fas fa-user"></i></div>' +
                 '<div style="min-width:0"><div style="font-weight:600;color:#fff">' + escDash(x.vipPseudo || "VIP") + '</div>' +
                 '<div style="font-size:0.72rem;color:var(--text-muted)"><i class="fas fa-map-marker-alt"></i> ' + escDash(x.zone || "") + ' · ' + lf + '</div></div></div>' +
@@ -4310,6 +4317,20 @@ function loadFlDemann() {
                 '</div>';
         });
         list.innerHTML = h;
+        /* Deep-link depuis la notif push : scroll + surbrillance de la demande ciblée. */
+        if (_pendingDemann) {
+            var target = list.querySelector('[data-demand-id="' + _pendingDemann + '"]');
+            _pendingDemann = null;
+            if (target) {
+                setTimeout(function () {
+                    target.scrollIntoView({ behavior: "smooth", block: "center" });
+                    target.style.transition = "box-shadow .3s, border-color .3s";
+                    target.style.boxShadow = "0 0 0 2px #e91e63";
+                    target.style.borderColor = "#e91e63";
+                    setTimeout(function () { target.style.boxShadow = ""; target.style.borderColor = ""; }, 2600);
+                }, 250);
+            }
+        }
       }).catch(function (e) { console.warn("loadFlDemann:", e.code || e.message); });
 }
 
