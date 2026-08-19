@@ -1920,6 +1920,10 @@ body.no-screenshot * {
         <option value="active">Kont Aktif</option>
         <option value="all">Tout kont</option>
       </select>
+      <select id="hfZone" class="hfsel" onchange="setHomeZone(this.value)">
+        <option value="all">Zòn: Tout</option>
+      </select>
+      <button class="hfsel" onclick="resetHomeFilters()" style="cursor:pointer;color:#f48fb1;border-color:rgba(233,30,99,0.4)"><i class="fas fa-rotate-left"></i> Reyinisyalize</button>
     </div>
   </div>
 </section>
@@ -4184,8 +4188,9 @@ function renderRealFreelancers() {
             /* Recalcule la pagination (10 par page) avec les nouvelles cartes */
             try { refreshGrids(); } catch(e) {}
 
-            /* Affiche la barre de filtres de l'accueil (catégorie / tri / âge / prix) */
+            /* Affiche la barre de filtres de l'accueil + remplit les zones */
             try { var _hf = document.getElementById("homeFilters"); if (_hf) _hf.style.display = "block"; } catch(e) {}
+            try { populateHomeZones(); } catch(e) {}
 
             /* Notes + niveaux sur les vraies cartes */
             try { decorateRatings(); } catch(e) {}
@@ -5072,6 +5077,47 @@ function setHomeCat(cat, btn) {
     if (hs) hs.style.display = (cat === "all" || cat === "gason") ? "" : "none";
     if (ks) ks.style.display = (cat === "all" || cat === "krey") ? "" : "none";
     try { renderStoriesBar(); } catch (e) {}
+}
+
+/* Filtre par ZONE : applique le même filtre (data-f = clé de zone) aux 2 grilles. */
+function setHomeZone(v) {
+    if (gridState.fG) { gridState.fG.filter = v || "all"; gridState.fG.page = 0; }
+    if (gridState.hG) { gridState.hG.filter = v || "all"; gridState.hG.page = 0; }
+    try { refreshGrids(); } catch (e) {}
+}
+
+/* Remplit le menu déroulant des zones à partir des cartes réelles (clé data-f + libellé). */
+function populateHomeZones() {
+    var sel = document.getElementById("hfZone");
+    if (!sel) return;
+    var seen = {}, opts = [];
+    document.querySelectorAll('#fG .pc, #hG .pc').forEach(function (c) {
+        var lk = c.getAttribute("data-f");
+        if (!lk || lk === "all" || seen[lk]) return;
+        var locEl = c.querySelector(".pc-loc");
+        var label = locEl ? locEl.textContent.trim() : lk;
+        seen[lk] = 1; opts.push({ v: lk, t: label || lk });
+    });
+    opts.sort(function (a, b) { return a.t.localeCompare(b.t); });
+    var cur = sel.value;
+    sel.innerHTML = '<option value="all">Zòn: Tout</option>' + opts.map(function (o) {
+        return '<option value="' + o.v + '">' + o.t + '</option>';
+    }).join("");
+    if (cur && seen[cur]) sel.value = cur;
+}
+
+/* Réinitialise TOUS les filtres à leur valeur par défaut. */
+function resetHomeFilters() {
+    homeFilter = { cat: "all", sort: "default", age: "all", price: "all", status: "active" };
+    var setV = function (id, v) { var e = document.getElementById(id); if (e) e.value = v; };
+    setV("hfSort", "default"); setV("hfAge", "all"); setV("hfPrice", "all"); setV("hfStatus", "active"); setV("hfZone", "all");
+    var chips = document.querySelectorAll("#homeFilters .hfcat");
+    for (var i = 0; i < chips.length; i++) chips[i].classList.toggle("active", chips[i].getAttribute("data-cat") === "all");
+    if (gridState.fG) { gridState.fG.filter = "all"; gridState.fG.page = 0; }
+    if (gridState.hG) { gridState.hG.filter = "all"; gridState.hG.page = 0; }
+    ["femmes", "hommes", "krey"].forEach(function (id) { var s = document.getElementById(id); if (s) s.style.display = ""; });
+    try { renderStoriesBar(); } catch (e) {}
+    try { refreshGrids(); } catch (e) {}
 }
 
 /* ====================================

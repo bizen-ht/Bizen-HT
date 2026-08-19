@@ -44,7 +44,7 @@ var MILESTONES = [2, 4, 6, 8, 10];
 /* Prime pour un palier atteint, selon le statut Premium de l'ambassadeur. */
 function prizeFor(n, isPremium) {
     if (n === 2)  return isPremium ? { type: "cash", cash: 1000, label: "1 000 G" }
-                                   : { type: "premium", cash: 0, label: "1 mwa Premium gratis" };
+                                   : { type: "premium", cash: 0, label: "Yon plan Premium gratis" };
     if (n === 4)  return { type: "cash", cash: 1250, label: "1 250 G" };
     if (n === 6)  return { type: "cash", cash: 2000, label: "2 000 G" };
     if (n === 8)  return { type: "cash", cash: 3500, label: "3 500 G" };
