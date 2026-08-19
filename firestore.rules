@@ -218,7 +218,16 @@ service cloud.firestore {
       allow read:  if isAdmin()
         || (isSignedIn() && resource.data.ownerUid == request.auth.uid)
         || (isSignedIn() && resource.data.ownerEmail == request.auth.token.email);
-      allow write: if isAdmin();
+      allow write: if isAdmin();   /* auto-activation via la fonction ambassador (Admin SDK) */
+    }
+
+    /* -------- ANBASADÈ : demandes de prime ("touche") --------
+       Créées par la fonction ambassador (Admin SDK) quand l'ambassadeur touche
+       une prime. Le propriétaire lit les siennes ; l'admin les paie. */
+    match /ambassadorPayouts/{id} {
+      allow read:  if isAdmin()
+        || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create, update, delete: if isAdmin();
     }
 
     /* -------- VUES DE PROFIL (profileViews) : "qui a vu ton profil" --------

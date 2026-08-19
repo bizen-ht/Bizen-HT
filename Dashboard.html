@@ -507,6 +507,11 @@
                         Plan Mwen
                     </button>
                     <button class="sb-link"
+                            onclick="showSection('anbasade',this)">
+                        <i class="fas fa-medal"></i>
+                        Vin anbasadè
+                    </button>
+                    <button class="sb-link"
                             onclick="showSection('settings',this)">
                         <i class="fas fa-cog"></i>
                         Paramèt
@@ -1028,29 +1033,47 @@
             <div class="dash-top">
                 <h1><i class="fas fa-medal"></i> Espas <span>Anbasadè</span></h1>
             </div>
-            <!-- Compte à rebours du challenge (visible si un challenge est actif) -->
-            <div id="ambChallengeBanner" style="display:none;max-width:680px;margin-bottom:18px"></div>
-            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:680px;margin-bottom:18px">
-                <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px">Kòd Anbasadè ou</div>
-                <div id="ambMyCode" style="font-size:1.8rem;font-weight:700;color:#ff9800;letter-spacing:3px;margin-bottom:8px">—</div>
-                <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.6">Pataje kòd sa a ak moun ou vle fè vin Elu. Lè yo mete kòd ou nan fòm enskripsyon an epi <strong>administrasyon an apwouve</strong> yo, yo konte kòm « konfime » e ou monte nan chèn rekonpans lan.</p>
-                <div id="ambShareBox" style="margin-top:16px"></div>
+
+            <!-- Carte d'activation (VIP pas encore ambassadeur) -->
+            <div id="ambActivateCard" style="display:none;max-width:680px">
+                <div style="background:linear-gradient(135deg,rgba(255,152,0,0.12),rgba(233,30,99,0.10));border:1px solid rgba(255,152,0,0.4);border-radius:var(--radius-lg);padding:28px;text-align:center">
+                    <div style="width:64px;height:64px;border-radius:50%;background:rgba(255,152,0,0.18);display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><i class="fas fa-medal" style="color:#ff9800;font-size:1.7rem"></i></div>
+                    <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:10px">Vin Anbasadè Bizen HT</h2>
+                    <p style="color:var(--text-secondary);font-size:0.9rem;line-height:1.6;margin-bottom:8px">Rekrite Elu epi touche rekonpans! Chak <strong>2 Elu konfime</strong> = yon prim. Plis ou rekrite, plis prim nan vin gwo. <strong>San limit tan.</strong></p>
+                    <p style="color:var(--text-muted);font-size:0.82rem;line-height:1.6;margin-bottom:20px">A chak palye ou chwazi: <strong>touche prim nan kounye a</strong> (kont ou repati zewo) oswa <strong>kontinye</strong> pou yon pi gwo prim.</p>
+                    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+                        <button id="ambActivateBtn" onclick="activateAmbassador()" style="background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:50px;padding:12px 30px;font-weight:700;cursor:pointer"><i class="fas fa-check"></i> Wi, mwen vle</button>
+                        <button onclick="showSection('overview',null)" style="background:rgba(255,255,255,0.05);color:var(--text-muted);border:1px solid var(--border);border-radius:50px;padding:12px 30px;font-weight:600;cursor:pointer">Non, pita</button>
+                    </div>
+                </div>
             </div>
-            <!-- Stats : inscriptions vs confirmés -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;max-width:680px;margin-bottom:18px">
-                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px"><div style="font-size:0.75rem;color:var(--text-muted)"><i class="fas fa-user-plus"></i> Enskripsyon</div><div id="ambRegistered" style="font-size:1.9rem;font-weight:700">0</div><div style="font-size:0.7rem;color:var(--text-muted)">moun ki mete kòd ou</div></div>
-                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px"><div style="font-size:0.75rem;color:var(--text-muted)"><i class="fas fa-user-check"></i> Konfime</div><div id="ambConfirmed" style="font-size:1.9rem;font-weight:700;color:#4caf50">0</div><div style="font-size:0.7rem;color:var(--text-muted)">Élu apwouve</div></div>
-                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px"><div style="font-size:0.75rem;color:var(--text-muted)"><i class="fas fa-medal"></i> Nivo ou</div><div id="ambTier" style="font-size:1.9rem;font-weight:700;color:#ffd700">—</div><div id="ambNextHint" style="font-size:0.7rem;color:var(--text-muted)">&nbsp;</div></div>
-            </div>
-            <!-- Chaîne de récompenses -->
-            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;max-width:680px;margin-bottom:18px">
-                <h3 style="font-family:'Playfair Display',serif;margin-bottom:14px;font-size:1.05rem"><i class="fas fa-trophy" style="color:#ffd700"></i> Chèn Rekonpans Anbasadè</h3>
-                <div id="ambRewardChain" style="display:flex;flex-direction:column;gap:10px"></div>
-            </div>
-            <!-- Liste des recrues -->
-            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;max-width:680px">
-                <h3 style="font-family:'Playfair Display',serif;margin-bottom:14px;font-size:1.05rem"><i class="fas fa-users"></i> Élu ou rekrite yo</h3>
-                <div id="ambRecruits" style="font-size:0.85rem;color:var(--text-muted)">Chaje...</div>
+
+            <!-- Interface ambassadeur (une fois activé) -->
+            <div id="ambInterface" style="display:none">
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:680px;margin-bottom:18px">
+                    <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px">Kòd Anbasadè ou</div>
+                    <div id="ambMyCode" style="font-size:1.8rem;font-weight:700;color:#ff9800;letter-spacing:3px;margin-bottom:8px">—</div>
+                    <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.6">Pataje lyen ou an ak moun ou vle fè vin Elu. Lè administrasyon an apwouve yon recrue, li konte kòm « konfime ».</p>
+                    <div id="ambShareBox" style="margin-top:16px"></div>
+                </div>
+                <!-- Stats : inscriptions vs confirmés (série en cours) -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;max-width:680px;margin-bottom:18px">
+                    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px"><div style="font-size:0.75rem;color:var(--text-muted)"><i class="fas fa-user-plus"></i> Total enskripsyon</div><div id="ambRegistered" style="font-size:1.9rem;font-weight:700">0</div><div style="font-size:0.7rem;color:var(--text-muted)">moun ki mete kòd ou</div></div>
+                    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px"><div style="font-size:0.75rem;color:var(--text-muted)"><i class="fas fa-user-check"></i> Konfime (seri a)</div><div id="ambConfirmed" style="font-size:1.9rem;font-weight:700;color:#4caf50">0</div><div style="font-size:0.7rem;color:var(--text-muted)">depi dènye prim ou</div></div>
+                    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px"><div style="font-size:0.75rem;color:var(--text-muted)"><i class="fas fa-medal"></i> Nivo ou</div><div id="ambTier" style="font-size:1.9rem;font-weight:700;color:#ffd700">—</div><div id="ambNextHint" style="font-size:0.7rem;color:var(--text-muted)">&nbsp;</div></div>
+                </div>
+                <!-- Action : toucher la prime actuelle -->
+                <div id="ambClaimBox" style="max-width:680px;margin-bottom:18px"></div>
+                <!-- Chaîne de récompenses -->
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;max-width:680px;margin-bottom:18px">
+                    <h3 style="font-family:'Playfair Display',serif;margin-bottom:14px;font-size:1.05rem"><i class="fas fa-trophy" style="color:#ffd700"></i> Chèn Rekonpans Anbasadè</h3>
+                    <div id="ambRewardChain" style="display:flex;flex-direction:column;gap:10px"></div>
+                </div>
+                <!-- Liste des recrues -->
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;max-width:680px">
+                    <h3 style="font-family:'Playfair Display',serif;margin-bottom:14px;font-size:1.05rem"><i class="fas fa-users"></i> Élu ou rekrite yo</h3>
+                    <div id="ambRecruits" style="font-size:0.85rem;color:var(--text-muted)">Chaje...</div>
+                </div>
             </div>
         </div>
 
@@ -1968,8 +1991,8 @@ if (!auth) {
                 /* Espace affilié (s'affiche seulement si l'utilisateur possède un code) */
                 try { initAffiliate(user.email || userData.email); } catch (e) { console.warn("initAffiliate:", e); }
 
-                /* Espace ambassadeur (s'affiche seulement si l'utilisateur est ambassadeur) */
-                try { initAmbassador(user.email || userData.email); } catch (e) { console.warn("initAmbassador:", e); }
+                /* Espace ambassadeur : ouvert à tout VIP, chargé à la demande
+                   (bouton « Vin anbasadè » dans le menu -> loadAmbassadorSpace). */
 
                 /* === ONLINE STATUS + PUBLIC PROFILE SYNC === */
                 if (userData.type === "freelancer" || userData.type === "krey") {
@@ -3636,6 +3659,7 @@ function showSection(id, btn) {
     if (id === "demann") { try { setupDemannSection(); } catch (e) {} }
     if (id === "fl-demann") { try { loadFlDemann(); } catch (e) {} }
     if (id === "fl-stories") { try { loadFlStories(); } catch (e) {} }
+    if (id === "anbasade") { try { loadAmbassadorSpace(); } catch (e) {} }
     closeSidebar();
 }
 
@@ -4602,44 +4626,42 @@ function requestWithdrawal() {
    ==================================================== */
 var myAmbCode = null;
 var myAmbClaimed = {};
+var myAmbData = null;
 
 function ambTiers() {
+    /* Barème "touche ou continue". 1ère et dernière primes adaptées au statut
+       Premium du VIP (il a déjà Premium, donc cash à la place). */
+    var prem = userData && userData.isPremium === true;
     return [
-        { n: 2,  icon: "🥉", label: "1 kont premium gratis (valè 1 000g)" },
-        { n: 4,  icon: "🥈", label: "1 250 gdes kach" },
-        { n: 6,  icon: "🥇", label: "2 000 gdes kach" },
-        { n: 8,  icon: "💎", label: "3 500 gdes kach" },
-        { n: 10, icon: "🏆", label: "JACKPOT : 5 000 gdes + 1 kont premium gratis" }
+        { n: 2,  icon: "🥉", label: prem ? "1 000 G" : "1 mwa Premium gratis" },
+        { n: 4,  icon: "🥈", label: "1 250 G" },
+        { n: 6,  icon: "🥇", label: "2 000 G" },
+        { n: 8,  icon: "💎", label: "3 500 G" },
+        { n: 10, icon: "🏆", label: prem ? "5 000 G" : "5 000 G + Premium" }
     ];
 }
 
-function initAmbassador(email) {
+/* Ouvre l'espace ambassadeur : carte d'activation si pas encore ambassadeur,
+   sinon l'interface complète. Appelé quand on ouvre la section (self-serve). */
+function loadAmbassadorSpace() {
     if (!db || !currentUser) return;
-    email = String(email || "").toLowerCase();
-    /* Rattachement robuste : par UID d'abord (insensible à la casse de l'email),
-       puis par email en secours. CHAQUE requête a son propre .catch : si les
-       règles ne permettent pas encore la lecture par UID, on essaie quand même
-       par email (sinon le membre ne verrait jamais son espace). */
+    var card = document.getElementById("ambActivateCard");
+    var iface = document.getElementById("ambInterface");
     db.collection("ambassadors").where("ownerUid", "==", currentUser.uid).limit(1).get()
         .catch(function () { return { empty: true }; })
         .then(function (snap) {
-            if (snap && !snap.empty) return snap;
-            if (!email) return null;
-            return db.collection("ambassadors").where("ownerEmail", "==", email).limit(1).get()
-                .catch(function () { return null; });
-        })
-        .then(function (snap) {
-            if (!snap || snap.empty) return;    /* pas ambassadeur -> on ne montre rien */
+            if (!snap || snap.empty) {
+                if (card) card.style.display = "block";
+                if (iface) iface.style.display = "none";
+                return;
+            }
             var doc = snap.docs[0];
-            var a = doc.data();
-            myAmbCode = a.code || doc.id;
-            myAmbClaimed = a.claimed || {};
-            var menu = document.getElementById("anbasadeMenu");
-            if (menu) menu.style.display = "block";
+            myAmbData = doc.data();
+            myAmbCode = myAmbData.code || doc.id;
+            if (card) card.style.display = "none";
+            if (iface) iface.style.display = "block";
             var cd = document.getElementById("ambMyCode");
             if (cd) cd.textContent = myAmbCode;
-            /* Lien d'inscription Elu pré-rempli avec le code de l'ambassadeur :
-               chaque recrue qui s'inscrit via ce lien est automatiquement traquée. */
             var box = document.getElementById("ambShareBox");
             if (box) {
                 var joinLink = window.location.origin + "/elu?amb=" + encodeURIComponent(myAmbCode);
@@ -4648,12 +4670,50 @@ function initAmbassador(email) {
                 bh += '<input readonly value="' + joinLink + '" onclick="this.select()" style="flex:1;min-width:200px;background:rgba(0,0,0,0.25);border:1px solid var(--border);color:#eee;border-radius:8px;padding:9px 12px;font-size:0.8rem">';
                 bh += '<button onclick="bossCopy(\'' + joinLink + '\',this)" style="background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:0.8rem;font-weight:600;cursor:pointer"><i class="fas fa-copy"></i> Kopye</button>';
                 bh += '</div>';
-                bh += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">Lyen sa a ap otomatikman mete kòd ou nan fòm nan pou ou jwenn kredi.</div>';
+                bh += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">Lyen sa a ap otomatikman mete kòd ou nan fòm nan.</div>';
                 box.innerHTML = bh;
             }
             loadAmbassadorRecruits();
-            loadAmbChallengeBanner();
-        }).catch(function (e) { console.warn("initAmbassador:", e.code || e.message); });
+        }).catch(function (e) { console.warn("loadAmbassadorSpace:", e.code || e.message); });
+}
+
+/* Le VIP choisit "Wi" -> crée son espace ambassadeur (fonction serveur). */
+function activateAmbassador() {
+    if (!currentUser) return;
+    var btn = document.getElementById("ambActivateBtn");
+    if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> N ap aktive...'; }
+    currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/ambassador", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, action: "activate" })
+        });
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) {
+        if (!res.ok || !res.d.code) throw new Error(res.d && res.d.error ? res.d.error : "Erè");
+        showToast("Ou vin anbasadè! Kòd ou: " + res.d.code, "success");
+        loadAmbassadorSpace();
+    }).catch(function (e) {
+        if (btn) { btn.disabled = false; btn.style.opacity = "1"; btn.innerHTML = '<i class="fas fa-check"></i> Wi, mwen vle'; }
+        showToast("Pa t kapab aktive: " + (e.message || "eseye ankò"), "error");
+    });
+}
+
+/* Touche la prime actuelle -> le serveur enregistre + remet le compteur à zéro. */
+function claimReward() {
+    if (!currentUser) return;
+    var moncash = prompt("Antre nimewo MonCash ou pou n voye lajan prim nan.\n(Kite vid SI prim nan se yon kont Premium gratis.)", "");
+    if (moncash === null) return;   /* annulé */
+    currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/ambassador", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, action: "claim", moncashNumber: (moncash || "").trim() })
+        });
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) {
+        if (!res.ok || !res.d.success) throw new Error(res.d && res.d.error ? res.d.error : "Erè");
+        showToast("Prim ou (" + res.d.prize + ") anrejistre! N ap trete l. Kont ou repati zewo.", "success");
+        loadAmbassadorSpace();
+    }).catch(function (e) { showToast("Pa t kapab: " + (e.message || "eseye ankò"), "error"); });
 }
 
 /* Compte à rebours du challenge ambassadeur (settings/ambassadorChallenge). */
@@ -4708,34 +4768,51 @@ function loadAmbassadorRecruits() {
 }
 
 function renderAmbassador(all, confirmed) {
-    var conf = confirmed.length;
+    var totalConf = confirmed.length;
+    var baseline = (myAmbData && myAmbData.resetBaseline) || 0;
+    var eff = Math.max(0, totalConf - baseline);   /* compteur de la SÉRIE en cours */
     var setT = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
     setT("ambRegistered", all.length);
-    setT("ambConfirmed", conf);
+    setT("ambConfirmed", eff);
 
     var tiers = ambTiers();
     var current = null, next = null;
     tiers.forEach(function (t) {
-        if (conf >= t.n) current = t;
+        if (eff >= t.n) current = t;
         else if (!next) next = t;
     });
     setT("ambTier", current ? current.icon : "—");
     var hint = document.getElementById("ambNextHint");
-    if (hint) hint.textContent = next ? ((next.n - conf) + " Élu ankò pou " + next.icon) : "Ou nan pi wo nivo a! 🎉";
+    if (hint) hint.textContent = next ? ((next.n - eff) + " Elu ankò pou " + next.icon + " " + next.label) : "Ou nan pi wo palye a! 🎉";
+
+    /* Boîte d'action : toucher la prime actuelle (ou message de progression). */
+    var cbox = document.getElementById("ambClaimBox");
+    if (cbox) {
+        if (current) {
+            cbox.innerHTML = '<div style="background:linear-gradient(135deg,rgba(76,175,80,0.12),rgba(255,215,0,0.10));border:1px solid rgba(76,175,80,0.45);border-radius:var(--radius-lg);padding:20px 22px">' +
+                '<div style="font-weight:700;color:#4caf50;font-size:1.05rem;margin-bottom:6px"><i class="fas fa-gift"></i> Prim aktyèl ou: ' + current.icon + ' ' + current.label + '</div>' +
+                '<p style="font-size:0.84rem;color:var(--text-secondary);line-height:1.5;margin-bottom:14px">Ou ka <strong>touche</strong> prim sa a kounye a (kont ou ap repati zewo)' + (next ? ', oswa <strong>kontinye</strong> pou rive nan ' + next.icon + ' ' + next.label + ' — ' + (next.n - eff) + ' Elu ankò.' : '.') + '</p>' +
+                '<button onclick="claimReward()" style="background:linear-gradient(135deg,#4caf50,#2e7d32);color:#fff;border:none;border-radius:50px;padding:11px 26px;font-weight:700;cursor:pointer"><i class="fas fa-hand-holding-usd"></i> Touche ' + current.label + '</button>' +
+                '</div>';
+        } else {
+            var need = tiers[0].n - eff;
+            cbox.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 22px;color:var(--text-secondary);font-size:0.88rem"><i class="fas fa-seedling" style="color:#ff9800"></i> Rekrite <strong>' + need + '</strong> Elu konfime ankò pou debloke premye prim ou (' + tiers[0].label + ').</div>';
+        }
+    }
 
     var chain = document.getElementById("ambRewardChain");
     if (chain) {
         var h = "";
         tiers.forEach(function (t) {
-            var reached = conf >= t.n;
-            var paid = !!myAmbClaimed[String(t.n)];
+            var reached = eff >= t.n;
+            var isCur = current && current.n === t.n;
             var badge = reached
-                ? (paid ? '<span style="color:#4caf50;font-weight:700;font-size:0.75rem"><i class="fas fa-check-circle"></i> Peye</span>'
-                        : '<span style="color:#ffd700;font-weight:700;font-size:0.75rem"><i class="fas fa-clock"></i> Rive — n ap trete</span>')
-                : '<span style="color:var(--text-muted);font-size:0.75rem">' + t.n + ' Élu</span>';
-            h += '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid ' + (reached ? 'rgba(76,175,80,0.35)' : 'var(--border)') + ';background:' + (reached ? 'rgba(76,175,80,0.06)' : 'transparent') + '">';
+                ? (isCur ? '<span style="color:#ffd700;font-weight:700;font-size:0.75rem"><i class="fas fa-gift"></i> Prim aktyèl</span>'
+                         : '<span style="color:#4caf50;font-weight:700;font-size:0.75rem"><i class="fas fa-check-circle"></i> Rive</span>')
+                : '<span style="color:var(--text-muted);font-size:0.75rem">' + t.n + ' Elu</span>';
+            h += '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid ' + (isCur ? 'rgba(255,215,0,0.55)' : reached ? 'rgba(76,175,80,0.35)' : 'var(--border)') + ';background:' + (reached ? 'rgba(76,175,80,0.06)' : 'transparent') + '">';
             h += '<div style="font-size:1.5rem;' + (reached ? '' : 'filter:grayscale(1);opacity:0.5') + '">' + t.icon + '</div>';
-            h += '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:0.86rem">' + t.n + ' Élu konfime</div><div style="font-size:0.78rem;color:var(--text-muted)">' + t.label + '</div></div>';
+            h += '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:0.86rem">' + t.n + ' Elu konfime</div><div style="font-size:0.78rem;color:var(--text-muted)">' + t.label + '</div></div>';
             h += badge + '</div>';
         });
         chain.innerHTML = h;

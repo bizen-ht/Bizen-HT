@@ -1916,6 +1916,10 @@ body.no-screenshot * {
         <option value="2000-5000">2 000 – 5 000 G</option>
         <option value="5000-9999999">Plis 5 000 G</option>
       </select>
+      <select id="hfStatus" class="hfsel" onchange="applyHomeFilters()">
+        <option value="active">Kont Aktif</option>
+        <option value="all">Tout kont</option>
+      </select>
     </div>
   </div>
 </section>
@@ -3761,6 +3765,7 @@ function mkCard(p, type, male) {
         + ' data-merit="' + (p.merit || 0) + '"'
         + ' data-age="' + (p.age || "") + '"'
         + ' data-genre="' + (male ? "gason" : "fanm") + '"'
+        + ' data-frozen="' + (p.frozen ? "1" : "0") + '"'
         + ' data-online="' + (p.online ? "1" : "0") + '"'
         + ' data-price-num="' + (p.priceNum || 0) + '"'
         + ' data-price="' + (p.p || "") + '">';
@@ -5016,10 +5021,12 @@ function filterByAgency(slug, el) {
 /* ====================================
    FILTRES ACCUEIL (catégorie / tri / âge / prix)
    ==================================== */
-var homeFilter = { cat: "all", sort: "default", age: "all", price: "all" };
+var homeFilter = { cat: "all", sort: "default", age: "all", price: "all", status: "active" };
 
-/* Une carte passe-t-elle les filtres âge + prix ? */
+/* Une carte passe-t-elle les filtres statut + âge + prix ? */
 function passesAgePrice(c) {
+    /* Par défaut on ne montre QUE les comptes actifs (pas les gelés). */
+    if (homeFilter.status === "active" && c.getAttribute("data-frozen") === "1") return false;
     if (homeFilter.age !== "all") {
         var a = parseInt(c.getAttribute("data-age"), 10);
         var pa = homeFilter.age.split("-");
@@ -5048,6 +5055,7 @@ function applyHomeFilters() {
     var s = document.getElementById("hfSort"); if (s) homeFilter.sort = s.value;
     var a = document.getElementById("hfAge"); if (a) homeFilter.age = a.value;
     var p = document.getElementById("hfPrice"); if (p) homeFilter.price = p.value;
+    var st = document.getElementById("hfStatus"); if (st) homeFilter.status = st.value;
     if (gridState.fG) gridState.fG.page = 0;
     if (gridState.hG) gridState.hG.page = 0;
     try { refreshGrids(); } catch (e) {}

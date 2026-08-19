@@ -1470,19 +1470,11 @@
             </div>
 
             <div class="tc">
-                <div class="tc-head"><div class="tc-title"><i class="fas fa-stopwatch"></i> Challenge Anbasadè (peryòd limite)</div></div>
-                <div style="padding:18px">
-                    <div id="ambChallengeStatus" style="font-size:0.85rem;color:#6a6a80;margin-bottom:14px">Chajman...</div>
-                    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
-                        <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Kantite jou</label><input id="ambChDays" type="number" min="1" max="365" value="30" style="width:110px;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
-                        <button onclick="setAmbChDays(7)" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:10px 14px;font-size:0.8rem;cursor:pointer">7</button>
-                        <button onclick="setAmbChDays(15)" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:10px 14px;font-size:0.8rem;cursor:pointer">15</button>
-                        <button onclick="setAmbChDays(30)" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:10px 14px;font-size:0.8rem;cursor:pointer">30</button>
-                        <button onclick="launchAmbChallenge()" style="background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:11px 18px;font-weight:600;cursor:pointer;font-size:0.85rem"><i class="fas fa-rocket"></i> Lanse Challenge</button>
-                        <button onclick="stopAmbChallenge()" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.3);border-radius:8px;padding:11px 16px;font-size:0.85rem;cursor:pointer"><i class="fas fa-stop"></i> Arete</button>
-                    </div>
-                    <p style="color:#6a6a80;font-size:0.76rem;margin-top:12px">Lè challenge la aktif, anbasadè yo wè yon kont-a-rebour (konbyen jou ki rete). Sa pa reset kantite Elu — se yon dat limit pou kreye ijans.</p>
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-hand-holding-usd"></i> Prim pou peye (anbasadè ki touche)</div>
+                    <button onclick="loadAmbPayouts()" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:6px;padding:6px 12px;font-size:0.75rem;cursor:pointer"><i class="fas fa-sync"></i> Refrechi</button>
                 </div>
+                <div id="ambPayoutsList" style="padding:14px"></div>
             </div>
 
             <div class="tc" style="margin-top:22px">
@@ -3447,7 +3439,7 @@ function goPage(id, btn) {
     if (id === "msg") loadAdminMsg();
     if (id === "promo") loadPromo();
     if (id === "vedette") loadVedetteAdmin();
-    if (id === "anbasade") { loadAmbassadors(); loadAmbChallenge(); }
+    if (id === "anbasade") { loadAmbassadors(); loadAmbPayouts(); }
     if (id === "wallet") loadWallets();
 }
 
@@ -5249,6 +5241,49 @@ function verifyAmbassador(code, email) {
             loadAmbassadors();
         }).catch(function (e) { toast("Ere: " + (e.message || e.code), false); });
     });
+}
+
+/* Primes que des ambassadeurs ont "touchées" — à payer (MonCash) / accorder Premium. */
+function loadAmbPayouts() {
+    if (!db) return;
+    var box = document.getElementById("ambPayoutsList");
+    if (box) box.innerHTML = '<p style="color:#6a6a80;font-size:0.85rem">Chajman...</p>';
+    db.collection("ambassadorPayouts").where("status", "==", "pending").get().then(function (snap) {
+        var rows = []; snap.forEach(function (d) { var x = d.data(); x._id = d.id; rows.push(x); });
+        rows.sort(function (a, b) {
+            var am = a.requestedAt && a.requestedAt.toMillis ? a.requestedAt.toMillis() : 0;
+            var bm = b.requestedAt && b.requestedAt.toMillis ? b.requestedAt.toMillis() : 0;
+            return bm - am;
+        });
+        if (!box) return;
+        if (!rows.length) { box.innerHTML = '<p style="color:#6a6a80;font-size:0.85rem;text-align:center;padding:20px">Pa gen prim pou peye.</p>'; return; }
+        var h = "";
+        rows.forEach(function (x) {
+            var needsPrem = (x.prizeType === "premium" || x.prizeType === "cash_premium");
+            h += '<div style="background:#12121a;border:1px solid #2a2a3a;border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
+                '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px">' +
+                '<strong style="color:#ff9800">' + escHtml(x.ownerName || "VIP") + ' <span style="color:#6a6a80;font-weight:400">(' + escHtml(x.code || "") + ')</span></strong>' +
+                '<span style="color:#ffd700;font-weight:700">' + escHtml(x.prizeLabel || "") + '</span></div>' +
+                '<div style="font-size:0.78rem;color:#ccc;margin-bottom:10px">Palye ' + (x.milestone || "?") + ' Elu · ' + escHtml(x.ownerEmail || "") + (x.moncashNumber ? ' · MonCash: <strong>' + escHtml(x.moncashNumber) + '</strong>' : '') + '</div>' +
+                '<button onclick="markAmbPayout(\'' + x._id + '\',\'' + x.prizeType + '\',\'' + x.ownerUid + '\')" style="background:rgba(76,175,80,0.15);color:#4caf50;border:1px solid rgba(76,175,80,0.4);border-radius:8px;padding:7px 16px;font-size:0.8rem;font-weight:600;cursor:pointer"><i class="fas fa-check"></i> Make peye' + (needsPrem ? ' + bay Premium' : '') + '</button>' +
+                '</div>';
+        });
+        box.innerHTML = h;
+    }).catch(function (e) { if (box) box.innerHTML = '<p style="color:#f44336;font-size:0.85rem">Erè: ' + (e.code || e.message) + '</p>'; });
+}
+
+function markAmbPayout(id, prizeType, ownerUid) {
+    if (!db) return;
+    var grantPrem = (prizeType === "premium" || prizeType === "cash_premium");
+    if (!confirm("Konfime ou peye prim sa a?" + (grantPrem ? " (VIP la ap vin Premium tou)" : ""))) return;
+    var jobs = [ db.collection("ambassadorPayouts").doc(id).update({ status: "paid", paidAt: firebase.firestore.FieldValue.serverTimestamp() }) ];
+    if (grantPrem && ownerUid) {
+        jobs.push(db.collection("users").doc(ownerUid).set({ isPremium: true, premiumActivatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }));
+    }
+    Promise.all(jobs).then(function () {
+        toast("Prim make peye" + (grantPrem ? " + Premium bay" : "") + ".", true);
+        loadAmbPayouts();
+    }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
 }
 
 function loadAmbassadors() {
