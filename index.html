@@ -1881,6 +1881,45 @@ body.no-screenshot * {
 </section>
 
 <!-- FEMMES -->
+<!-- BARRE DE FILTRES DE L'ACCUEIL -->
+<style>
+  #homeFilters .hfcat{background:rgba(255,255,255,0.05);border:1px solid var(--border,#2a2a3a);color:#b0b0c0;border-radius:50px;padding:9px 18px;font-family:'Montserrat',sans-serif;font-weight:600;font-size:0.82rem;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.15s}
+  #homeFilters .hfcat:hover{border-color:#e91e63}
+  #homeFilters .hfcat.active{background:linear-gradient(135deg,#e91e63,#9c27b0);border-color:transparent;color:#fff}
+  #homeFilters .hfsel{background:rgba(255,255,255,0.05);border:1px solid var(--border,#2a2a3a);color:#fff;border-radius:10px;padding:9px 13px;font-family:'Montserrat',sans-serif;font-size:0.82rem;cursor:pointer}
+</style>
+<section class="section" id="homeFilters" style="display:none;padding-top:26px;padding-bottom:0">
+  <div class="container">
+    <div style="display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-bottom:14px">
+      <button class="hfcat active" data-cat="all" onclick="setHomeCat('all',this)"><i class="fas fa-border-all"></i> Tout</button>
+      <button class="hfcat" data-cat="fanm" onclick="setHomeCat('fanm',this)"><i class="fas fa-venus"></i> Fanm</button>
+      <button class="hfcat" data-cat="gason" onclick="setHomeCat('gason',this)"><i class="fas fa-mars"></i> Gason</button>
+      <button class="hfcat" data-cat="krey" onclick="setHomeCat('krey',this)"><i class="fas fa-users"></i> Krey</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center">
+      <select id="hfSort" class="hfsel" onchange="applyHomeFilters()">
+        <option value="default">Triye: Otomatik</option>
+        <option value="rating">⭐ Pi bon nòt</option>
+        <option value="online">🟢 An liy anvan</option>
+        <option value="price_asc">💰 Mwen chè</option>
+        <option value="price_desc">💎 Pi chè</option>
+      </select>
+      <select id="hfAge" class="hfsel" onchange="applyHomeFilters()">
+        <option value="all">Laj: Tout</option>
+        <option value="18-25">18–25 an</option>
+        <option value="26-35">26–35 an</option>
+        <option value="36-99">36 an +</option>
+      </select>
+      <select id="hfPrice" class="hfsel" onchange="applyHomeFilters()">
+        <option value="all">Pri: Tout</option>
+        <option value="0-2000">Mwens 2 000 G</option>
+        <option value="2000-5000">2 000 – 5 000 G</option>
+        <option value="5000-9999999">Plis 5 000 G</option>
+      </select>
+    </div>
+  </div>
+</section>
+
 <!-- BARRE DE STORIES DES ELU -->
 <section class="section" id="storiesSection" style="display:none;padding-top:24px;padding-bottom:0">
     <div class="container">
@@ -3720,6 +3759,10 @@ function mkCard(p, type, male) {
         + ' data-agency="' + (p.agencySlug || "") + '"'
         + ' data-name="' + (p.n || "").replace(/"/g, "&quot;") + '"'
         + ' data-merit="' + (p.merit || 0) + '"'
+        + ' data-age="' + (p.age || "") + '"'
+        + ' data-genre="' + (male ? "gason" : "fanm") + '"'
+        + ' data-online="' + (p.online ? "1" : "0") + '"'
+        + ' data-price-num="' + (p.priceNum || 0) + '"'
         + ' data-price="' + (p.p || "") + '">';
     h += '<div class="pc-img">';
     h += '<div class="pc-bg" style="background:' + p.g + '">';
@@ -4081,6 +4124,7 @@ function renderRealFreelancers() {
                     l: d.localisation || "Ayiti",
                     lk: locKey,
                     p: disc.newPrice.toLocaleString(),
+                    priceNum: disc.newPrice,
                     domi: Math.round(parseFloat(d.prixDomi) || 0),
                     origP: disc.active ? disc.base.toLocaleString() : "",
                     discountBadge: disc.active ? ('Rabè -' + disc.amount.toLocaleString() + ' Gdes · ' + disc.daysLeft + ' jou') : "",
@@ -4134,6 +4178,9 @@ function renderRealFreelancers() {
 
             /* Recalcule la pagination (10 par page) avec les nouvelles cartes */
             try { refreshGrids(); } catch(e) {}
+
+            /* Affiche la barre de filtres de l'accueil (catégorie / tri / âge / prix) */
+            try { var _hf = document.getElementById("homeFilters"); if (_hf) _hf.style.display = "block"; } catch(e) {}
 
             /* Notes + niveaux sur les vraies cartes */
             try { decorateRatings(); } catch(e) {}
@@ -4967,6 +5014,59 @@ function filterByAgency(slug, el) {
 }
 
 /* ====================================
+   FILTRES ACCUEIL (catégorie / tri / âge / prix)
+   ==================================== */
+var homeFilter = { cat: "all", sort: "default", age: "all", price: "all" };
+
+/* Une carte passe-t-elle les filtres âge + prix ? */
+function passesAgePrice(c) {
+    if (homeFilter.age !== "all") {
+        var a = parseInt(c.getAttribute("data-age"), 10);
+        var pa = homeFilter.age.split("-");
+        if (!a || a < parseInt(pa[0], 10) || a > parseInt(pa[1], 10)) return false;
+    }
+    if (homeFilter.price !== "all") {
+        var pr = parseFloat(c.getAttribute("data-price-num")) || 0;
+        var pp = homeFilter.price.split("-");
+        if (pr < parseFloat(pp[0]) || pr > parseFloat(pp[1])) return false;
+    }
+    return true;
+}
+
+/* Comparateur de tri (note / en-ligne / prix). */
+function gridSortCmp(a, b) {
+    var s = homeFilter.sort;
+    if (s === "rating") return (parseFloat(b.getAttribute("data-rating")) || 0) - (parseFloat(a.getAttribute("data-rating")) || 0);
+    if (s === "online") return (parseInt(b.getAttribute("data-online"), 10) || 0) - (parseInt(a.getAttribute("data-online"), 10) || 0);
+    if (s === "price_asc") return (parseFloat(a.getAttribute("data-price-num")) || 0) - (parseFloat(b.getAttribute("data-price-num")) || 0);
+    if (s === "price_desc") return (parseFloat(b.getAttribute("data-price-num")) || 0) - (parseFloat(a.getAttribute("data-price-num")) || 0);
+    return 0;
+}
+
+/* Lit les selects et re-applique (tri/âge/prix) sur les grilles. */
+function applyHomeFilters() {
+    var s = document.getElementById("hfSort"); if (s) homeFilter.sort = s.value;
+    var a = document.getElementById("hfAge"); if (a) homeFilter.age = a.value;
+    var p = document.getElementById("hfPrice"); if (p) homeFilter.price = p.value;
+    if (gridState.fG) gridState.fG.page = 0;
+    if (gridState.hG) gridState.hG.page = 0;
+    try { refreshGrids(); } catch (e) {}
+}
+
+/* Catégorie : montre/masque les sections + la barre Story. */
+function setHomeCat(cat, btn) {
+    homeFilter.cat = cat;
+    var chips = document.querySelectorAll("#homeFilters .hfcat");
+    for (var i = 0; i < chips.length; i++) chips[i].classList.remove("active");
+    if (btn) btn.classList.add("active");
+    var fs = document.getElementById("femmes"), hs = document.getElementById("hommes"), ks = document.getElementById("krey");
+    if (fs) fs.style.display = (cat === "all" || cat === "fanm") ? "" : "none";
+    if (hs) hs.style.display = (cat === "all" || cat === "gason") ? "" : "none";
+    if (ks) ks.style.display = (cat === "all" || cat === "krey") ? "" : "none";
+    try { renderStoriesBar(); } catch (e) {}
+}
+
+/* ====================================
    PAGINATION GRILLES (10 par page) — filtre-aware
    ==================================== */
 var GRID_PER_PAGE = 10;
@@ -4987,9 +5087,15 @@ function renderGridPage(gridId) {
         var match;
         if (agFilter) match = (c.getAttribute("data-agency") === agFilter);
         else match = (st.filter === "all" || c.getAttribute("data-f") === st.filter);
+        if (match && !passesAgePrice(c)) match = false;   /* filtre âge + prix */
         if (!match) { c.style.display = "none"; }
         else elig.push(c);
     });
+    /* Tri choisi (note / en-ligne / prix) : on réordonne le DOM des cartes éligibles. */
+    if (homeFilter.sort && homeFilter.sort !== "default") {
+        elig.sort(gridSortCmp);
+        elig.forEach(function (c) { g.appendChild(c); });
+    }
     var total = elig.length;
     var pages = Math.max(1, Math.ceil(total / GRID_PER_PAGE));
     if (st.page >= pages) st.page = pages - 1;
@@ -6543,6 +6649,7 @@ function decorateRatings() {
             /* Tri: score de niveau (mérite d'abord) puis moyenne des notes */
             var score = merit * 1000 + Math.round(avg * 100);
             card.setAttribute("data-level-score", score);
+            card.setAttribute("data-rating", avg.toFixed(2));   /* pour le tri "pi bon nòt" */
 
             /* Évite les doublons d'injection */
             var old = card.querySelector(".elu-rating-row");
@@ -6830,6 +6937,7 @@ function shareEluWhatsApp(code, name) {
    Barre d'avatars + visualiseur (like / commentaire privé Premium / vues).
    ==================================== */
 var _storiesByElu = {};
+var _storiesEluList = [];
 var _storyView = { eluUid: null, list: [], idx: 0 };
 var _storiesBarUnsub = null;
 
@@ -6865,22 +6973,40 @@ function loadStoriesBar() {
             return bm - am;
         });
         _storiesByElu = {};
-        elus.forEach(function (e) { _storiesByElu[e.eluUid] = e.stories; });
-
-        var bar = document.getElementById("storiesBar");
-        var sec = document.getElementById("storiesSection");
-        if (!bar) return;
-        if (!elus.length) { if (sec) sec.style.display = "none"; return; }
-        if (sec) sec.style.display = "block";
-        var h = "";
         elus.forEach(function (e) {
-            var av = e.photo ? '<img src="' + e.photo + '" style="width:100%;height:100%;object-fit:cover">' : '<i class="fas fa-user" style="color:#fff"></i>';
-            h += '<div onclick="openStoryViewer(\'' + e.eluUid + '\')" style="flex-shrink:0;width:72px;text-align:center;cursor:pointer">' +
-                '<div style="width:66px;height:66px;border-radius:50%;padding:3px;background:linear-gradient(135deg,#e91e63,#9c27b0);margin:0 auto"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#12121a;display:flex;align-items:center;justify-content:center;border:2px solid #12121a">' + av + '</div></div>' +
-                '<div style="font-size:0.68rem;color:#b0b0c0;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeResHotel(e.pseudo) + '</div></div>';
+            _storiesByElu[e.eluUid] = e.stories;
+            var s0 = e.stories[0] || {};
+            e.type = s0.eluType || "freelancer";     /* freelancer | krey */
+            e.genre = s0.eluGenre || "fanm";          /* fanm | gason */
         });
-        bar.innerHTML = h;
+        _storiesEluList = elus;
+        renderStoriesBar();
     }, function (e) { console.warn("loadStoriesBar:", e && e.code); });
+}
+
+/* Rendu de la barre Story, filtré par la catégorie active (Tout/Fanm/Gason/Krey). */
+function renderStoriesBar() {
+    var bar = document.getElementById("storiesBar");
+    var sec = document.getElementById("storiesSection");
+    if (!bar) return;
+    var cat = homeFilter.cat;
+    var elus = (_storiesEluList || []).filter(function (e) {
+        if (cat === "all") return true;
+        if (cat === "krey") return e.type === "krey";
+        if (cat === "fanm") return e.type !== "krey" && e.genre === "fanm";
+        if (cat === "gason") return e.type !== "krey" && e.genre === "gason";
+        return true;
+    });
+    if (!elus.length) { if (sec) sec.style.display = "none"; return; }
+    if (sec) sec.style.display = "block";
+    var h = "";
+    elus.forEach(function (e) {
+        var av = e.photo ? '<img src="' + e.photo + '" style="width:100%;height:100%;object-fit:cover">' : '<i class="fas fa-user" style="color:#fff"></i>';
+        h += '<div onclick="openStoryViewer(\'' + e.eluUid + '\')" style="flex-shrink:0;width:72px;text-align:center;cursor:pointer">' +
+            '<div style="width:66px;height:66px;border-radius:50%;padding:3px;background:linear-gradient(135deg,#e91e63,#9c27b0);margin:0 auto"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#12121a;display:flex;align-items:center;justify-content:center;border:2px solid #12121a">' + av + '</div></div>' +
+            '<div style="font-size:0.68rem;color:#b0b0c0;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeResHotel(e.pseudo) + '</div></div>';
+    });
+    bar.innerHTML = h;
 }
 
 function openStoryViewer(eluUid) {

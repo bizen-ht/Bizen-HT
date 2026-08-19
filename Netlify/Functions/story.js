@@ -92,10 +92,13 @@ exports.handler = async function (event) {
             if (stype === "photo" && photoUrl.indexOf("https://") !== 0) return err(400, "Foto pa valab.");
             if (stype === "text" && !stext) return err(400, "Ekri kichòy.");
 
+            var _g = (u.genre || pub.genre || "");
             var ref = await dbf.collection("stories").add({
                 eluUid: uid,
                 eluPseudo: (u.pseudo || pub.pseudo || u.prenom || "Elu"),
                 eluPhotoUrl: (pub.photoUrl || u.photoUrl || ""),
+                eluType: u.type,                                             /* freelancer | krey */
+                eluGenre: (_g === "homme" || _g === "gason") ? "gason" : "fanm",
                 type: stype,
                 text: stext,
                 photoUrl: (stype === "photo") ? photoUrl : "",
