@@ -887,6 +887,9 @@
             <button class="sb-link" onclick="goPage('story',this)">
                 <i class="fas fa-circle-play"></i> Story
             </button>
+            <button class="sb-link" onclick="goPage('viphistory',this)">
+                <i class="fas fa-clock-rotate-left"></i> Istorik VIP
+            </button>
 
             <div class="sb-cat">Aktivite</div>
             <button class="sb-link" onclick="goPage('res',this)">
@@ -1132,6 +1135,21 @@
                     <div class="tc-title"><i class="fas fa-circle-play"></i> Story aktif yo (24h)</div>
                 </div>
                 <div id="storyModList" style="padding:14px"></div>
+            </div>
+        </div>
+
+        <!-- ISTORIK REZÈVASYON VIP -->
+        <div class="pg" id="pg-viphistory">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-clock-rotate-left" style="color:var(--red)"></i> Istorik Rezèvasyon VIP</h1>
+                <input class="srch" placeholder="Chache VIP (non / imel)..." oninput="filterVipHist(this.value)">
+            </div>
+            <div class="tc">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-users"></i> VIP ki deja rezève (klike pou detay)</div>
+                    <button onclick="loadVipHistoryPage()" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:6px;padding:6px 12px;font-size:0.75rem;cursor:pointer"><i class="fas fa-sync"></i> Refrechi</button>
+                </div>
+                <div id="vipHistList" style="padding:14px"></div>
             </div>
         </div>
 
@@ -3435,6 +3453,7 @@ function goPage(id, btn) {
     if (id === "boss") loadBoss();
     if (id === "demann") loadDemannMod();
     if (id === "story") loadStoryMod();
+    if (id === "viphistory") loadVipHistoryPage();
     if (id === "zones") loadZones();
     if (id === "msg") loadAdminMsg();
     if (id === "promo") loadPromo();
@@ -5632,6 +5651,74 @@ function doLogout() {
 /* ====================================
    VIEW ACCOUNT DETAIL (Modal)
    ==================================== */
+/* Historique des réservations d'un VIP (avec quels Elu il a passé des moments). */
+function buildVipHistory(uid) {
+    var res = (adminRes || []).filter(function (r) { return r.userId === uid; });
+    res.sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")); });
+    var metCount = res.filter(function (r) { return r.met === true; }).length;
+    var elusSet = {};
+    res.forEach(function (r) { if (r.met === true) elusSet[r.prestateName || r.prestateId || "?"] = 1; });
+    var elusMet = Object.keys(elusSet).length;
+
+    var h = '<div style="margin-top:18px;background:rgba(233,30,99,0.05);border:1px solid rgba(233,30,99,0.22);border-radius:12px;padding:16px">';
+    h += '<div style="font-size:0.72rem;color:#f48fb1;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px"><i class="fas fa-clock-rotate-left"></i> Istorik Rezèvasyon (' + res.length + ')</div>';
+    if (!res.length) { return h + '<div style="font-size:0.82rem;color:#6a6a80">VIP sa a poko fè okenn rezèvasyon.</div></div>'; }
+    h += '<div style="font-size:0.78rem;color:#6a6a80;margin-bottom:12px">' + metCount + ' rankont konfime · ' + elusMet + ' Elu diferan</div>';
+    h += '<div style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto">';
+    res.forEach(function (r) {
+        var stCl = r.status === "confirmed" ? "#4caf50" : r.status === "cancelled" ? "#f44336" : "#ff9800";
+        var stTxt = r.status === "confirmed" ? "Konfime" : r.status === "cancelled" ? "Anile" : "An atant";
+        var metBadge = r.met ? ' <span style="color:#ffd700;font-weight:700"><i class="fas fa-heart"></i> Rankont fèt</span>' : '';
+        h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;background:rgba(255,255,255,0.03);border-radius:8px;padding:9px 12px">' +
+            '<div style="min-width:0"><div style="font-weight:600;font-size:0.85rem">' + escHtml(r.prestateName || "Elu") + '</div>' +
+            '<div style="font-size:0.7rem;color:#6a6a80"><i class="fas fa-calendar"></i> ' + escHtml(r.date || "—") + (r.price ? ' · ' + escHtml(String(r.price)) : '') + metBadge + '</div></div>' +
+            '<span style="color:' + stCl + ';font-size:0.72rem;font-weight:600;white-space:nowrap">' + stTxt + '</span></div>';
+    });
+    h += '</div></div>';
+    return h;
+}
+
+/* Page dédiée : liste des VIP qui ont réservé (nb, rankont, Elu). Clic -> détail. */
+function loadVipHistoryPage() {
+    var box = document.getElementById("vipHistList");
+    if (!box) return;
+    var res = adminRes || [];
+    var map = {};
+    res.forEach(function (r) {
+        var uid = r.userId; if (!uid) return;
+        if (!map[uid]) map[uid] = { uid: uid, email: r.userEmail || "", count: 0, met: 0, elus: {}, last: "" };
+        var m = map[uid];
+        m.count++;
+        if (r.met) { m.met++; m.elus[r.prestateName || r.prestateId || "?"] = 1; }
+        if (String(r.date || "") > m.last) m.last = String(r.date || "");
+    });
+    var rows = Object.keys(map).map(function (k) { return map[k]; });
+    rows.sort(function (a, b) { return b.count - a.count; });
+    var byId = {}; (adminUsers || []).forEach(function (u) { byId[u.id] = u; });
+    if (!rows.length) { box.innerHTML = '<p style="color:#6a6a80;padding:20px;text-align:center">Pa gen rezèvasyon VIP anko.</p>'; return; }
+    var h = "";
+    rows.forEach(function (m) {
+        var u = byId[m.uid] || {};
+        var name = ((u.prenom || "") + " " + (u.nom || "")).trim() || u.pseudo || m.email || "VIP";
+        var elusN = Object.keys(m.elus).length;
+        h += '<div onclick="viewAccountDetail(\'' + m.uid + '\')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;background:#12121a;border:1px solid #2a2a3a;border-radius:10px;padding:14px 16px;margin-bottom:10px" data-search="' + escHtml((name + " " + m.email).toLowerCase()) + '">' +
+            '<div style="min-width:0"><div style="font-weight:600;color:#fff">' + escHtml(name) + '</div><div style="font-size:0.74rem;color:#6a6a80">' + escHtml(m.email) + ' · dènye: ' + escHtml(m.last || "—") + '</div></div>' +
+            '<div style="text-align:right;white-space:nowrap"><div style="color:#f48fb1;font-weight:700">' + m.count + ' rezèv.</div><div style="font-size:0.72rem;color:#6a6a80">' + m.met + ' konfime · ' + elusN + ' Elu</div></div>' +
+            '</div>';
+    });
+    box.innerHTML = h;
+}
+
+/* Filtre la liste Istorik VIP par texte (nom/email). */
+function filterVipHist(q) {
+    q = (q || "").toLowerCase().trim();
+    var box = document.getElementById("vipHistList");
+    if (!box) return;
+    box.querySelectorAll("[data-search]").forEach(function (el) {
+        el.style.display = (!q || el.getAttribute("data-search").indexOf(q) !== -1) ? "flex" : "none";
+    });
+}
+
 /* Change la zone (localisation) d'un Elu / Krey — users + publicProfiles. */
 function setEluLocation(uid, type) {
     if (!db) return;
@@ -5778,6 +5865,11 @@ function viewAccountDetail(uid) {
         content.innerHTML += mh;
     } else if (user.type === "freelancer" || user.type === "krey") {
         content.innerHTML += '<div style="margin-top:16px;font-size:0.8rem;color:#6a6a80"><i class="fas fa-image"></i> Pa gen medya uploade.</div>';
+    }
+
+    /* === HISTORIQUE DES RÉSERVATIONS (VIP) : avec quels Elu il a passé des moments === */
+    if (user.type !== "freelancer" && user.type !== "krey") {
+        content.innerHTML += buildVipHistory(uid);
     }
 
     /* === ÉDITION DU PRIX (base Elu + prix hôtel ajouté par l'admin) === */
