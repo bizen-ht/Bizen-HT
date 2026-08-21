@@ -2675,8 +2675,9 @@ function renderFLTable(list) {
         var stTxt = f.status === "active" ? "Aktif" : f.status === "en_attente" ? "An Atant" : "Jele";
 
         var fTest = f.isTest ? ' <span class="sbadge purple" style="background:rgba(156,39,176,0.18);color:#ce93d8"><i class="fas fa-flask"></i> TEST</span>' : '';
+        var fAmb = f.ambassadorCode ? ' <span class="sbadge" style="background:rgba(255,152,0,0.15);color:#ff9800;border:1px solid rgba(255,152,0,0.4)" title="Referans anbasadè: ' + escHtml(f.ambassadorCode) + '"><i class="fas fa-medal"></i> ' + escHtml(f.ambassadorCode) + '</span>' : '';
         h += '<tr data-filter="' + (f.status || '') + '" data-test="' + (f.isTest ? '1' : '0') + '">';
-        h += '<td><strong>' + escHtml(f.prenom || '') + ' ' + escHtml(f.nom || '') + '</strong>' + fTest + '<br><small style="color:#6a6a80">' + escHtml(f.email || '') + '</small></td>';
+        h += '<td><strong>' + escHtml(f.prenom || '') + ' ' + escHtml(f.nom || '') + '</strong>' + fTest + fAmb + '<br><small style="color:#6a6a80">' + escHtml(f.email || '') + '</small></td>';
         h += '<td>' + (f.genre === "femme" ? "Fanm" : (f.genre === "fanm" ? "Fanm" : "Gason")) + '</td>';
         h += '<td>' + escHtml(f.localisation || 'N/A') + '</td>';
         h += '<td>' + ((f.prixMoment || 0).toLocaleString()) + ' G</td>';
@@ -5810,6 +5811,15 @@ function viewAccountDetail(uid) {
 
     var bizenCodeHtml = user.bizenCode ? '<div style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:12px;margin-bottom:12px;text-align:center"><div style="font-size:0.72rem;color:#6a6a80;margin-bottom:4px">Kòd Bizen HT</div><div style="font-size:1.3rem;font-weight:700;color:#ffd700;letter-spacing:2px">' + user.bizenCode + '</div></div>' : "";
 
+    /* Référence ambassadeur : si l'Elu s'est inscrit via un code, on l'affiche direct. */
+    var ambRefHtml = "";
+    if ((user.type === "freelancer" || user.type === "krey") && user.ambassadorCode) {
+        ambRefHtml = '<div style="background:rgba(255,152,0,0.1);border:1px solid rgba(255,152,0,0.4);border-radius:10px;padding:12px;margin-bottom:12px">' +
+            '<div style="font-size:0.72rem;color:#6a6a80;margin-bottom:4px"><i class="fas fa-medal" style="color:#ff9800"></i> Referans Anbasadè</div>' +
+            '<div style="font-size:1.05rem;font-weight:700;color:#ff9800;letter-spacing:1px">' + escHtml(user.ambassadorCode) +
+            ' <span id="ambRefName_' + uid + '" style="font-size:0.8rem;color:#b0b0c0;font-weight:400"></span></div></div>';
+    }
+
     var onlineHtml = "";
     if (user.type === "freelancer" || user.type === "krey") {
         var onlineDot = user.isOnline ? '<span style="display:inline-block;width:10px;height:10px;background:#4caf50;border-radius:50%;margin-right:6px"></span><span style="color:#4caf50">En Liy</span>' : '<span style="display:inline-block;width:10px;height:10px;background:#6a6a80;border-radius:50%;margin-right:6px"></span><span style="color:#6a6a80">Dekonekte</span>';
@@ -5822,7 +5832,7 @@ function viewAccountDetail(uid) {
 
     var photoHtml = user.profilePhoto ? '<div style="margin-bottom:15px;text-align:center"><img src="' + user.profilePhoto + '" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #e91e63"></div>' : "";
 
-    content.innerHTML = photoHtml + bizenCodeHtml + onlineHtml +
+    content.innerHTML = photoHtml + bizenCodeHtml + ambRefHtml + onlineHtml +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.85rem">' +
         '<div><span style="color:#6a6a80">Pseudo (piblik):</span><br><strong style="color:#f48fb1">' + escHtml(user.pseudo || "—") + '</strong></div>' +
         '<div><span style="color:#6a6a80">Imel:</span><br><strong>' + (user.email || "N/A") + '</strong></div>' +
@@ -5837,6 +5847,14 @@ function viewAccountDetail(uid) {
         (user.kreyMemberCount ? '<div><span style="color:#6a6a80">Manm:</span><br><strong>' + user.kreyMemberCount + '</strong></div>' : '') +
         (user.solde !== undefined ? '<div><span style="color:#6a6a80">Solde:</span><br><strong style="color:#4caf50">' + (user.solde || 0).toLocaleString() + ' G</strong></div>' : '') +
         '</div>';
+
+    /* Nom de l'ambassadeur qui a recruté (par code) — best effort. */
+    if ((user.type === "freelancer" || user.type === "krey") && user.ambassadorCode) {
+        db.collection("ambassadors").doc(user.ambassadorCode).get().then(function (d) {
+            var el = document.getElementById("ambRefName_" + uid);
+            if (el && d.exists) { var a = d.data(); el.textContent = "— " + (a.ownerName || a.ownerEmail || ""); }
+        }).catch(function () {});
+    }
 
     /* === DESCRIPTION === */
     var descTxt = user.description || user.kreyDescription || "";
