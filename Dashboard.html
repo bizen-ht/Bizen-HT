@@ -4662,14 +4662,46 @@ function ambTiers() {
     ];
 }
 
+/* Affiche l'interface ambassadeur à partir des données du doc (code, resetBaseline…).
+   Ne dépend d'AUCUNE re-requête : sûr même si les règles de lecture posent problème. */
+function renderAmbassadorInterface(data) {
+    myAmbData = data || myAmbData || {};
+    myAmbCode = myAmbData.code || myAmbCode;
+    var card = document.getElementById("ambActivateCard");
+    var iface = document.getElementById("ambInterface");
+    if (card) card.style.display = "none";
+    if (iface) iface.style.display = "block";
+    var cd = document.getElementById("ambMyCode");
+    if (cd) cd.textContent = myAmbCode || "—";
+    var box = document.getElementById("ambShareBox");
+    if (box && myAmbCode) {
+        var joinLink = window.location.origin + "/elu?amb=" + encodeURIComponent(myAmbCode);
+        var bh = '<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px"><i class="fas fa-user-plus"></i> Lyen enskripsyon Elu — pou nouvo recrus ou yo</div>';
+        bh += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+        bh += '<input readonly value="' + joinLink + '" onclick="this.select()" style="flex:1;min-width:200px;background:rgba(0,0,0,0.25);border:1px solid var(--border);color:#eee;border-radius:8px;padding:9px 12px;font-size:0.8rem">';
+        bh += '<button onclick="bossCopy(\'' + joinLink + '\',this)" style="background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:0.8rem;font-weight:600;cursor:pointer"><i class="fas fa-copy"></i> Kopye</button>';
+        bh += '</div>';
+        bh += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">Lyen sa a ap otomatikman mete kòd ou nan fòm nan.</div>';
+        box.innerHTML = bh;
+    }
+    try { loadAmbassadorRecruits(); } catch (e) {}
+}
+
 /* Ouvre l'espace ambassadeur : carte d'activation si pas encore ambassadeur,
-   sinon l'interface complète. Appelé quand on ouvre la section (self-serve). */
+   sinon l'interface complète. Repli par email (comme l'ancien code) au cas où
+   la lecture par ownerUid serait refusée par les règles. */
 function loadAmbassadorSpace() {
     if (!db || !currentUser) return;
     var card = document.getElementById("ambActivateCard");
     var iface = document.getElementById("ambInterface");
+    var email = String((userData && userData.email) || currentUser.email || "").toLowerCase();
     db.collection("ambassadors").where("ownerUid", "==", currentUser.uid).limit(1).get()
         .catch(function () { return { empty: true }; })
+        .then(function (snap) {
+            if (snap && !snap.empty) return snap;
+            if (!email) return null;
+            return db.collection("ambassadors").where("ownerEmail", "==", email).limit(1).get().catch(function () { return null; });
+        })
         .then(function (snap) {
             if (!snap || snap.empty) {
                 if (card) card.style.display = "block";
@@ -4677,32 +4709,19 @@ function loadAmbassadorSpace() {
                 return;
             }
             var doc = snap.docs[0];
-            myAmbData = doc.data();
-            myAmbCode = myAmbData.code || doc.id;
-            if (card) card.style.display = "none";
-            if (iface) iface.style.display = "block";
-            var cd = document.getElementById("ambMyCode");
-            if (cd) cd.textContent = myAmbCode;
-            var box = document.getElementById("ambShareBox");
-            if (box) {
-                var joinLink = window.location.origin + "/elu?amb=" + encodeURIComponent(myAmbCode);
-                var bh = '<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px"><i class="fas fa-user-plus"></i> Lyen enskripsyon Elu — pou nouvo recrus ou yo</div>';
-                bh += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
-                bh += '<input readonly value="' + joinLink + '" onclick="this.select()" style="flex:1;min-width:200px;background:rgba(0,0,0,0.25);border:1px solid var(--border);color:#eee;border-radius:8px;padding:9px 12px;font-size:0.8rem">';
-                bh += '<button onclick="bossCopy(\'' + joinLink + '\',this)" style="background:linear-gradient(135deg,#ff9800,#e91e63);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:0.8rem;font-weight:600;cursor:pointer"><i class="fas fa-copy"></i> Kopye</button>';
-                bh += '</div>';
-                bh += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">Lyen sa a ap otomatikman mete kòd ou nan fòm nan.</div>';
-                box.innerHTML = bh;
-            }
-            loadAmbassadorRecruits();
+            var d = doc.data(); d.code = d.code || doc.id;
+            renderAmbassadorInterface(d);
         }).catch(function (e) { console.warn("loadAmbassadorSpace:", e.code || e.message); });
 }
 
-/* Le VIP choisit "Wi" -> crée son espace ambassadeur (fonction serveur). */
+/* Le VIP choisit "Wi" -> crée son espace ambassadeur (fonction serveur).
+   On affiche l'interface DIRECTEMENT depuis la réponse (le code) — pas de
+   re-requête, donc le bouton ne "tourne" plus indéfiniment. */
 function activateAmbassador() {
     if (!currentUser) return;
     var btn = document.getElementById("ambActivateBtn");
     if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> N ap aktive...'; }
+    var resetBtn = function () { if (btn) { btn.disabled = false; btn.style.opacity = "1"; btn.innerHTML = '<i class="fas fa-check"></i> Wi, mwen vle'; } };
     currentUser.getIdToken().then(function (idToken) {
         return fetch("/.netlify/functions/ambassador", {
             method: "POST", headers: { "Content-Type": "application/json" },
@@ -4710,11 +4729,12 @@ function activateAmbassador() {
         });
     }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
     .then(function (res) {
+        resetBtn();
         if (!res.ok || !res.d.code) throw new Error(res.d && res.d.error ? res.d.error : "Erè");
-        showToast("Ou vin anbasadè! Kòd ou: " + res.d.code, "success");
-        loadAmbassadorSpace();
+        showToast(res.d.already ? ("Ou deja anbasadè. Kòd ou: " + res.d.code) : ("Ou vin anbasadè! Kòd ou: " + res.d.code), "success");
+        renderAmbassadorInterface({ code: res.d.code, ownerUid: currentUser.uid, ownerEmail: ((userData && userData.email) || currentUser.email || ""), resetBaseline: 0 });
     }).catch(function (e) {
-        if (btn) { btn.disabled = false; btn.style.opacity = "1"; btn.innerHTML = '<i class="fas fa-check"></i> Wi, mwen vle'; }
+        resetBtn();
         showToast("Pa t kapab aktive: " + (e.message || "eseye ankò"), "error");
     });
 }
