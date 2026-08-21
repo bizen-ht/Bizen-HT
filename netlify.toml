@@ -68,6 +68,10 @@
 [functions.ambassador]
   external_node_modules = ["firebase-admin"]
 
+[functions.unsuspend]
+  external_node_modules = ["firebase-admin"]
+  schedule = "@daily"
+
 # Pages dédiées des agences partenaires : /agence/<slug> -> index avec filtre
 [[redirects]]
   from = "/agence/*"

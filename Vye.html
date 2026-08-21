@@ -5632,6 +5632,71 @@ function doLogout() {
 /* ====================================
    VIEW ACCOUNT DETAIL (Modal)
    ==================================== */
+/* Change la zone (localisation) d'un Elu / Krey — users + publicProfiles. */
+function setEluLocation(uid, type) {
+    if (!db) return;
+    var sel = document.getElementById("admZone_" + uid);
+    var zone = sel ? sel.value.trim() : "";
+    if (!zone) { toast("Chwazi yon zòn.", false); return; }
+    var upd = { localisation: zone };
+    if (type === "krey") upd.kreyZone = zone;   /* le catalogue Krey lit kreyZone */
+    Promise.all([
+        db.collection("users").doc(uid).set(upd, { merge: true }),
+        db.collection("publicProfiles").doc(uid).set(upd, { merge: true }).catch(function () {})
+    ]).then(function () {
+        toast("Zòn chanje: " + zone, true);
+        closeDetailModal();
+    }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+}
+
+/* Barème d'escalade des suspensions (niveau = alertCount/3). 0 => jele nèt. */
+var ALERT_SUSPEND_DAYS = { 1: 3, 2: 7, 3: 15, 4: 30 };
+
+/* Donne une alerte à un Elu. À chaque multiple de 3 => suspension automatique
+   (durée croissante). Le compte est gelé; il se retablit tout seul (fonction
+   planifiée unsuspend) quand la durée est passée. */
+function addEluAlert(uid) {
+    if (!db) return;
+    var all = adminUsers.concat(adminFL).concat(adminKrey);
+    var u = all.find(function (x) { return x.id === uid; }) || {};
+    var nc = (u.alertCount || 0) + 1;
+    if (!confirm("Bay yon alèt bay Elu sa a? Total alèt ap vin " + nc + ".")) return;
+    var upd = { alertCount: nc };
+    var pub = null;
+    var msg = "Alèt bay. Total: " + nc + ".";
+    if (nc % 3 === 0) {
+        var level = nc / 3;
+        var days = ALERT_SUSPEND_DAYS[level] || 0;
+        upd.status = "frozen";
+        upd.suspendLevel = level;
+        if (days > 0) {
+            upd.suspendReason = "alert";
+            upd.suspendedUntil = firebase.firestore.Timestamp.fromMillis(Date.now() + days * 86400000);
+            msg = nc + " alèt → kont sispann pou " + days + " jou.";
+        } else {
+            upd.suspendReason = "alert_permanent";
+            upd.suspendedUntil = firebase.firestore.FieldValue.delete();
+            msg = nc + " alèt → kont jele nèt.";
+        }
+        pub = { status: "frozen" };
+    }
+    var jobs = [ db.collection("users").doc(uid).set(upd, { merge: true }) ];
+    if (pub) jobs.push(db.collection("publicProfiles").doc(uid).set(pub, { merge: true }).catch(function () {}));
+    Promise.all(jobs).then(function () { toast(msg, true); closeDetailModal(); })
+        .catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+}
+
+/* Retire une alerte (correction admin). Ne dégèle pas automatiquement. */
+function removeEluAlert(uid) {
+    if (!db) return;
+    var all = adminUsers.concat(adminFL).concat(adminKrey);
+    var u = all.find(function (x) { return x.id === uid; }) || {};
+    var nc = Math.max(0, (u.alertCount || 0) - 1);
+    db.collection("users").doc(uid).set({ alertCount: nc }, { merge: true })
+        .then(function () { toast("Alèt retire. Total: " + nc + ".", true); closeDetailModal(); })
+        .catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+}
+
 function viewAccountDetail(uid) {
     if (!db) return;
 
@@ -5726,6 +5791,40 @@ function viewAccountDetail(uid) {
             '<span style="color:#ffd700;font-weight:700">Gdes</span>' +
             '<button onclick="setEluPrice(\'' + uid + '\',\'' + user.type + '\')" style="padding:10px 18px;background:linear-gradient(135deg,#ffd700,#ff9800);color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.82rem"><i class="fas fa-save"></i> Sove Pri</button>' +
             '</div></div>';
+    }
+
+    /* === CHANGER ZONE + ALERTES / SANCTIONS (Elu / Krey) === */
+    if (user.type === "freelancer" || user.type === "krey") {
+        var ZLIST = ["Pétion-Ville","Delmas","Tabarre","Pòtoprens","Carrefour","Route de Frères","Croix-des-Bouquets","Thomassin","Kenscoff","Cap-Haïtien","Gonaïves","Les Cayes","Jacmel"];
+        var curLoc = user.localisation || user.kreyZone || "";
+        var zopts = '<option value="">— Chwazi zòn —</option>';
+        if (curLoc && ZLIST.indexOf(curLoc) === -1) zopts += '<option value="' + escHtml(curLoc) + '" selected>' + escHtml(curLoc) + ' (aktyèl)</option>';
+        ZLIST.forEach(function(z) { zopts += '<option value="' + z + '"' + (z === curLoc ? ' selected' : '') + '>' + z + '</option>'; });
+
+        var alertCount = user.alertCount || 0;
+        var suspTs = (user.suspendedUntil && user.suspendedUntil.toMillis) ? user.suspendedUntil.toMillis() : 0;
+        var suspHtml = (suspTs > Date.now())
+            ? '<div style="color:#f44336;font-size:0.8rem;margin-top:4px"><i class="fas fa-ban"></i> Sispann jiska <strong>' + fmtDate(new Date(suspTs)) + '</strong></div>'
+            : (user.suspendReason === "alert_permanent" ? '<div style="color:#f44336;font-size:0.8rem;margin-top:4px"><i class="fas fa-ban"></i> Jele nèt (alèt)</div>' : '');
+
+        content.innerHTML +=
+            '<div style="margin-top:18px;background:rgba(33,150,243,0.06);border:1px solid rgba(33,150,243,0.25);border-radius:12px;padding:16px">' +
+                '<div style="font-size:0.72rem;color:#64b5f6;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px"><i class="fas fa-map-marker-alt"></i> Chanje Zòn</div>' +
+                '<div style="display:flex;gap:8px;align-items:center">' +
+                    '<select id="admZone_' + uid + '" style="flex:1;padding:9px 12px;background:rgba(255,255,255,0.05);border:1px solid #2a2a3a;border-radius:8px;color:#fff;font-size:0.85rem;font-family:Montserrat,sans-serif">' + zopts + '</select>' +
+                    '<button onclick="setEluLocation(\'' + uid + '\',\'' + user.type + '\')" style="padding:9px 16px;background:linear-gradient(135deg,#1976d2,#0d47a1);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.82rem;white-space:nowrap"><i class="fas fa-save"></i> Chanje</button>' +
+                '</div>' +
+            '</div>' +
+            '<div style="margin-top:14px;background:rgba(244,67,54,0.06);border:1px solid rgba(244,67,54,0.25);border-radius:12px;padding:16px">' +
+                '<div style="font-size:0.72rem;color:#ef5350;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px"><i class="fas fa-triangle-exclamation"></i> Alèt / Sanksyon</div>' +
+                '<div style="font-size:0.92rem;margin-bottom:2px">Total alèt: <strong style="color:#ff9800">' + alertCount + '</strong></div>' +
+                suspHtml +
+                '<div style="font-size:0.72rem;color:#6a6a80;margin:8px 0 12px">Chak 3 alèt = sispansyon otomatik : 3 alèt→3 jou · 6→7 jou · 9→15 jou · 12→30 jou · plis→jele nèt. Kont lan retabli otomatik lè tan an fini.</div>' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+                    '<button onclick="addEluAlert(\'' + uid + '\')" style="flex:1;min-width:130px;padding:10px;background:rgba(244,67,54,0.15);color:#f44336;border:1px solid rgba(244,67,54,0.4);border-radius:8px;font-weight:700;cursor:pointer;font-size:0.82rem"><i class="fas fa-plus"></i> Bay yon alèt</button>' +
+                    '<button onclick="removeEluAlert(\'' + uid + '\')" style="padding:10px 14px;background:rgba(255,255,255,0.05);color:#b0b0c0;border:1px solid #2a2a3a;border-radius:8px;cursor:pointer;font-size:0.82rem"><i class="fas fa-minus"></i> Retire</button>' +
+                '</div>' +
+            '</div>';
     }
 
     /* === NOTE ADMIN (étoiles avec quantité par niveau) — uniquement pour les Elu === */
