@@ -5654,7 +5654,8 @@ function doLogout() {
    ==================================== */
 /* Historique des réservations d'un VIP (avec quels Elu il a passé des moments). */
 function buildVipHistory(uid) {
-    var res = (adminRes || []).filter(function (r) { return r.userId === uid; });
+    /* Uniquement les réservations CONFIRMÉES par l'Elu (payées) — pas les "en attente". */
+    var res = (adminRes || []).filter(function (r) { return r.userId === uid && r.status === "confirmed"; });
     res.sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")); });
     var metCount = res.filter(function (r) { return r.met === true; }).length;
     var elusSet = {};
@@ -5687,6 +5688,7 @@ function loadVipHistoryPage() {
     var map = {};
     res.forEach(function (r) {
         var uid = r.userId; if (!uid) return;
+        if (r.status !== "confirmed") return;   /* seulement confirmées par l'Elu (pas en attente) */
         if (!map[uid]) map[uid] = { uid: uid, email: r.userEmail || "", count: 0, met: 0, elus: {}, last: "" };
         var m = map[uid];
         m.count++;
