@@ -133,6 +133,11 @@ exports.handler = async function (event) {
         var senderName = sender.pseudo || sender.prenom || "VIP";
         var isPremium = sender.isPremium === true;
 
+        /* Un Elu GELÉ (jele) ne peut pas répondre aux conversations en cours. */
+        if (isEluReply && sender.status && sender.status !== "active") {
+            return err(403, "Kont ou jele — ou pa ka reponn mesaj yo kounye a.");
+        }
+
         /* ---- LIMITES + RÉSERVATION ATOMIQUE (client uniquement) ----
            On vérifie ET on réserve le slot dans une TRANSACTION. Sans ça, deux
            envois simultanés lisaient tous les deux "4 personnes", passaient, puis

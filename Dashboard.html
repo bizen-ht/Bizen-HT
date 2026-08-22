@@ -3716,6 +3716,13 @@ var eluDmEphemeral = true;     /* état courant du mode éphémère du fil ouver
 function loadDmThreads() {
     if (!db || !currentUser) return;
     var box = document.getElementById("flDmThreads");
+    /* Elu GELÉ : aucun accès aux conversations en cours. */
+    if (userData && userData.status === "frozen") {
+        if (flDmThreadsUnsub) { try { flDmThreadsUnsub(); } catch(e){} flDmThreadsUnsub = null; }
+        if (box) box.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><i class="fas fa-lock" style="font-size:1.8rem;color:#f44336"></i><p style="margin-top:12px;font-size:0.9rem">Kont ou jele — ou pa gen aksè ak mesaj yo pou kounye a.</p></div>';
+        var mb = document.getElementById("flMsgBadge"); if (mb) mb.style.display = "none";
+        return;
+    }
     if (flDmThreadsUnsub) { try { flDmThreadsUnsub(); } catch(e){} }
     flDmThreadsUnsub = db.collection("dmThreads")
         .where("eluUid", "==", currentUser.uid)
