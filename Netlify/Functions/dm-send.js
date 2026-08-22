@@ -133,9 +133,9 @@ exports.handler = async function (event) {
         var senderName = sender.pseudo || sender.prenom || "VIP";
         var isPremium = sender.isPremium === true;
 
-        /* Un Elu GELÉ (jele) ne peut pas répondre aux conversations en cours. */
-        if (isEluReply && sender.status && sender.status !== "active") {
-            return err(403, "Kont ou jele — ou pa ka reponn mesaj yo kounye a.");
+        /* Compte GELÉ (jele) — Elu OU VIP : aucun envoi de message autorisé. */
+        if (sender.status && sender.status !== "active") {
+            return err(403, "Kont ou jele — ou pa ka voye mesaj kounye a.");
         }
 
         /* ---- LIMITES + RÉSERVATION ATOMIQUE (client uniquement) ----

@@ -4030,6 +4030,14 @@ var userDmThreadsUnsub = null;
 
 function loadUserDmThreads() {
     if (!db || !currentUser) return;
+    /* VIP GELÉ : aucun accès aux conversations. */
+    if (userData && userData.status === "frozen") {
+        if (userDmThreadsUnsub) { try { userDmThreadsUnsub(); } catch(e){} userDmThreadsUnsub = null; }
+        var ub = document.getElementById("userDmThreads");
+        if (ub) ub.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><i class="fas fa-lock" style="font-size:1.8rem;color:#f44336"></i><p style="margin-top:12px;font-size:0.9rem">Kont ou jele — ou pa gen aksè ak mesaj yo pou kounye a.</p></div>';
+        var umb = document.getElementById("userMsgBadge"); if (umb) umb.style.display = "none";
+        return;
+    }
     if (userDmThreadsUnsub) { try { userDmThreadsUnsub(); } catch(e){} }
     userDmThreadsUnsub = db.collection("dmThreads")
         .where("userUid", "==", currentUser.uid)
