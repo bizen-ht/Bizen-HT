@@ -142,8 +142,13 @@ exports.handler = async function (event) {
            On vérifie ET on réserve le slot dans une TRANSACTION. Sans ça, deux
            envois simultanés lisaient tous les deux "4 personnes", passaient, puis
            écrasaient le tableau => la limite (5) était contournée (7-8 Elus). */
+        /* Fil INITIÉ PAR L'ELU (ex: réponse à une demande VIP) : le VIP peut écrire
+           librement à cet Elu, MÊME s'il a atteint sa limite quotidienne. Ce n'est
+           pas du démarchage à froid — c'est l'Elu qui a contacté le VIP en premier. */
+        var eluInitiatedThread = !!(thread && thread.eluInitiated === true);
+
         var remaining = null;
-        if (!isEluReply) {
+        if (!isEluReply && !eluInitiatedThread) {
             var dstr = haitiDate();
             var counterRef = dbf.collection("dmCounters").doc(senderUid + "_" + dstr);
             var maxPeople = isPremium ? 5 : 2;

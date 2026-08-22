@@ -220,7 +220,8 @@ exports.handler = async function (event) {
                 lastMessage: openText.slice(0, 120),
                 lastAt: nowTs,
                 updatedAt: nowTs,
-                unreadForUser: FieldValue.increment(1)   /* le VIP a un non-lu */
+                unreadForUser: FieldValue.increment(1),   /* le VIP a un non-lu */
+                eluInitiated: true                        /* l'Elu a initié -> le VIP répond sans limite */
             };
             if (!threadSnap.exists) {
                 threadUpdate.userUid = vipUid;
