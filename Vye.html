@@ -1546,6 +1546,15 @@
                 <div class="tc-head"><div class="tc-title"><i class="fas fa-list"></i> Utilizatè ki gen balans (yon pa yon)</div></div>
                 <div class="tscroll"><table><thead><tr><th>Imel</th><th>Non</th><th>Balans</th></tr></thead><tbody id="tbWallet"></tbody></table></div>
             </div>
+
+            <!-- HISTORIQUE DES RECHARGES -->
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-clock-rotate-left"></i> Istorik Rechaj (MonCash konfime + Manyèl)</div>
+                    <button onclick="loadWalletHistory()" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:6px;padding:6px 12px;font-size:0.75rem;cursor:pointer"><i class="fas fa-sync"></i> Refrechi</button>
+                </div>
+                <div class="tscroll"><table><thead><tr><th>Dat</th><th>Imel</th><th>Montan</th><th>Mwayen</th><th>Estati</th></tr></thead><tbody id="tbWalletHist"></tbody></table></div>
+            </div>
         </div>
 
         <!-- HOTELS PARTENAIRES -->
@@ -5545,6 +5554,42 @@ function loadWallets() {
         });
         tb.innerHTML = h;
     }).catch(function (e) { tb.innerHTML = emptyRow(3, "Ere: " + (e.code || e.message)); });
+    loadWalletHistory();
+}
+
+/* Historique des recharges wallet : dépôts MonCash confirmés + ajouts manuels. */
+function loadWalletHistory() {
+    if (!db) return;
+    var tb = document.getElementById("tbWalletHist");
+    if (tb) tb.innerHTML = emptyRow(5, "Chajman...");
+    db.collection("payments").where("purpose", "==", "wallet").get().then(function (snap) {
+        var rows = [];
+        snap.forEach(function (d) {
+            var x = d.data(); x._id = d.id;
+            if (x.status === "confirmed" || x.walletCredited === true) rows.push(x);   /* confirmés/crédités seulement */
+        });
+        rows.sort(function (a, b) {
+            var am = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+            var bm = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+            return bm - am;
+        });
+        if (!tb) return;
+        if (!rows.length) { tb.innerHTML = emptyRow(5, "Pa gen rechaj anko."); return; }
+        var h = "";
+        rows.forEach(function (x) {
+            var dt = (x.createdAt && x.createdAt.toDate) ? x.createdAt.toDate().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+            var isManual = (x.manual === true || x.method === "manual");
+            var moyen = isManual
+                ? '<span class="sbadge purple" style="background:rgba(156,39,176,0.18);color:#ce93d8"><i class="fas fa-hand-holding-usd"></i> Manyèl</span>'
+                : '<span class="sbadge blue"><i class="fas fa-mobile-alt"></i> MonCash</span>';
+            h += '<tr><td><small>' + escHtml(dt) + '</small></td>' +
+                '<td><small>' + escHtml(x.email || x.userEmail || "—") + '</small></td>' +
+                '<td style="color:var(--gold,#ffd700);font-weight:700">' + (parseInt(x.amount, 10) || 0).toLocaleString() + ' G</td>' +
+                '<td>' + moyen + '</td>' +
+                '<td><span class="sbadge green">Konfime</span></td></tr>';
+        });
+        tb.innerHTML = h;
+    }).catch(function (e) { if (tb) tb.innerHTML = emptyRow(5, "Erè: " + (e.code || e.message)); });
 }
 
 function createPromoCode() {

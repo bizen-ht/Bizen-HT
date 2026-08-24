@@ -7237,8 +7237,9 @@ function openEluProfile(btnOrUid) {
             ? '<span style="color:#4caf50;font-size:0.8rem"><i class="fas fa-circle" style="font-size:0.5rem"></i> An Liy kounye a</span>'
             : '<span style="color:#6a6a80;font-size:0.8rem"><i class="fas fa-circle" style="font-size:0.5rem"></i> Dekonekte</span>';
 
+        window._eluPhotoUrl = photo;   /* pour le zoom (évite d'injecter l'URL dans le onclick) */
         var avatar = photo
-            ? '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover">'
+            ? '<img src="' + photo + '" onclick="if(window._eluPhotoUrl)openLightbox([{type:\'image\',url:window._eluPhotoUrl}],0)" title="Klike pou agrandi" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in">'
             : '<i class="fas fa-user" style="font-size:2.5rem;color:#fff"></i>';
 
         var lvlBadge = '<span style="display:inline-flex;align-items:center;gap:6px;background:' + lvl.bg + ';border:1px solid ' + lvl.color + '55;color:' + lvl.color + ';padding:4px 12px;border-radius:50px;font-size:0.75rem;font-weight:700"><i class="fas ' + lvl.icon + '"></i> ' + lvl.name + '</span>';
@@ -8977,17 +8978,58 @@ function applyOfferPrices() {
 /* ====================================
    NAVBAR CONNECTED
    ==================================== */
+/* Compteur de messages non-lus dans l'entête (VIP ou Elu — on écoute les 2 rôles). */
+var _navMsgUnsub = [];
+function dmThreadAliveNav(t) {
+    if (t.ephemeral === false) return true;   /* conversation permanente */
+    var ms = t.lastAt && t.lastAt.toMillis ? t.lastAt.toMillis() : 0;
+    return !ms || (Date.now() - ms) < 24 * 3600 * 1000;   /* éphémère 24h */
+}
+function startNavMsgListener(uid) {
+    if (!db || !uid) return;
+    _navMsgUnsub.forEach(function (u) { try { u(); } catch (e) {} });
+    _navMsgUnsub = [];
+    var counts = { user: 0, elu: 0 };
+    function apply() {
+        var total = counts.user + counts.elu;
+        ["navMsgBadge", "mNavMsgBadge"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            if (total > 0) { el.textContent = total > 99 ? "99+" : total; el.style.display = ""; }
+            else el.style.display = "none";
+        });
+    }
+    _navMsgUnsub.push(db.collection("dmThreads").where("userUid", "==", uid).onSnapshot(function (s) {
+        var c = 0; s.forEach(function (d) { var t = d.data(); if (dmThreadAliveNav(t)) c += (t.unreadForUser || 0); }); counts.user = c; apply();
+    }, function () {}));
+    _navMsgUnsub.push(db.collection("dmThreads").where("eluUid", "==", uid).onSnapshot(function (s) {
+        var c = 0; s.forEach(function (d) { var t = d.data(); if (dmThreadAliveNav(t)) c += (t.unreadForElu || 0); }); counts.elu = c; apply();
+    }, function () {}));
+}
+function stopNavMsgListener() {
+    _navMsgUnsub.forEach(function (u) { try { u(); } catch (e) {} });
+    _navMsgUnsub = [];
+    ["navMsgBadge", "mNavMsgBadge"].forEach(function (id) { var el = document.getElementById(id); if (el) el.style.display = "none"; });
+}
+
 function renderNavIn(user) {
     var nb = document.getElementById("navBtns");
     if (!nb) return;
     var nm = user.email.split("@")[0];
     nb.innerHTML = "";
-    /* La messagerie (inbox) est désormais DANS le dashboard, pas dans le menu du site. */
+    /* Bouton Mesaj (accès direct depuis l'entête, avec badge de non-lus). */
+    var msgBtn = document.createElement("button");
+    msgBtn.className = "btn-nl";
+    msgBtn.style.cssText = "position:relative";
+    msgBtn.onclick = function () { window.location.href = "/dashboard?msg=1"; };
+    msgBtn.innerHTML = '<i class="fas fa-comment-dots"></i> Mesaj <span id="navMsgBadge" style="display:none;position:absolute;top:-5px;right:-3px;background:#e91e63;color:#fff;font-size:0.6rem;font-weight:700;min-width:17px;height:17px;line-height:17px;text-align:center;border-radius:50px;padding:0 4px">0</span>';
+    nb.appendChild(msgBtn);
     var dashBtn = document.createElement("button");
     dashBtn.className = "btn-nl";
     dashBtn.onclick = function () { window.location.href = "/dashboard"; };
     dashBtn.innerHTML = '<i class="fas fa-tachometer-alt"></i> Dashboard';
     nb.appendChild(dashBtn);
+    try { startNavMsgListener(user.uid); } catch (e) {}
     var nameSpan = document.createElement("span");
     nameSpan.style.cssText = "color:var(--primary-light);font-size:0.85rem;padding:8px 5px";
     nameSpan.innerHTML = '<i class="fas fa-circle" style="color:#4caf50;font-size:0.5rem;vertical-align:middle;margin-right:4px"></i>' + nm;
@@ -9000,9 +9042,15 @@ function renderNavIn(user) {
     var ma = document.getElementById("mobileAuth");
     if (ma) {
         ma.innerHTML = "";
+        var mMsg = document.createElement("button");
+        mMsg.className = "btn btn-outline";
+        mMsg.style.cssText = "width:100%;margin-top:15px;padding:12px;justify-content:center;position:relative";
+        mMsg.onclick = function () { window.location.href = "/dashboard?msg=1"; };
+        mMsg.innerHTML = '<i class="fas fa-comment-dots"></i> Mesaj <span id="mNavMsgBadge" style="display:none;background:#e91e63;color:#fff;font-size:0.62rem;font-weight:700;border-radius:50px;padding:1px 7px;margin-left:6px">0</span>';
+        ma.appendChild(mMsg);
         var mDash = document.createElement("button");
         mDash.className = "btn btn-primary";
-        mDash.style.cssText = "width:100%;margin-top:15px;padding:12px;justify-content:center";
+        mDash.style.cssText = "width:100%;margin-top:10px;padding:12px;justify-content:center";
         mDash.onclick = function () { window.location.href = "/dashboard"; };
         mDash.innerHTML = '<i class="fas fa-tachometer-alt"></i> Dashboard Mwen';
         ma.appendChild(mDash);
@@ -9019,6 +9067,7 @@ function renderNavIn(user) {
    NAVBAR DISCONNECTED
    ==================================== */
 function renderNavOut() {
+    try { stopNavMsgListener(); } catch (e) {}
     var nb = document.getElementById("navBtns");
     if (!nb) return;
     nb.innerHTML = '<button class="btn-nl" onclick="oM(\'lM\')"><i class="fas fa-sign-in-alt"></i> Konekte</button>' +

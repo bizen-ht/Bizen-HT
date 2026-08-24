@@ -2163,8 +2163,10 @@ function setupUser() {
     renderWallet();        /* Wallet (VIP Premium) */
     try { setupDemannSection(); } catch (e) {}   /* Post yon demann (Premium) */
 
-    /* Show overview */
-    showSection("overview", null);
+    /* Show overview (ou la messagerie si on vient du bouton Mesaj de l'entête) */
+    var _vipMsg = false;
+    try { _vipMsg = !!new URLSearchParams(location.search).get("msg"); } catch (e) {}
+    if (_vipMsg) showSection("messages", null); else showSection("overview", null);
     /* Activate first user menu link */
     var firstLink = document.querySelector("#userMenu .sb-link");
     if (firstLink) firstLink.classList.add("active");
@@ -2366,8 +2368,10 @@ function setupFreelancer() {
     try { storyTab("text"); } catch (e) {}
     /* Deep-link notif push "nouvo demann" : ouvre direct la section Demann VIP. */
     try {
-        var _dl = new URLSearchParams(location.search).get("demann");
+        var _q = new URLSearchParams(location.search);
+        var _dl = _q.get("demann");
         if (_dl) { _pendingDemann = _dl; showSection("fl-demann", null); }
+        else if (_q.get("msg")) { showSection("fl-messages", null); }   /* bouton Mesaj de l'entête */
     } catch (e) {}
 
     /* Show overview */
