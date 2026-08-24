@@ -914,6 +914,7 @@
                     <input type="text" id="setPseudo" maxlength="30" placeholder="Egz: King, Boss, JR..."
                            style="width:100%;padding:10px 15px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif">
                     <p style="font-size:0.72rem;color:#f48fb1;margin-top:5px"><i class="fas fa-eye"></i> Vrè non w rete prive. Se pseudo a Elu yo wè.</p>
+                    <p id="setPseudoLock" style="display:none;font-size:0.72rem;color:#ff9800;margin-top:4px"><i class="fas fa-lock"></i> Pseudo ou fikse — li pa ka chanje.</p>
                 </div>
                 <button onclick="saveSettings()"
                         style="padding:10px 25px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:var(--radius-full);cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600">
@@ -1498,6 +1499,7 @@
                     <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px">Pri pa Moman (Gdes)</label>
                     <input type="number" id="flPrice"
                            style="width:100%;padding:10px 15px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif">
+                    <p style="font-size:0.72rem;color:#ff9800;margin-top:5px"><i class="fas fa-triangle-exclamation"></i> Ou ka chanje pri w yon sèl fwa pa mwa.</p>
                 </div>
                 <div style="margin-bottom:15px">
                     <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px"><i class="fas fa-moon" style="color:#9c8bd8"></i> Pri Domi / Nwit (opsyonèl)</label>
@@ -2133,11 +2135,19 @@ function setupUser() {
     if (setNameEl) setNameEl.value = fullName;
     if (setTelEl) setTelEl.value = userData.telephone || "";
     var setPseudoEl = document.getElementById("setPseudo");
-    if (setPseudoEl) setPseudoEl.value = userData.pseudo || "";
+    var hasPseudo = !!(userData.pseudo && userData.pseudo.trim());
+    if (setPseudoEl) {
+        setPseudoEl.value = userData.pseudo || "";
+        /* Le pseudo est DÉFINITIF une fois enregistré : champ verrouillé. */
+        setPseudoEl.readOnly = hasPseudo;
+        setPseudoEl.style.opacity = hasPseudo ? "0.7" : "1";
+        var lockNote = document.getElementById("setPseudoLock");
+        if (lockNote) lockNote.style.display = hasPseudo ? "block" : "none";
+    }
 
     /* Rappel pseudo : s'affiche au login si le VIP n'a pas encore de pseudo */
     var pseudoPrompt = document.getElementById("pseudoPrompt");
-    if (pseudoPrompt) pseudoPrompt.style.display = (userData.pseudo && userData.pseudo.trim()) ? "none" : "block";
+    if (pseudoPrompt) pseudoPrompt.style.display = hasPseudo ? "none" : "block";
 
     /* Zone danger : suppression de compte réservée au VIP */
     var dz = document.getElementById("dangerZone");
@@ -3442,14 +3452,15 @@ function buildResRow(r, isFL, ratedSet) {
         : r.status === "en_attente_peman" ? "An Atant Peman"
         : "An Atant Konfimasyon";
 
-    var mainText = isFL ? (r.userEmail || "Kliyan") : (r.prestateName || "N/A");
+    /* Confidentialité : l'Elu voit le PSEUDO du VIP, jamais son email. */
+    var mainText = isFL ? (r.userPseudo || r.userName || "Kliyan VIP") : (r.prestateName || "N/A");
     var priceText = r.price || "N/A";
     if (isFL) {
         var pNum = parseInt(String(r.price || "0").replace(/[^0-9]/g, "")) || 0;
         priceText = Math.round(pNum * 0.9).toLocaleString() + " G (net)";
     }
-    /* Nom affiché dans le chat: pour l'Elu c'est le client, pour le client c'est l'Elu */
-    var chatPartner = (isFL ? (r.userEmail || "Kliyan") : (r.prestateName || "Elu"));
+    /* Nom affiché dans le chat: pour l'Elu c'est le PSEUDO du VIP (jamais l'email), pour le client c'est l'Elu */
+    var chatPartner = (isFL ? (r.userPseudo || r.userName || "Kliyan VIP") : (r.prestateName || "Elu"));
 
     var tipBadge = r.type === "krey"
         ? '<span style="padding:2px 8px;border-radius:20px;font-size:0.6rem;font-weight:600;background:rgba(156,39,176,0.15);color:#9c27b0;margin-left:6px">Krey</span>'
@@ -4126,22 +4137,54 @@ function saveFlProfile() {
     var domiEl = document.getElementById("flPriceDomi");
     var pDomi = domiEl ? (parseInt(domiEl.value) || 0) : 0;
 
+    /* === PRIX MODIFIABLE 1 FOIS PAR MOIS === */
+    var curP = (userData && userData.prixMoment) || 0;
+    var curD = (userData && userData.prixDomi) || 0;
+    var priceChanged = (p !== curP) || (pDomi !== curD);
+    var lastChange = (userData && userData.lastPriceChangeAt && userData.lastPriceChangeAt.toMillis) ? userData.lastPriceChangeAt.toMillis() : 0;
+    var THIRTY = 30 * 24 * 3600 * 1000;
+
+    var updates = { description: desc.value.trim(), pseudo: pseudo, moncashNumber: moncash };
+    var pubUpdates = { description: desc.value.trim(), pseudo: pseudo };
+    var applyPrice = false;
+
+    if (priceChanged) {
+        if (lastChange && (Date.now() - lastChange < THIRTY)) {
+            var nd = new Date(lastChange + THIRTY).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+            showToast("Ou ka chanje pri w yon sèl fwa pa mwa. Pwochèn chanjman: " + nd + ".", "error");
+            if (price) price.value = curP;
+            if (domiEl) domiEl.value = curD;
+            /* on continue : les autres champs (deskripsyon, pseudo, moncash) se sauvent quand même */
+        } else {
+            if (!confirm("ATANSYON: apre ou chanje pri w, ou p ap ka chanje l ankò pandan 1 mwa. Ou vle kontinye?")) {
+                if (price) price.value = curP;
+                if (domiEl) domiEl.value = curD;
+                return;
+            }
+            applyPrice = true;
+            updates.prixMoment = p; updates.prixDomi = pDomi; updates.prixNet = net; updates.commissionBizen = comm;
+            updates.lastPriceChangeAt = firebase.firestore.FieldValue.serverTimestamp();
+            pubUpdates.prixMoment = p; pubUpdates.prixDomi = pDomi;
+        }
+    }
+
     db.collection("users").doc(currentUser.uid)
-        .update({
-            description: desc.value.trim(), pseudo: pseudo,
-            moncashNumber: moncash,
-            prixMoment: p, prixDomi: pDomi, prixNet: net, commissionBizen: comm
-        })
+        .update(updates)
         .then(function () {
-            /* Reflète sur le profil public (catalogue) */
-            db.collection("publicProfiles").doc(currentUser.uid).set({
-                description: desc.value.trim(), prixMoment: p, prixDomi: pDomi, pseudo: pseudo
-            }, { merge: true }).catch(function(){});
-            if (userData) userData.prixDomi = pDomi;
+            db.collection("publicProfiles").doc(currentUser.uid).set(pubUpdates, { merge: true }).catch(function(){});
+            if (userData) {
+                userData.pseudo = pseudo; userData.moncashNumber = moncash; userData.description = updates.description;
+                if (applyPrice) {
+                    userData.prixMoment = p; userData.prixDomi = pDomi;
+                    userData.lastPriceChangeAt = { toMillis: function () { return Date.now(); } };
+                }
+            }
             try { renderDomiPrompt(); } catch (e) {}
-            showToast("Pwofil sove!", "success");
-            setEl("flPrixEx", p.toLocaleString() + " Gdes");
-            setEl("flNetEx", net.toLocaleString() + " Gdes");
+            showToast(applyPrice ? "Pwofil ak nouvo pri sove!" : "Pwofil sove!", "success");
+            if (applyPrice) {
+                setEl("flPrixEx", p.toLocaleString() + " Gdes");
+                setEl("flNetEx", net.toLocaleString() + " Gdes");
+            }
         })
         .catch(function () {
             showToast("Ere. Eseye anko.", "error");
@@ -4189,6 +4232,11 @@ function saveSettings() {
    ==================================== */
 function saveVipPseudo(inputId, silent) {
     if (!currentUser) return;
+    /* Pseudo DÉFINITIF : si déjà enregistré, on n'essaie même pas. */
+    if (userData && userData.pseudo && userData.pseudo.trim()) {
+        if (!silent) showToast("Pseudo ou fikse deja — li pa ka chanje.", "error");
+        return;
+    }
     var inp = document.getElementById(inputId || "vipPseudoInput");
     var pseudo = inp ? inp.value.trim().slice(0, 30) : "";
     if (!pseudo) { if (!silent) showToast("Antre yon pseudo.", "error"); return; }

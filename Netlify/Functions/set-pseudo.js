@@ -44,6 +44,13 @@ exports.handler = async function (event) {
         var uid = decoded.uid;
         var dbf = admin.firestore();
 
+        /* Le pseudo est DÉFINITIF : une fois enregistré, on ne peut plus le changer. */
+        var uSnap = await dbf.collection("users").doc(uid).get();
+        var existing = uSnap.exists ? (uSnap.data().pseudo || "").toString().trim() : "";
+        if (existing) {
+            return err(409, "Pseudo ou deja anrejistre e li pa ka chanje.", { pseudo: existing, locked: true });
+        }
+
         /* 1) Écrit le pseudo sur le compte du VIP. */
         await dbf.collection("users").doc(uid).set({ pseudo: pseudo }, { merge: true });
 

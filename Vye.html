@@ -1528,6 +1528,17 @@
                 <div class="fc"><h4><i class="fas fa-users"></i> Kont ak balans</h4><div class="fv" id="walletUserCount">0</div><div class="fs">VIP ki gen kòb</div></div>
             </div>
 
+            <!-- AJOUT MANUEL DE MONTANT SUR UN WALLET VIP -->
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-plus-circle"></i> Ajoute lajan manyèl sou yon Wallet VIP</div></div>
+                <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:end">
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Imel VIP</label><input id="wmEmail" type="email" placeholder="imel@..." style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Montan (Gdes)</label><input id="wmAmount" type="number" min="1" placeholder="Egz: 5000" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"></div>
+                    <div style="display:flex;align-items:flex-end"><button onclick="manualWalletAdd()" style="width:100%;background:linear-gradient(135deg,#ffd700,#ff9800);color:#000;border:none;border-radius:8px;padding:11px 16px;font-weight:700;cursor:pointer;font-size:0.85rem"><i class="fas fa-wallet"></i> Ajoute sou Wallet</button></div>
+                </div>
+                <p style="padding:0 18px 16px;color:#6a6a80;font-size:0.76rem">Sa ajoute dirèkteman sou balans wallet VIP la (pou depo manyèl / kach). Montan an disponib lamenm pou li peye rezèvasyon.</p>
+            </div>
+
             <div class="tc" style="margin-top:22px">
                 <div class="tc-head"><div class="tc-title"><i class="fas fa-list"></i> Utilizatè ki gen balans (yon pa yon)</div></div>
                 <div class="tscroll"><table><thead><tr><th>Imel</th><th>Non</th><th>Balans</th></tr></thead><tbody id="tbWallet"></tbody></table></div>
@@ -5447,6 +5458,36 @@ function stopAmbChallenge() {
 /* ====================================================
    WALLET VIP (admin) — soldes + total + crédit test
    ==================================================== */
+/* Ajout manuel de fonds sur le wallet d'un VIP (dépôt manuel / cash). */
+function manualWalletAdd() {
+    if (!db) return;
+    var email = (document.getElementById("wmEmail").value || "").trim().toLowerCase();
+    var amount = parseInt(document.getElementById("wmAmount").value, 10) || 0;
+    if (!email) { toast("Antre imel VIP la.", false); return; }
+    if (amount < 1) { toast("Antre yon montan valab.", false); return; }
+
+    /* Cherche l'uid : d'abord dans adminUsers (insensible à la casse), sinon requête. */
+    var found = (adminUsers || []).filter(function (u) { return (u.email || "").toLowerCase() === email; })[0];
+    var uidP = found ? Promise.resolve(found.id) : findUserUidByEmail(email);
+    uidP.then(function (uid) {
+        if (!uid) { toast("Pa jwenn okenn kont ak imel sa a.", false); return; }
+        if (!confirm("Ajoute " + amount.toLocaleString() + " G sou wallet " + email + "?")) return;
+        db.collection("users").doc(uid).set({
+            walletBalance: firebase.firestore.FieldValue.increment(amount)
+        }, { merge: true }).then(function () {
+            /* Traçabilité : on enregistre un paiement "manyèl" déjà crédité. */
+            db.collection("payments").add({
+                userId: uid, email: email, method: "manual", amount: amount,
+                purpose: "wallet", status: "confirmed", walletCredited: true, manual: true,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(function () {});
+            toast(amount.toLocaleString() + " G ajoute sou wallet " + email + ".", true);
+            var ae = document.getElementById("wmAmount"); if (ae) ae.value = "";
+            loadWallets();
+        }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+    });
+}
+
 function loadWallets() {
     var tb = document.getElementById("tbWallet");
     if (!tb || !db) return;
@@ -5680,6 +5721,27 @@ function buildVipHistory(uid) {
     return h;
 }
 
+/* Crédit Wallet manuel : l'admin ajoute un montant au Wallet d'un VIP.
+   (L'admin peut écrire walletBalance — la règle bloque seulement le PROPRIÉTAIRE.) */
+function creditVipWallet(uid) {
+    if (!db) return;
+    var inp = document.getElementById("admWalletInput_" + uid);
+    var amt = inp ? Math.round(parseFloat(inp.value) || 0) : 0;
+    if (amt <= 0) { toast("Antre yon montan valab.", false); return; }
+    if (!confirm("Ajoute " + amt.toLocaleString() + " G nan Wallet VIP sa a?")) return;
+    db.collection("users").doc(uid).set({ walletBalance: firebase.firestore.FieldValue.increment(amt) }, { merge: true })
+        .then(function () {
+            /* Trace (best effort — collection admin-only via la règle par défaut). */
+            db.collection("walletLog").add({
+                userId: uid, amount: amt, by: "admin_manual",
+                at: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(function () {});
+            toast("Wallet kredite: +" + amt.toLocaleString() + " G", true);
+            closeDetailModal();
+            try { loadWallets(); } catch (e) {}
+        }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+}
+
 /* Page dédiée : liste des VIP qui ont réservé (nb, rankont, Elu). Clic -> détail. */
 function loadVipHistoryPage() {
     var box = document.getElementById("vipHistList");
@@ -5890,6 +5952,15 @@ function viewAccountDetail(uid) {
     /* === HISTORIQUE DES RÉSERVATIONS (VIP) : avec quels Elu il a passé des moments === */
     if (user.type !== "freelancer" && user.type !== "krey") {
         content.innerHTML += buildVipHistory(uid);
+
+        /* === CRÉDIT WALLET MANUEL (admin ajoute un montant au Wallet du VIP) === */
+        content.innerHTML += '<div style="margin-top:16px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.3);border-radius:12px;padding:16px">' +
+            '<div style="font-size:0.72rem;color:#ffd700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px"><i class="fas fa-wallet"></i> Wallet VIP</div>' +
+            '<div style="font-size:0.8rem;color:#ccc;margin-bottom:10px">Balans aktyèl: <strong style="color:#ffd700">' + ((user.walletBalance || 0).toLocaleString()) + ' G</strong>. Ajoute yon montan manyèl.</div>' +
+            '<div style="display:flex;gap:8px;align-items:center">' +
+            '<input id="admWalletInput_' + uid + '" type="number" min="1" placeholder="Montan (G)" style="flex:1;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid #2a2a3a;border-radius:8px;color:white;font-family:Montserrat,sans-serif;font-size:0.95rem;outline:none">' +
+            '<button onclick="creditVipWallet(\'' + uid + '\')" style="padding:10px 18px;background:linear-gradient(135deg,#ffd700,#ff9800);color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.82rem"><i class="fas fa-plus"></i> Ajoute</button>' +
+            '</div></div>';
     }
 
     /* === ÉDITION DU PRIX (base Elu + prix hôtel ajouté par l'admin) === */

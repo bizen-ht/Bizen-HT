@@ -6580,6 +6580,7 @@ function chkPrem(uid) {
                 isPremiumViewer = (d.data().isPremium === true);
                 viewerWalletBalance = parseFloat(d.data().walletBalance) || 0;
                 isTestViewer = (d.data().isTest === true);
+                window._viewerPseudo = (d.data().pseudo || "").toString();   /* pseudo VIP -> réservations */
                 if (isPremiumViewer) unlockUI();
                 /* Recharge l'affichage des notes (visibles aux Premium) */
                 try { decorateRatings(); } catch(e) {}
@@ -7849,6 +7850,7 @@ function confirmRes() {
             var payNow = !!prestateId && amountNum > 0 && !isTestViewer;
             db.collection("reservations").add({
                 userId: auth.currentUser.uid, userEmail: auth.currentUser.email,
+                userPseudo: (window._viewerPseudo || ""),
                 prestateName: nm, prestateId: prestateId, price: pr, amount: amountNum,
                 resType: (bookingTarget && bookingTarget.priceType) || "moman",
                 date: date.value, time: time.value,
@@ -8084,6 +8086,7 @@ function submitKreyRes(kreyName, price) {
 
     db.collection("reservations").add({
         userId: auth.currentUser.uid, userEmail: auth.currentUser.email,
+        userPseudo: (window._viewerPseudo || ""),
         prestateName: kreyName, prestateId: kreyPrestateId,
         price: price + " Gdes", amount: kreyAmount, type: "krey",
         date: date.value, time: time.value, locationType: locType.value,
