@@ -265,6 +265,14 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isSignedIn() && resource.data.eluUid == request.auth.uid);
     }
 
+    /* -------- ESPAS BYENNÈT (articles édukatif) --------
+       Lecture publique des articles PUBLIÉS (pas besoin d'être connecté — bon
+       pour le SEO). L'admin lit tout (y compris brouillons) et écrit. */
+    match /articles/{id} {
+      allow read:  if isAdmin() || (resource != null && resource.data.published == true);
+      allow write: if isAdmin();
+    }
+
     /* -------- TOUT LE RESTE : interdit par défaut --------
        (Aucune collection oubliée ne reste ouverte.) */
     match /{document=**} {

@@ -887,6 +887,9 @@
             <button class="sb-link" onclick="goPage('story',this)">
                 <i class="fas fa-circle-play"></i> Story
             </button>
+            <button class="sb-link" onclick="goPage('byennet',this)">
+                <i class="fas fa-heart-pulse"></i> Espas Byennèt
+            </button>
             <button class="sb-link" onclick="goPage('viphistory',this)">
                 <i class="fas fa-clock-rotate-left"></i> Istorik VIP
             </button>
@@ -1135,6 +1138,51 @@
                     <div class="tc-title"><i class="fas fa-circle-play"></i> Story aktif yo (24h)</div>
                 </div>
                 <div id="storyModList" style="padding:14px"></div>
+            </div>
+        </div>
+
+        <!-- ESPAS BYENNÈT : articles éducatifs -->
+        <div class="pg" id="pg-byennet">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-heart-pulse" style="color:var(--red)"></i> Espas Byennèt</h1>
+            </div>
+            <div class="tc">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-pen-to-square"></i> <span id="artFormTitle">Nouvo atik</span></div></div>
+                <div style="padding:18px;display:grid;gap:12px;max-width:760px">
+                    <input type="hidden" id="artEditId" value="">
+                    <div style="display:grid;grid-template-columns:1fr 220px;gap:12px">
+                        <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Tit</label><input id="artTitle" placeholder="Tit atik la" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.9rem"></div>
+                        <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Kategori</label>
+                            <select id="artCat" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.9rem">
+                                <option value="sante">Sante & Sekirite</option>
+                                <option value="dezi">Aksepte Dezi</option>
+                                <option value="kominikasyon">Kominikasyon</option>
+                                <option value="byennet">Byennèt</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Rezime kout (parèt sou kat la)</label><input id="artExcerpt" maxlength="200" placeholder="Yon fraz oswa de pou rezime atik la" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.9rem"></div>
+                    <div>
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Imaj atik la (chwazi yon foto — rekòmande 1200 × 675 px)</label>
+                        <input type="file" id="artImageFile" accept="image/*" onchange="previewArticleImage(this)" style="width:100%;color:#ccc;font-size:0.84rem">
+                        <div id="artImagePreview" style="margin-top:10px"></div>
+                        <label style="display:block;font-size:0.72rem;color:#6a6a80;margin:10px 0 4px">— oswa mete yon lyen URL (opsyonèl)</label>
+                        <input id="artImage" placeholder="https://..." style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div><label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Tèks konplè</label><textarea id="artBody" rows="8" placeholder="Ekri atik la isit... (sote liy yo ap konsève)" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.9rem;resize:vertical;line-height:1.6"></textarea></div>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:#ccc;cursor:pointer"><input type="checkbox" id="artPublished" checked> Pibliye (vizib sou sit la)</label>
+                    <div style="display:flex;gap:8px">
+                        <button onclick="saveArticle()" style="background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:8px;padding:11px 20px;font-weight:700;cursor:pointer;font-size:0.85rem"><i class="fas fa-save"></i> Sove atik la</button>
+                        <button onclick="resetArticleForm()" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:11px 18px;cursor:pointer;font-size:0.85rem">Anile</button>
+                    </div>
+                </div>
+            </div>
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-list"></i> Tout atik yo</div>
+                    <button onclick="loadArticlesAdmin()" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:6px;padding:6px 12px;font-size:0.75rem;cursor:pointer"><i class="fas fa-sync"></i> Refrechi</button>
+                </div>
+                <div id="artAdminList" style="padding:14px"></div>
             </div>
         </div>
 
@@ -2565,6 +2613,118 @@ function deleteStoryAdmin(id) {
 }
 
 /* ====================================
+   ESPAS BYENNÈT — gestion des articles (admin)
+   ==================================== */
+function previewArticleImage(input) {
+    var box = document.getElementById("artImagePreview");
+    if (!box) return;
+    var f = input.files && input.files[0];
+    if (!f) { box.innerHTML = ""; return; }
+    box.innerHTML = '<img src="' + URL.createObjectURL(f) + '" style="max-width:260px;border-radius:10px;border:1px solid #2a2a3a">';
+}
+
+function uploadArticleImage(file) {
+    var path = "articles/" + Date.now() + "_" + file.name.replace(/\s+/g, "_");
+    return storage.ref(path).put(file).then(function (snap) { return snap.ref.getDownloadURL(); });
+}
+
+function saveArticle() {
+    if (!db) return;
+    var id = document.getElementById("artEditId").value;
+    var title = document.getElementById("artTitle").value.trim();
+    var cat = document.getElementById("artCat").value;
+    var excerpt = document.getElementById("artExcerpt").value.trim();
+    var urlField = document.getElementById("artImage").value.trim();
+    var body = document.getElementById("artBody").value.trim();
+    var published = document.getElementById("artPublished").checked;
+    if (!title || !body) { toast("Antre yon tit ak yon tèks.", false); return; }
+
+    var btn = document.querySelector('#pg-byennet button[onclick="saveArticle()"]');
+    if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
+    var done = function () { if (btn) { btn.disabled = false; btn.style.opacity = "1"; } };
+
+    function write(imageUrl) {
+        var data = { title: title, category: cat, excerpt: excerpt, imageUrl: imageUrl, body: body, published: published, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+        var p;
+        if (id) { p = db.collection("articles").doc(id).set(data, { merge: true }); }
+        else { data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); p = db.collection("articles").add(data); }
+        p.then(function () { done(); toast(id ? "Atik modifye!" : "Atik pibliye!", true); resetArticleForm(); loadArticlesAdmin(); })
+            .catch(function (e) { done(); toast("Erè: " + (e.message || e.code), false); });
+    }
+
+    var fileInput = document.getElementById("artImageFile");
+    var file = fileInput && fileInput.files && fileInput.files[0];
+    if (file) {
+        toast("Chajman imaj...", true);
+        uploadArticleImage(file).then(function (url) { write(url); })
+            .catch(function (e) { done(); toast("Erè imaj: " + (e.message || e.code), false); });
+    } else {
+        write(urlField);   /* pas de nouveau fichier -> on garde l'URL existante/saisie */
+    }
+}
+
+function resetArticleForm() {
+    ["artTitle", "artExcerpt", "artImage", "artBody", "artImageFile"].forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ""; });
+    var ei = document.getElementById("artEditId"); if (ei) ei.value = "";
+    var pub = document.getElementById("artPublished"); if (pub) pub.checked = true;
+    var ft = document.getElementById("artFormTitle"); if (ft) ft.textContent = "Nouvo atik";
+    var pv = document.getElementById("artImagePreview"); if (pv) pv.innerHTML = "";
+}
+
+function loadArticlesAdmin() {
+    if (!db) return;
+    var box = document.getElementById("artAdminList");
+    if (box) box.innerHTML = '<p style="color:#6a6a80;font-size:0.85rem">Chajman...</p>';
+    db.collection("articles").get().then(function (snap) {
+        var rows = []; snap.forEach(function (d) { var x = d.data(); x._id = d.id; rows.push(x); });
+        rows.sort(function (a, b) {
+            var am = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+            var bm = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+            return bm - am;
+        });
+        window._adminArticles = rows;
+        if (!box) return;
+        if (!rows.length) { box.innerHTML = '<p style="color:#6a6a80;font-size:0.85rem;text-align:center;padding:20px">Pa gen atik anko.</p>'; return; }
+        var CATS = { sante: "Sante & Sekirite", dezi: "Aksepte Dezi", kominikasyon: "Kominikasyon", byennet: "Byennèt" };
+        var h = "";
+        rows.forEach(function (x) {
+            h += '<div style="display:flex;gap:10px;align-items:center;background:#12121a;border:1px solid #2a2a3a;border-radius:10px;padding:12px 14px;margin-bottom:10px">' +
+                '<div style="flex:1;min-width:0"><div style="color:#fff;font-weight:600;font-size:0.9rem">' + escHtml(x.title || "") + ' ' + (x.published ? '<span class="sbadge green" style="font-size:0.6rem">Pibliye</span>' : '<span class="sbadge orange" style="font-size:0.6rem">Bouyon</span>') + '</div>' +
+                '<div style="font-size:0.72rem;color:#6a6a80">' + escHtml(CATS[x.category] || x.category || "") + '</div></div>' +
+                '<button onclick="editArticle(\'' + x._id + '\')" title="Modifye" style="background:rgba(33,150,243,0.15);color:#42a5f5;border:1px solid rgba(33,150,243,0.4);border-radius:8px;padding:7px 12px;font-size:0.76rem;cursor:pointer"><i class="fas fa-pen"></i></button>' +
+                '<button onclick="deleteArticle(\'' + x._id + '\')" title="Efase" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:7px 12px;font-size:0.76rem;cursor:pointer"><i class="fas fa-trash"></i></button>' +
+                '</div>';
+        });
+        box.innerHTML = h;
+    }).catch(function (e) { if (box) box.innerHTML = '<p style="color:#f44336;font-size:0.85rem">Erè: ' + (e.code || e.message) + '</p>'; });
+}
+
+function editArticle(id) {
+    var a = (window._adminArticles || []).filter(function (x) { return x._id === id; })[0];
+    if (!a) return;
+    document.getElementById("artEditId").value = id;
+    document.getElementById("artTitle").value = a.title || "";
+    document.getElementById("artCat").value = a.category || "sante";
+    document.getElementById("artExcerpt").value = a.excerpt || "";
+    document.getElementById("artImage").value = a.imageUrl || "";
+    document.getElementById("artBody").value = a.body || "";
+    document.getElementById("artPublished").checked = a.published !== false;
+    var fi = document.getElementById("artImageFile"); if (fi) fi.value = "";
+    var pv = document.getElementById("artImagePreview");
+    if (pv) pv.innerHTML = a.imageUrl ? '<img src="' + a.imageUrl + '" style="max-width:260px;border-radius:10px;border:1px solid #2a2a3a"><div style="font-size:0.7rem;color:#6a6a80;margin-top:4px">Imaj aktyèl — chwazi yon lòt foto pou ranplase l.</div>' : "";
+    var ft = document.getElementById("artFormTitle"); if (ft) ft.textContent = "Modifye atik";
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) {}
+}
+
+function deleteArticle(id) {
+    if (!db) return;
+    if (!confirm("Efase atik sa a?")) return;
+    db.collection("articles").doc(id).delete()
+        .then(function () { toast("Atik efase.", true); loadArticlesAdmin(); })
+        .catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+}
+
+/* ====================================
    CLASSEMENT DES ELU (glisser-déposer par catégorie)
    Écrit un sortRank UNIQUE par Elu dans chaque catégorie => l'ordre du site
    devient déterministe (le catalogue trie par sortRank décroissant).
@@ -3506,6 +3666,7 @@ function goPage(id, btn) {
     if (id === "boss") loadBoss();
     if (id === "demann") loadDemannMod();
     if (id === "story") loadStoryMod();
+    if (id === "byennet") loadArticlesAdmin();
     if (id === "viphistory") loadVipHistoryPage();
     if (id === "zones") loadZones();
     if (id === "msg") loadAdminMsg();

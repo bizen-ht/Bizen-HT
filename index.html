@@ -1703,7 +1703,7 @@ body.no-screenshot * {
                     Krèy
                 </a>
             </li>
-            <li><a href="#galerie" class="nav-link">Galri</a></li>
+            <li><a href="#byennet" class="nav-link"><i class="fas fa-heart-pulse"></i> Byennèt</a></li>
             <li><a href="#premium" class="nav-link prem-lnk"><i class="fas fa-crown"></i> Premium</a></li>
                         <li>
                 <a href="#contact"
@@ -2029,56 +2029,32 @@ body.no-screenshot * {
     </div>
 </section>
 
-<!-- GALLERY - VISIBLE (PAS FLOUTÉ) -->
-<section class="section" id="galerie">
+<!-- ESPAS BYENNÈT (éducation / positivité sexuelle) -->
+<section class="section" id="byennet">
     <div class="container">
         <div class="sec-head">
-            <p class="sec-sub"><i class="fas fa-fire"></i> Galri Premium</p>
-            <h2 class="sec-title">Foto & Videyo <span class="hl">Profil</span></h2>
+            <p class="sec-sub"><i class="fas fa-heart-pulse"></i> Espas Byennèt</p>
+            <h2 class="sec-title">Konesans, Plezi & <span class="hl">Libète</span></h2>
             <div class="ubar"></div>
-            <p class="sec-desc">Gade apèsi Elu nou yo. Pase nan Premium pou wè pwofil konplè yo!</p>
+            <p class="sec-desc">Aksepte dezi w, viv fantasm ou an libète, epi pran swen tèt ou. Enfòmasyon, sekirite ak byennèt — san tabou, san jijman.</p>
         </div>
-        <div class="gal-grid">
-            <!-- METTEZ VOS VRAIES IMAGES ICI -->
-            <!-- Remplacez les URL par vos vraies photos -->
-            <div class="gi sr">
-                <div class="gi-bg" style="background-image:url('https://cdn.pixabay.com/photo/2017/12/31/13/13/nude-3052317_1280.jpg?w=400&h=400&fit=crop');background-size:cover;background-position:center"></div>
-                <div class="gi-overlay"><span>Naomi - Petion-Ville</span><i class="fas fa-heart"></i></div>
-            </div>
-            <div class="gi sr">
-                <div class="gi-bg" style="background-image:url('https://ei.phncdn.com/(m=bLazqgKlbyaT)(mh=QjvYrZjjQDVmE1Vl)00b509a5-68fa-42e5-aa78-a2e9975f04c4.jpg?w=400&h=400&fit=crop');background-size:cover;background-position:center"></div>
-                <div class="gi-overlay"><span>Ricardo - Canape-vert </span><i class="fas fa-heart"></i></div>
-            </div>
-            <div class="gi sr">
-                <div class="gi-bg" style="background-image:url('https://cdni.pornpics.com/460/7/423/25740507/25740507_042_0060.jpg?w=400&h=400&fit=crop');background-size:cover;background-position:center"></div>
-                <div class="gi-overlay"><span>Sabrina - Delmas</span><i class="fas fa-heart"></i></div>
-            </div>
-            <div class="gi sr">
-                <div class="gi-bg" style="background-image:url('https://img.magnific.com/free-photo/young-sportive-african-man-posing-black-wall_176420-2515.jpg?w=400&h=400&fit=crop');background-size:cover;background-position:center"></div>
-                <div class="gi-overlay"><span>Jean-Marc - Petion-Ville</span><i class="fas fa-heart"></i></div>
-            </div>
-            <div class="gi lg sr">
-                <!-- VIDEO PLACEHOLDER - Remplacez par votre vrai contenu -->
-                <div class="gi-bg" style="background-image:url('https://ei.phncdn.com/pics/albums/075/495/981/832029581/(m=bJ4hdaaecac)(mh=CIouC9Ydp_XYov81)original_832029581.jpg?w=800&h=600&fit=crop');background-size:cover;background-position:center"></div>
-                <i class="gi-play fas fa-play-circle"></i>
-                <div class="gi-overlay"><span>Lovely - Carrefour</span><i class="fas fa-play"></i></div>
-            </div>
-            <div class="gi sr">
-                <div class="gi-bg" style="background-image:url('https://ei.phncdn.com/pics/albums/0000/7970/3285/858890085/(m=bJ4hdaaecac)(mh=6QAoDFtm11KtQRYA)original_858890085.jpg?w=400&h=400&fit=crop');background-size:cover;background-position:center"></div>
-                <div class="gi-overlay"><span>Alexandra - Tabarre</span><i class="fas fa-heart"></i></div>
-            </div>
-            <div class="gi sr">
-                <div class="gi-bg" style="background-image:url('https://ei.phncdn.com/(m=bJ4hdaaecac)(mh=S6t5hc2MeFRbvE_1)47204462-8107-4695-a096-55ddb44f5338.jpg?w=400&h=400&fit=crop');background-size:cover;background-position:center"></div>
-                <div class="gi-overlay"><span>Stanley - Juvenat</span><i class="fas fa-heart"></i></div>
-            </div>
-            <div class="gi sr">
-                <div class="gi-bg" style="background-image:url('https://cdni.pornpics.com/460/7/434/52313317/52313317_081_b4c8.jpg?w=400&h=400&fit=crop');background-size:cover;background-position:center"></div>
-                <div class="gi-overlay"><span>Naicka - Routes frères</span><i class="fas fa-heart"></i></div>
-            </div>
+        <div class="filter-bar" id="byennetFilterBar" style="margin-bottom:26px">
+            <button class="fbtn active" data-bcat="all" onclick="setByennetCat('all',this)">Tout</button>
+            <button class="fbtn" data-bcat="sante" onclick="setByennetCat('sante',this)"><i class="fas fa-shield-heart"></i> Sante & Sekirite</button>
+            <button class="fbtn" data-bcat="dezi" onclick="setByennetCat('dezi',this)"><i class="fas fa-fire"></i> Aksepte Dezi</button>
+            <button class="fbtn" data-bcat="kominikasyon" onclick="setByennetCat('kominikasyon',this)"><i class="fas fa-comments"></i> Kominikasyon</button>
+            <button class="fbtn" data-bcat="byennet" onclick="setByennetCat('byennet',this)"><i class="fas fa-spa"></i> Byennèt</button>
         </div>
-        <div class="gal-cta premium-hide">
+        <div id="byennetGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px"></div>
+        <p style="text-align:center;color:var(--text-muted);font-size:0.78rem;margin-top:28px;max-width:640px;margin-left:auto;margin-right:auto"><i class="fas fa-circle-info"></i> Enfòmasyon jeneral pou edikasyon — se pa yon konsèy medikal. Pou kesyon sante, konsilte yon pwofesyonèl.</p>
+    </div>
+</section>
 
-            <button class="btn btn-primary btn-glow" onclick="oM('pM')"><i class="fas fa-crown"></i> Vin Premium pou Rezève - 1,000 Gdes</button>
+<!-- (ancienne galerie retirée) -->
+<section style="display:none">
+    <div class="container">
+        <div class="gal-grid">
+            <!-- vide -->
         </div>
     </div>
 </section>
@@ -2360,7 +2336,7 @@ body.is-premium .pc-blur{display:none!important}
         <li><a href="#top">Akey</a></li>
         <li><a href="#femmes">Fanm</a></li>
         <li><a href="#hommes">Gason</a></li>
-        <li><a href="#galerie">Galri</a></li>
+        <li><a href="#byennet">Byennèt</a></li>
         <li><a href="#premium">Premium</a></li>
         <li><a href="faq.html">FAQ</a></li>
     </ul>
@@ -4074,6 +4050,7 @@ function renderCards() {
     }
     /* Charge les VRAIS prestataires Firebase (mode hybride) */
     try { renderRealFreelancers(); } catch(e) { console.warn("RealFL:", e); }
+    try { loadByennet(); } catch(e) { console.warn("Byennet:", e); }
     /* Load real-time online status from Firebase */
     try { loadOnlineFromFirebase(); } catch(e) {}
 }
@@ -7171,6 +7148,87 @@ function sendStoryComment(id) {
         var box = document.getElementById("stCommentBox");
         if (box) box.innerHTML = '<div style="color:#4caf50;font-size:0.85rem;text-align:center"><i class="fas fa-check"></i> Kòmantè voye an prive!</div>';
     }).catch(function (e) { toast(e.message || "Erè", "err"); });
+}
+
+/* ====================================
+   ESPAS BYENNÈT (articles d'éducation / positivité) — lecture publique
+   ==================================== */
+var BYENNET_CATS = {
+    sante: { label: "Sante & Sekirite", icon: "fa-shield-heart", color: "#4caf50" },
+    dezi: { label: "Aksepte Dezi", icon: "fa-fire", color: "#e91e63" },
+    kominikasyon: { label: "Kominikasyon", icon: "fa-comments", color: "#2196f3" },
+    byennet: { label: "Byennèt", icon: "fa-spa", color: "#9c27b0" }
+};
+var _byennetArticles = [];
+var _byennetCat = "all";
+
+function loadByennet() {
+    if (!db) return;
+    db.collection("articles").where("published", "==", true).get().then(function (snap) {
+        var arr = [];
+        snap.forEach(function (d) { var x = d.data(); x._id = d.id; arr.push(x); });
+        arr.sort(function (a, b) {
+            var am = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+            var bm = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+            return bm - am;
+        });
+        _byennetArticles = arr;
+        renderByennet();
+    }).catch(function (e) { console.warn("loadByennet:", e && e.code); });
+}
+
+function setByennetCat(cat, btn) {
+    _byennetCat = cat;
+    var chips = document.querySelectorAll("#byennetFilterBar .fbtn");
+    for (var i = 0; i < chips.length; i++) chips[i].classList.remove("active");
+    if (btn) btn.classList.add("active");
+    renderByennet();
+}
+
+function renderByennet() {
+    var grid = document.getElementById("byennetGrid");
+    if (!grid) return;
+    var arr = _byennetArticles.filter(function (a) { return _byennetCat === "all" || a.category === _byennetCat; });
+    if (!arr.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:44px"><i class="fas fa-book-open" style="font-size:2rem;opacity:.5"></i><p style="margin-top:12px">Pa gen atik pou kounye a. Retounen byento!</p></div>';
+        return;
+    }
+    var h = "";
+    arr.forEach(function (a) {
+        var c = BYENNET_CATS[a.category] || { label: "Byennèt", icon: "fa-heart", color: "#e91e63" };
+        var media = a.imageUrl
+            ? '<div style="height:170px;background:url(\'' + a.imageUrl + '\') center/cover"></div>'
+            : '<div style="height:170px;background:linear-gradient(135deg,' + c.color + '33,' + c.color + '11);display:flex;align-items:center;justify-content:center"><i class="fas ' + c.icon + '" style="font-size:2.4rem;color:' + c.color + '"></i></div>';
+        h += '<div onclick="openArticle(\'' + a._id + '\')" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer">' +
+            media +
+            '<div style="padding:16px">' +
+            '<span style="display:inline-flex;align-items:center;gap:5px;background:' + c.color + '1f;color:' + c.color + ';border:1px solid ' + c.color + '55;border-radius:50px;padding:3px 10px;font-size:0.66rem;font-weight:700;margin-bottom:8px"><i class="fas ' + c.icon + '"></i> ' + c.label + '</span>' +
+            '<h3 style="font-family:\'Playfair Display\',serif;font-size:1.1rem;color:#fff;margin-bottom:6px">' + escapeResHotel(a.title || "") + '</h3>' +
+            '<p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + escapeResHotel(a.excerpt || (a.body || "").slice(0, 140)) + '</p>' +
+            '<div style="margin-top:10px;color:' + c.color + ';font-size:0.8rem;font-weight:600">Li plis <i class="fas fa-arrow-right"></i></div>' +
+            '</div></div>';
+    });
+    grid.innerHTML = h;
+}
+
+function openArticle(id) {
+    var a = _byennetArticles.filter(function (x) { return x._id === id; })[0];
+    if (!a) return;
+    var c = BYENNET_CATS[a.category] || { label: "Byennèt", icon: "fa-heart", color: "#e91e63" };
+    var old = document.getElementById("artM"); if (old) old.remove();
+    var bodyHtml = escapeResHotel(a.body || "").replace(/\n/g, "<br>");
+    var m = document.createElement("div");
+    m.id = "artM"; m.className = "mbg show"; m.style.cssText = "z-index:10004";
+    m.innerHTML = '<div class="modal" style="max-width:640px;max-height:92vh;overflow-y:auto">' +
+        '<button class="mx" onclick="cM(\'artM\')"><i class="fas fa-times"></i></button>' +
+        (a.imageUrl ? '<img src="' + a.imageUrl + '" style="width:100%;max-height:280px;object-fit:cover;border-radius:12px;margin-bottom:14px">' : '') +
+        '<span style="display:inline-flex;align-items:center;gap:5px;background:' + c.color + '1f;color:' + c.color + ';border:1px solid ' + c.color + '55;border-radius:50px;padding:3px 12px;font-size:0.7rem;font-weight:700"><i class="fas ' + c.icon + '"></i> ' + c.label + '</span>' +
+        '<h2 style="font-family:\'Playfair Display\',serif;font-size:1.6rem;color:#fff;margin:12px 0 14px">' + escapeResHotel(a.title || "") + '</h2>' +
+        '<div style="font-size:0.95rem;color:var(--text-secondary);line-height:1.8">' + bodyHtml + '</div>' +
+        '<p style="font-size:0.72rem;color:var(--text-muted);margin-top:22px;border-top:1px solid var(--border);padding-top:12px"><i class="fas fa-circle-info"></i> Enfòmasyon jeneral — se pa yon konsèy medikal. Konsilte yon pwofesyonèl sante pou bezwen medikal.</p>' +
+        '</div>';
+    document.body.appendChild(m);
+    m.addEventListener("click", function (ev) { if (ev.target === m) cM("artM"); });
 }
 
 function openEluProfile(btnOrUid) {
