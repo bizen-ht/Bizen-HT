@@ -1243,7 +1243,10 @@
         <div class="pg" id="pg-res">
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-calendar-check" style="color:var(--green)"></i> Rezevasyon</h1>
-                <button onclick="deleteTestReservations()" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:0.82rem"><i class="fas fa-trash"></i> Efase tout rezevasyon test</button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button onclick="backfillResClientNames()" title="Ranje non kliyan yo sou ansyen rezèvasyon (pou Elu wè non olye imel)" style="background:rgba(255,215,0,0.12);color:#ffd700;border:1px solid rgba(255,215,0,0.35);border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:0.82rem"><i class="fas fa-user-pen"></i> Ranje non kliyan yo</button>
+                    <button onclick="deleteTestReservations()" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:0.82rem"><i class="fas fa-trash"></i> Efase tout rezevasyon test</button>
+                </div>
             </div>
             <div id="resPayoutAlert" style="display:none;margin-bottom:16px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.45);border-radius:12px;padding:14px 18px;color:#ffd700;font-weight:600;align-items:center;gap:10px"></div>
             <div class="tc">
@@ -2852,6 +2855,35 @@ function loadReservations() {
             setBdg("bdgR", adminRes.length);
             renderResTable(adminRes);
         });
+}
+
+/* Backfill : remplit `userPseudo` sur les ANCIENNES réservations (celles créées
+   avant que le champ existe), pour que l'Elu voie le nom du client au lieu de rien.
+   L'admin peut lire tous les VIP (adminUsers) et écrire les réservations. */
+function backfillResClientNames() {
+    if (!db) return;
+    var umap = {};
+    (adminUsers || []).forEach(function (u) {
+        var nm = (u.pseudo || u.prenom || "").toString().trim();
+        if (nm) umap[u.id] = nm;
+    });
+    var todo = (adminRes || []).filter(function (r) {
+        return !(r.userPseudo && String(r.userPseudo).trim()) && r.userId && umap[r.userId];
+    });
+    if (!todo.length) { toast("Anyen pou ranje (non yo deja la oswa VIP yo pa gen pseudo/non).", true); return; }
+    if (!confirm("Ranje non kliyan sou " + todo.length + " ansyen rezèvasyon?")) return;
+    var chain = Promise.resolve(), done = 0;
+    for (var i = 0; i < todo.length; i += 400) {
+        (function (slice) {
+            chain = chain.then(function () {
+                var b = db.batch();
+                slice.forEach(function (r) { b.update(db.collection("reservations").doc(r.id), { userPseudo: umap[r.userId] }); });
+                return b.commit().then(function () { done += slice.length; });
+            });
+        })(todo.slice(i, i + 400));
+    }
+    chain.then(function () { toast(done + " rezèvasyon ranje! Elu yo ap wè non kliyan an kounye a.", true); })
+        .catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
 }
 
 function renderResTable(list) {
