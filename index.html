@@ -1905,6 +1905,7 @@ body.no-screenshot * {
       <button class="hfcat active" data-cat="all" onclick="setHomeCat('all',this)"><i class="fas fa-border-all"></i> Tout</button>
       <button class="hfcat" data-cat="fanm" onclick="setHomeCat('fanm',this)"><i class="fas fa-venus"></i> Fanm</button>
       <button class="hfcat" data-cat="gason" onclick="setHomeCat('gason',this)"><i class="fas fa-mars"></i> Gason</button>
+      <button class="hfcat" data-cat="biseksyel" onclick="setHomeCat('biseksyel',this)"><i class="fas fa-venus-mars"></i> Biseksyèl</button>
       <button class="hfcat" data-cat="krey" onclick="setHomeCat('krey',this)"><i class="fas fa-users"></i> Krey</button>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center">
@@ -3755,7 +3756,7 @@ function mkCard(p, type, male) {
         + ' data-name="' + (p.n || "").replace(/"/g, "&quot;") + '"'
         + ' data-merit="' + (p.merit || 0) + '"'
         + ' data-age="' + (p.age || "") + '"'
-        + ' data-genre="' + (male ? "gason" : "fanm") + '"'
+        + ' data-genre="' + (p.genreCat || (male ? "gason" : "fanm")) + '"'
         + ' data-frozen="' + (p.frozen ? "1" : "0") + '"'
         + ' data-online="' + (p.online ? "1" : "0") + '"'
         + ' data-price-num="' + (p.priceNum || 0) + '"'
@@ -4102,6 +4103,10 @@ function renderRealFreelancers() {
                 /* Page dédiée d'une agence : on ne montre QUE ses Elus. */
                 if (window._agencyFilter && (d.agencySlug || "") !== window._agencyFilter) return;
                 var male = (d.genre === "homme" || d.genre === "gason");
+                /* Catégorie de genre pour le filtre : fanm | gason | biseksyel.
+                   Les bisexuels restent affichés dans la grille "femmes" mais gardent
+                   leur propre genre pour le filtre. */
+                var genreCat = male ? "gason" : (d.genre === "biseksyel" ? "biseksyel" : "fanm");
                 /* Un groupe apparaît comme titre dès qu'une Elu femme y appartient. */
                 if (!male && d.agencySlug) femAgencies[d.agencySlug] = d.agencyName || d.agencySlug;
 
@@ -4135,7 +4140,8 @@ function renderRealFreelancers() {
                     photoUrl: d.photoUrl || "",
                     online: !!d.isOnline,
                     lastSeen: d.lastSeen || null,
-                    merit: (typeof d.confirmedMeetings === "number" ? d.confirmedMeetings : 0)
+                    merit: (typeof d.confirmedMeetings === "number" ? d.confirmedMeetings : 0),
+                    genreCat: genreCat
                 };
 
                 var cardHtml = mkCard(cardData, male ? "Gason" : "Fanm", male);
@@ -5061,10 +5067,33 @@ function setHomeCat(cat, btn) {
     for (var i = 0; i < chips.length; i++) chips[i].classList.remove("active");
     if (btn) btn.classList.add("active");
     var fs = document.getElementById("femmes"), hs = document.getElementById("hommes"), ks = document.getElementById("krey");
-    if (fs) fs.style.display = (cat === "all" || cat === "fanm") ? "" : "none";
+    /* Les FANM et les BISEKSYÈL partagent la grille "femmes" (#fG) — on montre la
+       section pour ces 2 catégories, puis le filtre par genre (renderGridPage)
+       n'affiche que les cartes du bon genre. */
+    if (fs) fs.style.display = (cat === "all" || cat === "fanm" || cat === "biseksyel") ? "" : "none";
     if (hs) hs.style.display = (cat === "all" || cat === "gason") ? "" : "none";
     if (ks) ks.style.display = (cat === "all" || cat === "krey") ? "" : "none";
+    /* Titre de la section "femmes" adapté à la catégorie. */
+    var femTitle = document.querySelector("#femmes .sec-title");
+    var femSub = document.querySelector("#femmes .sec-sub");
+    if (cat === "biseksyel") {
+        if (femTitle) femTitle.innerHTML = 'Elu Biseksyèl <span class="hl">Disponib</span> yo';
+        if (femSub) femSub.innerHTML = '<i class="fas fa-venus-mars"></i> Kategori Biseksyèl';
+    } else {
+        if (femTitle) femTitle.innerHTML = 'Elu Fanm <span class="hl">Disponib</span> yo';
+        if (femSub) femSub.innerHTML = '<i class="fas fa-venus"></i> Kategori Fanm';
+    }
+    if (gridState.fG) gridState.fG.page = 0;
+    if (gridState.hG) gridState.hG.page = 0;
+    try { refreshGrids(); } catch (e) {}   /* ré-applique le filtre de genre par carte */
     try { renderStoriesBar(); } catch (e) {}
+}
+
+/* La carte passe-t-elle le filtre de genre de la catégorie active ? */
+function genreMatchCat(c) {
+    var cat = homeFilter.cat;
+    if (cat === "all" || cat === "krey") return true;   /* krey géré par section ; all = pas de filtre genre */
+    return c.getAttribute("data-genre") === cat;        /* fanm | gason | biseksyel */
 }
 
 /* Filtre par ZONE : applique le même filtre (data-f = clé de zone) aux 2 grilles. */
@@ -5104,6 +5133,10 @@ function resetHomeFilters() {
     if (gridState.fG) { gridState.fG.filter = "all"; gridState.fG.page = 0; }
     if (gridState.hG) { gridState.hG.filter = "all"; gridState.hG.page = 0; }
     ["femmes", "hommes", "krey"].forEach(function (id) { var s = document.getElementById(id); if (s) s.style.display = ""; });
+    var femTitle = document.querySelector("#femmes .sec-title");
+    var femSub = document.querySelector("#femmes .sec-sub");
+    if (femTitle) femTitle.innerHTML = 'Elu Fanm <span class="hl">Disponib</span> yo';
+    if (femSub) femSub.innerHTML = '<i class="fas fa-venus"></i> Kategori Fanm';
     try { renderStoriesBar(); } catch (e) {}
     try { refreshGrids(); } catch (e) {}
 }
@@ -5130,6 +5163,7 @@ function renderGridPage(gridId) {
         if (agFilter) match = (c.getAttribute("data-agency") === agFilter);
         else match = (st.filter === "all" || c.getAttribute("data-f") === st.filter);
         if (match && !passesAgePrice(c)) match = false;   /* filtre âge + prix */
+        if (match && !genreMatchCat(c)) match = false;     /* filtre genre (fanm/gason/biseksyel) */
         if (!match) { c.style.display = "none"; }
         else elig.push(c);
     });
@@ -7038,6 +7072,7 @@ function renderStoriesBar() {
         if (cat === "krey") return e.type === "krey";
         if (cat === "fanm") return e.type !== "krey" && e.genre === "fanm";
         if (cat === "gason") return e.type !== "krey" && e.genre === "gason";
+        if (cat === "biseksyel") return e.type !== "krey" && e.genre === "biseksyel";
         return true;
     });
     if (!elus.length) { if (sec) sec.style.display = "none"; return; }

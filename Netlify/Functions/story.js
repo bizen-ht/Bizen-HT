@@ -98,7 +98,7 @@ exports.handler = async function (event) {
                 eluPseudo: (u.pseudo || pub.pseudo || u.prenom || "Elu"),
                 eluPhotoUrl: (pub.photoUrl || u.photoUrl || ""),
                 eluType: u.type,                                             /* freelancer | krey */
-                eluGenre: (_g === "homme" || _g === "gason") ? "gason" : "fanm",
+                eluGenre: (_g === "homme" || _g === "gason") ? "gason" : (_g === "biseksyel" ? "biseksyel" : "fanm"),
                 type: stype,
                 text: stext,
                 photoUrl: (stype === "photo") ? photoUrl : "",
