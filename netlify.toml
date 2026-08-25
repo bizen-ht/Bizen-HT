@@ -68,6 +68,12 @@
 [functions.ambassador]
   external_node_modules = ["firebase-admin"]
 
+[functions.article-stat]
+  external_node_modules = ["firebase-admin"]
+
+[functions.article-preview]
+  external_node_modules = ["firebase-admin"]
+
 [functions.unsuspend]
   external_node_modules = ["firebase-admin"]
   schedule = "@daily"
@@ -135,6 +141,12 @@
 [[redirects]]
   from = "/pwofil/*"
   to = "/.netlify/functions/elu-preview?code=:splat"
+  status = 200
+
+# Lien de partage d'un article Byennèt : aperçu (og) via fonction, puis redirection vers l'app
+[[redirects]]
+  from = "/atik/*"
+  to = "/.netlify/functions/article-preview?id=:splat"
   status = 200
 
 [[redirects]]

@@ -2690,7 +2690,7 @@ function loadArticlesAdmin() {
         rows.forEach(function (x) {
             h += '<div style="display:flex;gap:10px;align-items:center;background:#12121a;border:1px solid #2a2a3a;border-radius:10px;padding:12px 14px;margin-bottom:10px">' +
                 '<div style="flex:1;min-width:0"><div style="color:#fff;font-weight:600;font-size:0.9rem">' + escHtml(x.title || "") + ' ' + (x.published ? '<span class="sbadge green" style="font-size:0.6rem">Pibliye</span>' : '<span class="sbadge orange" style="font-size:0.6rem">Bouyon</span>') + '</div>' +
-                '<div style="font-size:0.72rem;color:#6a6a80">' + escHtml(CATS[x.category] || x.category || "") + '</div></div>' +
+                '<div style="font-size:0.72rem;color:#6a6a80">' + escHtml(CATS[x.category] || x.category || "") + ' &nbsp;·&nbsp; <i class="fas fa-eye" style="color:#64b5f6"></i> ' + (x.viewCount || 0) + ' lekti &nbsp;·&nbsp; <i class="fas fa-share-nodes" style="color:#4caf50"></i> ' + (x.shareCount || 0) + ' pataj</div></div>' +
                 '<button onclick="editArticle(\'' + x._id + '\')" title="Modifye" style="background:rgba(33,150,243,0.15);color:#42a5f5;border:1px solid rgba(33,150,243,0.4);border-radius:8px;padding:7px 12px;font-size:0.76rem;cursor:pointer"><i class="fas fa-pen"></i></button>' +
                 '<button onclick="deleteArticle(\'' + x._id + '\')" title="Efase" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:7px 12px;font-size:0.76rem;cursor:pointer"><i class="fas fa-trash"></i></button>' +
                 '</div>';

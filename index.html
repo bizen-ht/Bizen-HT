@@ -177,14 +177,14 @@
         .logo-i{width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary),var(--secondary));border-radius:50%;color:white;font-size:1.1rem;animation:hb 2s infinite}
         .logo-t{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:white}
         .logo-ht{background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-        .nav-links{display:flex;list-style:none;gap:5px}
-        .nav-link{color:var(--text-secondary);padding:8px 16px;border-radius:var(--radius-full);font-size:0.9rem;font-weight:500;transition:var(--transition)}
+        .nav-links{display:flex;list-style:none;gap:2px;align-items:center}
+        .nav-link{color:var(--text-secondary);padding:8px 11px;border-radius:var(--radius-full);font-size:0.84rem;font-weight:500;white-space:nowrap;transition:var(--transition)}
         .nav-link:hover,.nav-link.active{color:white;background:rgba(233,30,99,0.15)}
         .nav-link.active{color:var(--primary)}
         .prem-lnk{color:var(--gold)!important;font-weight:600}
         .prem-lnk:hover{background:rgba(255,215,0,0.15)!important}
-        .nav-btns{display:flex;gap:10px}
-        .btn-nl{background:transparent;border:1px solid var(--border);color:white;padding:8px 20px;border-radius:var(--radius-full);cursor:pointer;font-family:'Montserrat',sans-serif;font-size:0.85rem;transition:var(--transition)}
+        .nav-btns{display:flex;gap:7px;align-items:center}
+        .btn-nl{background:transparent;border:1px solid var(--border);color:white;padding:8px 14px;border-radius:var(--radius-full);cursor:pointer;font-family:'Montserrat',sans-serif;font-size:0.82rem;white-space:nowrap;transition:var(--transition)}
         .btn-nl:hover{border-color:var(--primary);color:var(--primary)}
         .btn-ns{background:linear-gradient(135deg,var(--primary),var(--secondary));border:none;color:white;padding:8px 20px;border-radius:var(--radius-full);cursor:pointer;font-family:'Montserrat',sans-serif;font-size:0.85rem;font-weight:600;transition:var(--transition)}
         .btn-ns:hover{transform:translateY(-2px);box-shadow:0 0 25px rgba(233,30,99,0.4)}
@@ -589,6 +589,17 @@
     .mobile-auth {
         display: flex;
     }
+}
+
+/* NAV : bascule en menu hamburger dès 1100px (le menu horizontal complet
+   n'entre pas proprement sur une ligne en dessous). */
+@media (max-width: 1100px) {
+    .nav-links{position:fixed;top:0;right:-100%;width:290px;height:100vh;background:rgba(10,10,15,0.98);backdrop-filter:blur(20px);flex-direction:column;align-items:stretch;padding:80px 30px 30px;transition:var(--transition);border-left:1px solid var(--border);z-index:999;gap:6px;overflow-y:auto}
+    .nav-links.open{right:0}
+    .nav-links .nav-link{padding:12px 16px;font-size:0.95rem}
+    .nav-btns{display:none}
+    .hbg{display:flex}
+    .mobile-auth{display:flex}
 }
 
 /* KREY SECTION */
@@ -1703,7 +1714,7 @@ body.no-screenshot * {
                     Krèy
                 </a>
             </li>
-            <li><a href="#byennet" class="nav-link"><i class="fas fa-heart-pulse"></i> Byennèt</a></li>
+            <li><a href="#byennet" class="nav-link">Byennèt</a></li>
             <li><a href="#premium" class="nav-link prem-lnk"><i class="fas fa-crown"></i> Premium</a></li>
                         <li>
                 <a href="#contact"
@@ -7174,6 +7185,11 @@ function loadByennet() {
         });
         _byennetArticles = arr;
         renderByennet();
+        /* Lien partagé /?atik=<id> : ouvre direct l'article. */
+        try {
+            var atik = new URLSearchParams(location.search).get("atik");
+            if (atik && arr.filter(function (x) { return x._id === atik; })[0]) openArticle(atik);
+        } catch (e) {}
     }).catch(function (e) { console.warn("loadByennet:", e && e.code); });
 }
 
@@ -7225,10 +7241,35 @@ function openArticle(id) {
         '<span style="display:inline-flex;align-items:center;gap:5px;background:' + c.color + '1f;color:' + c.color + ';border:1px solid ' + c.color + '55;border-radius:50px;padding:3px 12px;font-size:0.7rem;font-weight:700"><i class="fas ' + c.icon + '"></i> ' + c.label + '</span>' +
         '<h2 style="font-family:\'Playfair Display\',serif;font-size:1.6rem;color:#fff;margin:12px 0 14px">' + escapeResHotel(a.title || "") + '</h2>' +
         '<div style="font-size:0.95rem;color:var(--text-secondary);line-height:1.8">' + bodyHtml + '</div>' +
-        '<p style="font-size:0.72rem;color:var(--text-muted);margin-top:22px;border-top:1px solid var(--border);padding-top:12px"><i class="fas fa-circle-info"></i> Enfòmasyon jeneral — se pa yon konsèy medikal. Konsilte yon pwofesyonèl sante pou bezwen medikal.</p>' +
+        '<div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">' +
+            '<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px"><i class="fas fa-share-nodes"></i> Pataje atik sa a:</div>' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+                '<button onclick="shareArticle(\'' + a._id + '\',\'wa\')" style="background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.4);color:#25D366;border-radius:20px;padding:8px 16px;font-size:0.8rem;font-weight:600;cursor:pointer"><i class="fab fa-whatsapp"></i> WhatsApp</button>' +
+                '<button onclick="shareArticle(\'' + a._id + '\',\'more\')" style="background:rgba(255,255,255,0.06);border:1px solid var(--border);color:#fff;border-radius:20px;padding:8px 16px;font-size:0.8rem;font-weight:600;cursor:pointer"><i class="fas fa-share-nodes"></i> Lòt / Kopye lyen</button>' +
+            '</div>' +
+        '</div>' +
+        '<p style="font-size:0.72rem;color:var(--text-muted);margin-top:18px"><i class="fas fa-circle-info"></i> Enfòmasyon jeneral — se pa yon konsèy medikal. Konsilte yon pwofesyonèl sante pou bezwen medikal.</p>' +
         '</div>';
     document.body.appendChild(m);
     m.addEventListener("click", function (ev) { if (ev.target === m) cM("artM"); });
+    /* Compte une lecture (best effort). */
+    fetch("/.netlify/functions/article-stat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: a._id, action: "view" }) }).catch(function () {});
+}
+
+/* Partage d'un article hors de Bizen (WhatsApp ou natif/copie) + compteur. */
+function shareArticle(id, how) {
+    var a = _byennetArticles.filter(function (x) { return x._id === id; })[0] || {};
+    var url = "https://bizenht.com/atik/" + encodeURIComponent(id);   /* aperçu riche (og) via article-preview */
+    var txt = (a.title || "Atik Byennèt") + " — Espas Byennèt sou Bizen HT 💗\n" + url;
+    fetch("/.netlify/functions/article-stat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: id, action: "share" }) }).catch(function () {});
+    if (how === "wa") {
+        window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank", "noopener");
+    } else if (navigator.share) {
+        navigator.share({ title: a.title || "Bizen HT", text: (a.excerpt || ""), url: url }).catch(function () {});
+    } else {
+        try { navigator.clipboard.writeText(url); toast("Lyen kopye! Pataje l kote w vle.", "success"); }
+        catch (e) { window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank", "noopener"); }
+    }
 }
 
 function openEluProfile(btnOrUid) {
@@ -9078,9 +9119,10 @@ function renderNavIn(user) {
     /* Bouton Mesaj (accès direct depuis l'entête, avec badge de non-lus). */
     var msgBtn = document.createElement("button");
     msgBtn.className = "btn-nl";
-    msgBtn.style.cssText = "position:relative";
+    msgBtn.title = "Mesaj";
+    msgBtn.style.cssText = "position:relative;padding:8px 12px";
     msgBtn.onclick = function () { window.location.href = "/dashboard?msg=1"; };
-    msgBtn.innerHTML = '<i class="fas fa-comment-dots"></i> Mesaj <span id="navMsgBadge" style="display:none;position:absolute;top:-5px;right:-3px;background:#e91e63;color:#fff;font-size:0.6rem;font-weight:700;min-width:17px;height:17px;line-height:17px;text-align:center;border-radius:50px;padding:0 4px">0</span>';
+    msgBtn.innerHTML = '<i class="fas fa-comment-dots"></i><span id="navMsgBadge" style="display:none;position:absolute;top:-5px;right:-4px;background:#e91e63;color:#fff;font-size:0.6rem;font-weight:700;min-width:17px;height:17px;line-height:17px;text-align:center;border-radius:50px;padding:0 4px">0</span>';
     nb.appendChild(msgBtn);
     var dashBtn = document.createElement("button");
     dashBtn.className = "btn-nl";
