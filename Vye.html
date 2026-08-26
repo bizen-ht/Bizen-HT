@@ -2644,12 +2644,18 @@ function saveArticle() {
     var done = function () { if (btn) { btn.disabled = false; btn.style.opacity = "1"; } };
 
     function write(imageUrl) {
+        var isNew = !id;
         var data = { title: title, category: cat, excerpt: excerpt, imageUrl: imageUrl, body: body, published: published, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
         var p;
         if (id) { p = db.collection("articles").doc(id).set(data, { merge: true }); }
         else { data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); p = db.collection("articles").add(data); }
-        p.then(function () { done(); toast(id ? "Atik modifye!" : "Atik pibliye!", true); resetArticleForm(); loadArticlesAdmin(); })
-            .catch(function (e) { done(); toast("Erè: " + (e.message || e.code), false); });
+        p.then(function (ref) {
+            done(); toast(id ? "Atik modifye!" : "Atik pibliye!", true);
+            var newId = id || (ref && ref.id);
+            resetArticleForm(); loadArticlesAdmin();
+            /* Nouvel article publié -> propose de notifier les VIP. */
+            if (isNew && published && newId) notifyArticle(newId, title, excerpt);
+        }).catch(function (e) { done(); toast("Erè: " + (e.message || e.code), false); });
     }
 
     var fileInput = document.getElementById("artImageFile");
@@ -2661,6 +2667,25 @@ function saveArticle() {
     } else {
         write(urlField);   /* pas de nouveau fichier -> on garde l'URL existante/saisie */
     }
+}
+
+/* Notifie les VIP (push) qu'un nouvel article est publié. Réutilise broadcast. */
+function notifyArticle(articleId, title, excerpt) {
+    if (!auth || !auth.currentUser) return;
+    if (!confirm("Voye yon notifikasyon bay tout VIP yo sou atik sa a?")) return;
+    auth.currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/broadcast", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                idToken: idToken, segment: "users",
+                title: "📖 " + (title || "Nouvo atik"),
+                message: (excerpt || "Yon nouvo atik disponib nan Espas Byennèt sou Bizen HT."),
+                link: "/atik/" + articleId
+            })
+        });
+    }).then(function (r) { return r.json(); }).then(function (d) {
+        toast(d.success ? ("Notifikasyon voye bay " + (d.sent || 0) + " moun.") : ("Erè: " + (d.error || "")), !!d.success);
+    }).catch(function (e) { toast("Erè notif: " + (e.message || e.code), false); });
 }
 
 function resetArticleForm() {

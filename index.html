@@ -4092,6 +4092,9 @@ function renderRealFreelancers() {
 
             /* Zones RÉELLES des Elu FEMMES -> filtre dynamique (clé -> libellé) */
             var femZones = {};
+            /* TOUTES les zones où il y a des Elu (tous genres) -> sélecteur de zone
+               au moment de la réservation (libellé canonique). */
+            var allEluZones = {};
             /* Agences présentes chez les Elu FEMMES -> titres cliquables (slug -> nom) */
             var femAgencies = {};
             /* Cartes collectées puis triées par rang admin (sortRank). */
@@ -4115,6 +4118,8 @@ function renderRealFreelancers() {
                 var locKey = zc.key;
                 /* Une zone entre dans le filtre dès qu'une vraie Elu femme l'a comme adresse */
                 if (!male && locKey) femZones[locKey] = zc.label;
+                /* Toutes zones (tous genres) pour le sélecteur de réservation */
+                if (zc.label) allEluZones[zc.label] = 1;
 
                 var disc = eluDiscount(d);
                 var cardData = {
@@ -4175,6 +4180,8 @@ function renderRealFreelancers() {
 
             /* Reconstruit le filtre de zones FEMMES à partir des vraies Elu */
             try { rebuildFemFilter(femZones); } catch(e) {}
+            /* Remplit le sélecteur de zone de la réservation (toutes zones d'Elu) */
+            try { populateResCities(allEluZones); } catch(e) {}
 
             /* Titres cliquables des groupes/agences (sous les filtres de zones) */
             try { renderAgencyTitles(femAgencies); } catch(e) {}
@@ -5364,6 +5371,20 @@ function calcKreyComm() {
 var selectedHotel = null;
 var useCustomHotel = false;   /* l'utilisateur saisit son propre hôtel (à ses frais) */
 
+/* Remplit le sélecteur de zone de la réservation avec TOUTES les zones où il y a
+   des Elu (libellés canoniques). Se met à jour à chaque render (nouvelle zone incluse). */
+function populateResCities(zonesMap) {
+    var sel = document.getElementById("resCity");
+    if (!sel) return;
+    var labels = Object.keys(zonesMap || {}).filter(function (z) { return z && z.trim(); }).sort(function (a, b) { return a.localeCompare(b); });
+    if (!labels.length) return;   /* rien -> on garde les options existantes */
+    var cur = sel.value;
+    var h = '<option value="">Chwazi vil ou...</option>';
+    labels.forEach(function (z) { h += '<option value="' + z.replace(/"/g, "&quot;") + '">' + z + '</option>'; });
+    sel.innerHTML = h;
+    if (cur && labels.indexOf(cur) !== -1) sel.value = cur;   /* conserve la sélection */
+}
+
 function showHotel() {
     var cityEl = document.getElementById("resCity");
     var picker = document.getElementById("hotelPicker");
@@ -5384,17 +5405,21 @@ function showHotel() {
 
     listEl.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;padding:8px 0">Chajman hotels...</p>';
 
+    /* Matching par CLÉ CANONIQUE : les hôtels peuvent être enregistrés en slug
+       (potoprens) ou en libellé (Pòtoprens) — on normalise les 2 côtés. */
+    var wantKey = zoneCanonical(val).key;
+
     if (!db) {
         /* Fallback statique si Firebase indisponible */
-        var fb = hotels[val];
-        if (fb) { renderHotelChoices([{ id: "static", name: fb.name, address: fb.addr, description: fb.dist, logoUrl: "", images: [] }]); }
-        else { renderHotelChoices([]); }
+        var fb = null;
+        for (var k in hotels) { if (Object.prototype.hasOwnProperty.call(hotels, k) && zoneCanonical(k).key === wantKey) { fb = hotels[k]; break; } }
+        renderHotelChoices(fb ? [{ id: "static", name: fb.name, address: fb.addr, description: fb.dist, logoUrl: "", images: [] }] : []);
         return;
     }
 
-    db.collection("hotels").where("zone", "==", val).get().then(function(snap) {
+    db.collection("hotels").get().then(function(snap) {
         var list = [];
-        snap.forEach(function(doc) { var d = doc.data(); d.id = doc.id; list.push(d); });
+        snap.forEach(function(doc) { var d = doc.data(); d.id = doc.id; if (zoneCanonical(d.zone).key === wantKey) list.push(d); });
         renderHotelChoices(list);
     }).catch(function(e) {
         console.warn("showHotel:", e.code);
