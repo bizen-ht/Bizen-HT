@@ -1232,10 +1232,19 @@
         <div class="pg" id="pg-prem">
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-crown" style="color:var(--gold)"></i> Manm Premium</h1>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <label style="font-size:0.78rem;color:#6a6a80">Dat peman:</label>
+                    <input type="date" id="premDateFilter" onchange="renderPremRows()" style="background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:8px 10px;font-size:0.82rem">
+                    <button onclick="clearPremDate()" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:8px 14px;font-size:0.8rem;cursor:pointer"><i class="fas fa-rotate-left"></i> Tout</button>
+                    <select id="premSort" onchange="renderPremRows()" style="background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:8px 10px;font-size:0.82rem">
+                        <option value="desc">Pi resan an premye</option>
+                        <option value="asc">Pi ansyen an premye</option>
+                    </select>
+                </div>
             </div>
             <div class="tc">
                 <div class="tc-head">
-                    <div class="tc-title"><i class="fas fa-crown"></i> Tout Manm Premium</div>
+                    <div class="tc-title"><i class="fas fa-crown"></i> <span id="premCountLbl">Tout Manm Premium</span></div>
                 </div>
                 <div class="tscroll">
                     <table>
@@ -2991,25 +3000,50 @@ function renderPendingTable(list) {
     tb.innerHTML = h;
 }
 
+/* Date de "paiement premium" d'un membre (activation), avec repli sur createdAt. */
+function premMemberDate(u) {
+    if (u.premiumActivatedAt && u.premiumActivatedAt.toDate) return u.premiumActivatedAt.toDate();
+    if (u.createdAt && u.createdAt.toDate) return u.createdAt.toDate();
+    return null;
+}
+function ymdLocal(dt) {
+    if (!dt) return "";
+    return dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2) + "-" + ("0" + dt.getDate()).slice(-2);
+}
+
 function renderPremiumTable(list) {
+    window._premList = list || [];
+    renderPremRows();
+}
+
+function clearPremDate() {
+    var d = document.getElementById("premDateFilter"); if (d) d.value = "";
+    renderPremRows();
+}
+
+/* Rend le tableau des membres premium : filtre par DATE de paiement + tri. */
+function renderPremRows() {
     var tb = document.getElementById("tbPr");
     if (!tb) return;
+    var list = (window._premList || []).slice();
+    var dateF = (document.getElementById("premDateFilter") || {}).value || "";
+    var sortDir = (document.getElementById("premSort") || {}).value || "desc";
 
-    if (!list.length) {
-        tb.innerHTML = emptyRow(5, "Pa gen manm Premium anko");
-        return;
-    }
+    if (dateF) list = list.filter(function (u) { return ymdLocal(premMemberDate(u)) === dateF; });
+    list.sort(function (a, b) {
+        var ta = premMemberDate(a) ? premMemberDate(a).getTime() : 0;
+        var tbb = premMemberDate(b) ? premMemberDate(b).getTime() : 0;
+        return sortDir === "asc" ? ta - tbb : tbb - ta;
+    });
+
+    var lbl = document.getElementById("premCountLbl");
+    if (lbl) lbl.textContent = (dateF ? ("Manm Premium — " + dateF) : "Tout Manm Premium") + " (" + list.length + ")";
+
+    if (!list.length) { tb.innerHTML = emptyRow(5, dateF ? "Pa gen manm premium nan dat sa a" : "Pa gen manm Premium anko"); return; }
 
     var h = "";
-    list.forEach(function(u) {
-        var date = fmtDate(
-            u.premiumActivatedAt && u.premiumActivatedAt.toDate
-                ? u.premiumActivatedAt.toDate()
-                : u.createdAt && u.createdAt.toDate
-                    ? u.createdAt.toDate()
-                    : null
-        );
-
+    list.forEach(function (u) {
+        var date = fmtDate(premMemberDate(u));
         h += '<tr>';
         h += '<td><strong>' + (u.prenom || '') + ' ' + (u.nom || '') + '</strong></td>';
         h += '<td>' + (u.email || 'N/A') + '</td>';
@@ -3019,7 +3053,6 @@ function renderPremiumTable(list) {
             ? actBtn("ab-ufrz", "admAction('unfreeze','" + u.id + "')", "fa-check", "Debloke")
             : actBtn("ab-frz", "admAction('freeze','" + u.id + "')", "fa-ban", "Jele")) + '</td></tr>';
     });
-
     tb.innerHTML = h;
 }
 
