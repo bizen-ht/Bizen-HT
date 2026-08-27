@@ -7884,7 +7884,7 @@ function startEluBooking(uid, name, price, priceType) {
     var noHotel = (window._eluProfileHotelNotIncluded === true)
         || isNoHotelZone(eluLoc) || eluZones.some(function(z){ return isNoHotelZone(z); });
     window._bookingNoHotel = noHotel;
-    bookingTarget = { uid: uid, name: name, price: price, zones: eluZones, noHotel: noHotel, priceType: priceType };
+    bookingTarget = { uid: uid, name: name, price: price, zones: eluZones, loc: eluLoc, noHotel: noHotel, priceType: priceType };
     cM("eluProfM");
     /* Pré-remplit la modale de réservation */
     var typeLabel = priceType === "domi" ? " · Domi 🌙" : " · Moman";
@@ -7984,17 +7984,20 @@ function confirmRes() {
     }
 
     /* === VÉRIFICATION DE ZONE ===
-       Si l'Elu a défini des zones, la ville choisie doit y figurer.
-       (Les valeurs du select diffèrent des noms de zones => table de correspondance) */
-    var cityToZone = {
-        potoprens: "Potoprens", petyonvil: "Petion-Ville", delmas: "Delmas",
-        Tabarre: "Tabarre", carrefour: "carrefour", gonaives: "Gonaives",
-        "Route de freres": "Route de freres"
-    };
-    var chosenZone = cityToZone[city.value] || city.value;
-    var eluZones = (bookingTarget && bookingTarget.zones) ? bookingTarget.zones : [];
-    if (eluZones.length > 0 && eluZones.indexOf(chosenZone) === -1) {
-        showOk("Zòn pa disponib", nm + " pa kouvri zòn \"" + chosenZone + "\". Zòn li ka ale: " + eluZones.join(", ") + ". Tanpri chwazi yon lòt zòn.");
+       Les zones autorisées = la LOCALISATION de l'Elu (là où elle se trouve) +
+       ses zones de couverture. La comparaison se fait par CLÉ CANONIQUE (résiste
+       aux différences de format : "Cap-Haïtien" vs "cap haitien", etc.). */
+    var chosenZone = city.value;
+    var chosenKey = zoneCanonical(chosenZone).key;
+    var eluZones = (bookingTarget && bookingTarget.zones) ? bookingTarget.zones : (window._eluProfileZones || []);
+    var eluLoc = (bookingTarget && bookingTarget.loc) ? bookingTarget.loc : (window._eluProfileLoc || "");
+    var allowedKeys = {}, allowedLabels = [];
+    if (eluLoc) { allowedKeys[zoneCanonical(eluLoc).key] = 1; allowedLabels.push(eluLoc); }
+    eluZones.forEach(function (z) { if (z) { allowedKeys[zoneCanonical(z).key] = 1; if (allowedLabels.indexOf(z) === -1) allowedLabels.push(z); } });
+    /* On bloque seulement si l'Elu a défini au moins une zone/loc ET que la zone
+       choisie n'en fait pas partie. */
+    if (allowedLabels.length > 0 && !allowedKeys[chosenKey]) {
+        showOk("Zòn pa disponib", nm + " pa kouvri zòn \"" + chosenZone + "\". Zòn li ka ale: " + allowedLabels.join(", ") + ". Tanpri chwazi yon lòt zòn.");
         return;
     }
 
