@@ -3631,8 +3631,9 @@ function loadVedettes() {
                 var prix = (p.prixMoment || 0).toLocaleString();
                 var loc = escapeResHotel(p.localisation || "Ayiti");
                 var male = (p.genre === "homme" || p.genre === "gason");
-                var genderIcon = male ? "fa-mars" : "fa-venus";
-                var genderLabel = male ? "Gason" : "Fanm";
+                var _isBi = (p.genre === "biseksyel");
+                var genderIcon = male ? "fa-mars" : (_isBi ? "fa-venus-mars" : "fa-venus");
+                var genderLabel = male ? "Gason" : (_isBi ? "Biseksyèl" : "Fanm");
                 var photo = "";
                 var photoUrl = p.photoUrl || p.photoURL || (p.photos && p.photos[0]) || "";
                 if (photoUrl) {
@@ -4149,7 +4150,8 @@ function renderRealFreelancers() {
                     genreCat: genreCat
                 };
 
-                var cardHtml = mkCard(cardData, male ? "Gason" : "Fanm", male);
+                var typeBadge = genreCat === "gason" ? "Gason" : (genreCat === "biseksyel" ? "Biseksyèl" : "Fanm");
+                var cardHtml = mkCard(cardData, typeBadge, male);
                 var _item = {
                     html: cardHtml,
                     rank: (typeof d.sortRank === "number" ? d.sortRank : 0),
@@ -7425,6 +7427,12 @@ function openEluProfile(btnOrUid) {
         h += onlineHtml + '</div></div>';
         h += '<div style="margin-bottom:12px">' + ratingHtml + '</div>';
         h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;color:#f48fb1;font-size:0.9rem"><i class="fas fa-map-marker-alt"></i> ' + (d.localisation || "Ayiti") + '</div>';
+        /* Sexe (Fanm / Gason / Biseksyèl) — visible par les VIP */
+        var _pg = d.genre;
+        var _gLabel = (_pg === "homme" || _pg === "gason") ? "Gason" : (_pg === "biseksyel" ? "Biseksyèl" : "Fanm");
+        var _gIcon = (_pg === "homme" || _pg === "gason") ? "fa-mars" : (_pg === "biseksyel" ? "fa-venus-mars" : "fa-venus");
+        var _gColor = (_pg === "biseksyel") ? "#b388ff" : ((_pg === "homme" || _pg === "gason") ? "#64b5f6" : "#f48fb1");
+        h += '<div style="display:inline-flex;align-items:center;gap:6px;margin-bottom:12px;font-size:0.8rem;font-weight:600;color:' + _gColor + ';background:' + _gColor + '1a;border:1px solid ' + _gColor + '55;border-radius:50px;padding:3px 12px"><i class="fas ' + _gIcon + '"></i> ' + _gLabel + '</div>';
         /* Description : complète pour les Premium ; 1 ligne visible + reste flou pour les gratuits. */
         var descFull = d.description || "";
         if (descFull) {

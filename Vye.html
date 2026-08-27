@@ -1084,6 +1084,13 @@
                         </div>
                         <div id="orderListGason" class="ord-list" data-genre="gason"></div>
                     </div>
+                    <div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                            <h3 style="font-size:0.95rem;color:#b388ff;margin:0"><i class="fas fa-venus-mars"></i> Biseksyèl</h3>
+                            <button onclick="saveEluOrder('biseksyel')" style="background:linear-gradient(135deg,#9c27b0,#673ab7);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:0.76rem"><i class="fas fa-save"></i> Sove lòd la</button>
+                        </div>
+                        <div id="orderListBiseksyel" class="ord-list" data-genre="biseksyel"></div>
+                    </div>
                 </div>
             </div>
             <div class="tc">
@@ -2764,7 +2771,9 @@ function deleteArticle(id) {
    devient déterministe (le catalogue trie par sortRank décroissant).
    ==================================== */
 var _ordDragEl = null;
-function isFanm(g) { return !(g === "homme" || g === "gason"); }
+function isMaleG(g) { return (g === "homme" || g === "gason"); }
+function isBiG(g) { return (g === "biseksyel"); }
+function isFanm(g) { return !isMaleG(g) && !isBiG(g); }   /* fanm = ni homme/gason ni bisexuel */
 
 function toggleEluOrderPanel() {
     var panel = document.getElementById("eluOrderPanel");
@@ -2779,12 +2788,14 @@ function toggleEluOrderPanel() {
 function renderEluOrderLists() {
     var listF = document.getElementById("orderListFanm");
     var listG = document.getElementById("orderListGason");
+    var listB = document.getElementById("orderListBiseksyel");
     if (!listF || !listG) return;
 
     /* Seuls les Elu ACTIFS apparaissent sur le site => on ne classe qu'eux. */
     var actives = (adminFL || []).filter(function (f) { return f.status === "active"; });
     var fanm = actives.filter(function (f) { return isFanm(f.genre); });
-    var gason = actives.filter(function (f) { return !isFanm(f.genre); });
+    var gason = actives.filter(function (f) { return isMaleG(f.genre); });
+    var bi = actives.filter(function (f) { return isBiG(f.genre); });
 
     /* Tri initial = ordre actuel du site (sortRank décroissant, puis nom). */
     var byRank = function (a, b) {
@@ -2795,13 +2806,17 @@ function renderEluOrderLists() {
     };
     fanm.sort(byRank);
     gason.sort(byRank);
+    bi.sort(byRank);
 
     listF.innerHTML = fanm.map(ordItemHtml).join("") || '<div style="color:#6a6a80;font-size:0.8rem;padding:12px;text-align:center">Pa gen Elu fanm aktif.</div>';
     listG.innerHTML = gason.map(ordItemHtml).join("") || '<div style="color:#6a6a80;font-size:0.8rem;padding:12px;text-align:center">Pa gen Elu gason aktif.</div>';
+    if (listB) listB.innerHTML = bi.map(ordItemHtml).join("") || '<div style="color:#6a6a80;font-size:0.8rem;padding:12px;text-align:center">Pa gen Elu biseksyèl aktif.</div>';
     attachOrdHandlers(listF);
     attachOrdHandlers(listG);
+    if (listB) attachOrdHandlers(listB);
     refreshOrdNumbers(listF);
     refreshOrdNumbers(listG);
+    if (listB) refreshOrdNumbers(listB);
 }
 
 function ordItemHtml(f) {
@@ -2857,7 +2872,7 @@ function ordAfterElement(list, y) {
 
 function saveEluOrder(genre) {
     if (!db) return;
-    var listId = (genre === "fanm") ? "orderListFanm" : "orderListGason";
+    var listId = (genre === "fanm") ? "orderListFanm" : (genre === "biseksyel" ? "orderListBiseksyel" : "orderListGason");
     var list = document.getElementById(listId);
     if (!list) return;
     var ids = Array.prototype.slice.call(list.querySelectorAll(".ord-item")).map(function (it) { return it.getAttribute("data-id"); });
@@ -2873,7 +2888,7 @@ function saveEluOrder(genre) {
         batch.set(db.collection("publicProfiles").doc(id), { sortRank: rank }, { merge: true });
     });
     batch.commit().then(function () {
-        toast("Lòd " + (genre === "fanm" ? "Fanm" : "Gason") + " sove! Sit la ap respekte lòd sa a.", true);
+        toast("Lòd " + (genre === "fanm" ? "Fanm" : (genre === "biseksyel" ? "Biseksyèl" : "Gason")) + " sove! Sit la ap respekte lòd sa a.", true);
     }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
 }
 
@@ -2895,7 +2910,7 @@ function renderFLTable(list) {
         var fAmb = f.ambassadorCode ? ' <span class="sbadge" style="background:rgba(255,152,0,0.15);color:#ff9800;border:1px solid rgba(255,152,0,0.4)" title="Referans anbasadè: ' + escHtml(f.ambassadorCode) + '"><i class="fas fa-medal"></i> ' + escHtml(f.ambassadorCode) + '</span>' : '';
         h += '<tr data-filter="' + (f.status || '') + '" data-test="' + (f.isTest ? '1' : '0') + '">';
         h += '<td><strong>' + escHtml(f.prenom || '') + ' ' + escHtml(f.nom || '') + '</strong>' + fTest + fAmb + '<br><small style="color:#6a6a80">' + escHtml(f.email || '') + '</small></td>';
-        h += '<td>' + (f.genre === "femme" ? "Fanm" : (f.genre === "fanm" ? "Fanm" : "Gason")) + '</td>';
+        h += '<td>' + (f.genre === "biseksyel" ? "Biseksyèl" : ((f.genre === "homme" || f.genre === "gason") ? "Gason" : "Fanm")) + '</td>';
         h += '<td>' + escHtml(f.localisation || 'N/A') + '</td>';
         h += '<td>' + ((f.prixMoment || 0).toLocaleString()) + ' G</td>';
         /* Solde = net (90%) des rezevasyon KONFIME pa ankò peye — kalkile depi rezevasyon yo. */
