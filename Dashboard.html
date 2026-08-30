@@ -3670,14 +3670,15 @@ function submitRating(reservationId, prestateId) {
     var btn = document.getElementById("rateSend_" + reservationId);
     if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
 
-    /* Une seule note par réservation (doc id = reservationId) */
+    /* Une seule note par réservation (doc id = reservationId). set(merge:true) =>
+       le VIP peut créer OU mettre à jour sa note sans erreur. */
     db.collection("ratings").doc(reservationId).set({
         reservationId: reservationId,
         prestateId: prestateId,
         userId: currentUser.uid,
         stars: stars,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function() {
+    }, { merge: true }).then(function() {
         showToast("Mèsi! Ou bay " + stars + " zetwal.", "success");
         /* Remplace l'UI par la note donnée */
         var wrap = box ? box.parentElement : null;
@@ -3687,7 +3688,11 @@ function submitRating(reservationId, prestateId) {
         }
     }).catch(function(e) {
         if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
-        showToast("Ou deja note rezevasyon sa a.", "error");
+        console.warn("submitRating:", e && (e.code || e.message));
+        var m = (e && e.code === "permission-denied")
+            ? "Nòt la pa pase (pèmisyon). Rechaje paj la epi eseye ankò."
+            : "Nòt la pa pase: " + ((e && (e.code || e.message)) || "erè rezo") + ". Eseye ankò.";
+        showToast(m, "error");
     });
 }
 

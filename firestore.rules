@@ -72,8 +72,15 @@ service cloud.firestore {
        Créables par un utilisateur connecté ; non modifiables ensuite. */
     match /ratings/{ratingId} {
       allow read:   if true;
-      allow create: if isSignedIn();
-      allow update, delete: if isAdmin();
+      /* Le VIP crée SA note (userId = lui). L'admin peut aussi créer (notes admin). */
+      allow create: if isAdmin()
+        || (isSignedIn() && request.resource.data.userId == request.auth.uid);
+      /* Le VIP peut METTRE À JOUR sa propre note (doc id = reservationId => .set()
+         idempotent, il peut re-noter/corriger). L'admin peut tout. */
+      allow update: if isAdmin()
+        || (isSignedIn() && resource.data.userId == request.auth.uid
+            && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin();
     }
 
     /* -------- AVIS GLOBAUX DU SITE (siteReviews) --------
