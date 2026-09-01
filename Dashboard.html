@@ -981,8 +981,10 @@
                     <select id="demLookingFor" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 13px;font-size:0.9rem">
                         <option value="fanm">Fanm</option>
                         <option value="gason">Gason</option>
-                        <option value="tou">Tou de (pa enpòtan)</option>
+                        <option value="biseksyel">Biseksyèl</option>
+                        <option value="tou">Tout (pa enpòtan)</option>
                     </select>
+                    <p style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">Se sèlman Elu nan kategori sa a k ap wè demann ou.</p>
                 </div>
                 <div style="margin-bottom:6px">
                     <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px">Sa w ap chèche</label>
@@ -4331,7 +4333,7 @@ function loadMyDemann() {
         });
         if (!active.length) { box.style.display = "none"; box.innerHTML = ""; return; }
         var x = active[0];
-        var lf = x.lookingFor === "gason" ? "Gason" : (x.lookingFor === "fanm" ? "Fanm" : "Tou de");
+        var lf = x.lookingFor === "gason" ? "Gason" : (x.lookingFor === "fanm" ? "Fanm" : (x.lookingFor === "biseksyel" ? "Biseksyèl" : "Tout"));
         box.style.display = "block";
         box.innerHTML = '<div style="background:var(--bg-card);border:1px solid rgba(233,30,99,0.35);border-radius:var(--radius-lg);padding:18px 20px">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px"><strong style="color:#f48fb1"><i class="fas fa-bullhorn"></i> Demann aktif ou</strong>' +
@@ -4378,15 +4380,17 @@ function loadFlDemann() {
       .then(function (snap) {
         var now = Date.now();
         var zs = eluZoneSet();
-        var isFanmElu = userData && !(userData.genre === "homme" || userData.genre === "gason");
+        /* Catégorie de genre de l'Elu (fanm | gason | biseksyel). */
+        var _g = userData ? userData.genre : "";
+        var eluCat = (_g === "homme" || _g === "gason") ? "gason" : (_g === "biseksyel" ? "biseksyel" : "fanm");
         var rows = [];
         snap.forEach(function (d) {
             var x = d.data(); x._id = d.id;
             var exp = x.expiresAt && x.expiresAt.toMillis ? x.expiresAt.toMillis() : 0;
             if (exp <= now) return;
             if (!zs[String(x.zone || "").toLowerCase().trim()]) return;   /* zone match */
-            if (x.lookingFor === "fanm" && !isFanmElu) return;            /* préférence genre */
-            if (x.lookingFor === "gason" && isFanmElu) return;
+            /* Ciblage genre : seul l'Elu de la catégorie visée voit la demande. */
+            if (x.lookingFor && x.lookingFor !== "tou" && x.lookingFor !== eluCat) return;
             rows.push(x);
         });
         rows.sort(function (a, b) {
@@ -4411,7 +4415,7 @@ function loadFlDemann() {
         var h = "";
         rows.forEach(function (x) {
             var replied = (x.repliedBy || []).indexOf(currentUser.uid) !== -1;
-            var lf = x.lookingFor === "gason" ? "Gason" : (x.lookingFor === "fanm" ? "Fanm" : "Tou de");
+            var lf = x.lookingFor === "gason" ? "Gason" : (x.lookingFor === "fanm" ? "Fanm" : (x.lookingFor === "biseksyel" ? "Biseksyèl" : "Tout"));
             h += '<div data-demand-id="' + x._id + '" style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px">' +
                 '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0"><i class="fas fa-user"></i></div>' +
                 '<div style="min-width:0"><div style="font-weight:600;color:#fff">' + escDash(x.vipPseudo || "VIP") + '</div>' +

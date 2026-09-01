@@ -67,7 +67,8 @@ exports.handler = async function (event) {
         /* ---------- 1) PUBLIER UNE DEMANDE (VIP Premium) ---------- */
         if (action === "post") {
             var zone = (body.zone || "").toString().trim().slice(0, 60);
-            var lookingFor = (body.lookingFor === "gason") ? "gason" : (body.lookingFor === "fanm" ? "fanm" : "tou");
+            var _lf = body.lookingFor;
+            var lookingFor = (_lf === "gason") ? "gason" : (_lf === "biseksyel") ? "biseksyel" : (_lf === "fanm") ? "fanm" : "tou";
             var rawText = (body.text || "").toString().trim().slice(0, 300);
             if (!zone) return err(400, "Chwazi yon zòn.");
             if (!rawText) return err(400, "Ekri sa w ap chèche.");
@@ -111,9 +112,9 @@ exports.handler = async function (event) {
                 var targetUids = [];
                 pcSnap.forEach(function (d) {
                     var p = d.data();
-                    var isFanm = !(p.genre === "homme" || p.genre === "gason");
-                    if (lookingFor === "fanm" && !isFanm) return;
-                    if (lookingFor === "gason" && isFanm) return;
+                    /* Catégorie de genre de l'Elu (fanm | gason | biseksyel). */
+                    var eluCat = (p.genre === "homme" || p.genre === "gason") ? "gason" : (p.genre === "biseksyel" ? "biseksyel" : "fanm");
+                    if (lookingFor !== "tou" && lookingFor !== eluCat) return;   /* ciblage genre */
                     var zs = {};
                     (p.zones || []).forEach(function (z) { if (z) zs[String(z).toLowerCase().trim()] = 1; });
                     if (p.localisation) zs[String(p.localisation).toLowerCase().trim()] = 1;

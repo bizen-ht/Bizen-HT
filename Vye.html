@@ -3523,6 +3523,25 @@ function loadCommissions() {
 /* ====================================
    ADMIN ACTIONS
    ==================================== */
+/* Réinitialise le mot de passe d'un VIP/Elu (pour ceux qui l'ont oublié et ne
+   peuvent pas utiliser le lien « bliye modpas »). Via fonction admin (Admin SDK). */
+function adminResetPassword(uid) {
+    if (!auth || !auth.currentUser) { alert("Sesyon admin pa valab."); return; }
+    var pw = prompt("Antre yon NOUVO modpas pou kont sa a (omwen 6 karaktè).\nApre sa, bay itilizatè a modpas la:", "");
+    if (pw === null) return;
+    pw = pw.trim();
+    if (pw.length < 6) { toast("Modpas dwe gen omwen 6 karaktè.", false); return; }
+    auth.currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/admin-set-password", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, targetUid: uid, newPassword: pw })
+        });
+    }).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d.success) throw new Error(d.error || "Erè");
+        toast("Modpas chanje! Bay itilizatè a nouvo modpas la.", true);
+    }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+}
+
 function admAction(action, uid) {
     if (!db) return;
 
@@ -6463,6 +6482,7 @@ function viewAccountDetail(uid) {
     if (user.status === "en_attente") {
         actions.innerHTML += actBtn("ab-app", "admAction('approve','" + uid + "');closeDetailModal()", "fa-check", "Apwouve");
     }
+    actions.innerHTML += actBtn("ab-viw", "adminResetPassword('" + uid + "')", "fa-key", "Chanje modpas");
     actions.innerHTML += actBtn("ab-del", "admAction('delete','" + uid + "');closeDetailModal()", "fa-trash", "Efase Kont");
 
     modal.classList.add("show");
