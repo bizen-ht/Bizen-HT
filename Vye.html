@@ -1451,6 +1451,13 @@
                     <div class="fs">Komisyon + Membership</div>
                 </div>
             </div>
+            <!-- Filtre par date personnalisée -->
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:14px;background:rgba(255,255,255,0.03);border:1px solid #2a2a3a;border-radius:10px;padding:12px 14px">
+                <div><label style="display:block;font-size:0.72rem;color:#6a6a80;margin-bottom:4px">Depi</label><input type="date" id="finFrom" style="background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:9px 12px;font-size:0.85rem"></div>
+                <div><label style="display:block;font-size:0.72rem;color:#6a6a80;margin-bottom:4px">Jiska</label><input type="date" id="finTo" style="background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:9px 12px;font-size:0.85rem"></div>
+                <button onclick="applyFinCustom()" style="background:linear-gradient(135deg,#4caf50,#2e7d32);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:600;font-size:0.83rem;cursor:pointer"><i class="fas fa-filter"></i> Aplike</button>
+                <span id="finPeriodLbl" style="font-size:0.78rem;color:#6a6a80;align-self:center"></span>
+            </div>
             <div class="tc" style="margin-top:22px">
                 <div class="tc-head">
                     <div class="tc-title"><i class="fas fa-file-download"></i> Telechaje Rapò</div>
@@ -1478,11 +1485,25 @@
         <div class="pg" id="pg-comm">
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-percentage" style="color:var(--purple)"></i> Komisyon Elu</h1>
+                <div class="tc-filters">
+                    <button class="tf active" onclick="loadCommForPeriod('all',this)">Tout</button>
+                    <button class="tf" onclick="loadCommForPeriod('day',this)">Jou</button>
+                    <button class="tf" onclick="loadCommForPeriod('week',this)">Semèn</button>
+                    <button class="tf" onclick="loadCommForPeriod('month',this)">Mwa</button>
+                    <button class="tf" onclick="loadCommForPeriod('year',this)">Ane</button>
+                </div>
             </div>
             <div class="fg">
                 <div class="fc"><h4><i class="fas fa-coins"></i> Grand Total Komisyon Bizen</h4><div class="fv" style="color:var(--gold)" id="commGrandTotal">0 G</div><div class="fs">10% sou rezevasyon KONFIME</div></div>
                 <div class="fc"><h4><i class="fas fa-hand-holding-usd"></i> Total Net Elu</h4><div class="fv" style="color:var(--green)" id="commGrandNet">0 G</div><div class="fs">90% pou Elu yo</div></div>
                 <div class="fc"><h4><i class="fas fa-wallet"></i> Solde Total Dû</h4><div class="fv" style="color:var(--gold,#ffd700)" id="commGrandSolde">0 G</div><div class="fs">Poko peye Elu yo</div></div>
+            </div>
+            <!-- Filtre par date personnalisée -->
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:14px;background:rgba(255,255,255,0.03);border:1px solid #2a2a3a;border-radius:10px;padding:12px 14px">
+                <div><label style="display:block;font-size:0.72rem;color:#6a6a80;margin-bottom:4px">Depi</label><input type="date" id="commFrom" style="background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:9px 12px;font-size:0.85rem"></div>
+                <div><label style="display:block;font-size:0.72rem;color:#6a6a80;margin-bottom:4px">Jiska</label><input type="date" id="commTo" style="background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:9px 12px;font-size:0.85rem"></div>
+                <button onclick="applyCommCustom()" style="background:linear-gradient(135deg,#4caf50,#2e7d32);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:600;font-size:0.83rem;cursor:pointer"><i class="fas fa-filter"></i> Aplike</button>
+                <span id="commPeriodLbl" style="font-size:0.78rem;color:#6a6a80;align-self:center"></span>
             </div>
             <div class="tc">
                 <div class="tc-head">
@@ -3292,11 +3313,34 @@ function renderPayTable(list) {
    LOAD FINANCE
    ==================================== */
 var _finPeriod = "all";   /* période active des KPI finance (Tout/Semèn/Mwa) */
+var _finCustom = null;    /* plage de dates personnalisée (prioritaire) */
+
+/* Construit une plage {start,end,label} à partir de 2 dates YYYY-MM-DD. */
+function customRange(fromStr, toStr) {
+    var s = fromStr ? new Date(fromStr + "T00:00:00") : new Date(0);
+    var e = toStr ? new Date(toStr + "T23:59:59") : new Date();
+    var fmt = function (x) { try { return new Date(x + "T00:00:00").toLocaleDateString("fr-FR"); } catch (z) { return x; } };
+    return { start: s, end: e, label: (fromStr ? fmt(fromStr) : "…") + " → " + (toStr ? fmt(toStr) : "jodi a") };
+}
+
+function applyFinCustom() {
+    var f = (document.getElementById("finFrom") || {}).value || "";
+    var t = (document.getElementById("finTo") || {}).value || "";
+    if (!f && !t) { toast("Chwazi omwen yon dat.", false); return; }
+    _finCustom = customRange(f, t);
+    /* désactive les boutons préréglés */
+    var btns = document.querySelectorAll("#pg-fin .tc-filters .tf");
+    btns.forEach(function (b) { b.classList.remove("active"); });
+    var lbl = document.getElementById("finPeriodLbl"); if (lbl) lbl.textContent = "Peryòd: " + _finCustom.label;
+    loadFinance();
+}
 
 function loadFinance(period) {
     if (!db) return;
-    if (period) _finPeriod = period;
-    var range = repRange(_finPeriod);
+    if (period) { _finPeriod = period; _finCustom = null; }
+    var range = _finCustom || repRange(_finPeriod);
+    var lbl = document.getElementById("finPeriodLbl");
+    if (lbl && !_finCustom) lbl.textContent = "";
 
     var totalReservations = 0;
     var totalCommission = 0;
@@ -3389,10 +3433,11 @@ function loadRecent() {
    ==================================== */
 /* Stats par Elu à partir des réservations CONFIRMÉES uniquement (clé = prestateId).
    solde = net (90%) pas encore versé à l'Elu (paidOut != true). */
-function buildEluResStats() {
+function buildEluResStats(range) {
     var map = {};
     (adminRes || []).forEach(function (r) {
         if (r.status !== "confirmed") return;   /* SEULEMENT les confirmées */
+        if (range && !repInRange(r, range)) return;   /* filtre par période (optionnel) */
         var id = r.prestateId || ("nm:" + (r.prestateName || "?"));
         var price = parseInt(String(r.price || r.amount || "0").replace(/[^0-9]/g, "")) || 0;
         var net = Math.round(price * 0.90);
@@ -3407,11 +3452,41 @@ function buildEluResStats() {
     return map;
 }
 
+var _commPeriod = "all";   /* période active de la table commissions */
+var _commCustom = null;
+
+function loadCommForPeriod(period, btn) {
+    _commPeriod = period; _commCustom = null;
+    if (btn) {
+        var sibs = btn.parentElement.querySelectorAll(".tf");
+        sibs.forEach(function (s) { s.classList.remove("active"); });
+        btn.classList.add("active");
+    }
+    var lbl = document.getElementById("commPeriodLbl"); if (lbl) lbl.textContent = "";
+    loadCommissions();
+}
+
+function applyCommCustom() {
+    var f = (document.getElementById("commFrom") || {}).value || "";
+    var t = (document.getElementById("commTo") || {}).value || "";
+    if (!f && !t) { toast("Chwazi omwen yon dat.", false); return; }
+    _commCustom = customRange(f, t);
+    var btns = document.querySelectorAll("#pg-comm .tc-filters .tf");
+    btns.forEach(function (b) { b.classList.remove("active"); });
+    var lbl = document.getElementById("commPeriodLbl"); if (lbl) lbl.textContent = "Peryòd: " + _commCustom.label;
+    loadCommissions();
+}
+
 function loadCommissions() {
     var tb = document.getElementById("tbComm");
     if (!tb) return;
-    var map = buildEluResStats();
-    window._eluResStats = map;   /* réutilisé par la liste des Elus (colonne Solde) */
+    /* Colonne Solde de la liste des Elus = TOUJOURS all-time (dette réelle). */
+    var allMap = buildEluResStats(null);
+    window._eluResStats = allMap;
+    /* Table + cartes = période sélectionnée. */
+    var range = _commCustom || repRange(_commPeriod);
+    var isAll = !_commCustom && _commPeriod === "all";
+    var map = isAll ? allMap : buildEluResStats(range);
     var ids = Object.keys(map);
 
     var gCount = 0, gTotal = 0, gComm = 0, gNet = 0, gSolde = 0;
