@@ -3291,8 +3291,12 @@ function renderPayTable(list) {
 /* ====================================
    LOAD FINANCE
    ==================================== */
-function loadFinance() {
+var _finPeriod = "all";   /* période active des KPI finance (Tout/Semèn/Mwa) */
+
+function loadFinance(period) {
     if (!db) return;
+    if (period) _finPeriod = period;
+    var range = repRange(_finPeriod);
 
     var totalReservations = 0;
     var totalCommission = 0;
@@ -3302,6 +3306,7 @@ function loadFinance() {
 
     adminRes.forEach(function(r) {
         if (r.status !== "confirmed") return;
+        if (!repInRange(r, range)) return;                 /* filtre par période */
         var price = parseInt(String(r.price || "0").replace(/[^0-9]/g, "")) || 0;
         totalReservations += price;
         totalCommission += Math.round(price * 0.10);
@@ -3310,9 +3315,11 @@ function loadFinance() {
     var totalPremium = 0;
 
     adminPay.forEach(function(p) {
-        if (p.status === "confirmed") {
-            totalPremium += (p.amount || 0);
-        }
+        if (p.status !== "confirmed") return;
+        /* SEULEMENT les paiements Premium : on exclut réservation et dépôt wallet. */
+        if (p.purpose === "reservation" || p.purpose === "wallet") return;
+        if (!repInRange(p, range)) return;                 /* filtre par période */
+        totalPremium += (p.amount || 0);
     });
 
     var totalNet = totalCommission + totalPremium;
@@ -5306,7 +5313,7 @@ function loadFin(period, btn) {
         sibs.forEach(function(s) { s.classList.remove("active"); });
         btn.classList.add("active");
     }
-    loadFinance();
+    loadFinance(period);   /* recalcule pour la période choisie */
 }
 
 /* ====================================================
@@ -5358,15 +5365,20 @@ function buildReport(period) {
         if (!perElu[name]) perElu[name] = { count: 0, total: 0, comm: 0, net: 0 };
         perElu[name].count++; perElu[name].total += price; perElu[name].comm += c; perElu[name].net += (price - c);
     });
-    var premium = 0, premiumCount = 0;
-    pay.forEach(function(p) { if (p.status === "confirmed") { premium += (p.amount || 0); premiumCount++; } });
+    var premium = 0, premiumCount = 0, premPay = [];
+    pay.forEach(function(p) {
+        if (p.status !== "confirmed") return;
+        /* SEULEMENT les paiements Premium (pas réservation, pas dépôt wallet). */
+        if (p.purpose === "reservation" || p.purpose === "wallet") return;
+        premium += (p.amount || 0); premiumCount++; premPay.push(p);
+    });
 
     return {
         range: range, totalRes: totalRes, commission: commission,
         premium: premium, premiumCount: premiumCount, net: commission + premium,
         perElu: perElu,
         counts: { users: us.length, elu: fl.length, krey: kr.length },
-        pay: pay
+        pay: premPay
     };
 }
 
