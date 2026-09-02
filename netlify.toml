@@ -18,6 +18,12 @@
 [functions.admin-set-password]
   external_node_modules = ["firebase-admin"]
 
+[functions.natcash-submit]
+  external_node_modules = ["firebase-admin"]
+
+[functions.natcash-verify]
+  external_node_modules = ["firebase-admin"]
+
 [functions.dm-send]
   external_node_modules = ["firebase-admin"]
 

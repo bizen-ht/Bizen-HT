@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ht">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>NatCash — Tès Depo | Bizen HT</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Montserrat',system-ui,sans-serif}
+  body{background:#eef0f4;color:#141414;padding:24px 14px;min-height:100vh}
+  .wrap{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+  .card{background:#fff;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.08);padding:26px 24px}
+  .eyebrow{font-size:0.72rem;font-weight:700;letter-spacing:2px;color:#8a8a9e;text-transform:uppercase}
+  h1{font-size:1.7rem;font-weight:800;margin:6px 0 4px}
+  .sub{color:#8a8a9e;font-size:0.9rem;line-height:1.5}
+  .badge-test{display:inline-block;background:#ffe8a3;color:#8a6d00;font-size:0.62rem;font-weight:800;padding:2px 8px;border-radius:50px;letter-spacing:1px;vertical-align:middle}
+  .authbox{margin:18px 0;padding:14px 16px;border:1px solid #e6e8ee;border-radius:12px;background:#fafbfc;font-size:0.86rem}
+  .authbox input{width:100%;padding:10px 12px;border:1px solid #dfe2ea;border-radius:8px;font-size:0.9rem;margin-top:6px}
+  .authbox button{margin-top:10px}
+  .btn{border:none;border-radius:10px;padding:11px 18px;font-weight:700;font-size:0.86rem;cursor:pointer}
+  .btn-dark{background:#0b1020;color:#fff}
+  .btn-ghost{background:#f0f1f5;color:#333}
+  .payinfo{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:20px 0}
+  .merchant .name{font-weight:800;font-size:1.05rem}
+  .merchant .num{display:flex;align-items:center;gap:8px;margin-top:8px;font-weight:700;font-size:1rem;color:#0b1020}
+  .merchant .num i{color:#0aa0ff}
+  .copy{background:none;border:none;cursor:pointer;color:#8a8a9e;font-size:0.95rem}
+  .qr{width:130px;height:130px;border-radius:12px;border:1px solid #eee}
+  .seg{display:flex;background:#f0f1f5;border-radius:12px;padding:5px;gap:5px;margin-bottom:18px}
+  .seg button{flex:1;border:none;background:transparent;border-radius:9px;padding:10px;font-weight:700;font-size:0.85rem;color:#666;cursor:pointer}
+  .seg button.active{background:#0aa0ff;color:#fff}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:0.8rem;font-weight:600;color:#444;margin-bottom:6px}
+  .field input{width:100%;padding:13px 14px;border:1px solid #dfe2ea;border-radius:12px;font-size:0.95rem;outline:none}
+  .field input:focus{border-color:#0aa0ff}
+  .field small{display:block;color:#9a9aae;font-size:0.72rem;margin-top:5px}
+  .validate{width:100%;background:#0b1020;color:#fff;border:none;border-radius:14px;padding:16px;font-weight:800;font-size:0.95rem;letter-spacing:0.5px;cursor:pointer;margin-top:4px}
+  .validate:disabled{opacity:0.6;cursor:not-allowed}
+  .secure{text-align:center;color:#4caf50;font-size:0.76rem;margin-top:16px}
+  .msg{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:0.86rem;display:none}
+  .msg.ok{background:#e7f7ec;color:#1a7a3a;display:block}
+  .msg.ko{background:#fdecec;color:#c0392b;display:block}
+  h2{font-size:1.15rem;font-weight:800;margin-bottom:4px}
+  .prow{border:1px solid #e6e8ee;border-radius:12px;padding:14px;margin-top:12px}
+  .prow .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+  .prow .txid{font-weight:800;letter-spacing:1px;font-family:monospace}
+  .tag{font-size:0.66rem;font-weight:800;padding:2px 9px;border-radius:50px}
+  .tag.prem{background:#fff2cc;color:#8a6d00}.tag.res{background:#e3f0ff;color:#1266c9}
+  .prow .meta{color:#7a7a8e;font-size:0.78rem;margin-top:6px;line-height:1.6}
+  .prow .acts{display:flex;gap:8px;margin-top:12px}
+  .prow .acts button{flex:1}
+  .btn-ok{background:#e7f7ec;color:#1a7a3a;border:1px solid #b7e6c4}
+  .btn-no{background:#fdecec;color:#c0392b;border:1px solid #f3c2c2}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- CARTE CLIENT -->
+  <div class="card">
+    <div class="eyebrow">WALLET</div>
+    <h1>Depoze Fon — NatCash</h1>
+    <p class="sub">Peye sou nimewo Bizen an, epi antre Transaction ID w. <span class="badge-test">PAGE TÈS</span></p>
+
+    <div class="authbox" id="authBox">Chajman...</div>
+
+    <div class="payinfo">
+      <div class="merchant">
+        <div class="name">Baptiste Junior</div>
+        <div class="num"><i class="fas fa-mobile-alt"></i> +509 41228419
+          <button class="copy" onclick="copyNum()" title="Kopye"><i class="fas fa-copy"></i></button>
+        </div>
+      </div>
+      <img class="qr" alt="QR NatCash" src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=%2B50941228419">
+    </div>
+
+    <div class="seg" id="seg">
+      <button data-purpose="premium" class="active" onclick="setPurpose('premium',this)">Premium (1 000 G)</button>
+      <button data-purpose="reservation" onclick="setPurpose('reservation',this)">Rezèvasyon</button>
+    </div>
+
+    <div class="field" id="emailWrap">
+      <label>Imel kont Bizen ki fè peman an</label>
+      <input id="npEmail" type="email" placeholder="email@gmail.com">
+      <small>Se kont sa a k ap vin Premium apre validasyon.</small>
+    </div>
+
+    <div class="field" id="resWrap" style="display:none">
+      <label>ID Rezèvasyon (pou tès)</label>
+      <input id="npResId" placeholder="ID rezèvasyon an">
+      <small>Kopye ID yon rezèvasyon ki egziste (pou tès sèlman).</small>
+    </div>
+
+    <div class="field">
+      <label>Transaction ID (14 chif)</label>
+      <input id="npTxId" inputmode="numeric" maxlength="14" placeholder="Antre Transaction ID 14 chif">
+    </div>
+
+    <button class="validate" id="npSubmit" onclick="submitNatcash()">VALIDE RECHAJ NATCASH</button>
+    <div class="msg" id="npMsg"></div>
+    <p class="secure"><i class="fas fa-shield-halved"></i> Tout tranzaksyon chifre e trete an sekirite.</p>
+  </div>
+
+  <!-- CARTE ADMIN (admin sèlman) -->
+  <div class="card" id="adminCard" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2><i class="fas fa-user-shield"></i> Validasyon Admin</h2>
+      <button class="btn btn-ghost" onclick="loadPending()"><i class="fas fa-sync"></i> Refrechi</button>
+    </div>
+    <p class="sub" style="margin-top:4px">Peman NatCash ki ap tann validasyon. Verifye sou kont NatCash ou anvan.</p>
+    <div id="pendingList"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyADWklo0scZNWkhudRn_VBhrapXl4AZL_E",
+    authDomain: "bizen-ht.firebaseapp.com",
+    projectId: "bizen-ht",
+    storageBucket: "bizen-ht.firebasestorage.app",
+    messagingSenderId: "248857953518",
+    appId: "1:248857953518:web:f85b1b37abd849add01fff"
+  });
+  var auth = firebase.auth();
+  var db = firebase.firestore();
+  var ADMIN_EMAIL = "bizenht@gmail.com";
+  var _purpose = "premium";
+  var _user = null;
+
+  function copyNum(){ navigator.clipboard && navigator.clipboard.writeText("+50941228419"); }
+
+  function setPurpose(p, btn){
+    _purpose = p;
+    document.querySelectorAll("#seg button").forEach(function(b){ b.classList.remove("active"); });
+    if (btn) btn.classList.add("active");
+    document.getElementById("emailWrap").style.display = (p === "premium") ? "block" : "none";
+    document.getElementById("resWrap").style.display = (p === "reservation") ? "block" : "none";
+  }
+
+  /* Transaction ID : chiffres uniquement, max 14 */
+  document.getElementById("npTxId").addEventListener("input", function(){
+    this.value = this.value.replace(/\D/g, "").slice(0, 14);
+  });
+
+  function msg(text, ok){
+    var m = document.getElementById("npMsg");
+    m.className = "msg " + (ok ? "ok" : "ko");
+    m.textContent = text;
+  }
+
+  function renderAuth(){
+    var box = document.getElementById("authBox");
+    if (_user){
+      box.innerHTML = '<i class="fas fa-circle-check" style="color:#4caf50"></i> Konekte kòm <strong>' + (_user.email||"") + '</strong> '
+        + '<button class="btn btn-ghost" style="float:right;padding:6px 12px;font-size:0.75rem" onclick="auth.signOut()">Dekonekte</button>';
+      var e = document.getElementById("npEmail"); if (e && !e.value) e.value = _user.email || "";
+    } else {
+      box.innerHTML =
+        '<div style="font-weight:700;margin-bottom:4px">Konekte pou fè yon depo</div>'
+        + '<input id="lgEmail" type="email" placeholder="Imel">'
+        + '<input id="lgPw" type="password" placeholder="Modpas">'
+        + '<button class="btn btn-dark" style="width:100%" onclick="doLogin()">Konekte</button>'
+        + '<div id="lgErr" style="color:#c0392b;font-size:0.78rem;margin-top:6px"></div>';
+    }
+  }
+  function doLogin(){
+    var e = (document.getElementById("lgEmail")||{}).value || "";
+    var p = (document.getElementById("lgPw")||{}).value || "";
+    auth.signInWithEmailAndPassword(e.trim(), p).catch(function(err){
+      var el = document.getElementById("lgErr"); if (el) el.textContent = err.message || "Erè koneksyon.";
+    });
+  }
+
+  auth.onAuthStateChanged(function(u){
+    _user = u;
+    renderAuth();
+    var adminCard = document.getElementById("adminCard");
+    if (u && (u.email||"").toLowerCase() === ADMIN_EMAIL){ adminCard.style.display = "block"; loadPending(); }
+    else adminCard.style.display = "none";
+  });
+
+  function submitNatcash(){
+    if (!_user){ msg("Konekte anvan pou fè yon depo.", false); return; }
+    var txId = (document.getElementById("npTxId").value || "").trim();
+    if (!/^\d{14}$/.test(txId)){ msg("Transaction ID a dwe gen egzakteman 14 chif.", false); return; }
+    var payload = { purpose: _purpose, transactionId: txId };
+    if (_purpose === "premium"){
+      var em = (document.getElementById("npEmail").value || "").trim();
+      if (!em || em.indexOf("@") === -1){ msg("Antre imel kont Bizen ki fè peman an.", false); return; }
+      payload.email = em;
+    } else {
+      var rid = (document.getElementById("npResId").value || "").trim();
+      if (!rid){ msg("Antre ID rezèvasyon an.", false); return; }
+      payload.reservationId = rid;
+    }
+    var btn = document.getElementById("npSubmit");
+    btn.disabled = true; btn.textContent = "N AP TRETE...";
+    _user.getIdToken().then(function(idToken){
+      payload.idToken = idToken;
+      return fetch("/.netlify/functions/natcash-submit", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+    .then(function(res){
+      btn.disabled = false; btn.textContent = "VALIDE RECHAJ NATCASH";
+      if (!res.ok || !res.d.success) throw new Error(res.d && res.d.error ? res.d.error : "Erè");
+      msg("✅ " + (res.d.message || "Depo w resevwa! N ap verifye epi aktive kont ou."), true);
+      document.getElementById("npTxId").value = "";
+    }).catch(function(e){
+      btn.disabled = false; btn.textContent = "VALIDE RECHAJ NATCASH";
+      msg("❌ " + (e.message || "Erè rezo."), false);
+    });
+  }
+
+  /* ===== ADMIN : liste des paiements en attente ===== */
+  function loadPending(){
+    var box = document.getElementById("pendingList");
+    if (!box) return;
+    box.innerHTML = '<p class="sub" style="margin-top:12px">Chajman...</p>';
+    db.collection("natcashPayments").where("status","==","pending").get().then(function(snap){
+      var rows = [];
+      snap.forEach(function(d){ var x = d.data(); x._id = d.id; rows.push(x); });
+      rows.sort(function(a,b){ var am=a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0; var bm=b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0; return bm-am; });
+      if (!rows.length){ box.innerHTML = '<p class="sub" style="margin-top:12px;text-align:center">Pa gen peman ki ap tann.</p>'; return; }
+      var h = "";
+      rows.forEach(function(x){
+        var dt = (x.createdAt && x.createdAt.toDate) ? x.createdAt.toDate().toLocaleString("fr-FR") : "—";
+        var tag = x.purpose === "premium" ? '<span class="tag prem">PREMIUM</span>' : '<span class="tag res">REZÈVASYON</span>';
+        h += '<div class="prow">'
+          + '<div class="top"><span class="txid">' + x._id + '</span>' + tag + '</div>'
+          + '<div class="meta"><i class="far fa-clock"></i> ' + dt
+          + '<br><i class="fas fa-envelope"></i> ' + (x.email || x.submittedByEmail || "—")
+          + '<br><i class="fas fa-coins"></i> ' + ((x.amount||0).toLocaleString()) + ' G'
+          + (x.reservationId ? '<br><i class="fas fa-calendar-check"></i> Rez: ' + x.reservationId : '')
+          + '</div>'
+          + '<div class="acts">'
+          + '<button class="btn btn-ok" onclick="verifyNatcash(\'' + x._id + '\',\'confirm\')"><i class="fas fa-check"></i> Valide</button>'
+          + '<button class="btn btn-no" onclick="verifyNatcash(\'' + x._id + '\',\'reject\')"><i class="fas fa-times"></i> Rejte</button>'
+          + '</div></div>';
+      });
+      box.innerHTML = h;
+    }).catch(function(e){ box.innerHTML = '<p class="msg ko">Erè: ' + (e.code || e.message) + '</p>'; });
+  }
+
+  function verifyNatcash(txId, action){
+    if (action === "reject" && !confirm("Rejte peman " + txId + "?")) return;
+    if (action === "confirm" && !confirm("Ou verifye sou NatCash ou ke peman an fèt? Valide " + txId + "?")) return;
+    _user.getIdToken().then(function(idToken){
+      return fetch("/.netlify/functions/natcash-verify", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ idToken: idToken, transactionId: txId, action: action }) });
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (!d.success) throw new Error(d.error || "Erè");
+      loadPending();
+    }).catch(function(e){ alert("Erè: " + (e.message || e.code)); });
+  }
+</script>
+</body>
+</html>

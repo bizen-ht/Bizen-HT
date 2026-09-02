@@ -280,6 +280,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    /* -------- PAIEMENTS NATCASH MANUELS (natcashPayments) --------
+       Écrits UNIQUEMENT par les fonctions natcash-submit / natcash-verify
+       (Admin SDK). Le doc id = Transaction ID => unicité garantie. Le client
+       lit ses propres soumissions ; l'admin lit tout. */
+    match /natcashPayments/{txId} {
+      allow read:  if isAdmin()
+        || (isSignedIn() && resource.data.submittedByUid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
     /* -------- TOUT LE RESTE : interdit par défaut --------
        (Aucune collection oubliée ne reste ouverte.) */
     match /{document=**} {
