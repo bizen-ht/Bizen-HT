@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
+  :root{--primary:#e91e63;--primary-dark:#c2185b;--primary-light:#f48fb1;--gold:#ffd700}
   *{margin:0;padding:0;box-sizing:border-box;font-family:'Montserrat',system-ui,sans-serif}
   body{background:#eef0f4;color:#141414;padding:24px 14px;min-height:100vh}
   .wrap{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
@@ -20,28 +21,35 @@
   .authbox input{width:100%;padding:10px 12px;border:1px solid #dfe2ea;border-radius:8px;font-size:0.9rem;margin-top:6px}
   .authbox button{margin-top:10px}
   .btn{border:none;border-radius:10px;padding:11px 18px;font-weight:700;font-size:0.86rem;cursor:pointer}
-  .btn-dark{background:#0b1020;color:#fff}
+  .btn-dark{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff}
   .btn-ghost{background:#f0f1f5;color:#333}
   .payinfo{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:20px 0}
   .merchant .name{font-weight:800;font-size:1.05rem}
-  .merchant .num{display:flex;align-items:center;gap:8px;margin-top:8px;font-weight:700;font-size:1rem;color:#0b1020}
-  .merchant .num i{color:#0aa0ff}
+  .merchant .num{display:flex;align-items:center;gap:8px;margin-top:8px;font-weight:700;font-size:1rem;color:#1a1a2e}
+  .merchant .num i{color:var(--primary)}
   .copy{background:none;border:none;cursor:pointer;color:#8a8a9e;font-size:0.95rem}
   .qr{width:130px;height:130px;border-radius:12px;border:1px solid #eee}
   .seg{display:flex;background:#f0f1f5;border-radius:12px;padding:5px;gap:5px;margin-bottom:18px}
   .seg button{flex:1;border:none;background:transparent;border-radius:9px;padding:10px;font-weight:700;font-size:0.85rem;color:#666;cursor:pointer}
-  .seg button.active{background:#0aa0ff;color:#fff}
+  .seg button.active{background:var(--primary);color:#fff}
   .field{margin-bottom:16px}
   .field label{display:block;font-size:0.8rem;font-weight:600;color:#444;margin-bottom:6px}
-  .field input{width:100%;padding:13px 14px;border:1px solid #dfe2ea;border-radius:12px;font-size:0.95rem;outline:none}
-  .field input:focus{border-color:#0aa0ff}
+  .field input,.field select{width:100%;padding:13px 14px;border:1px solid #dfe2ea;border-radius:12px;font-size:0.95rem;outline:none;background:#fff}
+  .field input:focus,.field select:focus{border-color:var(--primary)}
   .field small{display:block;color:#9a9aae;font-size:0.72rem;margin-top:5px}
-  .validate{width:100%;background:#0b1020;color:#fff;border:none;border-radius:14px;padding:16px;font-weight:800;font-size:0.95rem;letter-spacing:0.5px;cursor:pointer;margin-top:4px}
-  .validate:disabled{opacity:0.6;cursor:not-allowed}
+  .validate{width:100%;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;border-radius:14px;padding:16px;font-weight:800;font-size:0.95rem;letter-spacing:0.5px;cursor:pointer;margin-top:4px}
+  .validate:disabled{opacity:0.7;cursor:not-allowed}
   .secure{text-align:center;color:#4caf50;font-size:0.76rem;margin-top:16px}
   .msg{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:0.86rem;display:none}
   .msg.ok{background:#e7f7ec;color:#1a7a3a;display:block}
   .msg.ko{background:#fdecec;color:#c0392b;display:block}
+  /* État "en attente" : spinner qui tourne jusqu'à la décision admin */
+  .pending{margin-top:16px;padding:18px 16px;border:1px solid #ffe0ec;background:#fff5f9;border-radius:14px;text-align:center;display:none}
+  .pending.show{display:block}
+  .pending .spin{width:38px;height:38px;margin:0 auto 12px;border:4px solid #f6d4e2;border-top-color:var(--primary);border-radius:50%;animation:spin 0.9s linear infinite}
+  .pending .t1{font-weight:800;color:#1a1a2e;font-size:0.95rem}
+  .pending .t2{color:#8a8a9e;font-size:0.82rem;margin-top:4px;line-height:1.5}
+  @keyframes spin{to{transform:rotate(360deg)}}
   h2{font-size:1.15rem;font-weight:800;margin-bottom:4px}
   .prow{border:1px solid #e6e8ee;border-radius:12px;padding:14px;margin-top:12px}
   .prow .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
@@ -87,9 +95,9 @@
     </div>
 
     <div class="field" id="resWrap" style="display:none">
-      <label>ID Rezèvasyon (pou tès)</label>
-      <input id="npResId" placeholder="ID rezèvasyon an">
-      <small>Kopye ID yon rezèvasyon ki egziste (pou tès sèlman).</small>
+      <label>Chwazi rezèvasyon w ap peye</label>
+      <select id="npResId"><option value="">Chajman rezèvasyon w yo...</option></select>
+      <small>Sou vrè sit la, sa vin otomatik lè w klike « Peye rezèvasyon ».</small>
     </div>
 
     <div class="field">
@@ -99,6 +107,14 @@
 
     <button class="validate" id="npSubmit" onclick="submitNatcash()">VALIDE RECHAJ NATCASH</button>
     <div class="msg" id="npMsg"></div>
+
+    <!-- État en attente : tourne jusqu'à la décision de l'admin -->
+    <div class="pending" id="npPending">
+      <div class="spin"></div>
+      <div class="t1">N ap verifye depo w lan…</div>
+      <div class="t2">Si li kòrèk, kont ou an ap aktive otomatikman. Ou pa bezwen fè anyen — rete sou paj la.</div>
+    </div>
+
     <p class="secure"><i class="fas fa-shield-halved"></i> Tout tranzaksyon chifre e trete an sekirite.</p>
   </div>
 
@@ -130,6 +146,7 @@
   var ADMIN_EMAIL = "bizenht@gmail.com";
   var _purpose = "premium";
   var _user = null;
+  var _watchUnsub = null;
 
   function copyNum(){ navigator.clipboard && navigator.clipboard.writeText("+50941228419"); }
 
@@ -139,6 +156,30 @@
     if (btn) btn.classList.add("active");
     document.getElementById("emailWrap").style.display = (p === "premium") ? "block" : "none";
     document.getElementById("resWrap").style.display = (p === "reservation") ? "block" : "none";
+    if (p === "reservation") loadMyReservations();
+  }
+
+  /* Charge les réservations du VIP connecté (sur le vrai site, ceci est automatique
+     via le bouton « Peye rezèvasyon » — pas de saisie d'ID). */
+  function loadMyReservations(){
+    var sel = document.getElementById("npResId");
+    if (!sel) return;
+    if (!_user){ sel.innerHTML = '<option value="">Konekte anvan</option>'; return; }
+    sel.innerHTML = '<option value="">Chajman rezèvasyon w yo...</option>';
+    db.collection("reservations").where("userId","==",_user.uid).get().then(function(snap){
+      var opts = [];
+      snap.forEach(function(d){ opts.push({ id:d.id, x:d.data() }); });
+      if (!opts.length){ sel.innerHTML = '<option value="">Ou pa gen rezèvasyon</option>'; return; }
+      var h = '<option value="">— Chwazi yon rezèvasyon —</option>';
+      opts.forEach(function(o){
+        var x = o.x;
+        var nm = x.eluName || x.eluPseudo || x.eluNom || x.elu || "Rezèvasyon";
+        var pr = (x.price || x.amount || "");
+        var st = x.paid ? "✔ peye" : (x.status || "");
+        h += '<option value="' + o.id + '">' + nm + (pr ? (' — ' + pr + ' G') : '') + (st ? (' (' + st + ')') : '') + '</option>';
+      });
+      sel.innerHTML = h;
+    }).catch(function(e){ sel.innerHTML = '<option value="">Erè: ' + (e.code || e.message) + '</option>'; });
   }
 
   /* Transaction ID : chiffres uniquement, max 14 */
@@ -204,14 +245,39 @@
       return fetch("/.netlify/functions/natcash-submit", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
     }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
     .then(function(res){
-      btn.disabled = false; btn.textContent = "VALIDE RECHAJ NATCASH";
-      if (!res.ok || !res.d.success) throw new Error(res.d && res.d.error ? res.d.error : "Erè");
-      msg("✅ " + (res.d.message || "Depo w resevwa! N ap verifye epi aktive kont ou."), true);
+      if (!res.ok || !res.d.success){
+        btn.disabled = false; btn.textContent = "VALIDE RECHAJ NATCASH";
+        throw new Error(res.d && res.d.error ? res.d.error : "Erè");
+      }
       document.getElementById("npTxId").value = "";
+      showPendingState(txId);   /* spinner jusqu'à la décision admin */
     }).catch(function(e){
       btn.disabled = false; btn.textContent = "VALIDE RECHAJ NATCASH";
       msg("❌ " + (e.message || "Erè rezo."), false);
     });
+  }
+
+  /* Affiche le spinner "en attente" et écoute en temps réel : dès que l'admin
+     valide/rejette, l'écran se met à jour tout seul. */
+  function showPendingState(txId){
+    var m = document.getElementById("npMsg"); m.className = "msg"; m.textContent = "";
+    document.getElementById("npSubmit").style.display = "none";
+    document.getElementById("npPending").classList.add("show");
+    if (_watchUnsub){ _watchUnsub(); _watchUnsub = null; }
+    _watchUnsub = db.collection("natcashPayments").doc(txId).onSnapshot(function(doc){
+      if (!doc.exists) return;
+      var st = doc.data().status;
+      if (st === "confirmed") finishPending(true, doc.data().purpose);
+      else if (st === "rejected") finishPending(false);
+    }, function(){ /* erreur lecture : on laisse le spinner tourner */ });
+  }
+  function finishPending(okv, purpose){
+    if (_watchUnsub){ _watchUnsub(); _watchUnsub = null; }
+    document.getElementById("npPending").classList.remove("show");
+    var btn = document.getElementById("npSubmit");
+    btn.style.display = "block"; btn.disabled = false; btn.textContent = "VALIDE RECHAJ NATCASH";
+    if (okv) msg("✅ Peman w konfime! " + (purpose === "premium" ? "Premium ou aktive." : "Rezèvasyon w peye."), true);
+    else msg("❌ Depo a pa t kòrèk oswa li refize. Kontakte sipò si w gen kesyon.", false);
   }
 
   /* ===== ADMIN : liste des paiements en attente ===== */
