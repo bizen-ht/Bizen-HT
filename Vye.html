@@ -1355,7 +1355,6 @@
                     <div class="tc-title"><i class="fas fa-mobile-alt" style="color:#e2001a"></i> Peman Natcash (ap tann validasyon) <span id="bdgNatcash" style="background:#e2001a;color:#fff;border-radius:50px;padding:1px 9px;font-size:0.72rem;margin-left:4px"></span></div>
                     <div class="tc-filters">
                         <button class="tf" onclick="loadNatcashPending()"><i class="fas fa-sync"></i> Refrechi</button>
-                        <button class="tf" onclick="resetNatcashData()" style="color:#ff6b6b"><i class="fas fa-trash"></i> Reyinisyalize done tès</button>
                     </div>
                 </div>
                 <p style="padding:0 18px 4px;color:#6a6a80;font-size:0.76rem">Verifye sou kont Natcash ou ke lajan an rive anvan ou valide. Valide = Premium/rezèvasyon aktive otomatikman. Chak Transaction ID sèvi yon sèl fwa.</p>
@@ -2070,6 +2069,29 @@
                         </div>
                     </div>
                     <p style="font-size:0.74rem;color:#6a6a80;margin-top:10px">Pri Premium nòmal: <strong>1,000 Gdes</strong>. Rabè a aplike otomatikman nan peman MonCash pandan òf la aktif.</p>
+                </div>
+            </div>
+
+            <!-- ANNONCE EN HAUT DU SITE -->
+            <div class="tc" style="margin-top:22px">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-bullhorn"></i> Anons an lè paj sit la</div></div>
+                <div style="padding:18px">
+                    <div id="annStatus" style="margin-bottom:14px"></div>
+                    <div style="margin-bottom:14px">
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Tèks anons la (sa k ap parèt an lè paj la)</label>
+                        <input id="annText" maxlength="160" placeholder="Egz: Natcash la disponib kounye a sou Bizen! 🎉" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;align-items:end">
+                        <div>
+                            <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Dire (èdtan)</label>
+                            <input id="annHours" type="number" min="1" max="720" value="24" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                        </div>
+                        <div style="display:flex;gap:8px">
+                            <button onclick="activateAnnounce()" style="background:linear-gradient(135deg,#9c27b0,#e91e63);color:#fff;border:none;border-radius:8px;padding:11px 18px;font-weight:600;cursor:pointer;font-size:0.84rem;flex:1"><i class="fas fa-bullhorn"></i> Lanse Anons</button>
+                            <button onclick="stopAnnounce()" style="background:rgba(244,67,54,0.12);color:#f44336;border:1px solid rgba(244,67,54,0.35);border-radius:8px;padding:11px 16px;font-weight:600;cursor:pointer;font-size:0.84rem"><i class="fas fa-stop"></i> Sispann</button>
+                        </div>
+                    </div>
+                    <p style="font-size:0.74rem;color:#6a6a80;margin-top:10px">Anons la ap parèt an lè tout paj sit la pandan dire w chwazi a. Vizitè yo ka fèmen l ak yon X.</p>
                 </div>
             </div>
 
@@ -3387,28 +3409,6 @@ function natcashVerify(txId, action) {
     }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
 }
 
-/* Réinitialise TOUTES les données Natcash (à utiliser pour effacer les données
-   de test). Supprime les natcashPayments + les payments method "natcash" =>
-   le rapport Natcash repasse à 0. Action définitive, double confirmation. */
-function resetNatcashData() {
-    if (!db) { toast("DB pa pare.", false); return; }
-    if (!confirm("Reyinisyalize done peman Natcash yo?\n\nRapò Natcash la ap tounen 0. Sèvi sa pou efase done tès sèlman. Aksyon sa a definitif.")) return;
-    if (!confirm("Konfime yon dènye fwa: efase TOUT peman Natcash yo?")) return;
-    var ops = [];
-    db.collection("natcashPayments").get().then(function (snap) {
-        snap.forEach(function (d) { ops.push(d.ref.delete()); });
-        return db.collection("payments").where("method", "==", "natcash").get();
-    }).then(function (snap) {
-        snap.forEach(function (d) { ops.push(d.ref.delete()); });
-        return Promise.all(ops);
-    }).then(function () {
-        toast("Done Natcash reyinisyalize! (" + ops.length + " dosye efase)", true);
-        loadPayments();
-        loadNatcashPending();
-        setTimeout(function () { loadFinance(); }, 700);
-    }).catch(function (e) { toast("Erè: " + (e.code || e.message), false); });
-}
-
 function renderPayTable(list) {
     var tb = document.getElementById("tbPy");
     if (!tb) return;
@@ -4116,6 +4116,7 @@ function loadPromo() {
     promoToggleChannel();
     offerPreview();
     loadOfferStatus();
+    loadAnnounceStatus();
 }
 
 /* Renvoie la liste d'utilisateurs du segment choisi */
@@ -4295,6 +4296,59 @@ function loadOfferStatus() {
             el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Pa gen òf aktif.</span>';
         }
     }).catch(function (e) { console.warn("loadOfferStatus:", e.code); });
+}
+
+/* ====================================
+   ANNONCE EN HAUT DU SITE (settings/announcement)
+   Bandeau important, sur une durée, que le visiteur peut fermer avec un X.
+   ==================================== */
+function activateAnnounce() {
+    var text = (document.getElementById("annText").value || "").trim();
+    var hours = parseFloat(document.getElementById("annHours").value) || 0;
+    if (!text) { alert("Antre tèks anons la."); return; }
+    if (hours <= 0) { alert("Antre yon dire valab (èdtan)."); return; }
+    var endsAt = firebase.firestore.Timestamp.fromMillis(Date.now() + hours * 3600 * 1000);
+    db.collection("settings").doc("announcement").set({
+        active: true, text: text, endsAt: endsAt,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function () { toast("Anons lanse! 📢", true); loadAnnounceStatus(); })
+      .catch(function (e) { alert("Erè: " + (e.message || e.code)); });
+}
+
+function stopAnnounce() {
+    if (!confirm("Sispann anons la?")) return;
+    db.collection("settings").doc("announcement").set({ active: false }, { merge: true })
+      .then(function () { toast("Anons sispann.", true); loadAnnounceStatus(); })
+      .catch(function (e) { alert("Erè: " + (e.message || e.code)); });
+}
+
+var annStatusTimer = null;
+function loadAnnounceStatus() {
+    var el = document.getElementById("annStatus");
+    if (!db || !el) return;
+    if (annStatusTimer) { clearInterval(annStatusTimer); annStatusTimer = null; }
+    db.collection("settings").doc("announcement").get().then(function (doc) {
+        if (!doc.exists) { el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Pa gen anons pou kounye a.</span>'; return; }
+        var a = doc.data();
+        var txtEl = document.getElementById("annText");
+        if (txtEl && a.text && !txtEl.value) txtEl.value = a.text;
+        var ends = a.endsAt && a.endsAt.toMillis ? a.endsAt.toMillis() : 0;
+        if (a.active === true && ends > Date.now()) {
+            var render = function () {
+                var left = ends - Date.now();
+                if (left <= 0) {
+                    el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Anons la fini.</span>';
+                    if (annStatusTimer) { clearInterval(annStatusTimer); annStatusTimer = null; }
+                    return;
+                }
+                el.innerHTML = '<div style="background:rgba(156,39,176,0.12);border:1px solid rgba(156,39,176,0.4);border-radius:10px;padding:12px;font-size:0.88rem;color:#ce93d8"><i class="fas fa-bullhorn"></i> <strong>ANONS AKTIF</strong> → "' + escHtml(a.text) + '". Fini nan <strong>' + fmtCountdown(left) + '</strong> ⏳</div>';
+            };
+            render();
+            annStatusTimer = setInterval(render, 1000);
+        } else {
+            el.innerHTML = '<span style="color:#6a6a80;font-size:0.85rem">Pa gen anons aktif.</span>';
+        }
+    }).catch(function (e) { console.warn("loadAnnounceStatus:", e.code); });
 }
 
 /* ====================================
