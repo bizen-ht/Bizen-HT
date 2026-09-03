@@ -101,8 +101,8 @@
     </div>
 
     <div class="field">
-      <label>Transaction ID (14 chif)</label>
-      <input id="npTxId" inputmode="numeric" maxlength="14" placeholder="Antre Transaction ID 14 chif">
+      <label>Transaction ID w la</label>
+      <input id="npTxId" inputmode="numeric" placeholder="Antre Transaction ID w la">
     </div>
 
     <button class="validate" id="npSubmit" onclick="submitNatcash()">VALIDE RECHAJ NATCASH</button>
@@ -184,7 +184,7 @@
 
   /* Transaction ID : chiffres uniquement, max 14 */
   document.getElementById("npTxId").addEventListener("input", function(){
-    this.value = this.value.replace(/\D/g, "").slice(0, 14);
+    this.value = this.value.replace(/\D/g, "");
   });
 
   function msg(text, ok){
@@ -227,7 +227,7 @@
   function submitNatcash(){
     if (!_user){ msg("Konekte anvan pou fè yon depo.", false); return; }
     var txId = (document.getElementById("npTxId").value || "").trim();
-    if (!/^\d{14}$/.test(txId)){ msg("Transaction ID a dwe gen egzakteman 14 chif.", false); return; }
+    if (!/^\d{14}$/.test(txId)){ msg("Transaction ID sa a pa valab. Verifye epi eseye ankò.", false); return; }
     var payload = { purpose: _purpose, transactionId: txId };
     if (_purpose === "premium"){
       var em = (document.getElementById("npEmail").value || "").trim();

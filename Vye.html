@@ -1478,6 +1478,30 @@
                     <div class="fs">Komisyon + Membership</div>
                 </div>
             </div>
+
+            <!-- NATCASH : fon Bizen ki rive sou kont Natcash la (separe ak fon pèsonèl) -->
+            <div style="margin-top:20px">
+                <h3 style="font-size:0.95rem;color:#e2001a;margin-bottom:10px"><i class="fas fa-mobile-alt"></i> Fon Natcash (lajan Bizen sou kont Natcash la)</h3>
+                <div class="fg">
+                    <div class="fc" style="border-color:rgba(226,0,26,0.35)">
+                        <h4><i class="fas fa-crown"></i> Natcash Membership</h4>
+                        <div class="fv" style="color:#e2001a" id="finNcPrem">0 G</div>
+                        <div class="fs">Peman Premium via Natcash</div>
+                    </div>
+                    <div class="fc" style="border-color:rgba(226,0,26,0.35)">
+                        <h4><i class="fas fa-calendar-check"></i> Natcash Rezèvasyon</h4>
+                        <div class="fv" style="color:#e2001a" id="finNcRes">0 G</div>
+                        <div class="fs">Peman rezèvasyon via Natcash</div>
+                    </div>
+                    <div class="fc" style="border-color:rgba(226,0,26,0.35)">
+                        <h4><i class="fas fa-coins"></i> Total Natcash</h4>
+                        <div class="fv" style="color:#e2001a" id="finNcTotal">0 G</div>
+                        <div class="fs">Total lajan Bizen sou kont Natcash</div>
+                    </div>
+                </div>
+                <p style="font-size:0.74rem;color:#6a6a80;margin-top:8px"><i class="fas fa-circle-info"></i> Se sèlman peman Bizen ki konfime via Natcash pou peryòd la. Fon pèsonèl ou yo pa konte isit, konsa ou konnen konbyen nan balans Natcash la se lajan Bizen.</p>
+            </div>
+
             <!-- Filtre par date personnalisée -->
             <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:14px;background:rgba(255,255,255,0.03);border:1px solid #2a2a3a;border-radius:10px;padding:12px 14px">
                 <div><label style="display:block;font-size:0.72rem;color:#6a6a80;margin-bottom:4px">Depi</label><input type="date" id="finFrom" style="background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:9px 12px;font-size:0.85rem"></div>
@@ -3459,10 +3483,28 @@ function loadFinance(period) {
 
     var totalNet = totalCommission + totalPremium;
 
+    /* === FON NATCASH ===
+       Lajan Bizen ki rive sou kont Natcash la (Premium + rezèvasyon), pou l
+       separe ak fon pèsonèl ki ka sou menm nimewo a. Sous = peman konfime
+       ki gen method "natcash" (natcash-verify anrejistre yo nan payments). */
+    var natcashPremium = 0, natcashRes = 0;
+    adminPay.forEach(function(p) {
+        if (p.status !== "confirmed") return;
+        if (p.method !== "natcash") return;
+        if (!repInRange(p, range)) return;
+        if (p.purpose === "wallet") return;
+        if (p.purpose === "reservation") natcashRes += (p.amount || 0);
+        else natcashPremium += (p.amount || 0);
+    });
+    var natcashTotal = natcashPremium + natcashRes;
+
     setVal("finR", totalReservations.toLocaleString() + " G");
     setVal("finC", totalCommission.toLocaleString() + " G");
     setVal("finP", totalPremium.toLocaleString() + " G");
     setVal("finT", totalNet.toLocaleString() + " G");
+    setVal("finNcPrem", natcashPremium.toLocaleString() + " G");
+    setVal("finNcRes", natcashRes.toLocaleString() + " G");
+    setVal("finNcTotal", natcashTotal.toLocaleString() + " G");
     setVal("stRev", totalNet.toLocaleString() + " G");
 }
 
@@ -5567,12 +5609,23 @@ function buildReport(period) {
         premium += (p.amount || 0); premiumCount++; premPay.push(p);
     });
 
+    /* Fon Natcash : lajan Bizen ki rive sou kont Natcash la (Premium + rezèvasyon). */
+    var natcashPrem = 0, natcashRes = 0, natcashList = [];
+    pay.forEach(function(p) {
+        if (p.status !== "confirmed" || p.method !== "natcash" || p.purpose === "wallet") return;
+        if (p.purpose === "reservation") natcashRes += (p.amount || 0);
+        else natcashPrem += (p.amount || 0);
+        natcashList.push(p);
+    });
+
     return {
         range: range, totalRes: totalRes, commission: commission,
         premium: premium, premiumCount: premiumCount, net: commission + premium,
         perElu: perElu,
         counts: { users: us.length, elu: fl.length, krey: kr.length },
-        pay: premPay
+        pay: premPay,
+        natcashPrem: natcashPrem, natcashRes: natcashRes,
+        natcashTotal: natcashPrem + natcashRes, natcash: natcashList
     };
 }
 
@@ -5607,6 +5660,18 @@ function downloadReport(format) {
     rows.push(["Revni Membership Premium (G)", R.premium]);
     rows.push(["Kantite Premium peye", R.premiumCount]);
     rows.push(["REVNI NET TOTAL (G)", R.net]);
+    rows.push([]);
+    rows.push(["FON NATCASH (lajan Bizen sou kont Natcash)"]);
+    rows.push(["Natcash Membership (G)", R.natcashPrem]);
+    rows.push(["Natcash Rezevasyon (G)", R.natcashRes]);
+    rows.push(["TOTAL NATCASH (G)", R.natcashTotal]);
+    rows.push([]);
+    rows.push(["DETAY PEMAN NATCASH"]);
+    rows.push(["Dat", "Transaction ID", "Imel", "Obje", "Montan (G)"]);
+    R.natcash.forEach(function(p) {
+        var dn = repTsToDate(p.createdAt);
+        rows.push([ dn ? dn.toLocaleDateString("fr-FR") : "", p.natcashId || "", p.email || "", (p.purpose === "reservation" ? "Rezevasyon" : "Premium"), p.amount || 0 ]);
+    });
     rows.push([]);
     rows.push(["NOUVO ENSKRIPSYON"]);
     rows.push(["VIP", R.counts.users]);
@@ -5645,6 +5710,11 @@ function printReport(R, gen) {
         return '<tr><td>' + repEsc(name) + '</td><td>' + e.count + '</td><td>' + g(e.total) + '</td><td>' + g(e.comm) + '</td><td>' + g(e.net) + '</td></tr>';
     }).join("") || '<tr><td colspan="5">Pa gen done pou peryòd sa a</td></tr>';
 
+    var ncRows = (R.natcash || []).map(function(p) {
+        var dn = repTsToDate(p.createdAt);
+        return '<tr><td>' + (dn ? dn.toLocaleDateString("fr-FR") : "") + '</td><td>' + repEsc(p.natcashId || "") + '</td><td>' + repEsc(p.email || "") + '</td><td>' + (p.purpose === "reservation" ? "Rezevasyon" : "Premium") + '</td><td>' + g(p.amount) + ' G</td></tr>';
+    }).join("") || '<tr><td colspan="5">Pa gen peman Natcash pou peryòd sa a</td></tr>';
+
     var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Bizen HT: Rapò ' + repEsc(R.range.label) + '</title>' +
         '<style>body{font-family:Arial,Helvetica,sans-serif;color:#141414;padding:32px;max-width:820px;margin:auto}' +
         'h1{color:#e91e63;margin-bottom:2px}h2{border-bottom:2px solid #e91e63;padding-bottom:6px;margin-top:26px;font-size:1.05rem}' +
@@ -5660,6 +5730,12 @@ function printReport(R, gen) {
         '<div><span>Komisyon (10%)</span><b>' + g(R.commission) + ' G</b></div>' +
         '<div><span>Revni Premium</span><b>' + g(R.premium) + ' G</b></div>' +
         '<div><span>Revni Net Total</span><b>' + g(R.net) + ' G</b></div></div>' +
+        '<h2>Fon Natcash (lajan Bizen sou kont Natcash)</h2>' +
+        '<div class="kpi">' +
+        '<div><span>Natcash Membership</span><b>' + g(R.natcashPrem) + ' G</b></div>' +
+        '<div><span>Natcash Rezevasyon</span><b>' + g(R.natcashRes) + ' G</b></div>' +
+        '<div><span>Total Natcash</span><b>' + g(R.natcashTotal) + ' G</b></div></div>' +
+        '<table><tr><th>Dat</th><th>Transaction ID</th><th>Imel</th><th>Obje</th><th>Montan</th></tr>' + ncRows + '</table>' +
         '<h2>Nouvo enskripsyon</h2><p>VIP : <b>' + R.counts.users + '</b> &nbsp;·&nbsp; Elu : <b>' + R.counts.elu + '</b> &nbsp;·&nbsp; Krey : <b>' + R.counts.krey + '</b> &nbsp;·&nbsp; Premium peye : <b>' + R.premiumCount + '</b></p>' +
         '<h2>Detay pa Elu</h2><table><tr><th>Elu</th><th>Rezevasyon</th><th>Total</th><th>Komisyon</th><th>Net Elu</th></tr>' + eluRows + '</table>' +
         '<button onclick="window.print()" style="margin-top:26px;padding:11px 22px;background:#e91e63;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem">Enprime / Sove an PDF</button>' +

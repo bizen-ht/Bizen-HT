@@ -49,7 +49,7 @@ exports.handler = async function (event) {
 
         /* Transaction ID : EXACTEMENT 14 chiffres. */
         var txId = (body.transactionId || "").toString().trim();
-        if (!/^\d{14}$/.test(txId)) return err(400, "Transaction ID a dwe gen egzakteman 14 chif (chif sèlman).");
+        if (!/^\d{14}$/.test(txId)) return err(400, "Transaction ID sa a pa valab. Verifye epi eseye ankò.");
 
         var purpose = (body.purpose === "reservation") ? "reservation" : "premium";
 

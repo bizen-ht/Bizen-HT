@@ -8196,7 +8196,7 @@ function openNatcashModal(purpose, opts) {
     if (isPrem) {
         h += '<div class="fg"><label>Imel kont Bizen ki fè peman an</label><input type="email" id="ncEmail" value="' + (auth.currentUser.email || "") + '" placeholder="imel@egzanp.com"></div>';
     }
-    h += '<div class="fg"><label>2. Antre Transaction ID (14 chif)</label><input type="text" id="ncTxId" inputmode="numeric" maxlength="14" placeholder="Transaction ID 14 chif" oninput="this.value=this.value.replace(/[^0-9]/g,\'\').slice(0,14)"></div>';
+    h += '<div class="fg"><label>2. Antre Transaction ID w la</label><input type="text" id="ncTxId" inputmode="numeric" placeholder="Antre Transaction ID w la" oninput="this.value=this.value.replace(/[^0-9]/g,\'\')"></div>';
     h += '<button class="btn btn-primary fw btn-glow" id="ncSubmit" onclick="submitNatcashPay(\'' + purpose + '\',\'' + resId + '\')"><i class="fas fa-check-circle"></i> Valide peman Natcash</button>';
     h += '<div id="ncMsg" style="margin-top:12px;font-size:0.85rem;display:none"></div>';
     h += '<div id="ncPending" style="display:none;margin-top:14px;padding:16px;border:1px solid rgba(233,30,99,0.3);background:rgba(233,30,99,0.08);border-radius:14px;text-align:center">';
@@ -8221,7 +8221,7 @@ function submitNatcashPay(purpose, reservationId) {
     var txId = (txEl ? txEl.value : "").trim();
     var msg = document.getElementById("ncMsg");
     function showMsg(t, ok) { if (!msg) return; msg.style.display = "block"; msg.style.color = ok ? "#4caf50" : "#ff6b6b"; msg.textContent = t; }
-    if (!/^\d{14}$/.test(txId)) { showMsg("Transaction ID a dwe gen egzakteman 14 chif.", false); return; }
+    if (!/^\d{14}$/.test(txId)) { showMsg("Transaction ID sa a pa valab. Verifye epi eseye ankò.", false); return; }
     var payload = { purpose: purpose, transactionId: txId };
     if (purpose === "premium") {
         var em = (document.getElementById("ncEmail").value || "").trim();
