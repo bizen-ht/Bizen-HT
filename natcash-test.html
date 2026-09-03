@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>NatCash — Tès Depo | Bizen HT</title>
+<title>NatCash Tès Depo | Bizen HT</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
@@ -68,7 +68,7 @@
   <!-- CARTE CLIENT -->
   <div class="card">
     <div class="eyebrow">WALLET</div>
-    <h1>Depoze Fon — NatCash</h1>
+    <h1>Depoze Fon NatCash</h1>
     <p class="sub">Peye sou nimewo Bizen an, epi antre Transaction ID w. <span class="badge-test">PAGE TÈS</span></p>
 
     <div class="authbox" id="authBox">Chajman...</div>
@@ -112,7 +112,7 @@
     <div class="pending" id="npPending">
       <div class="spin"></div>
       <div class="t1">N ap verifye depo w lan…</div>
-      <div class="t2">Si li kòrèk, kont ou an ap aktive otomatikman. Ou pa bezwen fè anyen — rete sou paj la.</div>
+      <div class="t2">Si li kòrèk, kont ou an ap aktive otomatikman. Ou pa bezwen fè anyen, rete sou paj la.</div>
     </div>
 
     <p class="secure"><i class="fas fa-shield-halved"></i> Tout tranzaksyon chifre e trete an sekirite.</p>
@@ -170,13 +170,13 @@
       var opts = [];
       snap.forEach(function(d){ opts.push({ id:d.id, x:d.data() }); });
       if (!opts.length){ sel.innerHTML = '<option value="">Ou pa gen rezèvasyon</option>'; return; }
-      var h = '<option value="">— Chwazi yon rezèvasyon —</option>';
+      var h = '<option value="">Chwazi yon rezèvasyon</option>';
       opts.forEach(function(o){
         var x = o.x;
         var nm = x.eluName || x.eluPseudo || x.eluNom || x.elu || "Rezèvasyon";
         var pr = (x.price || x.amount || "");
         var st = x.paid ? "✔ peye" : (x.status || "");
-        h += '<option value="' + o.id + '">' + nm + (pr ? (' — ' + pr + ' G') : '') + (st ? (' (' + st + ')') : '') + '</option>';
+        h += '<option value="' + o.id + '">' + nm + (pr ? (', ' + pr + ' G') : '') + (st ? (' (' + st + ')') : '') + '</option>';
       });
       sel.innerHTML = h;
     }).catch(function(e){ sel.innerHTML = '<option value="">Erè: ' + (e.code || e.message) + '</option>'; });
@@ -292,12 +292,12 @@
       if (!rows.length){ box.innerHTML = '<p class="sub" style="margin-top:12px;text-align:center">Pa gen peman ki ap tann.</p>'; return; }
       var h = "";
       rows.forEach(function(x){
-        var dt = (x.createdAt && x.createdAt.toDate) ? x.createdAt.toDate().toLocaleString("fr-FR") : "—";
+        var dt = (x.createdAt && x.createdAt.toDate) ? x.createdAt.toDate().toLocaleString("fr-FR") : "";
         var tag = x.purpose === "premium" ? '<span class="tag prem">PREMIUM</span>' : '<span class="tag res">REZÈVASYON</span>';
         h += '<div class="prow">'
           + '<div class="top"><span class="txid">' + x._id + '</span>' + tag + '</div>'
           + '<div class="meta"><i class="far fa-clock"></i> ' + dt
-          + '<br><i class="fas fa-envelope"></i> ' + (x.email || x.submittedByEmail || "—")
+          + '<br><i class="fas fa-envelope"></i> ' + (x.email || x.submittedByEmail || "")
           + '<br><i class="fas fa-coins"></i> ' + ((x.amount||0).toLocaleString()) + ' G'
           + (x.reservationId ? '<br><i class="fas fa-calendar-check"></i> Rez: ' + x.reservationId : '')
           + '</div>'
