@@ -82,6 +82,11 @@ exports.handler = async function (event) {
             rec.targetUid = uid;
             rec.email = callerEmail;   /* pour l'affichage admin */
             rec.amount = parseInt(String(rd.price || rd.amount || "0").replace(/[^0-9]/g, ""), 10) || 0;
+            /* Nom de l'Elu + date/heure : aide l'admin à identifier LA bonne
+               réservation si le VIP en tente plusieurs à la fois. */
+            rec.eluName = rd.prestateName || rd.eluName || rd.prestateNom || "";
+            rec.resDate = rd.date || "";
+            rec.resTime = rd.time || "";
         }
 
         /* UNICITÉ : doc id = Transaction ID. Transaction atomique => jamais 2x. */

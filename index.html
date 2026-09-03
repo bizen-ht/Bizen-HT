@@ -8202,7 +8202,7 @@ function openNatcashModal(purpose, opts) {
     h += '<div id="ncPending" style="display:none;margin-top:14px;padding:16px;border:1px solid rgba(233,30,99,0.3);background:rgba(233,30,99,0.08);border-radius:14px;text-align:center">';
     h += '<i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--primary)"></i>';
     h += '<div style="font-weight:700;color:#fff;font-size:0.92rem;margin-top:10px">N ap verifye depo w lan</div>';
-    h += '<div style="color:#b0b0c0;font-size:0.8rem;margin-top:4px">Si li kòrèk, kont ou an ap aktive otomatikman. Rete sou paj la.</div>';
+    h += '<div style="color:#b0b0c0;font-size:0.8rem;margin-top:4px">' + (isPrem ? 'Si li kòrèk, kont ou an ap aktive otomatikman. Rete sou paj la.' : 'Si li kòrèk, rezevasyon w lan ap konfime nan yon ti tan. Rete sou paj la.') + '</div>';
     h += '</div>';
     h += '<p style="font-size:0.72rem;color:#6a6a80;text-align:center;margin-top:12px"><i class="fas fa-shield-alt"></i> Peye sou nimewo an anvan, apre antre Transaction ID w.</p>';
     h += '</div></div></div>';

@@ -3324,7 +3324,10 @@ function loadNatcashPending() {
             var dt = (x.createdAt && x.createdAt.toDate) ? x.createdAt.toDate().toLocaleString("fr-FR") : "";
             var obj = x.purpose === "premium"
                 ? '<span style="color:#ffd700;font-weight:600">Premium</span>'
-                : '<span style="color:#64b5f6;font-weight:600">Rezèvasyon</span>';
+                : '<span style="color:#64b5f6;font-weight:600">Rezèvasyon</span>'
+                  + (x.eluName ? '<br><small style="color:#b0b0c0"><i class="fas fa-user"></i> ' + escHtml(x.eluName)
+                        + (x.resDate ? ' · ' + escHtml(x.resDate) : '')
+                        + (x.resTime ? ' ' + escHtml(x.resTime) : '') + '</small>' : '');
             h += '<tr>'
                 + '<td style="font-family:monospace;font-weight:700;letter-spacing:1px">' + escHtml(x._id) + '</td>'
                 + '<td>' + obj + '</td>'
@@ -5477,7 +5480,7 @@ function initAdminNotifs() {
         var obj = d.purpose === "premium" ? "Premium" : "Rezèvasyon";
         return { ico: "fa-mobile-alt", cl: "#e2001a",
             txt: "Nouvo peman Natcash (" + obj + "): " + ((d.amount || 0).toLocaleString()) + " Gdes",
-            sub: (d.email || d.submittedByEmail || "") + " | ID " + (d.transactionId || "") };
+            sub: (d.eluName ? d.eluName + " | " : "") + (d.email || d.submittedByEmail || "") + " | ID " + (d.transactionId || "") };
     });
 }
 
