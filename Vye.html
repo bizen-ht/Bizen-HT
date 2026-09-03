@@ -1355,6 +1355,7 @@
                     <div class="tc-title"><i class="fas fa-mobile-alt" style="color:#e2001a"></i> Peman Natcash (ap tann validasyon) <span id="bdgNatcash" style="background:#e2001a;color:#fff;border-radius:50px;padding:1px 9px;font-size:0.72rem;margin-left:4px"></span></div>
                     <div class="tc-filters">
                         <button class="tf" onclick="loadNatcashPending()"><i class="fas fa-sync"></i> Refrechi</button>
+                        <button class="tf" onclick="resetNatcashData()" style="color:#ff6b6b"><i class="fas fa-trash"></i> Reyinisyalize done tès</button>
                     </div>
                 </div>
                 <p style="padding:0 18px 4px;color:#6a6a80;font-size:0.76rem">Verifye sou kont Natcash ou ke lajan an rive anvan ou valide. Valide = Premium/rezèvasyon aktive otomatikman. Chak Transaction ID sèvi yon sèl fwa.</p>
@@ -3384,6 +3385,28 @@ function natcashVerify(txId, action) {
         loadNatcashPending();
         loadPayments();
     }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+}
+
+/* Réinitialise TOUTES les données Natcash (à utiliser pour effacer les données
+   de test). Supprime les natcashPayments + les payments method "natcash" =>
+   le rapport Natcash repasse à 0. Action définitive, double confirmation. */
+function resetNatcashData() {
+    if (!db) { toast("DB pa pare.", false); return; }
+    if (!confirm("Reyinisyalize done peman Natcash yo?\n\nRapò Natcash la ap tounen 0. Sèvi sa pou efase done tès sèlman. Aksyon sa a definitif.")) return;
+    if (!confirm("Konfime yon dènye fwa: efase TOUT peman Natcash yo?")) return;
+    var ops = [];
+    db.collection("natcashPayments").get().then(function (snap) {
+        snap.forEach(function (d) { ops.push(d.ref.delete()); });
+        return db.collection("payments").where("method", "==", "natcash").get();
+    }).then(function (snap) {
+        snap.forEach(function (d) { ops.push(d.ref.delete()); });
+        return Promise.all(ops);
+    }).then(function () {
+        toast("Done Natcash reyinisyalize! (" + ops.length + " dosye efase)", true);
+        loadPayments();
+        loadNatcashPending();
+        setTimeout(function () { loadFinance(); }, 700);
+    }).catch(function (e) { toast("Erè: " + (e.code || e.message), false); });
 }
 
 function renderPayTable(list) {
