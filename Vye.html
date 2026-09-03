@@ -1348,6 +1348,33 @@
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-credit-card" style="color:var(--blue)"></i> Peman</h1>
             </div>
+
+            <!-- PEMAN NATCASH (manyèl : admin valide apre l verifye sou kont Natcash li) -->
+            <div class="tc" style="margin-bottom:18px;border:1px solid rgba(226,0,26,0.45)">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-mobile-alt" style="color:#e2001a"></i> Peman Natcash (ap tann validasyon) <span id="bdgNatcash" style="background:#e2001a;color:#fff;border-radius:50px;padding:1px 9px;font-size:0.72rem;margin-left:4px"></span></div>
+                    <div class="tc-filters">
+                        <button class="tf" onclick="loadNatcashPending()"><i class="fas fa-sync"></i> Refrechi</button>
+                    </div>
+                </div>
+                <p style="padding:0 18px 4px;color:#6a6a80;font-size:0.76rem">Verifye sou kont Natcash ou ke lajan an rive anvan ou valide. Valide = Premium/rezèvasyon aktive otomatikman. Chak Transaction ID sèvi yon sèl fwa.</p>
+                <div class="tscroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>Objè</th>
+                                <th>Imel</th>
+                                <th>Montan</th>
+                                <th>Dat / Lè</th>
+                                <th>Aksyon</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbNatcash"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="tc">
                 <div class="tc-head">
                     <div class="tc-title"><i class="fas fa-credit-card"></i> Tout Peman Premium</div>
@@ -3271,6 +3298,67 @@ function loadPayments() {
         });
 }
 
+/* ====================================
+   PEMAN NATCASH MANUEL — validation admin
+   Liste les paiements Natcash en attente ; Valide => Premium/réservation
+   s'active (natcash-verify). Anile => rejeté (l'ID reste bloqué).
+   ==================================== */
+var _unsubNatcash = null;
+function loadNatcashPending() {
+    var tb = document.getElementById("tbNatcash");
+    if (!db || !tb) return;
+    tb.innerHTML = emptyRow(6, "Chajman...");
+    if (_unsubNatcash) { _unsubNatcash(); _unsubNatcash = null; }
+    _unsubNatcash = db.collection("natcashPayments").where("status", "==", "pending").onSnapshot(function (snap) {
+        var rows = [];
+        snap.forEach(function (doc) { var x = doc.data(); x._id = doc.id; rows.push(x); });
+        rows.sort(function (a, b) {
+            var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+            var tbb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+            return tbb - ta;
+        });
+        setBdg("bdgNatcash", rows.length);
+        if (!rows.length) { tb.innerHTML = emptyRow(6, "Pa gen peman Natcash k ap tann"); return; }
+        var h = "";
+        rows.forEach(function (x) {
+            var dt = (x.createdAt && x.createdAt.toDate) ? x.createdAt.toDate().toLocaleString("fr-FR") : "";
+            var obj = x.purpose === "premium"
+                ? '<span style="color:#ffd700;font-weight:600">Premium</span>'
+                : '<span style="color:#64b5f6;font-weight:600">Rezèvasyon</span>';
+            h += '<tr>'
+                + '<td style="font-family:monospace;font-weight:700;letter-spacing:1px">' + escHtml(x._id) + '</td>'
+                + '<td>' + obj + '</td>'
+                + '<td><small>' + escHtml(x.email || x.submittedByEmail || "") + '</small></td>'
+                + '<td>' + ((x.amount || 0).toLocaleString()) + ' G</td>'
+                + '<td><small>' + escHtml(dt) + '</small></td>'
+                + '<td style="white-space:nowrap">'
+                + '<button onclick="natcashVerify(\'' + escHtml(x._id) + '\',\'confirm\')" style="background:rgba(76,175,80,0.15);color:#4caf50;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:0.72rem;margin-right:6px"><i class="fas fa-check"></i> Valide</button>'
+                + '<button onclick="natcashVerify(\'' + escHtml(x._id) + '\',\'reject\')" style="background:rgba(244,67,54,0.15);color:#f44336;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:0.72rem"><i class="fas fa-times"></i> Anile</button>'
+                + '</td></tr>';
+        });
+        tb.innerHTML = h;
+    }, function (e) {
+        tb.innerHTML = emptyRow(6, "Erè: " + (e.code || e.message));
+    });
+}
+
+function natcashVerify(txId, action) {
+    if (action === "reject" && !confirm("Anile peman Natcash " + txId + " ?")) return;
+    if (action === "confirm" && !confirm("Ou verifye sou kont Natcash ou ke peman an fèt ?\n\nValide " + txId + " ? Sa ap aktive Premium / rezèvasyon an otomatikman.")) return;
+    if (!auth || !auth.currentUser) { toast("Ou dwe konekte kòm admin.", false); return; }
+    auth.currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/natcash-verify", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, transactionId: txId, action: action })
+        });
+    }).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.success) throw new Error(j.error || "Erè");
+        toast(action === "confirm" ? "Peman Natcash valide! Kont lan aktive." : "Peman Natcash anile.", true);
+        loadNatcashPending();
+        loadPayments();
+    }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+}
+
 function renderPayTable(list) {
     var tb = document.getElementById("tbPy");
     if (!tb) return;
@@ -3828,7 +3916,7 @@ function goPage(id, btn) {
 
     /* Charge les données selon la page */
     if (id === "res")   loadReservations();
-    if (id === "pay")   loadPayments();
+    if (id === "pay")   { loadPayments(); loadNatcashPending(); }
     if (id === "fin")   loadFinance();
     if (id === "comm")  loadCommissions();
     if (id === "dash")  loadRecent();
@@ -5215,7 +5303,7 @@ var notifList = [];
 var notifSeenTs = 0;
 var notifInited = false;
 var unsubNotifUsers = null, unsubNotifPay = null,
-    unsubNotifRes = null, unsubNotifRev = null;
+    unsubNotifRes = null, unsubNotifRev = null, unsubNotifNatcash = null;
 
 function loadNotifState() {
     try {
@@ -5381,6 +5469,15 @@ function initAdminNotifs() {
         return { ico: "fa-star", cl: "#e91e63",
             txt: "Nouvo avi (" + (d.rating || "?") + "★), ap tann apwobasyon",
             sub: (d.name || "") };
+    });
+
+    /* Nouveaux dépôts Natcash en attente de validation. */
+    unsubNotifNatcash = listen("natcashPayments", "nc", function (d) {
+        if (d.status && d.status !== "pending") return null;
+        var obj = d.purpose === "premium" ? "Premium" : "Rezèvasyon";
+        return { ico: "fa-mobile-alt", cl: "#e2001a",
+            txt: "Nouvo peman Natcash (" + obj + "): " + ((d.amount || 0).toLocaleString()) + " Gdes",
+            sub: (d.email || d.submittedByEmail || "") + " | ID " + (d.transactionId || "") };
     });
 }
 

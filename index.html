@@ -2112,6 +2112,7 @@ body.no-screenshot * {
             <h3>Metod Pèman Aksepte</h3>
             <div class="pay-icos">
                 <div class="pay-logo mc"><i class="fas fa-mobile-alt"></i><span>MonCash</span></div>
+                <div class="pay-logo nc"><i class="fas fa-mobile-alt"></i><span>NatCash</span></div>
             </div>
         </div>
     </div>
@@ -3102,6 +3103,18 @@ body.is-premium .pc-blur{display:none!important}
                         transition:all 0.3s">
                     <i class="fas fa-mobile-alt"></i>
                     Peye 1,000 Gdes via MonCash
+                </button>
+
+                <!-- NATCASH (peman manyèl, admin valide) -->
+                <button onclick="openNatcashModal('premium',{amount:1000})"
+                        style="width:100%;margin-top:10px;padding:16px;
+                        background:linear-gradient(135deg,#e2001a,#b30015);
+                        border:none;border-radius:50px;color:#fff;
+                        font-family:Montserrat,sans-serif;font-size:1rem;font-weight:700;
+                        cursor:pointer;display:flex;align-items:center;justify-content:center;
+                        gap:10px;transition:all 0.3s">
+                    <i class="fas fa-mobile-alt"></i>
+                    Peye ak Natcash
                 </button>
 
                 <p style="font-size:0.72rem;
@@ -8038,13 +8051,8 @@ function confirmRes() {
                 if (payNow) {
                     /* Mémorise la réservation à confirmer après le paiement */
                     try { localStorage.setItem("bizenPendingBooking", ref.id); } catch(e) {}
-                    /* VIP Premium avec assez sur le wallet => on propose le choix. */
-                    if (isPremiumViewer && viewerWalletBalance >= amountNum) {
-                        askPayChoice(ref.id, amountNum, nm);
-                    } else {
-                        showOk("Redireksyon Peman...", "Ou pral peye " + amountNum.toLocaleString() + " Gdes via MonCash pou konfime rezevasyon ak " + nm + ".");
-                        payReservationMonCash(amountNum, ref.id, nm);
-                    }
+                    /* Choix du mode de paiement : Wallet (si éligible) / MonCash / Natcash. */
+                    askPayChoice(ref.id, amountNum, nm);
                 } else if (isTestViewer) {
                     showOk("Rezevasyon Test Konfime!", "[MOD TEST] Rezevasyon demo pou " + nm + " le " + date.value + " kreye san peman. Hotel: " + hotelName + ".");
                 } else {
@@ -8145,14 +8153,131 @@ function payReservationMonCash(amount, reservationId, prestateName) {
 function askPayChoice(resId, amount, name) {
     var old = document.getElementById("payChoiceM"); if (old) old.remove();
     var safeName = String(name || "").replace(/'/g, "\\'");
+    var canWallet = isPremiumViewer && viewerWalletBalance >= amount;
     var h = '<div class="mbg show" id="payChoiceM" style="z-index:10006">';
     h += '<div class="modal" style="max-width:420px;text-align:center">';
+    h += '<button class="mx" onclick="cM(\'payChoiceM\')"><i class="fas fa-times"></i></button>';
     h += '<h2 style="margin-bottom:8px">Kijan ou vle peye?</h2>';
     h += '<p style="color:#b0b0c0;font-size:0.9rem;margin-bottom:18px"><strong>' + amount.toLocaleString() + ' Gdes</strong> pou rezevasyon ak ' + escapeResHotel(name) + '.</p>';
-    h += '<button class="btn btn-primary fw btn-glow" style="margin-bottom:10px" onclick="cM(\'payChoiceM\');payReservationWallet(\'' + resId + '\',' + amount + ',\'' + safeName + '\')"><i class="fas fa-wallet"></i> Peye ak Wallet (balans: ' + viewerWalletBalance.toLocaleString() + ' G)</button>';
-    h += '<button class="btn btn-outline fw" onclick="cM(\'payChoiceM\');payReservationMonCash(' + amount + ',\'' + resId + '\',\'' + safeName + '\')"><i class="fas fa-mobile-alt"></i> Peye dirèk ak MonCash</button>';
+    if (canWallet) h += '<button class="btn btn-primary fw btn-glow" style="margin-bottom:10px" onclick="cM(\'payChoiceM\');payReservationWallet(\'' + resId + '\',' + amount + ',\'' + safeName + '\')"><i class="fas fa-wallet"></i> Peye ak Wallet (balans: ' + viewerWalletBalance.toLocaleString() + ' G)</button>';
+    h += '<button class="btn btn-outline fw" style="margin-bottom:10px" onclick="cM(\'payChoiceM\');payReservationMonCash(' + amount + ',\'' + resId + '\',\'' + safeName + '\')"><i class="fas fa-mobile-alt"></i> Peye ak MonCash</button>';
+    h += '<button class="btn btn-outline fw" onclick="cM(\'payChoiceM\');openNatcashModal(\'reservation\',{reservationId:\'' + resId + '\',amount:' + amount + ',name:\'' + safeName + '\'})"><i class="fas fa-mobile-alt" style="color:#e2001a"></i> Peye ak Natcash</button>';
     h += '</div></div>';
     var wrap = document.createElement("div"); wrap.innerHTML = h; document.body.appendChild(wrap.firstChild);
+}
+
+/* ====================================
+   PAIEMENT NATCASH MANUEL (Premium + réservations)
+   Le client paie sur le numéro Bizen, entre son Transaction ID (14 chiffres),
+   l'admin valide dans son panneau => Premium / réservation s'active tout seul.
+   ==================================== */
+var _natcashWatch = null;
+
+function openNatcashModal(purpose, opts) {
+    opts = opts || {};
+    if (!auth || !auth.currentUser) { oM("lM"); return; }
+    if (purpose === "premium" && blockPremiumForElu()) return;
+    var old = document.getElementById("natcashM"); if (old) old.remove();
+    var isPrem = purpose === "premium";
+    var amount = opts.amount || (isPrem ? 1000 : 0);
+    var resId = opts.reservationId || "";
+    var h = '<div class="mbg show" id="natcashM" style="z-index:10007">';
+    h += '<div class="modal" style="max-width:440px;max-height:95vh;overflow-y:auto">';
+    h += '<button class="mx" onclick="closeNatcash()"><i class="fas fa-times"></i></button>';
+    h += '<div class="mhead"><div class="mico" style="background:linear-gradient(135deg,#e2001a,#b30015)"><i class="fas fa-mobile-alt"></i></div><h2>Peye ak Natcash</h2>';
+    h += '<p style="color:#b0b0c0">' + (isPrem ? "Manm Premium" : escapeResHotel(opts.name || "Rezevasyon")) + (amount ? ' · ' + amount.toLocaleString() + ' Gdes' : '') + '</p></div>';
+    h += '<div class="mform">';
+    h += '<div style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px">';
+    h += '<div style="font-size:0.72rem;color:#6a6a80;margin-bottom:6px">1. Voye <strong style="color:#fff">' + (amount ? amount.toLocaleString() + ' Gdes' : 'peman an') + '</strong> sou nimewo Natcash sa a:</div>';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">';
+    h += '<div><div style="font-weight:700;color:#fff;font-size:1.02rem">Baptiste Junior</div><div style="font-weight:700;color:var(--gold);font-size:1.12rem;letter-spacing:1px">+509 41228419</div></div>';
+    h += '<button type="button" onclick="copyNatcashNum(this)" class="btn btn-outline" style="padding:9px 13px"><i class="fas fa-copy"></i></button>';
+    h += '</div></div>';
+    if (isPrem) {
+        h += '<div class="fg"><label>Imel kont Bizen ki fè peman an</label><input type="email" id="ncEmail" value="' + (auth.currentUser.email || "") + '" placeholder="imel@egzanp.com"></div>';
+    }
+    h += '<div class="fg"><label>2. Antre Transaction ID (14 chif)</label><input type="text" id="ncTxId" inputmode="numeric" maxlength="14" placeholder="Transaction ID 14 chif" oninput="this.value=this.value.replace(/[^0-9]/g,\'\').slice(0,14)"></div>';
+    h += '<button class="btn btn-primary fw btn-glow" id="ncSubmit" onclick="submitNatcashPay(\'' + purpose + '\',\'' + resId + '\')"><i class="fas fa-check-circle"></i> Valide peman Natcash</button>';
+    h += '<div id="ncMsg" style="margin-top:12px;font-size:0.85rem;display:none"></div>';
+    h += '<div id="ncPending" style="display:none;margin-top:14px;padding:16px;border:1px solid rgba(233,30,99,0.3);background:rgba(233,30,99,0.08);border-radius:14px;text-align:center">';
+    h += '<i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--primary)"></i>';
+    h += '<div style="font-weight:700;color:#fff;font-size:0.92rem;margin-top:10px">N ap verifye depo w lan</div>';
+    h += '<div style="color:#b0b0c0;font-size:0.8rem;margin-top:4px">Si li kòrèk, kont ou an ap aktive otomatikman. Rete sou paj la.</div>';
+    h += '</div>';
+    h += '<p style="font-size:0.72rem;color:#6a6a80;text-align:center;margin-top:12px"><i class="fas fa-shield-alt"></i> Peye sou nimewo an anvan, apre antre Transaction ID w.</p>';
+    h += '</div></div></div>';
+    var wrap = document.createElement("div"); wrap.innerHTML = h; document.body.appendChild(wrap.firstChild);
+}
+
+function copyNatcashNum(btn) {
+    try {
+        navigator.clipboard.writeText("+50941228419");
+        if (btn) { var o = btn.innerHTML; btn.innerHTML = '<i class="fas fa-check"></i>'; setTimeout(function () { btn.innerHTML = o; }, 1200); }
+    } catch (e) {}
+}
+
+function submitNatcashPay(purpose, reservationId) {
+    var txEl = document.getElementById("ncTxId");
+    var txId = (txEl ? txEl.value : "").trim();
+    var msg = document.getElementById("ncMsg");
+    function showMsg(t, ok) { if (!msg) return; msg.style.display = "block"; msg.style.color = ok ? "#4caf50" : "#ff6b6b"; msg.textContent = t; }
+    if (!/^\d{14}$/.test(txId)) { showMsg("Transaction ID a dwe gen egzakteman 14 chif.", false); return; }
+    var payload = { purpose: purpose, transactionId: txId };
+    if (purpose === "premium") {
+        var em = (document.getElementById("ncEmail").value || "").trim();
+        if (!em || em.indexOf("@") === -1) { showMsg("Antre imel kont Bizen ki fè peman an.", false); return; }
+        payload.email = em;
+    } else {
+        payload.reservationId = reservationId;
+    }
+    var btn = document.getElementById("ncSubmit");
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> N ap trete...';
+    auth.currentUser.getIdToken().then(function (idToken) {
+        payload.idToken = idToken;
+        return fetch("/.netlify/functions/natcash-submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) {
+        if (!res.ok || !res.d.success) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Valide peman Natcash'; throw new Error(res.d && res.d.error ? res.d.error : "Erè"); }
+        if (txEl) txEl.value = "";
+        watchNatcashPay(txId, purpose);
+    }).catch(function (e) {
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Valide peman Natcash';
+        showMsg(e.message || "Erè rezo.", false);
+    });
+}
+
+function watchNatcashPay(txId, purpose) {
+    var msg = document.getElementById("ncMsg"); if (msg) msg.style.display = "none";
+    var btn = document.getElementById("ncSubmit"); if (btn) btn.style.display = "none";
+    var emEl = document.getElementById("ncEmail"); if (emEl && emEl.parentNode) emEl.parentNode.style.display = "none";
+    var txEl = document.getElementById("ncTxId"); if (txEl && txEl.parentNode) txEl.parentNode.style.display = "none";
+    var pend = document.getElementById("ncPending"); if (pend) pend.style.display = "block";
+    if (_natcashWatch) { _natcashWatch(); _natcashWatch = null; }
+    if (!db) return;
+    _natcashWatch = db.collection("natcashPayments").doc(txId).onSnapshot(function (doc) {
+        if (!doc.exists) return;
+        var st = doc.data().status;
+        if (st === "confirmed") finishNatcashPay(true, purpose);
+        else if (st === "rejected") finishNatcashPay(false, purpose);
+    }, function () { /* erreur de lecture : on laisse le spinner tourner */ });
+}
+
+function finishNatcashPay(ok, purpose) {
+    if (_natcashWatch) { _natcashWatch(); _natcashWatch = null; }
+    closeNatcash();
+    if (ok) {
+        try { localStorage.removeItem("bizenPendingBooking"); } catch (e) {}
+        if (purpose === "premium") showOk("Peman konfime! 👑", "Peman Natcash ou konfime. Premium ou aktive otomatikman.");
+        else showOk("Rezevasyon konfime! 💳", "Peman Natcash ou konfime. Rezevasyon w peye.");
+    } else {
+        showOk("Peman refize", "Depo Natcash la pa t kòrèk oswa li refize. Kontakte sipò si w gen kesyon.");
+    }
+}
+
+function closeNatcash() {
+    if (_natcashWatch) { _natcashWatch(); _natcashWatch = null; }
+    cM("natcashM");
+    var el = document.getElementById("natcashM"); if (el) el.remove();
 }
 
 function payReservationWallet(resId, amount, name) {
