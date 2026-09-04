@@ -9,9 +9,9 @@
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<!-- Leaflet : carte Haïti (open source, sans clé API) -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet : carte Haïti (open source, SANS clé API) — CDN fiable (cdnjs) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 .zone-count-label{background:transparent;border:none;box-shadow:none;color:#fff;font-weight:800;font-size:0.8rem;text-shadow:0 1px 3px rgba(0,0,0,0.9)}
 .zone-count-label::before{display:none}
@@ -4833,8 +4833,9 @@ function renderZoneMap(list, totUsers, totPrem) {
     if (!el) return;
     if (!zoneMap) {
         zoneMap = L.map("zoneMap", { scrollWheelZoom: true }).setView([18.97, -72.55], 8);
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-            attribution: "&copy; OpenStreetMap &copy; CARTO", maxZoom: 18
+        /* Tuiles OpenStreetMap standard : totalement libres, AUCUNE clé API. */
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "&copy; OpenStreetMap contributors", maxZoom: 19
         }).addTo(zoneMap);
     }
     if (zoneLayer) { zoneMap.removeLayer(zoneLayer); }

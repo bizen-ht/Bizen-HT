@@ -1876,23 +1876,6 @@ body.no-screenshot * {
     <div class="vedettes-grid" id="vedettesGrid"></div>
 </section>
 
-<!-- ELU AN RABÈ (slideshow automatique) -->
-<section class="section alt-bg" id="rabaisSection" style="display:none">
-    <div class="container">
-        <div class="sec-head">
-            <p class="sec-sub" style="color:#ff9800"><i class="fas fa-tags"></i> Òf Limite</p>
-            <h2 class="sec-title">Elu an <span class="hl" style="color:#ff9800">Rabè</span> kounye a</h2>
-            <div class="ubar" style="background:#ff9800"></div>
-            <p class="sec-desc">Pwofite rezève Elu sa yo pandan yo bay rabè an anvan yo fini .</p>
-        </div>
-        <div class="rabais-wrap">
-            <button class="rabais-arrow rabais-prev" onclick="rabaisScroll(-1)"><i class="fas fa-chevron-left"></i></button>
-            <div class="rabais-track" id="rabaisTrack"></div>
-            <button class="rabais-arrow rabais-next" onclick="rabaisScroll(1)"><i class="fas fa-chevron-right"></i></button>
-        </div>
-    </div>
-</section>
-
 <!-- FEMMES -->
 <!-- BARRE DE FILTRES DE L'ACCUEIL -->
 <style>
@@ -1972,6 +1955,24 @@ body.no-screenshot * {
             <button class="btn btn-outline" id="fGPrev" onclick="gridNav('fG',-1)"><i class="fas fa-chevron-left"></i> Avan</button>
             <span class="grid-pager-info" id="fGInfo">1 / 1</span>
             <button class="btn btn-primary" id="fGNext" onclick="gridNav('fG',1)">Apre <i class="fas fa-chevron-right"></i></button>
+        </div>
+    </div>
+</section>
+
+<!-- ELU AN RABÈ (slideshow automatique) — placé APRÈS la catégorie Fanm, et
+     filtré selon le filtre actif de l'accueil (catégorie / zone / âge / prix). -->
+<section class="section alt-bg" id="rabaisSection" style="display:none">
+    <div class="container">
+        <div class="sec-head">
+            <p class="sec-sub" style="color:#ff9800"><i class="fas fa-tags"></i> Òf Limite</p>
+            <h2 class="sec-title">Elu an <span class="hl" style="color:#ff9800">Rabè</span> kounye a</h2>
+            <div class="ubar" style="background:#ff9800"></div>
+            <p class="sec-desc">Pwofite rezève Elu sa yo pandan yo bay rabè an anvan yo fini .</p>
+        </div>
+        <div class="rabais-wrap">
+            <button class="rabais-arrow rabais-prev" onclick="rabaisScroll(-1)"><i class="fas fa-chevron-left"></i></button>
+            <div class="rabais-track" id="rabaisTrack"></div>
+            <button class="rabais-arrow rabais-next" onclick="rabaisScroll(1)"><i class="fas fa-chevron-right"></i></button>
         </div>
     </div>
 </section>
@@ -3687,6 +3688,38 @@ function loadRabaisSlideshow() {
     startRabaisAuto();
 }
 
+/* La rabè respecte les filtres de l'accueil (catégorie, zone, âge, prix) :
+   si le VIP a filtré "Fanm" en haut, il ne verra QUE des Fanm en rabè. */
+function rabaisPassesHomeFilter(d) {
+    if (typeof homeFilter === "undefined") return true;
+    var male = (d.genre === "homme" || d.genre === "gason");
+    var catOf = male ? "gason" : (d.genre === "biseksyel" ? "biseksyel" : "fanm");
+    var cat = homeFilter.cat;
+    if (cat === "krey") return false;                 /* rabè = Elu, jamais Krey */
+    if (cat !== "all" && catOf !== cat) return false;
+    /* Zone : même clé que le filtre des grilles */
+    var zoneKey = (typeof gridState !== "undefined" && gridState.fG) ? gridState.fG.filter : "all";
+    if (zoneKey && zoneKey !== "all") {
+        var k = zoneCanonical(d.localisation).key;
+        var ok = (k === zoneKey);
+        if (!ok && Array.isArray(d.zones)) ok = d.zones.some(function (z) { return zoneCanonical(z).key === zoneKey; });
+        if (!ok) return false;
+    }
+    /* Âge */
+    if (homeFilter.age && homeFilter.age !== "all") {
+        var a = (typeof d.age === "number") ? d.age : 0;
+        var pa = homeFilter.age.split("-");
+        if (!a || a < parseInt(pa[0], 10) || a > parseInt(pa[1], 10)) return false;
+    }
+    /* Prix (prix après rabais) */
+    if (homeFilter.price && homeFilter.price !== "all") {
+        var pr = eluDiscount(d).newPrice || 0;
+        var pp = homeFilter.price.split("-");
+        if (pr < parseFloat(pp[0]) || pr > parseFloat(pp[1])) return false;
+    }
+    return true;
+}
+
 function renderRabaisSlideshow() {
     var section = document.getElementById("rabaisSection");
     var track = document.getElementById("rabaisTrack");
@@ -3697,7 +3730,7 @@ function renderRabaisSlideshow() {
         var isElu = d.type === "freelancer" || !d.type;
         /* SEULS les Elu APPROUVÉS (status "active") peuvent apparaître ici.
            Un compte "en_attente" ne doit jamais être visible sur le site. */
-        return (d.discountAmount > 0) && ends > now && isElu && d.status === "active";
+        return (d.discountAmount > 0) && ends > now && isElu && d.status === "active" && rabaisPassesHomeFilter(d);
     });
     if (!active.length) { section.style.display = "none"; return; }
     section.style.display = "block";
@@ -5083,6 +5116,7 @@ function applyHomeFilters() {
     if (gridState.fG) gridState.fG.page = 0;
     if (gridState.hG) gridState.hG.page = 0;
     try { refreshGrids(); } catch (e) {}
+    try { renderRabaisSlideshow(); } catch (e) {}
 }
 
 /* Catégorie : montre/masque les sections + la barre Story. */
@@ -5112,6 +5146,7 @@ function setHomeCat(cat, btn) {
     if (gridState.hG) gridState.hG.page = 0;
     try { refreshGrids(); } catch (e) {}   /* ré-applique le filtre de genre par carte */
     try { renderStoriesBar(); } catch (e) {}
+    try { renderRabaisSlideshow(); } catch (e) {}
 }
 
 /* La carte passe-t-elle le filtre de genre de la catégorie active ? */
@@ -5126,6 +5161,7 @@ function setHomeZone(v) {
     if (gridState.fG) { gridState.fG.filter = v || "all"; gridState.fG.page = 0; }
     if (gridState.hG) { gridState.hG.filter = v || "all"; gridState.hG.page = 0; }
     try { refreshGrids(); } catch (e) {}
+    try { renderRabaisSlideshow(); } catch (e) {}
 }
 
 /* Remplit le menu déroulant des zones à partir des cartes réelles (clé data-f + libellé). */
@@ -5164,6 +5200,7 @@ function resetHomeFilters() {
     if (femSub) femSub.innerHTML = '<i class="fas fa-venus"></i> Kategori Fanm';
     try { renderStoriesBar(); } catch (e) {}
     try { refreshGrids(); } catch (e) {}
+    try { renderRabaisSlideshow(); } catch (e) {}
 }
 
 /* ====================================
@@ -6921,8 +6958,13 @@ async function unlockUI() {
 // Dissuade le partage : toute capture révèle QUI a fuité le contenu.
 function mediaWatermark() {
     var id = (auth && auth.currentUser) ? (auth.currentUser.email || "Bizen HT") : "Bizen HT";
-    return '<div style="position:absolute;inset:0;pointer-events:none;z-index:5;display:flex;align-items:center;justify-content:center;overflow:hidden">' +
-        '<span style="transform:rotate(-30deg);color:rgba(255,255,255,0.28);font-size:0.6rem;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.5);white-space:nowrap">' + id + '</span></div>';
+    var safe = String(id).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; });
+    /* Filigrane RÉPÉTÉ (mosaïque diagonale) : l'imel apparaît des dizaines de
+       fois sur tout le média. Impossible de le recadrer/retoucher pour l'enlever. */
+    var cell = '<span style="color:rgba(255,255,255,0.20);font-size:0.62rem;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.55);white-space:nowrap;margin:13px 20px">' + safe + '</span>';
+    var many = "";
+    for (var i = 0; i < 48; i++) many += cell;
+    return '<div style="position:absolute;inset:-45%;pointer-events:none;z-index:5;overflow:hidden;transform:rotate(-30deg);display:flex;flex-wrap:wrap;align-content:center;justify-content:center">' + many + '</div>';
 }
 
 /* ====================================================
