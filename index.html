@@ -177,6 +177,8 @@
         .logo-i{width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary),var(--secondary));border-radius:50%;color:white;font-size:1.1rem;animation:hb 2s infinite}
         .logo-t{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:white}
         .logo-ht{background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .logo-img{height:46px;width:auto;max-width:190px;display:block;object-fit:contain}
+        @media(max-width:768px){.logo-img{height:38px}}
         .nav-links{display:flex;list-style:none;gap:2px;align-items:center}
         .nav-link{color:var(--text-secondary);padding:8px 11px;border-radius:var(--radius-full);font-size:0.84rem;font-weight:500;white-space:nowrap;transition:var(--transition)}
         .nav-link:hover,.nav-link.active{color:white;background:rgba(233,30,99,0.15)}
@@ -1699,7 +1701,7 @@ body.no-screenshot * {
 <!-- NAVBAR -->
 <nav class="navbar" id="navbar">
     <div class="nav-c">
-        <a href="#" class="logo"><span class="logo-i"><i class="fas fa-heart"></i></span><span class="logo-t">Bizen<span class="logo-ht">HT</span></span></a>
+        <a href="#" class="logo"><img src="Images/bizen-logo.png" alt="Bizen HT" class="logo-img"></a>
         <ul class="nav-links" id="navLinks">
             <li><a href="#top" class="nav-link active">Akey</a></li>
             <li><a href="#apropos" class="nav-link">Kisa Nou Ye</a></li>
@@ -2342,7 +2344,7 @@ body.is-premium .pc-blur{display:none!important}
 <footer class="footer">
     <div class="container">
         <div class="foot-grid">
-            <div class="foot-brand"><a href="#" class="logo"><span class="logo-i"><i class="fas fa-heart"></i></span><span class="logo-t">Bizen<span class="logo-ht">HT</span></span></a><p>Sit rankont #1 an Ayiti pou moman entim ak plezi. Hotel inclus. Diskresyon total.</p></div>
+            <div class="foot-brand"><a href="#" class="logo"><img src="Images/bizen-logo.png" alt="Bizen HT" class="logo-img"></a><p>Sit rankont #1 an Ayiti pou moman entim ak plezi. Hotel inclus. Diskresyon total.</p></div>
             <div class="foot-col">
     <h4>Lyen Rapid</h4>
     <ul>
@@ -8132,18 +8134,16 @@ function payReservationMonCash(amount, reservationId, prestateName) {
             }
             window.location.href = finalUrl;
         } else {
-            /* Affiche la VRAIE raison renvoyée par Bazik/Netlify */
+            /* MonCash indisponible (souvent une panne côté Bazik) : on repropose Natcash. */
             console.error("MonCash create response:", data);
-            var reason = data.error
-                || (data.rawResponse && (data.rawResponse.message || data.rawResponse.error))
-                || "Bazik pa retounen lyen peman.";
-            toast("Peman echwe: " + reason, "err");
-            showOk("Pwoblèm Peman MonCash", "Detay teknik: " + reason + "\n\nVerifye nan Netlify > Functions > Logs (moncash) sa Bazik retounen.");
+            toast("MonCash pa disponib kounye a. Peye ak Natcash pito.", "err");
+            askPayChoice(reservationId, amount, prestateName);
         }
     })
     .catch(function(err) {
         console.error("payReservationMonCash:", err);
-        toast("Ere koneksyon MonCash. Verifye fonksyon Netlify a.", "err");
+        toast("MonCash pa disponib kounye a. Peye ak Natcash pito.", "err");
+        askPayChoice(reservationId, amount, prestateName);
     });
 }
 
@@ -8620,19 +8620,17 @@ function createMonCashPayment(
             }, 1000);
 
         } else {
-            if (statusEl) {
-                statusEl.innerHTML =
-                    '<i class="fas ' +
-                    'fa-exclamation-triangle">' +
-                    '</i>' +
-                    ' Pa jwenn lyen peman.';
-                statusEl.style.color =
-                    "#ff9800";
+            if (btn) {
+                var _amtE = window.premiumOffer ? window.premiumOffer.price : 1000;
+                btn.innerHTML = '<i class="fas fa-mobile-alt"></i> Peye ' + _amtE.toLocaleString() + ' Gdes via MonCash';
+                btn.disabled = false;
             }
-            toast(
-                "Lyen peman pa disponib.",
-                "err"
-            );
+            if (statusEl) {
+                statusEl.style.display = "block";
+                statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> MonCash pa disponib pou kounye a (pwoblèm bò Bazik). Tanpri peye ak <strong>Natcash</strong> anba a 👇';
+                statusEl.style.color = "#ff9800";
+            }
+            toast("MonCash pa disponib. Sèvi ak Natcash anba a.", "err");
         }
     })
     .catch(function(err) {
@@ -8649,15 +8647,14 @@ function createMonCashPayment(
             btn.disabled = false;
         }
         if (statusEl) {
+            statusEl.style.display = "block";
             statusEl.innerHTML =
-                '<i class="fas ' +
-                'fa-times-circle"></i>' +
-                ' Koneksyon echwe.';
+                '<i class="fas fa-exclamation-triangle"></i> MonCash pa disponib pou kounye a. Tanpri peye ak <strong>Natcash</strong> anba a 👇';
             statusEl.style.color =
-                "#f44336";
+                "#ff9800";
         }
         toast(
-            "Ere koneksyon MonCash.",
+            "MonCash pa disponib. Sèvi ak Natcash anba a.",
             "err"
         );
     });
