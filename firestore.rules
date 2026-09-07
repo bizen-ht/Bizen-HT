@@ -290,6 +290,79 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    /* ============================================================
+       BIZEN SOCIAL — app de rencontres (séparée du système Élu)
+       Principe identique au reste du site : le client LIT, mais toute
+       écriture sensible (swipe, match, message, droits, compteurs) passe
+       par les fonctions Netlify (Admin SDK), jamais en direct.
+       ============================================================ */
+
+    /* Profil Social : lisible par tout membre connecté (catalogue de swipe).
+       Le propriétaire édite SON profil, mais ne peut PAS s'auto-attribuer
+       un statut/rôle privilégié : status & modération restent côté serveur. */
+    match /socialProfiles/{uid} {
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isAdmin()
+        || (isSignedIn() && request.auth.uid == uid
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                 .hasAny(['status', 'boostUntil', 'activatedAt', 'uid']));
+      allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == uid);
+    }
+
+    /* Swipes : je lis seulement les MIENS (from == moi). Écriture serveur. */
+    match /socialSwipes/{id} {
+      allow read:  if isAdmin() || (isSignedIn() && resource.data.from == request.auth.uid);
+      allow write: if isAdmin();   /* écrit par social-swipe (Admin SDK) */
+    }
+
+    /* Matchs : lisibles par les 2 participants. Écriture serveur.
+       Un participant peut SEULEMENT remettre à zéro ses non-lus + régler l'éphémère. */
+    match /socialMatches/{pairId} {
+      allow read:   if isAdmin() || (isSignedIn() && request.auth.uid in resource.data.users);
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isSignedIn() && request.auth.uid in resource.data.users
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unread', 'ephemeral']));
+    }
+
+    /* Messages Social : lus par les participants (query array-contains). Écriture serveur. */
+    match /socialMessages/{msgId} {
+      allow read:  if isAdmin() || (isSignedIn() && request.auth.uid in resource.data.participants);
+      allow write: if isAdmin();   /* écrit par social-message (Admin SDK) */
+    }
+
+    /* "Qui m'a liké" : je lis seulement les miens (owner == moi). Écriture serveur.
+       Le contenu n'est révélé côté UI que si je suis Premium. */
+    match /socialLikesReceived/{id} {
+      allow read:  if isAdmin() || (isSignedIn() && resource.data.owner == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    /* Droits (premium / crédits) : je lis les miens ; l'argent/le premium
+       ne s'écrit QUE côté serveur (paiement wallet/MonCash). */
+    match /socialEntitlements/{uid} {
+      allow read:  if isAdmin() || (isSignedIn() && request.auth.uid == uid);
+      allow write: if isAdmin();
+    }
+
+    /* Compteurs journaliers (anti-triche) : strictement serveur. */
+    match /socialCounters/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    /* Blocages : je lis/gère les miens (blocker == moi). Écriture serveur
+       (via social-moderation) pour garantir la réciprocité et l'auto-block. */
+    match /socialBlocks/{id} {
+      allow read:  if isAdmin() || (isSignedIn() && resource.data.blocker == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    /* Signalements : créés via la fonction (Admin SDK). Lecture admin only. */
+    match /socialReports/{id} {
+      allow read, write: if isAdmin();
+    }
+
     /* -------- TOUT LE RESTE : interdit par défaut --------
        (Aucune collection oubliée ne reste ouverte.) */
     match /{document=**} {

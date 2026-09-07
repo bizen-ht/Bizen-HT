@@ -87,6 +87,26 @@
   external_node_modules = ["firebase-admin"]
   schedule = "@daily"
 
+# ===== BIZEN SOCIAL (app de rencontres, séparée d'Élu) =====
+[functions.social-activate]
+  external_node_modules = ["firebase-admin"]
+
+[functions.social-feed]
+  external_node_modules = ["firebase-admin"]
+
+[functions.social-swipe]
+  external_node_modules = ["firebase-admin"]
+
+[functions.social-message]
+  external_node_modules = ["firebase-admin"]
+
+[functions.social-moderation]
+  external_node_modules = ["firebase-admin"]
+
+[functions.social-cleanup]
+  external_node_modules = ["firebase-admin"]
+  schedule = "@hourly"
+
 # Pages dédiées des agences partenaires : /agence/<slug> -> index avec filtre
 [[redirects]]
   from = "/agence/*"
@@ -112,6 +132,12 @@
 [[redirects]]
   from = "/dashboard"
   to = "/Dashboard.html"
+  status = 200
+
+# Bizen Social : URL propre vers l'app de rencontres
+[[redirects]]
+  from = "/social"
+  to = "/social.html"
   status = 200
 
 # Lien dédié pour le formulaire Elu (ouvre le popup Inskri sur le formulaire Elu)

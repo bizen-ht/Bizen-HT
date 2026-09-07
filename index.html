@@ -2674,6 +2674,7 @@ body.is-premium .pc-blur{display:none!important}
 <p style="font-size:0.72rem;color:#6a6a80;margin-top:5px"><i class="fas fa-info-circle"></i> Chwazi nan lis la oswa ajoute pwòp zòn ou. Kliyan yo p ap ka rezève w nan yon zòn ou pa chwazi.</p></div><div class="fg"><label>Dat Nesans</label><input type="date" id="flDob" required></div><div class="fg"><label>Pri pou chak Moman (Gdes) - 10% komisyon ap retire</label><input type="number" placeholder="ex: 2000" min="1000" required id="priceInput" oninput="calcCommission()"></div>
 <div id="commCalc" style="font-size:0.8rem;color:var(--primary-light);padding:5px 0;display:none"><i class="fas fa-calculator"></i> Ou pral resevwa: <strong id="netAmount">0</strong> Gdes | Komisyon Bizen HT: <strong id="commAmount">0</strong> Gdes</div>
 <div class="fg"><label>Pri Domi (opsyonèl)</label><input type="number" placeholder="Si w ka domi, mete pri a (ex: 5000)" min="0" id="flPrixDomi"><p class="fhint"><i class="fas fa-moon"></i> Si w ofri domi (nwit), mete pri domi w la. Kite l vid si w pa ofri sa.</p></div>
+<div class="fg"><label>Pri Threesome (opsyonèl)</label><input type="number" placeholder="Si w fè threesome, mete pri a (ex: 8000)" min="0" id="flPrixThreesome"><p class="fhint"><i class="fas fa-users"></i> Si w ofri threesome, mete pri a. Kite l vid si w pa ofri sa.</p></div>
 <div class="fg"><label>Deskripsyon ou</label><textarea id="flDescTxt" placeholder="Dekri tet ou, sevis ou ofri..." rows="4" required></textarea></div>
 <div class="fg">
     <label>
@@ -6169,6 +6170,7 @@ function doFR(e) {
     var dt = gv("flDob");
     var px = gv("priceInput");
     var pxDomi = parseInt(gv("flPrixDomi")) || 0;   /* pri domi opsyonèl */
+    var pxThree = parseInt(gv("flPrixThreesome")) || 0;   /* pri threesome opsyonèl */
     var ds = gv("flDescTxt").trim();
     var pw = gv("fpw");
     /* Code ambassadeur optionnel (traque l'inscription jusqu'à approbation) */
@@ -6261,7 +6263,7 @@ function doFR(e) {
                 age: ageF,
                 agencyName: agName, agencySlug: agSlug, hotelNotIncluded: agHotelOff,
                 ambassadorCode: ambCode,
-                prixMoment: parseInt(px), prixDomi: pxDomi, description: ds,
+                prixMoment: parseInt(px), prixDomi: pxDomi, prixThreesome: pxThree, description: ds,
                 photoUrl: "", bizenCode: bizenCode, isPremium: false,
                 status: "en_attente", isOnline: false, lastSeen: null,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -6271,7 +6273,7 @@ function doFR(e) {
             bgSet("users", uid, {
                 prenom: pr, nom: nm, pseudo: ps, email: em, telephone: tel,
                 genre: gn, localisation: vil, dateNesans: dt, age: ageF,
-                prixMoment: parseInt(px), prixDomi: pxDomi, prixNet: netPay,
+                prixMoment: parseInt(px), prixDomi: pxDomi, prixThreesome: pxThree, prixNet: netPay,
                 commissionBizen: commission, commissionPct: 10,
                 description: ds, isPremium: false,
                 type: "freelancer", status: "en_attente",
@@ -6649,28 +6651,140 @@ var isTestViewer = false;     /* compte test (démo) : réservations sans paieme
    ==================================== */
 var USER_FCM_VAPID = "BGG8Bm8QMjWrGOKaoYqEOUBzGyfLshmdEoRg4tjr0Y5S9xqLlFBOAQT5HnAXwwNy6pYi2hMZ1wzYbhPzNzxjn-o";
 var userFcm = null;
+var _userSwReg = null;
+
+function notifSupported() {
+    return ("serviceWorker" in navigator) && !!firebase.messaging && firebase.messaging.isSupported
+        && firebase.messaging.isSupported() && (typeof Notification !== "undefined");
+}
+
 function initUserPush() {
-    if (!("serviceWorker" in navigator) || !firebase.messaging || !firebase.messaging.isSupported) return;
-    if (!firebase.messaging.isSupported()) return;
+    if (!notifSupported()) return;
     navigator.serviceWorker.register("/sw.js").then(function (reg) {
-        if (typeof Notification === "undefined" || Notification.permission === "denied") return;
-        Notification.requestPermission().then(function (perm) {
-            if (perm !== "granted") return;
-            try { userFcm = firebase.messaging(); } catch (e) { return; }
-            userFcm.getToken({ vapidKey: USER_FCM_VAPID, serviceWorkerRegistration: reg })
-                .then(function (token) {
-                    if (token && auth && auth.currentUser && db) {
-                        db.collection("users").doc(auth.currentUser.uid).update({
-                            fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
-                        }).catch(function () {});
-                    }
-                }).catch(function () {});
-            userFcm.onMessage(function (payload) {
-                var n = (payload && payload.notification) || {};
-                try { toast((n.title || "Bizen HT") + ": " + (n.body || ""), "success"); } catch (e) {}
-            });
-        });
+        _userSwReg = reg;
+        /* Déjà autorisé : on (re)enregistre le jeton en silence (utile sur un
+           nouvel appareil, ou si le jeton n'avait jamais été sauvegardé). */
+        if (Notification.permission === "granted") registerUserFcmToken(reg);
+        /* On NE force PLUS le prompt au chargement (les gens le rejettent par
+           réflexe). On propose une bannière avec un bouton "Aktive" à la place. */
+        setTimeout(maybeShowNotifBanner, 3500);
     }).catch(function () {});
+}
+
+function registerUserFcmToken(reg) {
+    try { userFcm = firebase.messaging(); } catch (e) { return; }
+    userFcm.getToken({ vapidKey: USER_FCM_VAPID, serviceWorkerRegistration: reg })
+        .then(function (token) {
+            if (token && auth && auth.currentUser && db) {
+                db.collection("users").doc(auth.currentUser.uid).update({
+                    fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
+                }).catch(function () {});
+            }
+        }).catch(function () {});
+    userFcm.onMessage(function (payload) {
+        var n = (payload && payload.notification) || {};
+        try { toast((n.title || "Bizen HT") + ": " + (n.body || ""), "success"); } catch (e) {}
+    });
+}
+
+/* Active les notifications SUR DEMANDE (clic bouton/bannière). Marche même si
+   l'utilisateur avait ignoré au départ. Si le navigateur a été BLOQUÉ (denied),
+   impossible de reprompter => on montre comment débloquer manuellement. */
+function enableUserNotif() {
+    if (!notifSupported()) { toast("Navigatè w la pa sipòte notifikasyon.", "err"); return; }
+    if (Notification.permission === "granted") {
+        registerUserFcmToken(_userSwReg);
+        dismissNotifBanner();
+        toast("Notifikasyon yo deja aktive ✅", "success");
+        return;
+    }
+    if (Notification.permission === "denied") { showNotifUnblockHelp(); return; }
+    var go = function (reg) {
+        Notification.requestPermission().then(function (perm) {
+            if (perm === "granted") {
+                registerUserFcmToken(reg || _userSwReg);
+                dismissNotifBanner();
+                toast("Notifikasyon aktive! ✅ W ap resevwa mesaj Bizen yo.", "success");
+            } else if (perm === "denied") {
+                showNotifUnblockHelp();
+            } else {
+                toast("Ou ka aktive notifikasyon yo nenpòt lè.", "err");
+            }
+        }).catch(function () {});
+    };
+    if (_userSwReg) go(_userSwReg);
+    else navigator.serviceWorker.register("/sw.js").then(function (reg) { _userSwReg = reg; go(reg); }).catch(function () { go(null); });
+}
+
+/* Bannière discrète : rappelle aux VIP connectés qui n'ont pas (encore) autorisé
+   les notifications de les activer. Se ferme avec un X (par session). */
+function maybeShowNotifBanner() {
+    if (!auth || !auth.currentUser) return;
+    if (typeof Notification === "undefined" || Notification.permission === "granted") return;
+    try { if (sessionStorage.getItem("bizenNotifBannerHidden") === "1") return; } catch (e) {}
+    if (document.getElementById("notifNudge")) return;
+    var bar = document.createElement("div");
+    bar.id = "notifNudge";
+    bar.style.cssText = "position:fixed;left:14px;right:14px;bottom:16px;z-index:1003;max-width:520px;margin:0 auto;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,0.45);display:flex;align-items:center;gap:12px;font-size:0.84rem";
+    bar.innerHTML = '<i class="fas fa-bell" style="font-size:1.3rem;flex-shrink:0"></i>'
+        + '<span style="flex:1;line-height:1.35">Aktive notifikasyon yo pou w pa rate mesaj, rezèvasyon ak òf Bizen yo.</span>'
+        + '<button onclick="enableUserNotif()" style="background:#fff;color:#e91e63;border:none;border-radius:50px;padding:8px 15px;font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap">Aktive</button>'
+        + '<span onclick="dismissNotifBanner()" style="cursor:pointer;font-size:1.25rem;opacity:0.9;padding:0 2px">&times;</span>';
+    document.body.appendChild(bar);
+}
+
+function dismissNotifBanner() {
+    var b = document.getElementById("notifNudge");
+    if (b && b.parentNode) b.parentNode.removeChild(b);
+    try { sessionStorage.setItem("bizenNotifBannerHidden", "1"); } catch (e) {}
+}
+
+/* Guide de déblocage quand le navigateur a bloqué les notifications (denied). */
+function showNotifUnblockHelp() {
+    var old = document.getElementById("notifHelpM"); if (old) old.remove();
+    var ua = navigator.userAgent || "";
+    var isIOS = /iphone|ipad|ipod/i.test(ua);
+    var isAndroid = /android/i.test(ua);
+    var standalone = false;
+    try { standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true; } catch (e) {}
+    var steps;
+    if (standalone) {
+        /* App INSTALLÉE (PWA) : pas de barre d'adresse => on passe par les réglages de l'appareil. */
+        if (isIOS) {
+            steps = '<li>Louvri <strong>Réglages</strong> iPhone ou (Settings).</li>'
+                  + '<li>Desann jwenn <strong>Bizen HT</strong> nan lis app yo → <strong>Notifications</strong>.</li>'
+                  + '<li>Aktive <strong>Autoriser les notifications</strong>, epi retounen nan app la.</li>';
+        } else if (isAndroid) {
+            steps = '<li>Peze <strong>lontan</strong> sou ikon app <strong>Bizen HT</strong> la sou ekran akèy ou.</li>'
+                  + '<li>Tape <strong>Enfòmasyon app la</strong> (ⓘ) → <strong>Notifikasyon</strong>.</li>'
+                  + '<li>Mete notifikasyon yo sou <strong>Otorize</strong>, epi louvri app la ankò.</li>';
+        } else {
+            steps = '<li>Nan fenèt app Bizen la, klike sou meni <strong>⋮</strong> anlè adwat.</li>'
+                  + '<li>Chwazi <strong>Paramèt sit</strong> → <strong>Notifikasyon</strong> → <strong>Otorize</strong>.</li>'
+                  + '<li>Rechaje app la epi klike <strong>Aktive</strong> ankò.</li>';
+        }
+    } else if (isIOS) {
+        steps = '<li>Sou iPhone, ou dwe <strong>enstale app Bizen la</strong> sou ekran akèy ou anvan: tape ikon Pataje <i class="fas fa-arrow-up-from-bracket"></i> anba a → <strong>Ajoute sou ekran akèy</strong>.</li>'
+              + '<li>Louvri app la depi ekran akèy la, konekte, epi tape <strong>Aktive</strong> ankò.</li>';
+    } else if (isAndroid) {
+        steps = '<li>Tape ikon <strong>🔒</strong> (oswa ⓘ) bò kote adrès <strong>bizenht.com</strong> anlè a.</li>'
+              + '<li>Chwazi <strong>Otorizasyon</strong> → <strong>Notifikasyon</strong> → mete l sou <strong>Otorize</strong>.</li>'
+              + '<li>Rechaje paj la epi tape <strong>Aktive</strong> ankò.</li>';
+    } else {
+        steps = '<li>Klike sou ikon <strong>🔒</strong> bò kote adrès <strong>bizenht.com</strong> anlè navigatè a.</li>'
+              + '<li>Nan <strong>Notifikasyon</strong>, chwazi <strong>Otorize</strong>.</li>'
+              + '<li>Rechaje paj la epi klike <strong>Aktive</strong> ankò.</li>';
+    }
+    var close = "var e=document.getElementById('notifHelpM');if(e)e.remove()";
+    var h = '<div class="mbg show" id="notifHelpM" style="z-index:10008">'
+        + '<div class="modal" style="max-width:440px">'
+        + '<button class="mx" onclick="' + close + '"><i class="fas fa-times"></i></button>'
+        + '<div class="mhead"><div class="mico"><i class="fas fa-bell-slash"></i></div><h2>Debloke notifikasyon yo</h2>'
+        + '<p style="color:#b0b0c0">Navigatè w la te bloke notifikasyon Bizen yo. Men kijan pou w otorize yo ankò:</p></div>'
+        + '<div class="mform"><ol style="text-align:left;color:#ddd;font-size:0.9rem;line-height:1.7;padding-left:20px">' + steps + '</ol>'
+        + '<button class="btn btn-primary fw btn-glow" onclick="' + close + '">Konprann</button>'
+        + '</div></div></div>';
+    var wrap = document.createElement("div"); wrap.innerHTML = h; document.body.appendChild(wrap.firstChild);
 }
 
 function chkPrem(uid) {
@@ -7511,10 +7625,14 @@ function openEluProfile(btnOrUid) {
             h += '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,152,0,0.1);border:1px solid rgba(255,152,0,0.4);border-radius:12px;margin-bottom:12px;font-size:0.85rem;color:#ff9800"><i class="fas fa-hotel"></i><span><strong>Hotel pa enkli</strong>, se ou k ap peye pwòp hotel ou.</span></div>';
         }
         var domiPrice = Math.round(parseFloat(d.prixDomi) || 0);
+        var threePrice = Math.round(parseFloat(d.prixThreesome) || 0);
         h += '<div style="padding:14px;background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.2);border-radius:12px;margin-bottom:16px">';
         h += '<div style="display:flex;align-items:center;gap:8px"><i class="fas fa-tag" style="color:#ffd700"></i>' + origPriceHtml + '<span style="font-weight:700;font-size:1.3rem;color:#ffd700">' + price.toLocaleString() + ' Gdes</span><span style="color:#6a6a80;font-size:0.8rem">/ Moman (' + (noHotel ? 'Hotel non inclus' : 'Hotel inclus') + ')</span></div>';
         if (domiPrice > 0) {
             h += '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.12)"><i class="fas fa-moon" style="color:#9c8bd8;font-size:0.85rem"></i><span style="font-weight:700;font-size:1rem;color:#b9a9e6">' + domiPrice.toLocaleString() + ' Gdes</span><span style="color:#6a6a80;font-size:0.75rem">/ Domi (nwit)</span></div>';
+        }
+        if (threePrice > 0) {
+            h += '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.12)"><i class="fas fa-users" style="color:#4dd0e1;font-size:0.85rem"></i><span style="font-weight:700;font-size:1rem;color:#80deea">' + threePrice.toLocaleString() + ' Gdes</span><span style="color:#6a6a80;font-size:0.75rem">/ Threesome</span></div>';
         }
         h += '</div>';
         /* GALERIE : réservée aux Premium. Les gratuits (même via lien partagé)
@@ -7543,6 +7661,9 @@ function openEluProfile(btnOrUid) {
             h += '<button class="btn btn-primary fw btn-glow" onclick="startEluBooking(\'' + uid + '\',\'' + safeName + '\',\'' + price + '\',\'moman\')"><i class="fas fa-calendar-check"></i> Rezève Moman (' + price.toLocaleString() + ' Gdes)</button>';
             if (domiPrice > 0) {
                 h += '<button class="btn btn-outline fw btn-glow" style="margin-top:10px;border-color:#9c8bd8;color:#b9a9e6" onclick="startEluBooking(\'' + uid + '\',\'' + safeName + '\',\'' + domiPrice + '\',\'domi\')"><i class="fas fa-moon"></i> Rezève Domi (' + domiPrice.toLocaleString() + ' Gdes)</button>';
+            }
+            if (threePrice > 0) {
+                h += '<button class="btn btn-outline fw btn-glow" style="margin-top:10px;border-color:#4dd0e1;color:#80deea" onclick="startEluBooking(\'' + uid + '\',\'' + safeName + '\',\'' + threePrice + '\',\'threesome\')"><i class="fas fa-users"></i> Rezève Threesome (' + threePrice.toLocaleString() + ' Gdes)</button>';
             }
         } else {
             /* Gratuit : pas de réservation -> invitation Premium */
@@ -7945,7 +8066,7 @@ function sendDM() {
 function startEluBooking(uid, name, price, priceType) {
     var eluLoc = window._eluProfileLoc || "";
     var eluZones = window._eluProfileZones || [];
-    priceType = (priceType === "domi") ? "domi" : "moman";
+    priceType = (priceType === "domi") ? "domi" : (priceType === "threesome" ? "threesome" : "moman");
     /* Hôtel non inclus : Elu marqué "hotel non inclus", OU zone Cap-Haïtien/Les Cayes */
     var noHotel = (window._eluProfileHotelNotIncluded === true)
         || isNoHotelZone(eluLoc) || eluZones.some(function(z){ return isNoHotelZone(z); });
@@ -7953,7 +8074,7 @@ function startEluBooking(uid, name, price, priceType) {
     bookingTarget = { uid: uid, name: name, price: price, zones: eluZones, loc: eluLoc, noHotel: noHotel, priceType: priceType };
     cM("eluProfM");
     /* Pré-remplit la modale de réservation */
-    var typeLabel = priceType === "domi" ? " · Domi 🌙" : " · Moman";
+    var typeLabel = priceType === "domi" ? " · Domi 🌙" : (priceType === "threesome" ? " · Threesome 👥" : " · Moman");
     var rn = document.getElementById("resName");
     var rt = document.getElementById("resTotalPrice");
     var hw = document.getElementById("hotelChoiceWrap");

@@ -922,6 +922,17 @@
                 </button>
             </div>
 
+            <!-- NOTIFICATIONS -->
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:26px 30px;max-width:500px;margin-top:22px">
+                <h3 style="font-family:'Playfair Display',serif;margin-bottom:8px"><i class="fas fa-bell" style="color:var(--primary)"></i> Notifikasyon</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px">Aktive notifikasyon yo pou w resevwa mesaj, rezèvasyon ak alèt Bizen yo menm lè app la fèmen.</p>
+                <div id="notifStatusLine" style="font-size:0.84rem;margin-bottom:14px"></div>
+                <button id="notifEnableBtn" onclick="enableDashNotif()"
+                        style="padding:11px 22px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:var(--radius-full);cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:700">
+                    <i class="fas fa-bell"></i> Aktive notifikasyon
+                </button>
+            </div>
+
             <!-- ZONE DANJE : efase kont (VIP sèlman) -->
             <div id="dangerZone" style="display:none;background:var(--bg-card);border:1px solid rgba(244,67,54,0.35);border-radius:var(--radius-lg);padding:26px 30px;max-width:500px;margin-top:22px">
                 <h3 style="font-family:'Playfair Display',serif;margin-bottom:10px;color:#f44336">
@@ -1508,6 +1519,12 @@
                     <input type="number" id="flPriceDomi" min="0" placeholder="Si w ka domi, mete pri a"
                            style="width:100%;padding:10px 15px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif">
                     <p style="font-size:0.74rem;color:#6a6a80;margin-top:6px">Kite l vid (oswa 0) si w pa ofri domi.</p>
+                </div>
+                <div style="margin-bottom:15px">
+                    <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px"><i class="fas fa-users" style="color:#4dd0e1"></i> Pri Threesome (opsyonèl)</label>
+                    <input type="number" id="flPriceThreesome" min="0" placeholder="Si w fè threesome, mete pri a"
+                           style="width:100%;padding:10px 15px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif">
+                    <p style="font-size:0.74rem;color:#6a6a80;margin-top:6px">Kite l vid (oswa 0) si w pa ofri threesome.</p>
                 </div>
                 <div style="margin-bottom:15px">
                     <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:5px"><i class="fas fa-mobile-alt" style="color:#ffcc00"></i> Nimewo MonCash (pou resevwa peman ou)</label>
@@ -2349,6 +2366,8 @@ function setupFreelancer() {
     if (priceEl) priceEl.value = userData.prixMoment || "";
     var priceDomiEl = document.getElementById("flPriceDomi");
     if (priceDomiEl) priceDomiEl.value = userData.prixDomi ? userData.prixDomi : "";
+    var priceThreeEl = document.getElementById("flPriceThreesome");
+    if (priceThreeEl) priceThreeEl.value = userData.prixThreesome ? userData.prixThreesome : "";
     if (pseudoElLoad) pseudoElLoad.value = userData.pseudo || "";
     if (moncashElLoad) moncashElLoad.value = userData.moncashNumber || "";
     /* Rappel "ajoute pri domi" pour les Elu actifs qui n'en ont pas encore. */
@@ -4147,11 +4166,14 @@ function saveFlProfile() {
     var comm = p - net;
     var domiEl = document.getElementById("flPriceDomi");
     var pDomi = domiEl ? (parseInt(domiEl.value) || 0) : 0;
+    var threeEl = document.getElementById("flPriceThreesome");
+    var pThree = threeEl ? (parseInt(threeEl.value) || 0) : 0;
 
     /* === PRIX MODIFIABLE 1 FOIS PAR MOIS === */
     var curP = (userData && userData.prixMoment) || 0;
     var curD = (userData && userData.prixDomi) || 0;
-    var priceChanged = (p !== curP) || (pDomi !== curD);
+    var curT = (userData && userData.prixThreesome) || 0;
+    var priceChanged = (p !== curP) || (pDomi !== curD) || (pThree !== curT);
     var lastChange = (userData && userData.lastPriceChangeAt && userData.lastPriceChangeAt.toMillis) ? userData.lastPriceChangeAt.toMillis() : 0;
     var THIRTY = 30 * 24 * 3600 * 1000;
 
@@ -4165,17 +4187,19 @@ function saveFlProfile() {
             showToast("Ou ka chanje pri w yon sèl fwa pa mwa. Pwochèn chanjman: " + nd + ".", "error");
             if (price) price.value = curP;
             if (domiEl) domiEl.value = curD;
+            if (threeEl) threeEl.value = curT;
             /* on continue : les autres champs (deskripsyon, pseudo, moncash) se sauvent quand même */
         } else {
             if (!confirm("ATANSYON: apre ou chanje pri w, ou p ap ka chanje l ankò pandan 1 mwa. Ou vle kontinye?")) {
                 if (price) price.value = curP;
                 if (domiEl) domiEl.value = curD;
+                if (threeEl) threeEl.value = curT;
                 return;
             }
             applyPrice = true;
-            updates.prixMoment = p; updates.prixDomi = pDomi; updates.prixNet = net; updates.commissionBizen = comm;
+            updates.prixMoment = p; updates.prixDomi = pDomi; updates.prixThreesome = pThree; updates.prixNet = net; updates.commissionBizen = comm;
             updates.lastPriceChangeAt = firebase.firestore.FieldValue.serverTimestamp();
-            pubUpdates.prixMoment = p; pubUpdates.prixDomi = pDomi;
+            pubUpdates.prixMoment = p; pubUpdates.prixDomi = pDomi; pubUpdates.prixThreesome = pThree;
         }
     }
 
@@ -4186,7 +4210,7 @@ function saveFlProfile() {
             if (userData) {
                 userData.pseudo = pseudo; userData.moncashNumber = moncash; userData.description = updates.description;
                 if (applyPrice) {
-                    userData.prixMoment = p; userData.prixDomi = pDomi;
+                    userData.prixMoment = p; userData.prixDomi = pDomi; userData.prixThreesome = pThree;
                     userData.lastPriceChangeAt = { toMillis: function () { return Date.now(); } };
                 }
             }
@@ -5468,29 +5492,149 @@ function decryptMsg(cipher) {
 var FCM_VAPID = "BGG8Bm8QMjWrGOKaoYqEOUBzGyfLshmdEoRg4tjr0Y5S9xqLlFBOAQT5HnAXwwNy6pYi2hMZ1wzYbhPzNzxjn-o";
 var fcmMessaging = null;
 
+var _dashSwReg = null;
+
+function dashNotifSupported() {
+    return ("serviceWorker" in navigator) && !!firebase.messaging && firebase.messaging.isSupported
+        && firebase.messaging.isSupported() && (typeof Notification !== "undefined");
+}
+
 function initPush() {
-    if (!("serviceWorker" in navigator) || !firebase.messaging || !firebase.messaging.isSupported) return;
-    if (!firebase.messaging.isSupported()) return;
+    if (!dashNotifSupported()) { refreshNotifStatusLine(); return; }
     navigator.serviceWorker.register("/sw.js").then(function (reg) {
-        if (typeof Notification === "undefined" || Notification.permission === "denied") return;
-        Notification.requestPermission().then(function (perm) {
-            if (perm !== "granted") return;
-            try { fcmMessaging = firebase.messaging(); } catch (e) { return; }
-            fcmMessaging.getToken({ vapidKey: FCM_VAPID, serviceWorkerRegistration: reg })
-                .then(function (token) {
-                    if (token && currentUser && db) {
-                        db.collection("users").doc(currentUser.uid).update({
-                            fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
-                        }).catch(function () {});
-                    }
+        _dashSwReg = reg;
+        /* Déjà autorisé : (re)enregistre le jeton en silence. */
+        if (Notification.permission === "granted") registerDashFcmToken(reg);
+        refreshNotifStatusLine();
+        /* On ne force plus le prompt au chargement : bannière + bouton à la place. */
+        setTimeout(maybeShowDashNotifBanner, 3500);
+    }).catch(function () { refreshNotifStatusLine(); });
+}
+
+function registerDashFcmToken(reg) {
+    try { fcmMessaging = firebase.messaging(); } catch (e) { return; }
+    fcmMessaging.getToken({ vapidKey: FCM_VAPID, serviceWorkerRegistration: reg })
+        .then(function (token) {
+            if (token && currentUser && db) {
+                db.collection("users").doc(currentUser.uid).update({
+                    fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
                 }).catch(function () {});
-            /* Message reçu pendant que l'appli est ouverte */
-            fcmMessaging.onMessage(function (payload) {
-                var n = (payload && payload.notification) || {};
-                try { showToast((n.title || "Bizen HT") + ": " + (n.body || ""), "success"); } catch (e) {}
-            });
-        });
-    }).catch(function () {});
+            }
+        }).catch(function () {});
+    fcmMessaging.onMessage(function (payload) {
+        var n = (payload && payload.notification) || {};
+        try { showToast((n.title || "Bizen HT") + ": " + (n.body || ""), "success"); } catch (e) {}
+    });
+}
+
+/* Active les notifications sur demande (bouton/bannière), même après un refus
+   initial. Si le navigateur a BLOQUÉ (denied), on montre comment débloquer. */
+function enableDashNotif() {
+    if (!dashNotifSupported()) { showToast("Navigatè w la pa sipòte notifikasyon.", "error"); return; }
+    if (Notification.permission === "granted") { registerDashFcmToken(_dashSwReg); dismissDashNotifBanner(); showToast("Notifikasyon yo deja aktive ✅", "success"); refreshNotifStatusLine(); return; }
+    if (Notification.permission === "denied") { showNotifUnblockHelp(); return; }
+    var go = function (reg) {
+        Notification.requestPermission().then(function (perm) {
+            if (perm === "granted") { registerDashFcmToken(reg || _dashSwReg); dismissDashNotifBanner(); showToast("Notifikasyon aktive! ✅", "success"); }
+            else if (perm === "denied") { showNotifUnblockHelp(); }
+            else { showToast("Ou ka aktive notifikasyon yo nenpòt lè.", "error"); }
+            refreshNotifStatusLine();
+        }).catch(function () {});
+    };
+    if (_dashSwReg) go(_dashSwReg);
+    else navigator.serviceWorker.register("/sw.js").then(function (reg) { _dashSwReg = reg; go(reg); }).catch(function () { go(null); });
+}
+
+function refreshNotifStatusLine() {
+    var el = document.getElementById("notifStatusLine");
+    var btn = document.getElementById("notifEnableBtn");
+    if (!el) return;
+    var p = (typeof Notification !== "undefined") ? Notification.permission : "unsupported";
+    if (!dashNotifSupported() && p !== "denied") p = "unsupported";
+    if (btn) btn.style.display = "";
+    if (p === "granted") {
+        el.innerHTML = '<span style="color:#4caf50"><i class="fas fa-circle-check"></i> Notifikasyon yo aktive.</span>';
+        if (btn) btn.innerHTML = '<i class="fas fa-rotate"></i> Re-verifye';
+    } else if (p === "denied") {
+        el.innerHTML = '<span style="color:#f44336"><i class="fas fa-bell-slash"></i> Notifikasyon yo bloke nan navigatè a.</span>';
+        if (btn) btn.innerHTML = '<i class="fas fa-unlock"></i> Kijan pou debloke';
+    } else if (p === "unsupported") {
+        el.innerHTML = '<span style="color:#ff9800"><i class="fas fa-triangle-exclamation"></i> Navigatè sa a pa sipòte notifikasyon.</span>';
+        if (btn) btn.style.display = "none";
+    } else {
+        el.innerHTML = '<span style="color:#ff9800"><i class="fas fa-bell"></i> Notifikasyon yo poko aktive.</span>';
+        if (btn) btn.innerHTML = '<i class="fas fa-bell"></i> Aktive notifikasyon';
+    }
+}
+
+function maybeShowDashNotifBanner() {
+    if (!currentUser) return;
+    if (typeof Notification === "undefined" || Notification.permission === "granted") return;
+    try { if (sessionStorage.getItem("bizenNotifBannerHidden") === "1") return; } catch (e) {}
+    if (document.getElementById("notifNudge")) return;
+    var bar = document.createElement("div");
+    bar.id = "notifNudge";
+    bar.style.cssText = "position:fixed;left:14px;right:14px;bottom:16px;z-index:99998;max-width:520px;margin:0 auto;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,0.45);display:flex;align-items:center;gap:12px;font-size:0.84rem";
+    bar.innerHTML = '<i class="fas fa-bell" style="font-size:1.3rem;flex-shrink:0"></i>'
+        + '<span style="flex:1;line-height:1.35">Aktive notifikasyon yo pou w pa rate rezèvasyon, mesaj ak alèt Bizen yo.</span>'
+        + '<button onclick="enableDashNotif()" style="background:#fff;color:#e91e63;border:none;border-radius:50px;padding:8px 15px;font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap">Aktive</button>'
+        + '<span onclick="dismissDashNotifBanner()" style="cursor:pointer;font-size:1.25rem;opacity:0.9;padding:0 2px">&times;</span>';
+    document.body.appendChild(bar);
+}
+
+function dismissDashNotifBanner() {
+    var b = document.getElementById("notifNudge");
+    if (b && b.parentNode) b.parentNode.removeChild(b);
+    try { sessionStorage.setItem("bizenNotifBannerHidden", "1"); } catch (e) {}
+}
+
+/* Guide de déblocage (denied) — overlay autonome (styles inline). */
+function showNotifUnblockHelp() {
+    var old = document.getElementById("notifHelpM"); if (old) old.remove();
+    var ua = navigator.userAgent || "";
+    var isIOS = /iphone|ipad|ipod/i.test(ua);
+    var isAndroid = /android/i.test(ua);
+    var standalone = false;
+    try { standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true; } catch (e) {}
+    var steps;
+    if (standalone) {
+        /* App INSTALLÉE (PWA) : pas de barre d'adresse => réglages de l'appareil. */
+        if (isIOS) {
+            steps = '<li>Louvri <b>Réglages</b> iPhone ou (Settings).</li>'
+                  + '<li>Desann jwenn <b>Bizen HT</b> nan lis app yo → <b>Notifications</b>.</li>'
+                  + '<li>Aktive <b>Autoriser les notifications</b>, epi retounen nan app la.</li>';
+        } else if (isAndroid) {
+            steps = '<li>Peze <b>lontan</b> sou ikon app <b>Bizen HT</b> la sou ekran akèy ou.</li>'
+                  + '<li>Tape <b>Enfòmasyon app la</b> (ⓘ) → <b>Notifikasyon</b>.</li>'
+                  + '<li>Mete notifikasyon yo sou <b>Otorize</b>, epi louvri app la ankò.</li>';
+        } else {
+            steps = '<li>Nan fenèt app Bizen la, klike sou meni <b>⋮</b> anlè adwat.</li>'
+                  + '<li>Chwazi <b>Paramèt sit</b> → <b>Notifikasyon</b> → <b>Otorize</b>.</li>'
+                  + '<li>Rechaje app la epi klike <b>Aktive</b> ankò.</li>';
+        }
+    } else if (isIOS) {
+        steps = '<li>Sou iPhone, ou dwe <b>enstale app Bizen la</b> sou ekran akèy ou anvan: tape ikon Pataje anba a → <b>Ajoute sou ekran akèy</b>.</li>'
+              + '<li>Louvri app la depi ekran akèy la, konekte, epi tape <b>Aktive</b> ankò.</li>';
+    } else if (isAndroid) {
+        steps = '<li>Tape ikon <b>🔒</b> (oswa ⓘ) bò kote adrès <b>bizenht.com</b> anlè a.</li>'
+              + '<li>Chwazi <b>Otorizasyon</b> → <b>Notifikasyon</b> → mete l sou <b>Otorize</b>.</li>'
+              + '<li>Rechaje paj la epi tape <b>Aktive</b> ankò.</li>';
+    } else {
+        steps = '<li>Klike sou ikon <b>🔒</b> bò kote adrès <b>bizenht.com</b> anlè navigatè a.</li>'
+              + '<li>Nan <b>Notifikasyon</b>, chwazi <b>Otorize</b>.</li>'
+              + '<li>Rechaje paj la epi klike <b>Aktive</b> ankò.</li>';
+    }
+    var ov = document.createElement("div");
+    ov.id = "notifHelpM";
+    ov.style.cssText = "position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:18px";
+    ov.innerHTML = '<div style="background:#15151f;border:1px solid #2a2a3a;border-radius:16px;max-width:440px;width:100%;padding:26px 24px;font-family:Montserrat,sans-serif;color:#eee">'
+        + '<h3 style="margin:0 0 6px;color:#fff"><i class="fas fa-bell-slash" style="color:#f44336"></i> Debloke notifikasyon yo</h3>'
+        + '<p style="color:#b0b0c0;font-size:0.86rem;margin:0 0 14px">Navigatè w la te bloke notifikasyon Bizen yo. Men kijan pou w otorize yo ankò:</p>'
+        + '<ol style="text-align:left;color:#ddd;font-size:0.9rem;line-height:1.7;padding-left:20px;margin:0 0 18px">' + steps + '</ol>'
+        + '<button onclick="var e=document.getElementById(\'notifHelpM\');if(e)e.remove()" style="width:100%;padding:12px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer">Konprann</button>'
+        + '</div>';
+    ov.onclick = function (e) { if (e.target === ov) ov.remove(); };
+    document.body.appendChild(ov);
 }
 
 /* Envoie une push à un autre utilisateur (via la fonction Netlify) */
@@ -6070,12 +6214,8 @@ var notifFirstLoad = true;
 function initFreelancerNotifications(uid, data) {
     if (!db) return;
 
-    /* Demande permission notifications navigateur */
-    try {
-        if ("Notification" in window && Notification.permission === "default") {
-            Notification.requestPermission();
-        }
-    } catch(e) {}
+    /* On ne force plus le prompt ici (rejet réflexe) : la bannière + la carte
+       "Notifikasyon" dans Paramèt permettent d'activer d'un clic. */
 
     var searchName = (data.prenom || "") + " " + ((data.nom || "").charAt(0) || "") + ".";
 

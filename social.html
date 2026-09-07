@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Bizen Social — Rankont ant granmoun</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="rating" content="adult">
+    <meta name="theme-color" content="#e91e63">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
+    <link rel="manifest" href="/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+<style>
+:root{
+  --bg:#0a0a0f; --card:#12121a; --card2:#171722; --line:#2a2a3a;
+  --ink:#fff; --muted:#8a8a9c; --muted2:#b0b0c0;
+  --rose:#e91e63; --purple:#9c27b0; --gold:#ffd700; --green:#4caf50; --red:#f44336; --blue:#2196f3;
+  --grad:linear-gradient(135deg,#e91e63,#9c27b0);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--ink);overflow:hidden;position:fixed;width:100%;height:100%}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{max-width:100%;display:block}
+.hidden{display:none!important}
+
+/* ---- App shell ---- */
+#app-shell{display:flex;flex-direction:column;height:100%;max-width:520px;margin:0 auto;position:relative}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);flex:none}
+.brand{font-family:'Playfair Display',serif;font-weight:700;font-size:1.25rem}
+.brand span{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.topbar .sub{font-size:.62rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.topbar-btn{width:38px;height:38px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--muted2)}
+.view{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+
+/* ---- Bottom nav ---- */
+.bottomnav{display:flex;border-top:1px solid var(--line);flex:none;background:var(--card)}
+.navbtn{flex:1;padding:11px 0 max(11px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:.62rem;font-weight:600;position:relative}
+.navbtn i{font-size:1.15rem}
+.navbtn.active{color:var(--rose)}
+.navbtn .badge{position:absolute;top:4px;right:calc(50% - 20px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--rose);color:#fff;font-size:.6rem;display:flex;align-items:center;justify-content:center}
+
+/* ---- Buttons ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--grad);color:#fff;padding:14px 22px;border-radius:50px;font-weight:600;font-size:.95rem;width:100%;transition:transform .15s,opacity .15s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.5}
+.btn.ghost{background:var(--card2);border:1px solid var(--line)}
+.btn.gold{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000}
+.input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:13px 14px;color:var(--ink);font-family:inherit;font-size:.92rem;margin-bottom:12px}
+textarea{resize:vertical;min-height:90px}
+label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;text-transform:uppercase;letter-spacing:.5px}
+
+/* ---- Centered states (gate / loading) ---- */
+.center{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+.center .big-ico{font-size:3rem;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:18px}
+.center h2{font-family:'Playfair Display',serif;margin-bottom:10px}
+.center p{color:var(--muted2);font-size:.9rem;margin-bottom:22px;max-width:34ch}
+.pad{padding:20px 18px 30px}
+.pad h3{font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:6px}
+.pad .lead{color:var(--muted2);font-size:.86rem;margin-bottom:20px}
+
+/* ---- Swipe deck ---- */
+#deck{position:relative;height:100%;padding:14px 14px 0}
+.swipecard{position:absolute;inset:14px 14px 14px;background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.5);display:flex;flex-direction:column;will-change:transform}
+.swipecard .photo{flex:1;background:#1c1c28 center/cover no-repeat;position:relative;min-height:0}
+.swipecard .photo .noimg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:4rem;color:#3a3a4a}
+.swipecard .grad{position:absolute;left:0;right:0;bottom:0;height:52%;background:linear-gradient(transparent,rgba(0,0,0,.9))}
+.swipecard .meta{position:absolute;left:0;right:0;bottom:0;padding:20px 18px}
+.swipecard .nm{font-size:1.5rem;font-weight:700;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.swipecard .nm .age{font-weight:400;color:#e6e6ee}
+.swipecard .sub{display:flex;align-items:center;gap:6px;color:#d0d0dc;font-size:.82rem;margin-top:5px}
+.swipecard .bio{color:#c4c4d2;font-size:.82rem;margin-top:8px;max-height:3.4em;overflow:hidden}
+.avail-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(76,175,80,.22);border:1px solid rgba(76,175,80,.5);color:#7be07f;padding:4px 11px;border-radius:50px;font-size:.7rem;font-weight:600;margin-top:8px}
+.stamp{position:absolute;top:26px;padding:6px 16px;border:3px solid;border-radius:12px;font-weight:800;font-size:1.4rem;letter-spacing:2px;opacity:0;transform:rotate(-14deg);text-transform:uppercase}
+.stamp.like{left:20px;color:var(--green);border-color:var(--green)}
+.stamp.nope{right:20px;color:var(--red);border-color:var(--red);transform:rotate(14deg)}
+.deck-actions{position:absolute;left:0;right:0;bottom:16px;display:flex;align-items:center;justify-content:center;gap:16px;z-index:5}
+.act{width:60px;height:60px;border-radius:50%;background:var(--card2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 8px 22px rgba(0,0,0,.4);transition:transform .12s}
+.act:active{transform:scale(.9)}
+.act.pass{color:var(--red)} .act.like{color:var(--green)} .act.super{color:var(--blue);width:50px;height:50px;font-size:1.2rem}
+.act.boost{color:var(--gold);width:50px;height:50px;font-size:1.2rem}
+
+/* ---- Matches list ---- */
+.match-strip{display:flex;gap:14px;overflow-x:auto;padding:14px 16px 6px}
+.match-strip .m{flex:none;width:66px;text-align:center}
+.match-strip .m .av{width:62px;height:62px;border-radius:50%;background:var(--card2) center/cover;border:2px solid var(--rose);margin-bottom:5px}
+.match-strip .m .nm{font-size:.68rem;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv{display:flex;align-items:center;gap:13px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.conv .av{width:54px;height:54px;border-radius:50%;background:var(--card2) center/cover;flex:none}
+.conv .info{flex:1;min-width:0}
+.conv .info .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.conv .info .nm{font-weight:600;font-size:.95rem}
+.conv .info .tm{font-size:.66rem;color:var(--muted)}
+.conv .info .last{color:var(--muted2);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.conv .unread{background:var(--rose);color:#fff;min-width:20px;height:20px;border-radius:10px;font-size:.68rem;display:flex;align-items:center;justify-content:center;padding:0 5px;flex:none}
+
+/* ---- Chat ---- */
+#chatview{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;z-index:20}
+.chat-head{display:flex;align-items:center;gap:11px;padding:12px 14px;border-bottom:1px solid var(--line);flex:none}
+.chat-head .av{width:40px;height:40px;border-radius:50%;background:var(--card2) center/cover}
+.chat-head .nm{font-weight:600;font-size:.95rem;flex:1}
+.chat-body{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:8px}
+.bubble{max-width:76%;padding:10px 14px;border-radius:16px;font-size:.9rem;line-height:1.4;word-wrap:break-word}
+.bubble.me{align-self:flex-end;background:var(--grad);border-bottom-right-radius:5px}
+.bubble.you{align-self:flex-start;background:var(--card2);border:1px solid var(--line);border-bottom-left-radius:5px}
+.bubble img{border-radius:10px;margin:-2px 0}
+.chat-eph{text-align:center;font-size:.66rem;color:var(--muted);padding:6px}
+.chat-input{display:flex;align-items:center;gap:9px;padding:10px 12px max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--line);flex:none}
+.chat-input input{flex:1;margin:0;border-radius:50px}
+.chat-input .send{width:44px;height:44px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:1rem;flex:none}
+.icobtn{width:40px;height:40px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--muted2);flex:none}
+
+/* ---- Profile / settings ---- */
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.photo-slot{aspect-ratio:3/4;border-radius:14px;background:var(--card2);border:1.5px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:var(--muted);position:relative;overflow:hidden;background-size:cover;background-position:center}
+.photo-slot .rm{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:.7rem}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--line)}
+.toggle-row .lbl{font-size:.9rem}
+.toggle-row .desc{font-size:.72rem;color:var(--muted);margin-top:2px;max-width:26ch}
+.switch{width:46px;height:27px;border-radius:14px;background:var(--card2);border:1px solid var(--line);position:relative;flex:none;transition:background .2s}
+.switch.on{background:var(--rose);border-color:var(--rose)}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch.on::after{transform:translateX(19px)}
+.prem-card{background:linear-gradient(135deg,rgba(255,215,0,.14),rgba(233,30,99,.14));border:1px solid rgba(255,215,0,.35);border-radius:16px;padding:18px;margin-bottom:18px}
+.prem-card h4{display:flex;align-items:center;gap:8px;font-size:1rem;margin-bottom:10px;color:var(--gold)}
+.prem-card ul{list-style:none;font-size:.84rem;color:var(--muted2)}
+.prem-card li{padding:4px 0;display:flex;align-items:center;gap:9px}
+.prem-card li i{color:var(--gold);width:16px}
+
+/* ---- Toast + modal ---- */
+#toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(20px);background:#000;border:1px solid var(--line);color:#fff;padding:11px 18px;border-radius:50px;font-size:.82rem;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90%;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:24px;z-index:90;backdrop-filter:blur(4px)}
+.modal .box{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px 22px;max-width:360px;width:100%;text-align:center}
+.match-anim .hearts{font-size:3.2rem;margin-bottom:8px;animation:pop .5s}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+.match-anim h2{font-family:'Playfair Display',serif;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.match-avatars{display:flex;justify-content:center;gap:-10px;margin:16px 0}
+.match-avatars .av{width:80px;height:80px;border-radius:50%;background:var(--card2) center/cover;border:3px solid var(--rose)}
+.match-avatars .av:last-child{margin-left:-18px}
+.spin{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:60px 30px;color:var(--muted)}
+.empty i{font-size:2.6rem;margin-bottom:14px;display:block;color:var(--line)}
+.menu-sheet{position:fixed;inset:0;z-index:95;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6)}
+.menu-sheet .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:10px 0 max(10px,env(safe-area-inset-bottom))}
+.menu-sheet .item{padding:16px 22px;font-size:.92rem;display:flex;align-items:center;gap:13px;border-bottom:1px solid var(--line)}
+.menu-sheet .item:last-child{border-bottom:none}
+.menu-sheet .item.danger{color:var(--red)}
+</style>
+</head>
+<body>
+
+<div id="app-shell">
+  <!-- ============ LOADING ============ -->
+  <div id="v-loading" class="center">
+    <i class="fas fa-heart big-ico spin"></i>
+    <p>Chaje Bizen Social...</p>
+  </div>
+
+  <!-- ============ GATE (pa konekte) ============ -->
+  <div id="v-gate" class="center hidden">
+    <i class="fas fa-heart big-ico"></i>
+    <h2>Bizen <span style="background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Social</span></h2>
+    <p>Rankont ant granmoun 18 an+. Konekte ak menm kont Bizen ou an pou kòmanse.</p>
+    <a class="btn" href="/Dashboard.html"><i class="fas fa-right-to-bracket"></i> Konekte / Enskri</a>
+    <a href="/index.html" style="color:var(--muted);font-size:.82rem;margin-top:16px;text-decoration:none">← Retounen Bizen HT</a>
+  </div>
+
+  <!-- ============ ACTIVATION 1 clic ============ -->
+  <div id="v-activate" class="view hidden">
+    <div class="pad">
+      <div style="text-align:center;margin:14px 0 22px">
+        <i class="fas fa-heart big-ico" style="font-size:2.4rem"></i>
+        <h3>Aktive Bizen Social</h3>
+        <p class="lead">Menm kont, an 1 klik. Swipe, matche ak pale ak lòt granmoun toupre w.</p>
+      </div>
+      <label class="fld">Non / Pseudo</label>
+      <input id="a-pseudo" class="input" placeholder="Kijan yo rele w?" maxlength="40">
+      <label class="fld">Ane nesans (pou verifye 18 an+)</label>
+      <input id="a-birth" class="input" type="number" placeholder="Ex: 1996" inputmode="numeric">
+      <label class="fld">Mwen se</label>
+      <select id="a-gender" class="input">
+        <option value="">Chwazi...</option>
+        <option value="homme">Gason</option>
+        <option value="femme">Fanm</option>
+        <option value="autre">Lòt</option>
+      </select>
+      <label class="fld">M ap chèche</label>
+      <select id="a-seeking" class="input">
+        <option value="tous">Tout moun</option>
+        <option value="femme">Fanm</option>
+        <option value="homme">Gason</option>
+      </select>
+      <label class="fld">Zòn / Vil</label>
+      <input id="a-zone" class="input" placeholder="Ex: Pòtoprens, Petyonvil..." maxlength="60">
+      <label style="display:flex;gap:10px;align-items:flex-start;font-size:.8rem;color:var(--muted2);margin:6px 0 18px;cursor:pointer">
+        <input type="checkbox" id="a-consent" style="width:20px;height:20px;flex:none;margin-top:1px">
+        <span>Mwen gen 18 an oswa plis e mwen aksepte <a href="/regleman" style="color:var(--rose)">règleman</a> ak <a href="/konfidansyalite" style="color:var(--rose)">konfidansyalite</a> Bizen Social. Tolerans zewo pou kontni abizif.</span>
+      </label>
+      <button id="a-submit" class="btn"><i class="fas fa-bolt"></i> Aktive kounye a</button>
+      <a href="/Dashboard.html" style="display:block;text-align:center;color:var(--muted);font-size:.8rem;margin-top:16px;text-decoration:none">← Dashboard Bizen</a>
+    </div>
+  </div>
+
+  <!-- ============ ONBOARDING foto/bio ============ -->
+  <div id="v-onboard" class="view hidden">
+    <div class="pad">
+      <h3>Konplete pwofil ou</h3>
+      <p class="lead">Ajoute omwen 1 foto ak yon ti deskripsyon. Pwofil ou vin vizib apre yon revizyon rapid.</p>
+      <label class="fld">Foto (jiska 6)</label>
+      <div class="photo-grid" id="ob-photos"></div>
+      <label class="fld">Bio</label>
+      <textarea id="ob-bio" placeholder="Di yon ti bagay sou ou..." maxlength="300"></textarea>
+      <button id="ob-submit" class="btn"><i class="fas fa-check"></i> Fini &amp; kòmanse swipe</button>
+    </div>
+  </div>
+
+  <!-- ============ MAIN APP ============ -->
+  <div id="v-app" class="hidden" style="display:flex;flex-direction:column;height:100%">
+    <div class="topbar">
+      <div>
+        <div class="brand">Bizen<span>Social</span></div>
+        <div class="sub" id="premium-tag">Gratis</div>
+      </div>
+      <button class="topbar-btn" id="btn-boost" title="Disponib kounye a"><i class="fas fa-bolt"></i></button>
+    </div>
+
+    <!-- DISCOVER -->
+    <div id="tab-discover" class="view" style="position:relative;padding:0">
+      <div id="deck"></div>
+    </div>
+
+    <!-- MATCHES -->
+    <div id="tab-matches" class="view hidden">
+      <div id="match-strip" class="match-strip"></div>
+      <div id="conv-list"></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="tab-profile" class="view hidden">
+      <div class="pad">
+        <div class="prem-card" id="prem-card">
+          <h4><i class="fas fa-crown"></i> Bizen Social Premium</h4>
+          <ul>
+            <li><i class="fas fa-infinity"></i> Swipe &amp; mesaj san limit</li>
+            <li><i class="fas fa-heart"></i> Wè kiyès ki like ou</li>
+            <li><i class="fas fa-user-secret"></i> Mòd Enkognito (diskrè)</li>
+            <li><i class="fas fa-star"></i> Super Like &amp; Boost</li>
+          </ul>
+          <button class="btn gold" id="btn-premium" style="margin-top:14px"><i class="fas fa-crown"></i> Vin Premium (MonCash)</button>
+        </div>
+
+        <label class="fld">Foto</label>
+        <div class="photo-grid" id="pf-photos"></div>
+        <label class="fld">Bio</label>
+        <textarea id="pf-bio" maxlength="300"></textarea>
+        <button class="btn ghost" id="pf-save" style="margin-bottom:22px"><i class="fas fa-floppy-disk"></i> Anrejistre</button>
+
+        <h4 style="font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Konfidansyalite &amp; sekirite</h4>
+        <div class="toggle-row">
+          <div><div class="lbl">Mòd Enkognito</div><div class="desc">Sèlman moun ou like ki wè ou (Premium)</div></div>
+          <div class="switch" id="sw-incognito"></div>
+        </div>
+        <div class="toggle-row">
+          <div><div class="lbl">Pataje lokalizasyon</div><div class="desc">Montre distans apwoksimatif. Ou ka koupe l.</div></div>
+          <div class="switch on" id="sw-location"></div>
+        </div>
+        <div class="toggle-row">
+          <div><div class="lbl">Mesaj efemè</div><div class="desc">Mesaj efase otomatikman apre 24h</div></div>
+          <div class="switch on" id="sw-ephemeral"></div>
+        </div>
+
+        <button class="btn ghost" id="pf-logout" style="margin-top:22px"><i class="fas fa-right-from-bracket"></i> Dekonekte</button>
+        <a href="/index.html" style="display:block;text-align:center;color:var(--muted);font-size:.8rem;margin-top:16px;text-decoration:none">← Bizen HT prensipal</a>
+      </div>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <div class="bottomnav">
+      <button class="navbtn active" data-tab="discover"><i class="fas fa-fire"></i>Dekouvri</button>
+      <button class="navbtn" data-tab="matches"><i class="fas fa-comment-heart"></i>Match<span class="badge hidden" id="nav-badge">0</span></button>
+      <button class="navbtn" data-tab="profile"><i class="fas fa-user"></i>Pwofil</button>
+    </div>
+  </div>
+
+  <!-- CHAT (overlay) -->
+  <div id="chatview" class="hidden">
+    <div class="chat-head">
+      <button class="icobtn" id="chat-back"><i class="fas fa-arrow-left"></i></button>
+      <div class="av" id="chat-av"></div>
+      <div class="nm" id="chat-name">...</div>
+      <button class="icobtn" id="chat-menu"><i class="fas fa-ellipsis-vertical"></i></button>
+    </div>
+    <div class="chat-eph" id="chat-eph"></div>
+    <div class="chat-body" id="chat-body"></div>
+    <div class="chat-input">
+      <input id="chat-text" placeholder="Ekri yon mesaj..." maxlength="1000" autocomplete="off">
+      <button class="send" id="chat-send"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<input type="file" id="file-input" accept="image/*" class="hidden">
+
+<script>
+/* ============ FIREBASE ============ */
+var fbCfg = {
+  apiKey:"AIzaSyADWklo0scZNWkhudRn_VBhrapXl4AZL_E",
+  authDomain:"bizen-ht.firebaseapp.com",
+  projectId:"bizen-ht",
+  storageBucket:"bizen-ht.firebasestorage.app",
+  messagingSenderId:"248857953518",
+  appId:"1:248857953518:web:f85b1b37abd849add01fff"
+};
+var app; try{app=firebase.app();}catch(e){app=firebase.initializeApp(fbCfg);}
+var auth=firebase.auth(), db=firebase.firestore(), storage=firebase.storage();
+var API="/.netlify/functions/";
+
+/* ============ STATE ============ */
+var ME=null, TOKEN=null, PROFILE=null, ENT=null;
+var deck=[], deckIdx=0;
+var matchesCache={}, curPair=null, chatUnsub=null, matchesUnsub=null;
+var uploadTarget=null; /* "onboard" | "profile" */
+var pendingPhotos=[];  /* onboarding photos before profile creation */
+
+/* ============ HELPERS ============ */
+function $(id){return document.getElementById(id);}
+function show(id){ ["v-loading","v-gate","v-activate","v-onboard","v-app"].forEach(function(v){ $(v).classList.toggle("hidden", v!==id); }); }
+function toast(m){ var t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove("show");},2600); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+async function api(fn, payload){
+  payload=payload||{}; payload.idToken=TOKEN;
+  var r=await fetch(API+fn,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  var j={}; try{j=await r.json();}catch(e){}
+  if(!r.ok){ var er=new Error(j.error||"Erè"); er.data=j; er.status=r.status; throw er; }
+  return j;
+}
+function isPremium(){ return ENT && ENT.premiumUntil && ENT.premiumUntil.toMillis && ENT.premiumUntil.toMillis()>Date.now(); }
+function timeAgo(ts){ if(!ts||!ts.toMillis)return""; var s=(Date.now()-ts.toMillis())/1000; if(s<60)return"kounye a"; if(s<3600)return Math.floor(s/60)+"m"; if(s<86400)return Math.floor(s/3600)+"h"; return Math.floor(s/86400)+"j"; }
+
+/* ============ AUTH BOOT ============ */
+auth.onAuthStateChanged(async function(u){
+  if(window.DEMO) return;              /* mode aperçu (?demo) : on ignore l'auth réelle */
+  if(!u){ show("v-gate"); return; }
+  ME=u; TOKEN=await u.getIdToken();
+  try{
+    var snap=await db.collection("socialProfiles").doc(u.uid).get();
+    if(!snap.exists || !snap.data().activatedAt){ show("v-activate"); prefillActivate(); return; }
+    PROFILE=snap.data();
+    var eSnap=await db.collection("socialEntitlements").doc(u.uid).get();
+    ENT=eSnap.exists?eSnap.data():{};
+    if(PROFILE.status==="pending" || !PROFILE.photos || PROFILE.photos.length===0){ enterOnboard(); return; }
+    enterApp();
+  }catch(e){ console.error(e); toast("Erè chajman. Rafrechi."); }
+});
+
+/* ============ ACTIVATION ============ */
+async function prefillActivate(){
+  try{ var us=await db.collection("users").doc(ME.uid).get(); if(us.exists){ var d=us.data(); if(d.prenom)$("a-pseudo").value=d.prenom; if(d.localisation||d.zone)$("a-zone").value=d.localisation||d.zone; } }catch(e){}
+}
+$("a-submit").onclick=async function(){
+  var b=this; b.disabled=true;
+  try{
+    await api("social-activate",{
+      pseudo:$("a-pseudo").value.trim(),
+      birthYear:parseInt($("a-birth").value,10),
+      gender:$("a-gender").value,
+      seeking:$("a-seeking").value,
+      zone:$("a-zone").value.trim(),
+      consent:$("a-consent").checked
+    });
+    var snap=await db.collection("socialProfiles").doc(ME.uid).get();
+    PROFILE=snap.data();
+    var eSnap=await db.collection("socialEntitlements").doc(ME.uid).get(); ENT=eSnap.exists?eSnap.data():{};
+    enterOnboard();
+  }catch(e){ toast(e.message); b.disabled=false; }
+};
+
+/* ============ ONBOARDING ============ */
+function enterOnboard(){ show("v-onboard"); pendingPhotos=(PROFILE&&PROFILE.photos)?PROFILE.photos.slice():[]; renderPhotoGrid("ob-photos",pendingPhotos,"onboard"); $("ob-bio").value=(PROFILE&&PROFILE.bio)||""; }
+$("ob-submit").onclick=async function(){
+  if(pendingPhotos.length===0){ toast("Ajoute omwen 1 foto."); return; }
+  var b=this; b.disabled=true;
+  try{
+    await db.collection("socialProfiles").doc(ME.uid).set({
+      photos:pendingPhotos, bio:$("ob-bio").value.trim(),
+      status:"active", visible:true, lastActive:firebase.firestore.Timestamp.now()
+    },{merge:true});
+    var snap=await db.collection("socialProfiles").doc(ME.uid).get(); PROFILE=snap.data();
+    toast("Byenveni sou Bizen Social! 💗"); enterApp();
+  }catch(e){ toast("Erè: "+e.message); b.disabled=false; }
+};
+
+/* ============ PHOTOS (upload Storage) ============ */
+function renderPhotoGrid(gridId, arr, target){
+  var g=$(gridId); g.innerHTML="";
+  for(var i=0;i<6;i++){
+    var url=arr[i];
+    var slot=document.createElement("div"); slot.className="photo-slot";
+    if(url){ slot.style.backgroundImage="url('"+url+"')";
+      var rm=document.createElement("div"); rm.className="rm"; rm.innerHTML='<i class="fas fa-times"></i>';
+      (function(idx){ rm.onclick=function(ev){ ev.stopPropagation(); arr.splice(idx,1); renderPhotoGrid(gridId,arr,target); if(target==="profile")saveProfilePhotos(arr); }; })(i);
+      slot.appendChild(rm);
+    } else { slot.innerHTML='<i class="fas fa-plus"></i>';
+      (function(t){ slot.onclick=function(){ uploadTarget=t; $("file-input").click(); }; })(target);
+    }
+    g.appendChild(slot);
+  }
+}
+$("file-input").onchange=async function(){
+  var f=this.files[0]; this.value=""; if(!f)return;
+  if(f.size>15*1024*1024){ toast("Foto twò gwo (max 15Mo)."); return; }
+  toast("Ap voye foto...");
+  try{
+    var path="social/"+ME.uid+"/"+Date.now()+"_"+Math.random().toString(36).slice(2)+".jpg";
+    var ref=storage.ref().child(path);
+    await ref.put(f); var url=await ref.getDownloadURL();
+    if(uploadTarget==="onboard"){ if(pendingPhotos.length<6){pendingPhotos.push(url);} renderPhotoGrid("ob-photos",pendingPhotos,"onboard"); }
+    else { PROFILE.photos=PROFILE.photos||[]; if(PROFILE.photos.length<6){PROFILE.photos.push(url);} renderPhotoGrid("pf-photos",PROFILE.photos,"profile"); saveProfilePhotos(PROFILE.photos); }
+  }catch(e){ console.error(e); toast("Erè voye foto."); }
+};
+async function saveProfilePhotos(arr){ try{ await db.collection("socialProfiles").doc(ME.uid).set({photos:arr},{merge:true}); }catch(e){} }
+
+/* ============ ENTER APP ============ */
+function enterApp(){
+  show("v-app");
+  $("premium-tag").textContent=isPremium()?"⭐ Premium":"Gratis";
+  switchTab("discover");
+  loadFeed();
+  listenMatches();
+  hydrateProfileTab();
+}
+function switchTab(t){
+  ["discover","matches","profile"].forEach(function(x){ $("tab-"+x).classList.toggle("hidden",x!==t); });
+  document.querySelectorAll(".navbtn").forEach(function(b){ b.classList.toggle("active",b.dataset.tab===t); });
+  if(t==="matches") clearMatchBadge();
+}
+document.querySelectorAll(".navbtn").forEach(function(b){ b.onclick=function(){ switchTab(b.dataset.tab); }; });
+
+/* ============ FEED + SWIPE DECK ============ */
+async function loadFeed(){
+  $("deck").innerHTML='<div class="empty" style="margin-top:40px"><i class="fas fa-heart spin"></i>Ap chèche moun toupre w...</div>';
+  try{
+    var r=await api("social-feed",{});
+    deck=r.profiles||[]; deckIdx=0; renderDeck();
+  }catch(e){ $("deck").innerHTML='<div class="empty"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
+}
+function renderDeck(){
+  var d=$("deck"); d.innerHTML="";
+  if(deckIdx>=deck.length){
+    d.innerHTML='<div class="empty" style="margin-top:30px"><i class="fas fa-champagne-glasses"></i>Ou wè tout moun pou kounye a.<br>Retounen pita oswa elaji zòn ou.<br><br><button class="btn ghost" style="max-width:200px;margin:0 auto" onclick="loadFeed()"><i class=\'fas fa-rotate\'></i> Rafrechi</button></div>';
+    return;
+  }
+  /* render up to 2 stacked cards */
+  for(var k=Math.min(deckIdx+1,deck.length-1);k>=deckIdx;k--){
+    d.appendChild(buildCard(deck[k], k===deckIdx));
+  }
+  d.appendChild(buildActions());
+}
+function buildCard(p, top){
+  var c=document.createElement("div"); c.className="swipecard"; if(!top){c.style.transform="scale(.96) translateY(10px)";c.style.filter="brightness(.7)";}
+  var photo=p.photos&&p.photos[0]?p.photos[0]:"";
+  var distTxt = p.availableNow ? "Disponib kounye a" : (p.distanceKm!=null? ("~"+p.distanceKm+" km") : (p.zone||"")) ;
+  c.innerHTML=
+    '<div class="photo" style="'+(photo?"background-image:url(\'"+photo+"\')":"")+'">'+(photo?"":'<div class="noimg"><i class="fas fa-user"></i></div>')+
+      '<div class="stamp like">Like</div><div class="stamp nope">Non</div>'+
+      '<div class="grad"></div>'+
+      '<div class="meta">'+
+        '<div class="nm">'+esc(p.pseudo)+(p.age?' <span class="age">'+p.age+'</span>':'')+'</div>'+
+        (distTxt?'<div class="sub"><i class="fas fa-location-dot"></i> '+esc(distTxt)+'</div>':'')+
+        (p.availableNow?'<div class="avail-pill"><i class="fas fa-bolt"></i> Disponib kounye a</div>':'')+
+        (p.bio?'<div class="bio">'+esc(p.bio)+'</div>':'')+
+      '</div>'+
+    '</div>';
+  if(top) attachDrag(c);
+  c._data=p;
+  return c;
+}
+function buildActions(){
+  var wrap=document.createElement("div"); wrap.className="deck-actions";
+  wrap.innerHTML=
+    '<button class="act pass"><i class="fas fa-xmark"></i></button>'+
+    '<button class="act super"><i class="fas fa-star"></i></button>'+
+    '<button class="act like"><i class="fas fa-heart"></i></button>';
+  wrap.children[0].onclick=function(){ doSwipe("pass"); };
+  wrap.children[1].onclick=function(){ doSwipe("super"); };
+  wrap.children[2].onclick=function(){ doSwipe("like"); };
+  return wrap;
+}
+/* Drag gesture on top card */
+function attachDrag(card){
+  var sx=0,sy=0,dx=0,dy=0,drag=false;
+  function start(x,y){drag=true;sx=x;sy=y;card.style.transition="none";}
+  function move(x,y){ if(!drag)return; dx=x-sx;dy=y-sy; card.style.transform="translate("+dx+"px,"+dy+"px) rotate("+(dx/18)+"deg)";
+    var l=card.querySelector(".stamp.like"), n=card.querySelector(".stamp.nope");
+    if(l)l.style.opacity=Math.max(0,dx/90); if(n)n.style.opacity=Math.max(0,-dx/90);
+  }
+  function end(){ if(!drag)return; drag=false; card.style.transition="transform .3s";
+    if(dx>110){ flyOut(card,1); doSwipe("like",true); }
+    else if(dx<-110){ flyOut(card,-1); doSwipe("pass",true); }
+    else { card.style.transform=""; var l=card.querySelector(".stamp.like"),n=card.querySelector(".stamp.nope"); if(l)l.style.opacity=0; if(n)n.style.opacity=0; }
+  }
+  card.addEventListener("touchstart",function(e){start(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
+  card.addEventListener("touchmove",function(e){move(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
+  card.addEventListener("touchend",end);
+  card.addEventListener("mousedown",function(e){start(e.clientX,e.clientY);});
+  window.addEventListener("mousemove",function(e){if(drag)move(e.clientX,e.clientY);});
+  window.addEventListener("mouseup",end);
+}
+function flyOut(card,dir){ card.style.transition="transform .35s,opacity .35s"; card.style.transform="translate("+(dir*600)+"px,-40px) rotate("+(dir*30)+"deg)"; card.style.opacity="0"; }
+var swiping=false;
+async function doSwipe(dir, fromDrag){
+  if(swiping)return; if(deckIdx>=deck.length)return;
+  var p=deck[deckIdx];
+  swiping=true;
+  if(!fromDrag){ var top=$("deck").querySelector(".swipecard"); if(top){ flyOut(top, dir==="pass"?-1:1); } }
+  setTimeout(function(){ deckIdx++; renderDeck(); swiping=false; }, 300);
+  try{
+    var r=await api("social-swipe",{targetUid:p.uid, dir:dir});
+    if(r.match){ showMatchModal(p); }
+  }catch(e){
+    if(e.status===429){ if(e.data&&e.data.reason==="super"){ toast("Ou pa gen Super Like. Achte yon pak nan Pwofil."); } else { showLimitModal(e.message); } }
+    else { toast(e.message); }
+  }
+}
+
+/* ============ MATCH MODAL ============ */
+function showMatchModal(p){
+  var myPhoto=(PROFILE.photos&&PROFILE.photos[0])||"";
+  var m=document.createElement("div"); m.className="modal";
+  m.innerHTML='<div class="box match-anim"><div class="hearts">💗</div><h2>Se yon Match!</h2>'+
+    '<p style="color:var(--muted2);font-size:.86rem">Ou ak '+esc(p.pseudo)+' like youn lòt.</p>'+
+    '<div class="match-avatars"><div class="av" style="background-image:url(\''+myPhoto+'\')"></div><div class="av" style="background-image:url(\''+((p.photos&&p.photos[0])||"")+'\')"></div></div>'+
+    '<button class="btn" id="mm-chat"><i class="fas fa-comment"></i> Voye yon mesaj</button>'+
+    '<button class="btn ghost" id="mm-keep" style="margin-top:10px">Kontinye swipe</button></div>';
+  document.body.appendChild(m);
+  var pair=[ME.uid,p.uid].sort().join("_");
+  m.querySelector("#mm-chat").onclick=function(){ m.remove(); switchTab("matches"); setTimeout(function(){ openChat(pair); },250); };
+  m.querySelector("#mm-keep").onclick=function(){ m.remove(); };
+}
+function showLimitModal(msg){
+  var m=document.createElement("div"); m.className="modal";
+  m.innerHTML='<div class="box"><div style="font-size:2.4rem;margin-bottom:10px">⏳</div><h2 style="font-family:\'Playfair Display\';font-size:1.3rem;margin-bottom:8px">Limit jounen an</h2>'+
+    '<p style="color:var(--muted2);font-size:.86rem;margin-bottom:18px">'+esc(msg)+'</p>'+
+    '<button class="btn gold" id="lm-prem"><i class="fas fa-crown"></i> Vin Premium</button>'+
+    '<button class="btn ghost" id="lm-close" style="margin-top:10px">Fèmen</button></div>';
+  document.body.appendChild(m);
+  m.querySelector("#lm-prem").onclick=function(){ m.remove(); switchTab("profile"); openPremium(); };
+  m.querySelector("#lm-close").onclick=function(){ m.remove(); };
+}
+
+/* ============ MATCHES LIST (realtime) ============ */
+function listenMatches(){
+  if(matchesUnsub)matchesUnsub();
+  matchesUnsub=db.collection("socialMatches").where("users","array-contains",ME.uid).orderBy("lastAt","desc")
+    .onSnapshot(function(snap){
+      var strip=$("match-strip"), list=$("conv-list"); strip.innerHTML=""; list.innerHTML="";
+      var totalUnread=0, newMatches=0, conv=0;
+      snap.forEach(function(doc){
+        var d=doc.data(); matchesCache[doc.id]=d;
+        var other=d.users[0]===ME.uid?d.users[1]:d.users[0];
+        var nm=(d.names&&d.names[other])||"Anonim";
+        var av=(d.avatars&&d.avatars[other])||"";
+        var unread=(d.unread&&d.unread[ME.uid])||0; totalUnread+=unread;
+        if(!d.lastMessage){ /* new match, no message yet -> strip */
+          newMatches++;
+          var m=document.createElement("div"); m.className="m";
+          m.innerHTML='<div class="av" style="background-image:url(\''+av+'\')"></div><div class="nm">'+esc(nm)+'</div>';
+          m.onclick=(function(id){return function(){openChat(id);};})(doc.id);
+          strip.appendChild(m);
+        } else {
+          conv++;
+          var c=document.createElement("div"); c.className="conv";
+          c.innerHTML='<div class="av" style="background-image:url(\''+av+'\')"></div>'+
+            '<div class="info"><div class="t"><span class="nm">'+esc(nm)+'</span><span class="tm">'+timeAgo(d.lastAt)+'</span></div>'+
+            '<div class="last">'+esc(d.lastMessage||"")+'</div></div>'+
+            (unread?'<div class="unread">'+unread+'</div>':'');
+          c.onclick=(function(id){return function(){openChat(id);};})(doc.id);
+          list.appendChild(c);
+        }
+      });
+      if(newMatches===0) strip.style.display="none"; else strip.style.display="flex";
+      if(conv===0 && newMatches===0){ list.innerHTML='<div class="empty"><i class="fas fa-heart"></i>Poko gen match.<br>Ale swipe nan "Dekouvri"!</div>'; }
+      var badge=$("nav-badge");
+      if(totalUnread>0){ badge.textContent=totalUnread; badge.classList.remove("hidden"); } else { badge.classList.add("hidden"); }
+    }, function(err){ console.error("matches:",err); });
+}
+function clearMatchBadge(){}
+
+/* ============ CHAT ============ */
+function openChat(pairId){
+  curPair=pairId; var d=matchesCache[pairId]; if(!d)return;
+  var other=d.users[0]===ME.uid?d.users[1]:d.users[0];
+  $("chat-name").textContent=(d.names&&d.names[other])||"Anonim";
+  $("chat-av").style.backgroundImage="url('"+((d.avatars&&d.avatars[other])||"")+"')";
+  $("chat-eph").textContent=d.ephemeral!==false?"🔥 Mesaj efemè — efase apre 24h":"";
+  $("chat-body").innerHTML='<div class="empty" style="margin:auto"><i class="fas fa-comments spin"></i></div>';
+  $("chatview").classList.remove("hidden");
+  /* reset my unread */
+  var upd={}; upd["unread."+ME.uid]=0; db.collection("socialMatches").doc(pairId).set(upd,{merge:true}).catch(function(){});
+  if(chatUnsub)chatUnsub();
+  chatUnsub=db.collection("socialMessages").where("pairId","==",pairId).orderBy("createdAt","asc")
+    .onSnapshot(function(snap){
+      var body=$("chat-body"); body.innerHTML="";
+      if(snap.empty){ body.innerHTML='<div class="empty" style="margin:auto"><i class="fas fa-hand-sparkles"></i>Di bonjou! 👋</div>'; return; }
+      snap.forEach(function(doc){
+        var m=doc.data(); var mine=m.senderId===ME.uid;
+        var b=document.createElement("div"); b.className="bubble "+(mine?"me":"you");
+        if(m.mediaUrl){ b.innerHTML='<img src="'+esc(m.mediaUrl)+'">'+(m.text?'<div>'+esc(m.text)+'</div>':''); }
+        else b.textContent=m.text||"";
+        body.appendChild(b);
+      });
+      body.scrollTop=body.scrollHeight;
+    }, function(err){ console.error("chat:",err); });
+}
+$("chat-back").onclick=function(){ $("chatview").classList.add("hidden"); if(chatUnsub){chatUnsub();chatUnsub=null;} curPair=null; };
+async function sendChat(){
+  var inp=$("chat-text"); var txt=inp.value.trim(); if(!txt||!curPair)return;
+  inp.value="";
+  try{ await api("social-message",{pairId:curPair,text:txt}); }
+  catch(e){ inp.value=txt; if(e.status===429){showLimitModal(e.message);} else toast(e.message); }
+}
+$("chat-send").onclick=sendChat;
+$("chat-text").addEventListener("keydown",function(e){ if(e.key==="Enter"){e.preventDefault();sendChat();} });
+$("chat-menu").onclick=function(){ openChatMenu(); };
+function openChatMenu(){
+  var d=matchesCache[curPair]; if(!d)return; var other=d.users[0]===ME.uid?d.users[1]:d.users[0];
+  var s=document.createElement("div"); s.className="menu-sheet";
+  s.innerHTML='<div class="sheet">'+
+    '<div class="item" id="mi-report"><i class="fas fa-flag"></i> Sinyale</div>'+
+    '<div class="item danger" id="mi-block"><i class="fas fa-ban"></i> Bloke</div>'+
+    '<div class="item" id="mi-cancel"><i class="fas fa-xmark"></i> Anile</div></div>';
+  document.body.appendChild(s);
+  s.onclick=function(e){ if(e.target===s)s.remove(); };
+  s.querySelector("#mi-cancel").onclick=function(){ s.remove(); };
+  s.querySelector("#mi-report").onclick=async function(){ s.remove();
+    try{ await api("social-moderation",{action:"report",targetUid:other,pairId:curPair,reason:"abi"}); toast("Sinyale. Mèsi — n ap verifye."); $("chat-back").onclick(); }catch(e){toast(e.message);} };
+  s.querySelector("#mi-block").onclick=async function(){ s.remove();
+    if(!confirm("Bloke moun sa a? Nou p ap wè youn lòt ankò."))return;
+    try{ await api("social-moderation",{action:"block",targetUid:other}); toast("Bloke."); $("chat-back").onclick(); }catch(e){toast(e.message);} };
+}
+
+/* ============ PROFILE TAB ============ */
+function hydrateProfileTab(){
+  renderPhotoGrid("pf-photos",PROFILE.photos||[],"profile");
+  $("pf-bio").value=PROFILE.bio||"";
+  $("premium-tag").textContent=isPremium()?"⭐ Premium":"Gratis";
+  $("sw-incognito").classList.toggle("on",!!PROFILE.incognito);
+  $("sw-location").classList.toggle("on",PROFILE.shareLocation!==false);
+  $("sw-ephemeral").classList.toggle("on",PROFILE.defaultEphemeral!==false);
+}
+$("pf-save").onclick=async function(){ try{ await db.collection("socialProfiles").doc(ME.uid).set({bio:$("pf-bio").value.trim()},{merge:true}); toast("Anrejistre."); }catch(e){toast("Erè.");} };
+$("sw-incognito").onclick=function(){ toggleSetting("incognito",this,true); };
+$("sw-location").onclick=function(){ toggleSetting("shareLocation",this,false); };
+$("sw-ephemeral").onclick=function(){ toggleSetting("defaultEphemeral",this,false); };
+async function toggleSetting(key,el,premiumOnly){
+  if(premiumOnly && !isPremium()){ toast("Fonksyon Premium. Vin Premium pou aktive l."); return; }
+  var on=!el.classList.contains("on"); el.classList.toggle("on",on);
+  PROFILE[key]=on;
+  try{ await db.collection("socialProfiles").doc(ME.uid).set({[key]:on},{merge:true}); }catch(e){ el.classList.toggle("on",!on); toast("Erè."); }
+}
+$("pf-logout").onclick=function(){ auth.signOut(); };
+$("btn-premium").onclick=openPremium;
+$("btn-boost").onclick=async function(){
+  try{ await db.collection("socialProfiles").doc(ME.uid).set({availableNow:firebase.firestore.Timestamp.now()},{merge:true}); toast("Ou make 'Disponib kounye a' pou 1 èdtan! ⚡"); }catch(e){toast("Erè.");}
+};
+function openPremium(){
+  var m=document.createElement("div"); m.className="modal";
+  m.innerHTML='<div class="box"><div style="font-size:2.6rem">👑</div><h2 style="font-family:\'Playfair Display\';margin:8px 0">Bizen Social Premium</h2>'+
+    '<p style="color:var(--muted2);font-size:.85rem;margin-bottom:16px">Swipe &amp; mesaj san limit, wè kiyès ki like ou, mòd enkognito, Super Like &amp; Boost.</p>'+
+    '<p style="font-size:.8rem;color:var(--muted);margin-bottom:16px">Peman via MonCash — menm sistèm wallet Bizen ou an.</p>'+
+    '<button class="btn gold" id="pm-go"><i class="fab fa-cc-visa"></i> Kontinye ak MonCash</button>'+
+    '<button class="btn ghost" id="pm-close" style="margin-top:10px">Pita</button></div>';
+  document.body.appendChild(m);
+  m.querySelector("#pm-close").onclick=function(){m.remove();};
+  m.querySelector("#pm-go").onclick=function(){ m.remove(); toast("Peman Premium ap konekte ak wallet MonCash ou (pwochèn etap)."); };
+}
+
+/* ================================================================
+   MODE APERÇU — design uniquement, SANS serveur ni Firebase.
+   Activé UNIQUEMENT si l'URL contient ?demo  (ex: social.html?demo=1,
+   ?demo=activate, ?demo=onboard). N'a AUCUN effet en production.
+   Sert à voir tous les écrans en double-cliquant le fichier (hors-ligne).
+   ================================================================ */
+(function(){
+  /* Accepte ?demo=... OU #demo=... (l'un ou l'autre selon le navigateur). */
+  var q = location.search + " " + location.hash;
+  if(!/[?&#]demo/.test(q)) return;
+  window.DEMO = true;
+
+  /* Avatar SVG intégré (aucune image externe -> marche hors-ligne). */
+  function demoAv(hue, emoji){
+    var svg="<svg xmlns='http://www.w3.org/2000/svg' width='600' height='800'>"+
+      "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>"+
+      "<stop offset='0' stop-color='hsl("+hue+",65%,52%)'/>"+
+      "<stop offset='1' stop-color='hsl("+((hue+45)%360)+",65%,38%)'/></linearGradient></defs>"+
+      "<rect width='600' height='800' fill='url(#g)'/>"+
+      "<text x='300' y='450' font-size='230' text-anchor='middle'>"+emoji+"</text></svg>";
+    return "data:image/svg+xml,"+encodeURIComponent(svg);
+  }
+  var DEMO_PROFILES=[
+    {uid:"d1",pseudo:"Nadège",age:26,zone:"Petyonvil",distanceKm:3,availableNow:true, bio:"Renmen mizik, vwayaj ak bon konvèsasyon 🎶",photos:[demoAv(330,"🌸")]},
+    {uid:"d2",pseudo:"Jonas",age:31,zone:"Delmas",distanceKm:7,availableNow:false, bio:"Antreprenè, foutbòl chak wikenn. Senp e onèt.",photos:[demoAv(210,"⚽")]},
+    {uid:"d3",pseudo:"Mia",age:24,zone:"Pòtoprens",distanceKm:5,availableNow:false, bio:"Etidyan, atist nan kè. Fè m ri 😄",photos:[demoAv(280,"🎨")]},
+    {uid:"d4",pseudo:"Ricardo",age:29,zone:"Kwadèboukè",distanceKm:12,availableNow:true, bio:"Chèf kwizin. M ap prepare w yon bon plat 🍲",photos:[demoAv(20,"🔥")]}
+  ];
+
+  /* Stubs : neutralisent tout appel réseau (writes/reads Firestore + Storage). */
+  var noop=function(){}; var okp=function(){return Promise.resolve();};
+  var chain={ set:okp, update:okp, delete:okp, add:okp,
+    get:function(){return Promise.resolve({exists:false,data:function(){return{};},ref:{set:okp}});},
+    where:function(){return chainQ;}, doc:function(){return chain;}, orderBy:function(){return chainQ;} };
+  var chainQ={ where:function(){return chainQ;}, orderBy:function(){return chainQ;},
+    onSnapshot:function(){return noop;}, get:function(){return Promise.resolve({empty:true,forEach:noop});} };
+  db={ collection:function(){return chain;} };
+  var storageChild={ put:okp, getDownloadURL:function(){ return Promise.resolve(demoAv(140,"📷")); } };
+  storage={ ref:function(){ return { child:function(){ return storageChild; } }; } };
+  auth={ signOut:function(){ toast("(aperçu) Dekonekte"); }, onAuthStateChanged:noop };
+
+  ME={uid:"demo"}; TOKEN="demo";
+  ENT={premiumUntil:null, superCredits:3};
+  PROFILE={pseudo:"Ou",bio:"Egzanp: m renmen sinema, bon manje ak moun onèt.",
+    photos:[demoAv(300,"😊")],status:"active",visible:true,incognito:false,
+    shareLocation:true,defaultEphemeral:true,prefs:{}};
+
+  /* Remplace les appels serveur par des réponses factices. */
+  api=async function(fn,p){
+    if(fn==="social-feed") return {profiles:DEMO_PROFILES.slice()};
+    if(fn==="social-swipe") return {match: (p.dir!=="pass") && (p.targetUid==="d1"||Math.random()<0.4)};
+    return {success:true};
+  };
+
+  /* Liste des matchs (factice). */
+  listenMatches=function(){
+    var strip=$("match-strip"), list=$("conv-list");
+    strip.style.display="flex";
+    strip.innerHTML="";
+    [["d3","Mia",280,"🎨"],["d4","Ricardo",20,"🔥"]].forEach(function(x){
+      var m=document.createElement("div"); m.className="m";
+      m.innerHTML='<div class="av" style="background-image:url(\''+demoAv(x[2],x[3])+'\')"></div><div class="nm">'+x[1]+'</div>';
+      m.onclick=function(){ openChat("demo_"+x[0]); };
+      strip.appendChild(m);
+    });
+    list.innerHTML="";
+    [["d1","Nadège",330,"🌸","Kontan nou matche! Kijan w ye? 😊","2m",2],
+     ["d2","Jonas",210,"⚽","Ok pou yon kafe samdi?","1h",0]].forEach(function(c){
+      var el=document.createElement("div"); el.className="conv";
+      el.innerHTML='<div class="av" style="background-image:url(\''+demoAv(c[2],c[3])+'\')"></div>'+
+        '<div class="info"><div class="t"><span class="nm">'+c[1]+'</span><span class="tm">'+c[5]+'</span></div>'+
+        '<div class="last">'+c[4]+'</div></div>'+(c[6]?'<div class="unread">'+c[6]+'</div>':'');
+      el.onclick=function(){ openChat("demo_"+c[0]); };
+      list.appendChild(el);
+    });
+    var badge=$("nav-badge"); badge.textContent="2"; badge.classList.remove("hidden");
+  };
+
+  /* Conversation (factice). */
+  var DEMO_CHATS={
+    demo_d1:{nm:"Nadège",hue:330,em:"🌸",msgs:[["you","Kontan nou matche! Kijan w ye? 😊"],["you","M wè ou renmen mizik tou 🎶"]]},
+    demo_d2:{nm:"Jonas",hue:210,em:"⚽",msgs:[["me","Salye! Sa k pase?"],["you","Anfòm! Ou menm?"],["you","Ok pou yon kafe samdi?"]]},
+    demo_d3:{nm:"Mia",hue:280,em:"🎨",msgs:[["me","Bèl desen ou yo! 🎨"]]},
+    demo_d4:{nm:"Ricardo",hue:20,em:"🔥",msgs:[["you","M ap prepare w yon bon plat 🍲"]]}
+  };
+  openChat=function(pairId){
+    var c=DEMO_CHATS[pairId]||{nm:"Match",hue:300,em:"💗",msgs:[]};
+    curPair=pairId;
+    $("chat-name").textContent=c.nm;
+    $("chat-av").style.backgroundImage="url('"+demoAv(c.hue,c.em)+"')";
+    $("chat-eph").textContent="🔥 Mesaj efemè — efase apre 24h";
+    var body=$("chat-body"); body.innerHTML="";
+    if(!c.msgs.length){ body.innerHTML='<div class="empty" style="margin:auto"><i class="fas fa-hand-sparkles"></i>Di bonjou! 👋</div>'; }
+    c.msgs.forEach(function(mm){ var b=document.createElement("div"); b.className="bubble "+mm[0]; b.textContent=mm[1]; body.appendChild(b); });
+    $("chatview").classList.remove("hidden");
+    body.scrollTop=body.scrollHeight;
+    $("chat-send").onclick=demoSend;   /* remplace l'envoi réel */
+  };
+  function demoSend(){
+    var inp=$("chat-text"); var t=inp.value.trim(); if(!t)return; inp.value="";
+    var b=document.createElement("div"); b.className="bubble me"; b.textContent=t;
+    $("chat-body").appendChild(b); $("chat-body").scrollTop=$("chat-body").scrollHeight;
+  }
+  sendChat=demoSend;   /* pour la touche Entrée */
+
+  /* Point d'entrée du mode aperçu selon ?demo=... */
+  var which=(q.match(/[?&#]demo=([a-z0-9]+)/i)||[])[1]||"app";
+  if(which==="activate"){ show("v-activate"); }
+  else if(which==="onboard"){ PROFILE.photos=[]; enterOnboard(); }
+  else if(which==="gate"){ show("v-gate"); }
+  else { enterApp(); }
+
+  /* Bandeau discret pour rappeler qu'on est en aperçu. */
+  var tag=document.createElement("div");
+  tag.textContent="APERÇU (design)";
+  tag.style.cssText="position:fixed;top:8px;left:8px;z-index:200;background:#000;border:1px solid #2a2a3a;color:#ffd700;font-size:.6rem;font-weight:700;letter-spacing:1px;padding:4px 9px;border-radius:20px;pointer-events:none";
+  document.body.appendChild(tag);
+})();
+</script>
+</body>
+</html>

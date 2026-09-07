@@ -47,6 +47,11 @@ service firebase.storage {
       allow write: if isAdmin() || isValidOwnerUpload(userId);
     }
 
+    /* BIZEN SOCIAL — photos de profil + médias de messagerie : social/{uid}/... */
+    match /social/{userId}/{allPaths=**} {
+      allow write: if isAdmin() || isValidOwnerUpload(userId);
+    }
+
     /* Tout autre chemin : écriture admin uniquement (lecture déjà publique). */
     match /{root}/{allPaths=**} {
       allow write: if isAdmin();
