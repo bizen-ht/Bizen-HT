@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Bizen Social — Rankont ant granmoun</title>
+    <title>Bizen Social</title>
     <meta name="robots" content="noindex, nofollow">
     <meta name="rating" content="adult">
     <meta name="theme-color" content="#e91e63">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
     <link rel="manifest" href="/manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
@@ -17,9 +17,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
 <style>
 :root{
-  --bg:#0a0a0f; --card:#12121a; --card2:#171722; --line:#2a2a3a;
-  --ink:#fff; --muted:#8a8a9c; --muted2:#b0b0c0;
-  --rose:#e91e63; --purple:#9c27b0; --gold:#ffd700; --green:#4caf50; --red:#f44336; --blue:#2196f3;
+  --bg:#0a0a0f; --card:#12121a; --card2:#1a1a26; --line:#262633;
+  --ink:#fff; --muted:#8a8a9c; --muted2:#b4b4c2;
+  --rose:#e91e63; --purple:#9c27b0; --gold:#ffd700; --green:#4caf50; --red:#f4436a; --blue:#4aa3ff;
   --grad:linear-gradient(135deg,#e91e63,#9c27b0);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -28,68 +28,113 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--ink);o
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 img{max-width:100%;display:block}
 .hidden{display:none!important}
+::-webkit-scrollbar{width:0;height:0}
 
-/* ---- App shell ---- */
-#app-shell{display:flex;flex-direction:column;height:100%;max-width:520px;margin:0 auto;position:relative}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);flex:none}
-.brand{font-family:'Playfair Display',serif;font-weight:700;font-size:1.25rem}
-.brand span{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.topbar .sub{font-size:.62rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
-.topbar-btn{width:38px;height:38px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--muted2)}
+#app-shell{display:flex;flex-direction:column;height:100%;max-width:540px;margin:0 auto;position:relative;background:var(--bg)}
+
+/* ---------- Top bar ---------- */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line);flex:none;height:54px}
+.topbar .logo{height:30px;width:auto}
+.topbar .tb-actions{display:flex;gap:6px}
+.tb-btn{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:var(--ink);position:relative}
+.tb-btn .dot{position:absolute;top:7px;right:7px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;background:var(--rose);color:#fff;font-size:.58rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg)}
 .view{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 
-/* ---- Bottom nav ---- */
-.bottomnav{display:flex;border-top:1px solid var(--line);flex:none;background:var(--card)}
-.navbtn{flex:1;padding:11px 0 max(11px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:.62rem;font-weight:600;position:relative}
-.navbtn i{font-size:1.15rem}
+/* ---------- Bottom nav ---------- */
+.bottomnav{display:flex;align-items:center;border-top:1px solid var(--line);flex:none;background:var(--card);padding-bottom:env(safe-area-inset-bottom)}
+.navbtn{flex:1;padding:11px 0;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:1.35rem;position:relative}
 .navbtn.active{color:var(--rose)}
-.navbtn .badge{position:absolute;top:4px;right:calc(50% - 20px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--rose);color:#fff;font-size:.6rem;display:flex;align-items:center;justify-content:center}
+.navbtn.plus{color:#fff}
+.navbtn.plus .plus-ico{width:40px;height:32px;border-radius:10px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.navbtn .badge{position:absolute;top:5px;right:calc(50% - 20px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--rose);color:#fff;font-size:.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--card)}
 
-/* ---- Buttons ---- */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--grad);color:#fff;padding:14px 22px;border-radius:50px;font-weight:600;font-size:.95rem;width:100%;transition:transform .15s,opacity .15s}
-.btn:active{transform:scale(.97)}
+/* ---------- Buttons / inputs ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--grad);color:#fff;padding:14px 22px;border-radius:12px;font-weight:600;font-size:.95rem;width:100%;transition:transform .12s,opacity .12s}
+.btn:active{transform:scale(.98)}
 .btn:disabled{opacity:.5}
 .btn.ghost{background:var(--card2);border:1px solid var(--line)}
-.btn.gold{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000}
 .input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:13px 14px;color:var(--ink);font-family:inherit;font-size:.92rem;margin-bottom:12px}
-textarea{resize:vertical;min-height:90px}
+textarea{resize:vertical;min-height:90px;line-height:1.5}
 label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;text-transform:uppercase;letter-spacing:.5px}
 
-/* ---- Centered states (gate / loading) ---- */
+/* ---------- Centered states ---------- */
 .center{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
-.center .big-ico{font-size:3rem;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:18px}
-.center h2{font-family:'Playfair Display',serif;margin-bottom:10px}
-.center p{color:var(--muted2);font-size:.9rem;margin-bottom:22px;max-width:34ch}
-.pad{padding:20px 18px 30px}
+.center .logo-big{width:220px;max-width:70%;margin-bottom:26px}
+.center p{color:var(--muted2);font-size:.92rem;margin-bottom:22px;max-width:34ch}
+.pad{padding:20px 18px 40px}
 .pad h3{font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:6px}
 .pad .lead{color:var(--muted2);font-size:.86rem;margin-bottom:20px}
 
-/* ---- Swipe deck ---- */
-#deck{position:relative;height:100%;padding:14px 14px 0}
-.swipecard{position:absolute;inset:14px 14px 14px;background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.5);display:flex;flex-direction:column;will-change:transform}
+/* ---------- FEED (Instagram style) ---------- */
+.stories-row{display:flex;gap:14px;overflow-x:auto;padding:12px 14px;border-bottom:1px solid var(--line)}
+.story-btn{flex:none;width:64px;text-align:center}
+.story-btn .ring{width:62px;height:62px;border-radius:50%;padding:2px;background:var(--grad);margin:0 auto 5px}
+.story-btn .ring.mine{background:var(--card2);border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.2rem}
+.story-btn .ring .av{width:100%;height:100%;border-radius:50%;background:var(--card2) center/cover;border:2px solid var(--bg)}
+.story-btn .nm{font-size:.66rem;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.post{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:6px}
+.post-head{display:flex;align-items:center;gap:11px;padding:11px 14px}
+.post-head .av{width:38px;height:38px;border-radius:50%;background:var(--card2) center/cover;flex:none}
+.post-head .nm{font-weight:600;font-size:.9rem;flex:1}
+.post-head .nm small{display:block;font-weight:400;color:var(--muted);font-size:.7rem}
+.post-head .more{width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:1rem}
+.post-img{width:100%;aspect-ratio:1/1;background:#15151f center/cover no-repeat}
+.post-textonly{padding:4px 16px 14px;font-size:1.05rem;line-height:1.5}
+.post-actions{display:flex;align-items:center;gap:18px;padding:11px 15px 4px;font-size:1.5rem}
+.post-actions .act{display:flex;align-items:center;color:var(--ink);transition:transform .1s}
+.post-actions .act:active{transform:scale(.8)}
+.post-actions .act.liked{color:var(--rose)}
+.post-actions .save{margin-left:auto}
+.post-actions .save.saved{color:var(--gold)}
+.post-likes{padding:0 16px;font-weight:600;font-size:.86rem}
+.post-caption{padding:5px 16px 0;font-size:.88rem;line-height:1.45}
+.post-caption .u{font-weight:600;margin-right:6px}
+.post-caption .tag{color:var(--blue)}
+.post-cmlink{padding:5px 16px 0;color:var(--muted);font-size:.82rem}
+.post-time{padding:4px 16px 0;color:var(--muted);font-size:.66rem;text-transform:uppercase;letter-spacing:.4px}
+
+/* ---------- Create post ---------- */
+#createview,#commentsview,#chatview{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;z-index:30}
+.sheet-head{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);flex:none}
+.sheet-head .ttl{font-weight:700;font-size:1rem;flex:1}
+.sheet-head .go{color:var(--rose);font-weight:700;font-size:.92rem}
+.create-body{flex:1;overflow-y:auto;padding:16px}
+.pick-img{width:100%;aspect-ratio:1/1;border-radius:14px;background:var(--card2);border:1.5px dashed var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:10px;background-size:cover;background-position:center;margin-bottom:14px}
+.pick-img i{font-size:2.2rem}
+
+/* ---------- Comments ---------- */
+.cm-list{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:14px}
+.cm{display:flex;gap:11px}
+.cm .av{width:34px;height:34px;border-radius:50%;background:var(--card2) center/cover;flex:none}
+.cm .body{flex:1}
+.cm .body .nm{font-weight:600;font-size:.82rem;margin-right:7px}
+.cm .body .tx{font-size:.86rem;line-height:1.4}
+.cm .body .tm{font-size:.64rem;color:var(--muted);margin-top:3px}
+.cm-input{display:flex;align-items:center;gap:9px;padding:10px 12px max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--line);flex:none}
+.cm-input input{flex:1;margin:0;border-radius:50px}
+.cm-input .send{color:var(--rose);font-weight:700;padding:8px 6px}
+
+/* ---------- Swipe deck ---------- */
+#deck{position:relative;height:100%;padding:12px 12px 0}
+.swipecard{position:absolute;inset:12px 12px 12px;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.5);display:flex;flex-direction:column;will-change:transform}
 .swipecard .photo{flex:1;background:#1c1c28 center/cover no-repeat;position:relative;min-height:0}
 .swipecard .photo .noimg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:4rem;color:#3a3a4a}
-.swipecard .grad{position:absolute;left:0;right:0;bottom:0;height:52%;background:linear-gradient(transparent,rgba(0,0,0,.9))}
-.swipecard .meta{position:absolute;left:0;right:0;bottom:0;padding:20px 18px}
+.swipecard .grad{position:absolute;left:0;right:0;bottom:0;height:52%;background:linear-gradient(transparent,rgba(0,0,0,.92))}
+.swipecard .meta{position:absolute;left:0;right:0;bottom:0;padding:18px}
 .swipecard .nm{font-size:1.5rem;font-weight:700;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .swipecard .nm .age{font-weight:400;color:#e6e6ee}
-.swipecard .sub{display:flex;align-items:center;gap:6px;color:#d0d0dc;font-size:.82rem;margin-top:5px}
-.swipecard .bio{color:#c4c4d2;font-size:.82rem;margin-top:8px;max-height:3.4em;overflow:hidden}
+.swipecard .sub{display:flex;align-items:center;gap:6px;color:#d6d6e0;font-size:.82rem;margin-top:5px}
+.swipecard .bio{color:#c8c8d4;font-size:.82rem;margin-top:8px;max-height:3.4em;overflow:hidden}
 .avail-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(76,175,80,.22);border:1px solid rgba(76,175,80,.5);color:#7be07f;padding:4px 11px;border-radius:50px;font-size:.7rem;font-weight:600;margin-top:8px}
 .stamp{position:absolute;top:26px;padding:6px 16px;border:3px solid;border-radius:12px;font-weight:800;font-size:1.4rem;letter-spacing:2px;opacity:0;transform:rotate(-14deg);text-transform:uppercase}
 .stamp.like{left:20px;color:var(--green);border-color:var(--green)}
 .stamp.nope{right:20px;color:var(--red);border-color:var(--red);transform:rotate(14deg)}
-.deck-actions{position:absolute;left:0;right:0;bottom:16px;display:flex;align-items:center;justify-content:center;gap:16px;z-index:5}
-.act{width:60px;height:60px;border-radius:50%;background:var(--card2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 8px 22px rgba(0,0,0,.4);transition:transform .12s}
-.act:active{transform:scale(.9)}
-.act.pass{color:var(--red)} .act.like{color:var(--green)} .act.super{color:var(--blue);width:50px;height:50px;font-size:1.2rem}
-.act.boost{color:var(--gold);width:50px;height:50px;font-size:1.2rem}
+.deck-actions{position:absolute;left:0;right:0;bottom:18px;display:flex;align-items:center;justify-content:center;gap:22px;z-index:5}
+.act-btn{width:62px;height:62px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:1.6rem;box-shadow:0 8px 22px rgba(0,0,0,.45);transition:transform .12s}
+.act-btn:active{transform:scale(.9)}
+.act-btn.pass{color:var(--red)} .act-btn.like{color:var(--green)}
 
-/* ---- Matches list ---- */
-.match-strip{display:flex;gap:14px;overflow-x:auto;padding:14px 16px 6px}
-.match-strip .m{flex:none;width:66px;text-align:center}
-.match-strip .m .av{width:62px;height:62px;border-radius:50%;background:var(--card2) center/cover;border:2px solid var(--rose);margin-bottom:5px}
-.match-strip .m .nm{font-size:.68rem;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ---------- Matches / chat ---------- */
 .conv{display:flex;align-items:center;gap:13px;padding:12px 16px;border-bottom:1px solid var(--line)}
 .conv .av{width:54px;height:54px;border-radius:50%;background:var(--card2) center/cover;flex:none}
 .conv .info{flex:1;min-width:0}
@@ -98,9 +143,11 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .conv .info .tm{font-size:.66rem;color:var(--muted)}
 .conv .info .last{color:var(--muted2);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .conv .unread{background:var(--rose);color:#fff;min-width:20px;height:20px;border-radius:10px;font-size:.68rem;display:flex;align-items:center;justify-content:center;padding:0 5px;flex:none}
-
-/* ---- Chat ---- */
-#chatview{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;z-index:20}
+.match-strip{display:flex;gap:14px;overflow-x:auto;padding:14px 16px 8px;border-bottom:1px solid var(--line)}
+.match-strip .m{flex:none;width:66px;text-align:center}
+.match-strip .m .av{width:62px;height:62px;border-radius:50%;background:var(--card2) center/cover;border:2px solid var(--rose);margin-bottom:5px}
+.match-strip .m .nm{font-size:.68rem;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.match-strip .lbl{font-size:.62rem;color:var(--muted);padding:0 16px 6px;text-transform:uppercase;letter-spacing:.5px}
 .chat-head{display:flex;align-items:center;gap:11px;padding:12px 14px;border-bottom:1px solid var(--line);flex:none}
 .chat-head .av{width:40px;height:40px;border-radius:50%;background:var(--card2) center/cover}
 .chat-head .nm{font-weight:600;font-size:.95rem;flex:1}
@@ -108,16 +155,25 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .bubble{max-width:76%;padding:10px 14px;border-radius:16px;font-size:.9rem;line-height:1.4;word-wrap:break-word}
 .bubble.me{align-self:flex-end;background:var(--grad);border-bottom-right-radius:5px}
 .bubble.you{align-self:flex-start;background:var(--card2);border:1px solid var(--line);border-bottom-left-radius:5px}
-.bubble img{border-radius:10px;margin:-2px 0}
 .chat-eph{text-align:center;font-size:.66rem;color:var(--muted);padding:6px}
 .chat-input{display:flex;align-items:center;gap:9px;padding:10px 12px max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--line);flex:none}
 .chat-input input{flex:1;margin:0;border-radius:50px}
 .chat-input .send{width:44px;height:44px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:1rem;flex:none}
-.icobtn{width:40px;height:40px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--muted2);flex:none}
+.icobtn{width:40px;height:40px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--ink);flex:none}
 
-/* ---- Profile / settings ---- */
+/* ---------- Profile ---------- */
+.pf-top{display:flex;align-items:center;gap:18px;padding:20px 18px 12px}
+.pf-top .av{width:82px;height:82px;border-radius:50%;background:var(--card2) center/cover;flex:none;border:2px solid var(--line)}
+.pf-top .stats{display:flex;gap:22px;flex:1}
+.pf-top .stat{text-align:center}
+.pf-top .stat b{display:block;font-size:1.1rem}
+.pf-top .stat span{font-size:.7rem;color:var(--muted)}
+.pf-name{padding:0 18px 12px;font-weight:600}
+.pf-name .bio{font-weight:400;color:var(--muted2);font-size:.85rem;margin-top:3px}
+.pf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.pf-grid .cell{aspect-ratio:1/1;background:var(--card2) center/cover}
 .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
-.photo-slot{aspect-ratio:3/4;border-radius:14px;background:var(--card2);border:1.5px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:var(--muted);position:relative;overflow:hidden;background-size:cover;background-position:center}
+.photo-slot{aspect-ratio:3/4;border-radius:12px;background:var(--card2);border:1.5px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:var(--muted);position:relative;overflow:hidden;background-size:cover;background-position:center}
 .photo-slot .rm{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:.7rem}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--line)}
 .toggle-row .lbl{font-size:.9rem}
@@ -126,63 +182,115 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .switch.on{background:var(--rose);border-color:var(--rose)}
 .switch::after{content:"";position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;background:#fff;transition:transform .2s}
 .switch.on::after{transform:translateX(19px)}
-.prem-card{background:linear-gradient(135deg,rgba(255,215,0,.14),rgba(233,30,99,.14));border:1px solid rgba(255,215,0,.35);border-radius:16px;padding:18px;margin-bottom:18px}
-.prem-card h4{display:flex;align-items:center;gap:8px;font-size:1rem;margin-bottom:10px;color:var(--gold)}
-.prem-card ul{list-style:none;font-size:.84rem;color:var(--muted2)}
-.prem-card li{padding:4px 0;display:flex;align-items:center;gap:9px}
-.prem-card li i{color:var(--gold);width:16px}
+.sec-title{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:22px 0 4px}
 
-/* ---- Toast + modal ---- */
+/* ---------- Toast / modal / sheet ---------- */
 #toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(20px);background:#000;border:1px solid var(--line);color:#fff;padding:11px 18px;border-radius:50px;font-size:.82rem;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90%;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:24px;z-index:90;backdrop-filter:blur(4px)}
-.modal .box{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px 22px;max-width:360px;width:100%;text-align:center}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:24px;z-index:90;backdrop-filter:blur(4px)}
+.modal .box{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 22px;max-width:360px;width:100%;text-align:center}
 .match-anim .hearts{font-size:3.2rem;margin-bottom:8px;animation:pop .5s}
 @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
 .match-anim h2{font-family:'Playfair Display',serif;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
-.match-avatars{display:flex;justify-content:center;gap:-10px;margin:16px 0}
+.match-avatars{display:flex;justify-content:center;margin:16px 0}
 .match-avatars .av{width:80px;height:80px;border-radius:50%;background:var(--card2) center/cover;border:3px solid var(--rose)}
 .match-avatars .av:last-child{margin-left:-18px}
 .spin{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
 .empty{text-align:center;padding:60px 30px;color:var(--muted)}
 .empty i{font-size:2.6rem;margin-bottom:14px;display:block;color:var(--line)}
 .menu-sheet{position:fixed;inset:0;z-index:95;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6)}
-.menu-sheet .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:10px 0 max(10px,env(safe-area-inset-bottom))}
+.menu-sheet .sheet{background:var(--card);border:1px solid var(--line);border-radius:18px 18px 0 0;width:100%;max-width:540px;padding:8px 0 max(8px,env(safe-area-inset-bottom))}
 .menu-sheet .item{padding:16px 22px;font-size:.92rem;display:flex;align-items:center;gap:13px;border-bottom:1px solid var(--line)}
 .menu-sheet .item:last-child{border-bottom:none}
 .menu-sheet .item.danger{color:var(--red)}
+
+/* ---------- Repost / tagged ---------- */
+.repost-tag{display:flex;align-items:center;gap:7px;padding:9px 14px 0;color:var(--muted);font-size:.76rem;font-weight:600}
+.repost-note{padding:2px 16px 4px;font-size:.86rem;line-height:1.45}
+.post-tagged{padding:3px 16px 0;font-size:.8rem;color:var(--blue)}
+.post-head .nm.clk{cursor:pointer}
+.post-head .av.clk{cursor:pointer}
+
+/* ---------- Profile stats bar ---------- */
+.pf-statbar{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:4px 0 0}
+.pf-statbar .st{flex:1;text-align:center;padding:12px 4px;border-right:1px solid var(--line)}
+.pf-statbar .st:last-child{border-right:none}
+.pf-statbar .st b{display:block;font-size:1.05rem}
+.pf-statbar .st span{font-size:.66rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:3px}
+.pf-statbar .st.locked b{color:var(--gold)}
+
+/* ---------- Profile detail overlay ---------- */
+.pv-photo{width:100%;aspect-ratio:1/1;background:#15151f center/cover no-repeat;position:relative}
+.pv-photo .noimg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:4rem;color:#3a3a4a}
+.pv-name{font-size:1.4rem;font-weight:700;display:flex;align-items:center;gap:9px}
+.pv-name .age{font-weight:400;color:var(--muted2)}
+.pv-sub{color:var(--muted2);font-size:.85rem;margin:5px 0 14px;display:flex;align-items:center;gap:6px}
+.pv-stats{display:flex;gap:26px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:14px}
+.pv-stats .s{text-align:center}
+.pv-stats .s b{display:block;font-size:1.05rem}
+.pv-stats .s span{font-size:.66rem;color:var(--muted)}
+.pv-bio{font-size:.9rem;line-height:1.5;color:var(--muted2);margin-top:14px}
+.pv-actions{display:flex;align-items:center;justify-content:center;gap:22px;padding:12px 0 max(14px,env(safe-area-inset-bottom));border-top:1px solid var(--line);flex:none}
+.btn.follow-on{background:var(--card2);border:1px solid var(--line);color:var(--ink)}
+
+/* ---------- Tag friends picker ---------- */
+.tag-picker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.tag-chip{display:inline-flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--line);border-radius:50px;padding:6px 12px;font-size:.82rem}
+.tag-chip.sel{background:var(--rose);border-color:var(--rose);color:#fff}
+
+/* ---------- Empty states (soigné, avec appel à l'action) ---------- */
+.estate{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:52px 34px}
+.estate .ic{width:78px;height:78px;border-radius:50%;background:radial-gradient(circle at 50% 35%,rgba(233,30,99,.22),var(--card2));border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:1.9rem;color:var(--rose);margin-bottom:16px}
+.estate h4{font-size:1.08rem;font-weight:700;margin-bottom:7px}
+.estate p{color:var(--muted);font-size:.86rem;max-width:30ch;margin-bottom:18px;line-height:1.55}
+.estate .btn{width:auto;padding:12px 22px}
+.estate .btn.link{background:none;border:none;color:var(--muted2);padding:12px;font-weight:500}
+
+/* ---------- Carte de bienvenue (1ère visite) ---------- */
+.welcome{margin:12px 14px 4px;background:linear-gradient(135deg,rgba(233,30,99,.16),rgba(156,39,176,.16));border:1px solid rgba(233,30,99,.34);border-radius:16px;padding:16px 16px 15px;position:relative}
+.welcome h4{font-size:1rem;margin-bottom:6px}
+.welcome p{font-size:.82rem;color:var(--muted2);line-height:1.55;margin-bottom:13px}
+.welcome .wc-row{display:flex;gap:9px}
+.welcome .wc-row .btn{padding:11px 14px;font-size:.85rem}
+.welcome .wc-close{position:absolute;top:9px;right:11px;color:var(--muted);font-size:1.05rem;width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+
+/* ---------- Micro-interactions ---------- */
+@keyframes heartpop{0%{transform:scale(1)}35%{transform:scale(1.4)}60%{transform:scale(.88)}100%{transform:scale(1)}}
+.act.pop i,.act-btn.pop i{animation:heartpop .42s ease}
+.navbtn.active::after{content:"";position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--rose)}
+.deck-hint{position:absolute;left:0;right:0;bottom:92px;text-align:center;color:rgba(255,255,255,.85);font-size:.72rem;z-index:6;pointer-events:none;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+.deck-hint i{margin-right:5px}
 </style>
 </head>
 <body>
-
 <div id="app-shell">
-  <!-- ============ LOADING ============ -->
+
+  <!-- LOADING -->
   <div id="v-loading" class="center">
-    <i class="fas fa-heart big-ico spin"></i>
-    <p>Chaje Bizen Social...</p>
+    <img src="Images/bizen-logo.png" alt="Bizen" class="logo-big">
+    <p><i class="fas fa-circle-notch spin"></i> Chajman...</p>
   </div>
 
-  <!-- ============ GATE (pa konekte) ============ -->
+  <!-- GATE -->
   <div id="v-gate" class="center hidden">
-    <i class="fas fa-heart big-ico"></i>
-    <h2>Bizen <span style="background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Social</span></h2>
-    <p>Rankont ant granmoun 18 an+. Konekte ak menm kont Bizen ou an pou kòmanse.</p>
-    <a class="btn" href="/Dashboard.html"><i class="fas fa-right-to-bracket"></i> Konekte / Enskri</a>
-    <a href="/index.html" style="color:var(--muted);font-size:.82rem;margin-top:16px;text-decoration:none">← Retounen Bizen HT</a>
+    <img src="Images/bizen-logo.png" alt="Bizen Social" class="logo-big">
+    <p>Rankont, foto, ak kominote pou granmoun 18 an+. Konekte ak menm kont Bizen ou an.</p>
+    <a class="btn" href="/Dashboard.html"><i class="fas fa-right-to-bracket"></i> Konekte oswa enskri</a>
+    <a href="/index.html" style="color:var(--muted);font-size:.82rem;margin-top:16px;text-decoration:none">Retounen sou Bizen HT</a>
   </div>
 
-  <!-- ============ ACTIVATION 1 clic ============ -->
+  <!-- ACTIVATION -->
   <div id="v-activate" class="view hidden">
     <div class="pad">
-      <div style="text-align:center;margin:14px 0 22px">
-        <i class="fas fa-heart big-ico" style="font-size:2.4rem"></i>
+      <div style="text-align:center;margin:10px 0 18px">
+        <img src="Images/bizen-logo.png" alt="Bizen Social" style="width:190px;max-width:65%;margin:0 auto 8px">
         <h3>Aktive Bizen Social</h3>
-        <p class="lead">Menm kont, an 1 klik. Swipe, matche ak pale ak lòt granmoun toupre w.</p>
+        <p class="lead">Menm kont Bizen, an 1 klik. Poste, swipe, matche ak pale ak lòt granmoun.</p>
       </div>
-      <label class="fld">Non / Pseudo</label>
+      <label class="fld">Non oswa pseudo</label>
       <input id="a-pseudo" class="input" placeholder="Kijan yo rele w?" maxlength="40">
-      <label class="fld">Ane nesans (pou verifye 18 an+)</label>
-      <input id="a-birth" class="input" type="number" placeholder="Ex: 1996" inputmode="numeric">
+      <label class="fld">Ane nesans (verifye 18 an+)</label>
+      <input id="a-birth" class="input" type="number" placeholder="Egzanp: 1996" inputmode="numeric">
       <label class="fld">Mwen se</label>
       <select id="a-gender" class="input">
         <option value="">Chwazi...</option>
@@ -196,18 +304,17 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
         <option value="femme">Fanm</option>
         <option value="homme">Gason</option>
       </select>
-      <label class="fld">Zòn / Vil</label>
-      <input id="a-zone" class="input" placeholder="Ex: Pòtoprens, Petyonvil..." maxlength="60">
+      <label class="fld">Zòn oswa vil</label>
+      <input id="a-zone" class="input" placeholder="Egzanp: Pòtoprens, Petyonvil..." maxlength="60">
       <label style="display:flex;gap:10px;align-items:flex-start;font-size:.8rem;color:var(--muted2);margin:6px 0 18px;cursor:pointer">
         <input type="checkbox" id="a-consent" style="width:20px;height:20px;flex:none;margin-top:1px">
         <span>Mwen gen 18 an oswa plis e mwen aksepte <a href="/regleman" style="color:var(--rose)">règleman</a> ak <a href="/konfidansyalite" style="color:var(--rose)">konfidansyalite</a> Bizen Social. Tolerans zewo pou kontni abizif.</span>
       </label>
       <button id="a-submit" class="btn"><i class="fas fa-bolt"></i> Aktive kounye a</button>
-      <a href="/Dashboard.html" style="display:block;text-align:center;color:var(--muted);font-size:.8rem;margin-top:16px;text-decoration:none">← Dashboard Bizen</a>
     </div>
   </div>
 
-  <!-- ============ ONBOARDING foto/bio ============ -->
+  <!-- ONBOARDING -->
   <div id="v-onboard" class="view hidden">
     <div class="pad">
       <h3>Konplete pwofil ou</h3>
@@ -216,56 +323,70 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
       <div class="photo-grid" id="ob-photos"></div>
       <label class="fld">Bio</label>
       <textarea id="ob-bio" placeholder="Di yon ti bagay sou ou..." maxlength="300"></textarea>
-      <button id="ob-submit" class="btn"><i class="fas fa-check"></i> Fini &amp; kòmanse swipe</button>
+      <button id="ob-submit" class="btn"><i class="fas fa-check"></i> Fini e kòmanse</button>
     </div>
   </div>
 
-  <!-- ============ MAIN APP ============ -->
+  <!-- MAIN APP -->
   <div id="v-app" class="hidden" style="display:flex;flex-direction:column;height:100%">
     <div class="topbar">
-      <div>
-        <div class="brand">Bizen<span>Social</span></div>
-        <div class="sub" id="premium-tag">Gratis</div>
+      <img src="Images/bizen-logo.png" alt="Bizen Social" class="logo">
+      <div class="tb-actions">
+        <button class="tb-btn" id="tb-msg"><i class="fa-regular fa-paper-plane"></i><span class="dot hidden" id="tb-msg-dot">0</span></button>
       </div>
-      <button class="topbar-btn" id="btn-boost" title="Disponib kounye a"><i class="fas fa-bolt"></i></button>
     </div>
 
-    <!-- DISCOVER -->
-    <div id="tab-discover" class="view" style="position:relative;padding:0">
+    <!-- FEED -->
+    <div id="tab-feed" class="view">
+      <div class="stories-row" id="stories-row"></div>
+      <div id="feed-list"></div>
+    </div>
+
+    <!-- DISCOVER (swipe) -->
+    <div id="tab-discover" class="view hidden" style="position:relative;padding:0">
       <div id="deck"></div>
     </div>
 
     <!-- MATCHES -->
     <div id="tab-matches" class="view hidden">
-      <div id="match-strip" class="match-strip"></div>
+      <div class="match-strip hidden" id="match-strip"></div>
       <div id="conv-list"></div>
     </div>
 
     <!-- PROFILE -->
     <div id="tab-profile" class="view hidden">
-      <div class="pad">
-        <div class="prem-card" id="prem-card">
-          <h4><i class="fas fa-crown"></i> Bizen Social Premium</h4>
-          <ul>
-            <li><i class="fas fa-infinity"></i> Swipe &amp; mesaj san limit</li>
-            <li><i class="fas fa-heart"></i> Wè kiyès ki like ou</li>
-            <li><i class="fas fa-user-secret"></i> Mòd Enkognito (diskrè)</li>
-            <li><i class="fas fa-star"></i> Super Like &amp; Boost</li>
-          </ul>
-          <button class="btn gold" id="btn-premium" style="margin-top:14px"><i class="fas fa-crown"></i> Vin Premium (MonCash)</button>
+      <div class="pf-top">
+        <div class="av" id="pf-av"></div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:1.05rem" id="pf-pseudo">...</div>
+          <div class="bio" style="color:var(--muted2);font-size:.82rem;margin-top:4px" id="pf-bioshow"></div>
         </div>
+      </div>
+      <div class="pf-statbar">
+        <div class="st"><b id="pf-posts">0</b><span>Post</span></div>
+        <div class="st"><b id="pf-followers">0</b><span>Abòne</span></div>
+        <div class="st"><b id="pf-following">0</b><span>Ap swiv</span></div>
+        <div class="st"><b id="pf-likes">0</b><span>Like</span></div>
+        <div class="st locked"><b id="pf-matches">0</b><span><i class="fas fa-lock" style="font-size:.55rem"></i> Match</span></div>
+      </div>
+      <div style="padding:12px 14px"><button class="btn ghost" id="pf-editbtn"><i class="fas fa-pen"></i> Modifye pwofil</button></div>
+      <div class="pf-grid" id="pf-grid"></div>
 
-        <label class="fld">Foto</label>
+      <!-- edit panel -->
+      <div id="pf-edit" class="hidden" style="padding:18px">
+        <label class="fld">Foto pwofil (jiska 6)</label>
         <div class="photo-grid" id="pf-photos"></div>
         <label class="fld">Bio</label>
         <textarea id="pf-bio" maxlength="300"></textarea>
-        <button class="btn ghost" id="pf-save" style="margin-bottom:22px"><i class="fas fa-floppy-disk"></i> Anrejistre</button>
+        <button class="btn ghost" id="pf-save"><i class="fas fa-floppy-disk"></i> Anrejistre</button>
 
-        <h4 style="font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Konfidansyalite &amp; sekirite</h4>
+        <div class="sec-title">Dekouvri ak rankont</div>
         <div class="toggle-row">
-          <div><div class="lbl">Mòd Enkognito</div><div class="desc">Sèlman moun ou like ki wè ou (Premium)</div></div>
-          <div class="switch" id="sw-incognito"></div>
+          <div><div class="lbl">Aparèt nan Dekouvri</div><div class="desc">Montre pwofil ou bay moun k ap chèche yon Match. Koupe l lè ou vle, ou rete sou rezo a.</div></div>
+          <div class="switch on" id="sw-discoverable"></div>
         </div>
+
+        <div class="sec-title">Konfidansyalite ak sekirite</div>
         <div class="toggle-row">
           <div><div class="lbl">Pataje lokalizasyon</div><div class="desc">Montre distans apwoksimatif. Ou ka koupe l.</div></div>
           <div class="switch on" id="sw-location"></div>
@@ -274,21 +395,50 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
           <div><div class="lbl">Mesaj efemè</div><div class="desc">Mesaj efase otomatikman apre 24h</div></div>
           <div class="switch on" id="sw-ephemeral"></div>
         </div>
-
-        <button class="btn ghost" id="pf-logout" style="margin-top:22px"><i class="fas fa-right-from-bracket"></i> Dekonekte</button>
-        <a href="/index.html" style="display:block;text-align:center;color:var(--muted);font-size:.8rem;margin-top:16px;text-decoration:none">← Bizen HT prensipal</a>
+        <button class="btn ghost" id="pf-logout" style="margin-top:20px"><i class="fas fa-right-from-bracket"></i> Dekonekte</button>
+        <a href="/index.html" style="display:block;text-align:center;color:var(--muted);font-size:.8rem;margin-top:16px;text-decoration:none">Bizen HT prensipal</a>
       </div>
     </div>
 
     <!-- BOTTOM NAV -->
     <div class="bottomnav">
-      <button class="navbtn active" data-tab="discover"><i class="fas fa-fire"></i>Dekouvri</button>
-      <button class="navbtn" data-tab="matches"><i class="fas fa-comment-heart"></i>Match<span class="badge hidden" id="nav-badge">0</span></button>
-      <button class="navbtn" data-tab="profile"><i class="fas fa-user"></i>Pwofil</button>
+      <button class="navbtn active" data-tab="feed"><i class="fas fa-house"></i></button>
+      <button class="navbtn" data-tab="discover"><i class="fas fa-fire"></i></button>
+      <button class="navbtn plus" id="nav-create"><span class="plus-ico"><i class="fas fa-plus"></i></span></button>
+      <button class="navbtn" data-tab="matches"><i class="fa-regular fa-comment-dots"></i><span class="badge hidden" id="nav-badge">0</span></button>
+      <button class="navbtn" data-tab="profile"><i class="fa-regular fa-user"></i></button>
     </div>
   </div>
 
-  <!-- CHAT (overlay) -->
+  <!-- CREATE POST -->
+  <div id="createview" class="hidden">
+    <div class="sheet-head">
+      <button class="icobtn" id="cr-back"><i class="fas fa-arrow-left"></i></button>
+      <div class="ttl">Nouvo post</div>
+      <button class="go" id="cr-publish">Pibliye</button>
+    </div>
+    <div class="create-body">
+      <div class="pick-img" id="cr-pick"><i class="fas fa-image"></i><span style="font-size:.82rem">Chwazi yon foto</span></div>
+      <textarea id="cr-caption" placeholder="Ekri yon bagay... sèvi ak #hashtag" maxlength="2200"></textarea>
+      <div class="tag-picker" id="cr-tags"></div>
+      <button class="btn ghost" id="cr-tagbtn" style="margin-top:2px"><i class="fas fa-user-tag"></i> Idantifye zanmi</button>
+    </div>
+  </div>
+
+  <!-- COMMENTS -->
+  <div id="commentsview" class="hidden">
+    <div class="sheet-head">
+      <button class="icobtn" id="cm-back"><i class="fas fa-arrow-left"></i></button>
+      <div class="ttl">Kòmantè</div>
+    </div>
+    <div class="cm-list" id="cm-list"></div>
+    <div class="cm-input">
+      <input id="cm-text" placeholder="Ajoute yon kòmantè..." maxlength="500" autocomplete="off">
+      <button class="send" id="cm-send">Voye</button>
+    </div>
+  </div>
+
+  <!-- CHAT -->
   <div id="chatview" class="hidden">
     <div class="chat-head">
       <button class="icobtn" id="chat-back"><i class="fas fa-arrow-left"></i></button>
@@ -301,6 +451,28 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
     <div class="chat-input">
       <input id="chat-text" placeholder="Ekri yon mesaj..." maxlength="1000" autocomplete="off">
       <button class="send" id="chat-send"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+
+  <!-- PROFILE DETAIL (cliquable depuis Dekouvri ak fil la) -->
+  <div id="profileview" class="hidden" style="position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;z-index:35">
+    <div class="sheet-head">
+      <button class="icobtn" id="pv-back"><i class="fas fa-arrow-left"></i></button>
+      <div class="ttl" id="pv-title">Pwofil</div>
+    </div>
+    <div class="view" style="flex:1">
+      <div class="pv-photo" id="pv-photo"></div>
+      <div class="pad">
+        <div class="pv-name" id="pv-name"></div>
+        <div class="pv-sub" id="pv-sub"></div>
+        <div class="pv-stats" id="pv-stats"></div>
+        <button class="btn" id="pv-follow"><i class="fas fa-user-plus"></i> Swiv</button>
+        <div class="pv-bio" id="pv-bio"></div>
+      </div>
+    </div>
+    <div class="pv-actions hidden" id="pv-actions">
+      <button class="act-btn pass" id="pv-pass"><i class="fas fa-xmark"></i></button>
+      <button class="act-btn like" id="pv-like"><i class="fas fa-heart"></i></button>
     </div>
   </div>
 </div>
@@ -323,17 +495,17 @@ var auth=firebase.auth(), db=firebase.firestore(), storage=firebase.storage();
 var API="/.netlify/functions/";
 
 /* ============ STATE ============ */
-var ME=null, TOKEN=null, PROFILE=null, ENT=null;
+var ME=null, TOKEN=null, PROFILE=null;
 var deck=[], deckIdx=0;
 var matchesCache={}, curPair=null, chatUnsub=null, matchesUnsub=null;
-var uploadTarget=null; /* "onboard" | "profile" */
-var pendingPhotos=[];  /* onboarding photos before profile creation */
+var myLikes={}, mySaves={}, curCommentPost=null, uploadTarget=null, pendingPhotos=[], crImage="";
 
 /* ============ HELPERS ============ */
 function $(id){return document.getElementById(id);}
 function show(id){ ["v-loading","v-gate","v-activate","v-onboard","v-app"].forEach(function(v){ $(v).classList.toggle("hidden", v!==id); }); }
 function toast(m){ var t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove("show");},2600); }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function capTags(s){ return esc(s).replace(/#([\p{L}0-9_]{2,30})/gu,'<span class="tag">#$1</span>'); }
 async function api(fn, payload){
   payload=payload||{}; payload.idToken=TOKEN;
   var r=await fetch(API+fn,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
@@ -341,20 +513,17 @@ async function api(fn, payload){
   if(!r.ok){ var er=new Error(j.error||"Erè"); er.data=j; er.status=r.status; throw er; }
   return j;
 }
-function isPremium(){ return ENT && ENT.premiumUntil && ENT.premiumUntil.toMillis && ENT.premiumUntil.toMillis()>Date.now(); }
-function timeAgo(ts){ if(!ts||!ts.toMillis)return""; var s=(Date.now()-ts.toMillis())/1000; if(s<60)return"kounye a"; if(s<3600)return Math.floor(s/60)+"m"; if(s<86400)return Math.floor(s/3600)+"h"; return Math.floor(s/86400)+"j"; }
+function timeAgo(ts){ if(!ts||!ts.toMillis)return""; var s=(Date.now()-ts.toMillis())/1000; if(s<60)return"kounye a"; if(s<3600)return Math.floor(s/60)+" min"; if(s<86400)return Math.floor(s/3600)+" h"; return Math.floor(s/86400)+" j"; }
 
 /* ============ AUTH BOOT ============ */
 auth.onAuthStateChanged(async function(u){
-  if(window.DEMO) return;              /* mode aperçu (?demo) : on ignore l'auth réelle */
+  if(window.DEMO) return;
   if(!u){ show("v-gate"); return; }
   ME=u; TOKEN=await u.getIdToken();
   try{
     var snap=await db.collection("socialProfiles").doc(u.uid).get();
     if(!snap.exists || !snap.data().activatedAt){ show("v-activate"); prefillActivate(); return; }
     PROFILE=snap.data();
-    var eSnap=await db.collection("socialEntitlements").doc(u.uid).get();
-    ENT=eSnap.exists?eSnap.data():{};
     if(PROFILE.status==="pending" || !PROFILE.photos || PROFILE.photos.length===0){ enterOnboard(); return; }
     enterApp();
   }catch(e){ console.error(e); toast("Erè chajman. Rafrechi."); }
@@ -367,17 +536,9 @@ async function prefillActivate(){
 $("a-submit").onclick=async function(){
   var b=this; b.disabled=true;
   try{
-    await api("social-activate",{
-      pseudo:$("a-pseudo").value.trim(),
-      birthYear:parseInt($("a-birth").value,10),
-      gender:$("a-gender").value,
-      seeking:$("a-seeking").value,
-      zone:$("a-zone").value.trim(),
-      consent:$("a-consent").checked
-    });
-    var snap=await db.collection("socialProfiles").doc(ME.uid).get();
-    PROFILE=snap.data();
-    var eSnap=await db.collection("socialEntitlements").doc(ME.uid).get(); ENT=eSnap.exists?eSnap.data():{};
+    await api("social-activate",{ pseudo:$("a-pseudo").value.trim(), birthYear:parseInt($("a-birth").value,10),
+      gender:$("a-gender").value, seeking:$("a-seeking").value, zone:$("a-zone").value.trim(), consent:$("a-consent").checked });
+    var snap=await db.collection("socialProfiles").doc(ME.uid).get(); PROFILE=snap.data();
     enterOnboard();
   }catch(e){ toast(e.message); b.disabled=false; }
 };
@@ -388,124 +549,366 @@ $("ob-submit").onclick=async function(){
   if(pendingPhotos.length===0){ toast("Ajoute omwen 1 foto."); return; }
   var b=this; b.disabled=true;
   try{
-    await db.collection("socialProfiles").doc(ME.uid).set({
-      photos:pendingPhotos, bio:$("ob-bio").value.trim(),
-      status:"active", visible:true, lastActive:firebase.firestore.Timestamp.now()
-    },{merge:true});
+    await db.collection("socialProfiles").doc(ME.uid).set({ photos:pendingPhotos, bio:$("ob-bio").value.trim(),
+      status:"active", visible:true, discoverable:true, lastActive:firebase.firestore.Timestamp.now() },{merge:true});
     var snap=await db.collection("socialProfiles").doc(ME.uid).get(); PROFILE=snap.data();
-    toast("Byenveni sou Bizen Social! 💗"); enterApp();
+    toast("Byenveni sou Bizen Social!"); enterApp();
   }catch(e){ toast("Erè: "+e.message); b.disabled=false; }
 };
 
-/* ============ PHOTOS (upload Storage) ============ */
+/* ============ PHOTOS ============ */
 function renderPhotoGrid(gridId, arr, target){
   var g=$(gridId); g.innerHTML="";
   for(var i=0;i<6;i++){
-    var url=arr[i];
-    var slot=document.createElement("div"); slot.className="photo-slot";
+    var url=arr[i]; var slot=document.createElement("div"); slot.className="photo-slot";
     if(url){ slot.style.backgroundImage="url('"+url+"')";
       var rm=document.createElement("div"); rm.className="rm"; rm.innerHTML='<i class="fas fa-times"></i>';
       (function(idx){ rm.onclick=function(ev){ ev.stopPropagation(); arr.splice(idx,1); renderPhotoGrid(gridId,arr,target); if(target==="profile")saveProfilePhotos(arr); }; })(i);
       slot.appendChild(rm);
-    } else { slot.innerHTML='<i class="fas fa-plus"></i>';
-      (function(t){ slot.onclick=function(){ uploadTarget=t; $("file-input").click(); }; })(target);
-    }
+    } else { slot.innerHTML='<i class="fas fa-plus"></i>'; (function(t){ slot.onclick=function(){ uploadTarget=t; $("file-input").click(); }; })(target); }
     g.appendChild(slot);
   }
+}
+/* ============ ANTI-NUDITE (blocage a la source, navigateur) ============
+   Un modele IA (NSFWJS) analyse l'image AVANT l'envoi. Si contenu explicite,
+   la publication est bloquee. Chargement a la demande (pas au demarrage).
+   Si le modele n'arrive pas a charger (reseau), on laisse passer mais l'admin
+   garde l'oeil (file de moderation + signalements). */
+var _nsfwModel=null, _nsfwFailed=false;
+function loadScriptOnce(src){ return new Promise(function(res,rej){ if(document.querySelector('script[data-s="'+src+'"]')){res();return;} var s=document.createElement("script"); s.src=src; s.setAttribute("data-s",src); s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+async function loadNsfw(){
+  if(_nsfwModel||_nsfwFailed) return _nsfwModel;
+  try{
+    await loadScriptOnce("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js");
+    await loadScriptOnce("https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js");
+    _nsfwModel=await nsfwjs.load();
+  }catch(e){ console.warn("NSFW pa chaje:",e); _nsfwFailed=true; _nsfwModel=null; }
+  return _nsfwModel;
+}
+async function isNudity(file){
+  try{
+    var model=await loadNsfw();
+    if(!model) return false;   /* fail-open : admin garde l'oeil */
+    var img=document.createElement("img");
+    var u=URL.createObjectURL(file);
+    await new Promise(function(res,rej){ img.onload=res; img.onerror=rej; img.src=u; });
+    var preds=await model.classify(img);
+    try{ URL.revokeObjectURL(u); }catch(e){}
+    var s={}; preds.forEach(function(p){ s[p.className]=p.probability; });
+    return (s.Porn||0)>=0.6 || (s.Hentai||0)>=0.6 || (s.Sexy||0)>=0.85;
+  }catch(e){ console.warn("verifikasyon foto:",e); return false; }
 }
 $("file-input").onchange=async function(){
   var f=this.files[0]; this.value=""; if(!f)return;
   if(f.size>15*1024*1024){ toast("Foto twò gwo (max 15Mo)."); return; }
+  toast("Ap verifye foto...");
+  if(await isNudity(f)){ toast("Foto sa a sanble gen nidite. Li pa otorize sou Bizen Social. Chwazi yon lòt."); return; }
   toast("Ap voye foto...");
   try{
     var path="social/"+ME.uid+"/"+Date.now()+"_"+Math.random().toString(36).slice(2)+".jpg";
-    var ref=storage.ref().child(path);
-    await ref.put(f); var url=await ref.getDownloadURL();
-    if(uploadTarget==="onboard"){ if(pendingPhotos.length<6){pendingPhotos.push(url);} renderPhotoGrid("ob-photos",pendingPhotos,"onboard"); }
-    else { PROFILE.photos=PROFILE.photos||[]; if(PROFILE.photos.length<6){PROFILE.photos.push(url);} renderPhotoGrid("pf-photos",PROFILE.photos,"profile"); saveProfilePhotos(PROFILE.photos); }
+    var ref=storage.ref().child(path); await ref.put(f); var url=await ref.getDownloadURL();
+    if(uploadTarget==="onboard"){ if(pendingPhotos.length<6)pendingPhotos.push(url); renderPhotoGrid("ob-photos",pendingPhotos,"onboard"); }
+    else if(uploadTarget==="post"){ crImage=url; $("cr-pick").style.backgroundImage="url('"+url+"')"; $("cr-pick").innerHTML=""; }
+    else { PROFILE.photos=PROFILE.photos||[]; if(PROFILE.photos.length<6)PROFILE.photos.push(url); renderPhotoGrid("pf-photos",PROFILE.photos,"profile"); saveProfilePhotos(PROFILE.photos); }
   }catch(e){ console.error(e); toast("Erè voye foto."); }
 };
-async function saveProfilePhotos(arr){ try{ await db.collection("socialProfiles").doc(ME.uid).set({photos:arr},{merge:true}); }catch(e){} }
+async function saveProfilePhotos(arr){ try{ await db.collection("socialProfiles").doc(ME.uid).set({photos:arr},{merge:true}); if(arr[0])$("pf-av").style.backgroundImage="url('"+arr[0]+"')"; }catch(e){} }
 
 /* ============ ENTER APP ============ */
-function enterApp(){
-  show("v-app");
-  $("premium-tag").textContent=isPremium()?"⭐ Premium":"Gratis";
-  switchTab("discover");
-  loadFeed();
-  listenMatches();
-  hydrateProfileTab();
-}
+function enterApp(){ show("v-app"); switchTab("feed"); loadFeed(); listenMatches(); hydrateProfile(); }
 function switchTab(t){
-  ["discover","matches","profile"].forEach(function(x){ $("tab-"+x).classList.toggle("hidden",x!==t); });
-  document.querySelectorAll(".navbtn").forEach(function(b){ b.classList.toggle("active",b.dataset.tab===t); });
-  if(t==="matches") clearMatchBadge();
+  ["feed","discover","matches","profile"].forEach(function(x){ $("tab-"+x).classList.toggle("hidden",x!==t); });
+  document.querySelectorAll(".navbtn[data-tab]").forEach(function(b){ b.classList.toggle("active",b.dataset.tab===t); });
+  if(t==="discover" && deck.length===0) loadDeck();
 }
-document.querySelectorAll(".navbtn").forEach(function(b){ b.onclick=function(){ switchTab(b.dataset.tab); }; });
+document.querySelectorAll(".navbtn[data-tab]").forEach(function(b){ b.onclick=function(){ switchTab(b.dataset.tab); }; });
+$("tb-msg").onclick=function(){ switchTab("matches"); };
 
-/* ============ FEED + SWIPE DECK ============ */
+/* ============ ETATS VIDES + INVITATION ============ */
+/* Etat vide soigne, reutilisable : icone, titre, sous-titre, bouton d'action. */
+function renderEmpty(container, cfg){
+  var html='<div class="estate"><div class="ic"><i class="'+cfg.icon+'"></i></div>'+
+    '<h4>'+esc(cfg.title)+'</h4><p>'+esc(cfg.sub)+'</p>';
+  if(cfg.btn) html+='<button class="btn" id="es-btn"><i class="'+(cfg.btnIcon||"fas fa-plus")+'"></i> '+esc(cfg.btn)+'</button>';
+  if(cfg.link) html+='<button class="btn link" id="es-link">'+esc(cfg.link)+'</button>';
+  html+='</div>';
+  container.innerHTML=html;
+  if(cfg.btn){ var b=container.querySelector("#es-btn"); if(b)b.onclick=cfg.onClick; }
+  if(cfg.link){ var l=container.querySelector("#es-link"); if(l)l.onclick=cfg.onLink; }
+}
+/* Inviter des amis : partage du lien de l'app (croissance au demarrage). */
+function inviteFriends(){
+  var url=location.origin+"/social";
+  var txt=encodeURIComponent("Vin sou Bizen Social, nouvo rezo ak rankont pou granmoun an Ayiti! "+url);
+  window.open("https://wa.me/?text="+txt,"_blank");
+}
+
+/* ============ FEED ============ */
 async function loadFeed(){
-  $("deck").innerHTML='<div class="empty" style="margin-top:40px"><i class="fas fa-heart spin"></i>Ap chèche moun toupre w...</div>';
+  $("feed-list").innerHTML='<div class="empty" style="margin-top:30px"><i class="fas fa-circle-notch spin"></i>Chajman fil la...</div>';
   try{
-    var r=await api("social-feed",{});
-    deck=r.profiles||[]; deckIdx=0; renderDeck();
-  }catch(e){ $("deck").innerHTML='<div class="empty"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
+    /* Mes likes et sauvegardes pour marquer l'etat */
+    myLikes={}; mySaves={};
+    try{ var lk=await db.collection("socialPostLikes").where("uid","==",ME.uid).limit(300).get(); lk.forEach(function(d){ myLikes[d.data().postId]=1; }); }catch(e){}
+    try{ var sv=await db.collection("socialSaves").where("uid","==",ME.uid).limit(300).get(); sv.forEach(function(d){ mySaves[d.data().postId]=1; }); }catch(e){}
+    var snap=await db.collection("socialPosts").orderBy("createdAt","desc").limit(40).get();
+    var arr=[]; snap.forEach(function(d){ var x=d.data(); x.id=d.id; arr.push(x); });
+    renderPosts(arr);
+  }catch(e){ $("feed-list").innerHTML='<div class="empty"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
+}
+function welcomeCardHtml(){
+  try{ if(localStorage.getItem("bz_social_welcome")==="1") return ""; }catch(e){}
+  return '<div class="welcome" id="welcome-card">'+
+    '<button class="wc-close" id="wc-close"><i class="fas fa-xmark"></i></button>'+
+    '<h4>Byenveni sou Bizen Social</h4>'+
+    '<p>Pataje foto ak moman ou, swipe pou jwenn nouvo moun, epi swiv sa ou renmen. Kòmanse kounye a:</p>'+
+    '<div class="wc-row">'+
+      '<button class="btn" id="wc-post"><i class="fas fa-camera"></i> Pibliye</button>'+
+      '<button class="btn ghost" id="wc-invite"><i class="fab fa-whatsapp"></i> Envite zanmi</button>'+
+    '</div></div>';
+}
+function wireWelcome(box){
+  var c=box.querySelector("#wc-close"); if(c)c.onclick=function(){ try{localStorage.setItem("bz_social_welcome","1");}catch(e){} var w=box.querySelector("#welcome-card"); if(w)w.remove(); };
+  var p=box.querySelector("#wc-post"); if(p)p.onclick=function(){ $("nav-create").click(); };
+  var i=box.querySelector("#wc-invite"); if(i)i.onclick=inviteFriends;
+}
+function renderPosts(arr){
+  var list=$("feed-list"); var wc=welcomeCardHtml();
+  list.innerHTML=wc;
+  if(wc) wireWelcome(list);
+  if(!arr.length){
+    var holder=document.createElement("div"); list.appendChild(holder);
+    renderEmpty(holder, {icon:"fa-regular fa-images", title:"Fil ou vid pou kounye a",
+      sub:"Vin premye moun ki pataje yon moman sou Bizen Social. Post ou yo ap parèt isit la.",
+      btn:"Pibliye premye post ou", btnIcon:"fas fa-camera", onClick:function(){ $("nav-create").click(); },
+      link:"Envite zanmi ou yo", onLink:inviteFriends});
+    return;
+  }
+  arr.forEach(function(p){ list.appendChild(buildPost(p)); });
+}
+function buildPost(p){
+  var el=document.createElement("article"); el.className="post"; el._data=p;
+  var liked=!!myLikes[p.id], saved=!!mySaves[p.id];
+  var isRepost=!!p.repostOf;
+  var tagged=(p.taggedNames&&p.taggedNames.length)?('<div class="post-tagged"><i class="fas fa-user-tag"></i> avèk '+p.taggedNames.map(esc).join(", ")+'</div>'):'';
+  el.innerHTML=
+    (isRepost?'<div class="repost-tag"><i class="fas fa-retweet"></i> '+esc(p.authorName||"")+' repibliye soti nan '+esc(p.repostAuthorName||"")+'</div>':'')+
+    (isRepost&&p.repostComment?'<div class="repost-note">'+capTags(p.repostComment)+'</div>':'')+
+    '<div class="post-head">'+
+      '<div class="av clk" style="background-image:url(\''+esc(p.authorAvatar||"")+'\')"></div>'+
+      '<div class="nm clk">'+esc(p.authorName||"Anonim")+(p.zone?'<small>'+esc(p.zone)+'</small>':'')+'</div>'+
+      '<button class="more"><i class="fas fa-ellipsis"></i></button>'+
+    '</div>'+
+    (p.imageUrl?'<div class="post-img" style="background-image:url(\''+esc(p.imageUrl)+'\')"></div>':'')+
+    (!p.imageUrl&&p.caption?'<div class="post-textonly">'+capTags(p.caption)+'</div>':'')+
+    '<div class="post-actions">'+
+      '<button class="act like'+(liked?' liked':'')+'"><i class="'+(liked?'fas':'fa-regular')+' fa-heart"></i></button>'+
+      '<button class="act comment"><i class="fa-regular fa-comment"></i></button>'+
+      '<button class="act share"><i class="fa-regular fa-paper-plane"></i></button>'+
+      '<button class="act save'+(saved?' saved':'')+'"><i class="'+(saved?'fas':'fa-regular')+' fa-bookmark"></i></button>'+
+    '</div>'+
+    '<div class="post-likes"><span class="lc">'+(p.likeCount||0)+'</span> like</div>'+
+    (p.imageUrl&&p.caption?'<div class="post-caption"><span class="u">'+esc(p.authorName||"")+'</span>'+capTags(p.caption)+'</div>':'')+
+    tagged+
+    (p.commentCount?'<div class="post-cmlink">Wè '+p.commentCount+' kòmantè</div>':'<div class="post-cmlink">Ajoute yon kòmantè</div>')+
+    '<div class="post-time">'+timeAgo(p.createdAt)+'</div>';
+  /* actions */
+  var likeBtn=el.querySelector(".like");
+  likeBtn.onclick=function(){ toggleLike(p, likeBtn, el.querySelector(".lc")); };
+  el.querySelector(".comment").onclick=function(){ openComments(p); };
+  el.querySelector(".post-cmlink").onclick=function(){ openComments(p); };
+  el.querySelector(".share").onclick=function(){ sharePost(p); };
+  var saveBtn=el.querySelector(".save"); saveBtn.onclick=function(){ toggleSave(p, saveBtn); };
+  el.querySelector(".more").onclick=function(){ postMenu(p); };
+  var openAuthor=function(){ if(p.authorUid && p.authorUid!==ME.uid) openProfileByUid(p.authorUid); };
+  el.querySelector(".post-head .av").onclick=openAuthor;
+  el.querySelector(".post-head .nm").onclick=openAuthor;
+  return el;
+}
+async function toggleLike(p, btn, lc){
+  var wasLiked=btn.classList.contains("liked");
+  btn.classList.toggle("liked"); btn.querySelector("i").className=(wasLiked?"fa-regular":"fas")+" fa-heart";
+  if(!wasLiked){ btn.classList.add("pop"); setTimeout(function(){ btn.classList.remove("pop"); },420); }
+  lc.textContent=(parseInt(lc.textContent,10)||0)+(wasLiked?-1:1);
+  try{ await api("social-post",{action:"like",postId:p.id}); }catch(e){ toast(e.message); }
+}
+async function toggleSave(p, btn){
+  var wasSaved=btn.classList.contains("saved");
+  btn.classList.toggle("saved"); btn.querySelector("i").className=(wasSaved?"fa-regular":"fas")+" fa-bookmark";
+  try{ var r=await api("social-post",{action:"save",postId:p.id}); toast(r.saved?"Sovgade":"Retire"); }catch(e){ toast(e.message); }
+}
+function sharePost(p){
+  var s=document.createElement("div"); s.className="menu-sheet";
+  s.innerHTML='<div class="sheet">'+
+    '<div class="item" id="sh-repost"><i class="fas fa-retweet"></i> Repibliye sou fil mwen</div>'+
+    '<div class="item" id="sh-wa"><i class="fab fa-whatsapp"></i> Pataje sou WhatsApp</div>'+
+    '<div class="item" id="sh-cancel"><i class="fas fa-xmark"></i> Anile</div></div>';
+  document.body.appendChild(s);
+  s.onclick=function(e){ if(e.target===s)s.remove(); };
+  s.querySelector("#sh-cancel").onclick=function(){ s.remove(); };
+  s.querySelector("#sh-wa").onclick=function(){ s.remove(); var url=location.origin+"/social"; var txt=encodeURIComponent((p.caption?p.caption+" ":"Gade sa sou Bizen Social ")+url); window.open("https://wa.me/?text="+txt,"_blank"); };
+  s.querySelector("#sh-repost").onclick=async function(){ s.remove();
+    var note=prompt("Ajoute yon ti mo (opsyonèl):")||"";
+    try{ await api("social-post",{action:"create",repostOf:(p.repostOf||p.id),caption:note}); toast("Repibliye sou fil ou!"); switchTab("feed"); loadFeed(); }catch(e){ toast(e.message); } };
+}
+function postMenu(p){
+  var s=document.createElement("div"); s.className="menu-sheet";
+  var mine=p.authorUid===ME.uid;
+  s.innerHTML='<div class="sheet">'+
+    (mine?'<div class="item danger" id="mi-del"><i class="fas fa-trash"></i> Efase post</div>':'<div class="item" id="mi-rep"><i class="fas fa-flag"></i> Sinyale</div>')+
+    '<div class="item" id="mi-cancel"><i class="fas fa-xmark"></i> Anile</div></div>';
+  document.body.appendChild(s);
+  s.onclick=function(e){ if(e.target===s)s.remove(); };
+  s.querySelector("#mi-cancel").onclick=function(){ s.remove(); };
+  if(mine){ s.querySelector("#mi-del").onclick=async function(){ s.remove(); if(!confirm("Efase post sa a?"))return; try{ await api("social-post",{action:"delete",postId:p.id}); toast("Efase."); loadFeed(); }catch(e){toast(e.message);} }; }
+  else { s.querySelector("#mi-rep").onclick=async function(){ s.remove(); try{ await api("social-moderation",{action:"report",targetUid:p.authorUid,reason:"post"}); toast("Sinyale. Mèsi."); }catch(e){toast(e.message);} }; }
+}
+
+/* ============ COMMENTS ============ */
+function openComments(p){
+  curCommentPost=p; $("cm-list").innerHTML='<div class="empty" style="margin:auto"><i class="fas fa-circle-notch spin"></i></div>';
+  $("commentsview").classList.remove("hidden");
+  db.collection("socialPostComments").where("postId","==",p.id).orderBy("createdAt","asc").limit(200).get()
+    .then(function(snap){
+      var l=$("cm-list"); l.innerHTML="";
+      if(snap.empty){ l.innerHTML='<div class="empty" style="margin:auto"><i class="fa-regular fa-comment"></i>Poko gen kòmantè.</div>'; return; }
+      snap.forEach(function(d){ l.appendChild(buildComment(d.data())); });
+      l.scrollTop=l.scrollHeight;
+    }).catch(function(e){ $("cm-list").innerHTML='<div class="empty">'+esc(e.message)+'</div>'; });
+}
+function buildComment(c){
+  var el=document.createElement("div"); el.className="cm";
+  el.innerHTML='<div class="av" style="background-image:url(\''+esc(c.avatar||"")+'\')"></div>'+
+    '<div class="body"><span class="nm">'+esc(c.name||"Anonim")+'</span><span class="tx">'+esc(c.text||"")+'</span><div class="tm">'+timeAgo(c.createdAt)+'</div></div>';
+  return el;
+}
+$("cm-back").onclick=function(){ $("commentsview").classList.add("hidden"); curCommentPost=null; };
+async function sendComment(){
+  var inp=$("cm-text"); var t=inp.value.trim(); if(!t||!curCommentPost)return; inp.value="";
+  var l=$("cm-list"); if(l.querySelector(".empty"))l.innerHTML="";
+  l.appendChild(buildComment({name:PROFILE.pseudo||"Ou",avatar:(PROFILE.photos&&PROFILE.photos[0])||"",text:t,createdAt:firebase.firestore.Timestamp.now()}));
+  l.scrollTop=l.scrollHeight;
+  try{ await api("social-post",{action:"comment",postId:curCommentPost.id,text:t}); }catch(e){ toast(e.message); }
+}
+$("cm-send").onclick=sendComment;
+$("cm-text").addEventListener("keydown",function(e){ if(e.key==="Enter"){e.preventDefault();sendComment();} });
+
+/* ============ CREATE POST ============ */
+var crTags=[];
+function renderCrTags(){ var c=$("cr-tags"); c.innerHTML=""; crTags.forEach(function(nm,i){ var chip=document.createElement("span"); chip.className="tag-chip sel"; chip.innerHTML=esc(nm)+' <i class="fas fa-xmark"></i>'; chip.onclick=function(){ crTags.splice(i,1); renderCrTags(); }; c.appendChild(chip); }); }
+$("nav-create").onclick=function(){ crImage=""; crTags=[]; $("cr-caption").value=""; renderCrTags(); $("cr-pick").style.backgroundImage=""; $("cr-pick").innerHTML='<i class="fas fa-image"></i><span style="font-size:.82rem">Chwazi yon foto</span>'; $("createview").classList.remove("hidden"); };
+$("cr-back").onclick=function(){ $("createview").classList.add("hidden"); };
+$("cr-pick").onclick=function(){ uploadTarget="post"; $("file-input").click(); };
+$("cr-tagbtn").onclick=function(){ openTagPicker(); };
+function openTagPicker(){
+  var people=[], seen={};
+  Object.keys(matchesCache).forEach(function(k){ var d=matchesCache[k]; if(!d.users)return; var other=d.users[0]===ME.uid?d.users[1]:d.users[0]; var nm=(d.names&&d.names[other])||""; if(nm&&!seen[nm]){ seen[nm]=1; people.push(nm); } });
+  var s=document.createElement("div"); s.className="menu-sheet";
+  var inner='<div class="sheet" style="max-height:60vh;overflow:auto"><div style="padding:14px 20px;font-weight:700">Idantifye zanmi</div>';
+  if(!people.length){ inner+='<div class="item" style="color:var(--muted)">Poko gen moun pou idantifye. Matche ak moun anvan.</div>'; }
+  else { people.forEach(function(nm){ var on=crTags.indexOf(nm)!==-1; inner+='<div class="item tp" data-nm="'+esc(nm)+'"><i class="fas '+(on?'fa-square-check':'fa-square')+'" style="color:'+(on?'var(--rose)':'var(--muted)')+'"></i> '+esc(nm)+'</div>'; }); }
+  inner+='<div class="item" id="tp-done" style="color:var(--rose);font-weight:700"><i class="fas fa-check"></i> Fini</div></div>';
+  s.innerHTML=inner; document.body.appendChild(s);
+  s.onclick=function(e){ if(e.target===s)s.remove(); };
+  s.querySelectorAll(".tp").forEach(function(it){ it.onclick=function(){ var nm=it.dataset.nm; var i=crTags.indexOf(nm); if(i===-1)crTags.push(nm); else crTags.splice(i,1); renderCrTags(); var on=crTags.indexOf(nm)!==-1; var ic=it.querySelector("i"); ic.className="fas "+(on?"fa-square-check":"fa-square"); ic.style.color=on?"var(--rose)":"var(--muted)"; }; });
+  s.querySelector("#tp-done").onclick=function(){ s.remove(); };
+}
+$("cr-publish").onclick=async function(){
+  var cap=$("cr-caption").value.trim();
+  if(!crImage && !cap){ toast("Ajoute yon foto oswa yon tèks."); return; }
+  var b=this; b.style.opacity=".5";
+  try{ await api("social-post",{action:"create",imageUrl:crImage,caption:cap,taggedNames:crTags}); $("createview").classList.add("hidden"); toast("Pibliye!"); switchTab("feed"); loadFeed(); }
+  catch(e){ toast(e.message); } finally{ b.style.opacity="1"; }
+};
+
+/* ============ PROFILE DETAIL + FOLLOW ============ */
+var pvSwipeProfile=null;
+async function openProfileByUid(uid){
+  try{
+    var snap=await db.collection("socialProfiles").doc(uid).get();
+    if(!snap.exists){ toast("Pwofil pa disponib."); return; }
+    var d=snap.data(); var age=d.birthYear?(new Date().getFullYear()-d.birthYear):null;
+    openProfileDetail({uid:uid,pseudo:d.pseudo,age:age,zone:d.zone,bio:d.bio,photos:d.photos,followersCount:d.followersCount||0,followingCount:d.followingCount||0}, false);
+  }catch(e){ toast(e.message); }
+}
+function openProfileDetail(prof, fromSwipe){
+  pvSwipeProfile=fromSwipe?prof:null;
+  var photo=(prof.photos&&prof.photos[0])||"";
+  $("pv-title").textContent=prof.pseudo||"Pwofil";
+  $("pv-photo").style.backgroundImage=photo?"url('"+photo+"')":""; $("pv-photo").innerHTML=photo?"":'<div class="noimg"><i class="fas fa-user"></i></div>';
+  $("pv-name").innerHTML=esc(prof.pseudo||"Anonim")+(prof.age?' <span class="age">'+prof.age+'</span>':'');
+  $("pv-sub").innerHTML=prof.zone?'<i class="fas fa-location-dot"></i> '+esc(prof.zone):'';
+  $("pv-bio").textContent=prof.bio||"";
+  $("pv-stats").innerHTML='<div class="s"><b>'+(prof.followersCount||0)+'</b><span>Abòne</span></div><div class="s"><b>'+(prof.followingCount||0)+'</b><span>Ap swiv</span></div><div class="s"><b id="pv-postn">0</b><span>Post</span></div>';
+  $("pv-actions").classList.toggle("hidden",!fromSwipe);
+  $("profileview").classList.remove("hidden");
+  db.collection("socialPosts").where("authorUid","==",prof.uid).limit(60).get().then(function(s){ var n=0; s.forEach(function(){n++;}); var el=$("pv-postn"); if(el)el.textContent=n; }).catch(function(){});
+  refreshFollowBtn(prof.uid);
+}
+async function refreshFollowBtn(uid){
+  var btn=$("pv-follow"); btn.dataset.uid=uid;
+  var following=false;
+  try{ var f=await db.collection("socialFollows").doc(ME.uid+"_"+uid).get(); following=f.exists; }catch(e){}
+  setFollowBtn(following);
+}
+function setFollowBtn(following){
+  var btn=$("pv-follow"); btn.classList.toggle("follow-on",following);
+  btn.innerHTML=following?'<i class="fas fa-check"></i> Ou swiv':'<i class="fas fa-user-plus"></i> Swiv';
+}
+$("pv-follow").onclick=async function(){
+  var uid=this.dataset.uid; if(!uid)return;
+  var wasOn=this.classList.contains("follow-on"); setFollowBtn(!wasOn);
+  try{ var r=await api("social-follow",{targetUid:uid}); setFollowBtn(r.following); }catch(e){ setFollowBtn(wasOn); toast(e.message); }
+};
+$("pv-back").onclick=function(){ $("profileview").classList.add("hidden"); pvSwipeProfile=null; };
+$("pv-pass").onclick=function(){ $("profileview").classList.add("hidden"); if(pvSwipeProfile) doSwipe("pass"); };
+$("pv-like").onclick=function(){ $("profileview").classList.add("hidden"); if(pvSwipeProfile) doSwipe("like"); };
+
+/* ============ SWIPE DECK ============ */
+async function loadDeck(){
+  $("deck").innerHTML='<div class="empty" style="margin-top:40px"><i class="fas fa-fire spin"></i>Ap chèche moun toupre w...</div>';
+  try{ var r=await api("social-feed",{}); deck=r.profiles||[]; deckIdx=0; renderDeck(); }
+  catch(e){ $("deck").innerHTML='<div class="empty"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
 }
 function renderDeck(){
   var d=$("deck"); d.innerHTML="";
-  if(deckIdx>=deck.length){
-    d.innerHTML='<div class="empty" style="margin-top:30px"><i class="fas fa-champagne-glasses"></i>Ou wè tout moun pou kounye a.<br>Retounen pita oswa elaji zòn ou.<br><br><button class="btn ghost" style="max-width:200px;margin:0 auto" onclick="loadFeed()"><i class=\'fas fa-rotate\'></i> Rafrechi</button></div>';
-    return;
-  }
-  /* render up to 2 stacked cards */
-  for(var k=Math.min(deckIdx+1,deck.length-1);k>=deckIdx;k--){
-    d.appendChild(buildCard(deck[k], k===deckIdx));
-  }
+  if(deckIdx>=deck.length){ renderEmpty(d, {icon:"fas fa-champagne-glasses", title:"Ou wè tout moun toupre w",
+    sub:"Envite plis moun sou Bizen Social pou jwenn nouvo pwofil, oswa retounen pita.",
+    btn:"Envite zanmi", btnIcon:"fab fa-whatsapp", onClick:inviteFriends,
+    link:"Rafrechi", onLink:loadDeck}); return; }
+  for(var k=Math.min(deckIdx+1,deck.length-1);k>=deckIdx;k--){ d.appendChild(buildCard(deck[k], k===deckIdx)); }
   d.appendChild(buildActions());
+  if(deckIdx===0){ d.insertAdjacentHTML("beforeend",'<div class="deck-hint"><i class="fas fa-hand-pointer"></i> Tape foto a pou wè pwofil la</div>'); }
 }
 function buildCard(p, top){
   var c=document.createElement("div"); c.className="swipecard"; if(!top){c.style.transform="scale(.96) translateY(10px)";c.style.filter="brightness(.7)";}
   var photo=p.photos&&p.photos[0]?p.photos[0]:"";
-  var distTxt = p.availableNow ? "Disponib kounye a" : (p.distanceKm!=null? ("~"+p.distanceKm+" km") : (p.zone||"")) ;
-  c.innerHTML=
-    '<div class="photo" style="'+(photo?"background-image:url(\'"+photo+"\')":"")+'">'+(photo?"":'<div class="noimg"><i class="fas fa-user"></i></div>')+
-      '<div class="stamp like">Like</div><div class="stamp nope">Non</div>'+
-      '<div class="grad"></div>'+
-      '<div class="meta">'+
-        '<div class="nm">'+esc(p.pseudo)+(p.age?' <span class="age">'+p.age+'</span>':'')+'</div>'+
-        (distTxt?'<div class="sub"><i class="fas fa-location-dot"></i> '+esc(distTxt)+'</div>':'')+
-        (p.availableNow?'<div class="avail-pill"><i class="fas fa-bolt"></i> Disponib kounye a</div>':'')+
-        (p.bio?'<div class="bio">'+esc(p.bio)+'</div>':'')+
-      '</div>'+
-    '</div>';
+  var distTxt=p.availableNow?"Disponib kounye a":(p.distanceKm!=null?("~"+p.distanceKm+" km"):(p.zone||""));
+  c.innerHTML='<div class="photo" style="'+(photo?"background-image:url('"+photo+"')":"")+'">'+(photo?"":'<div class="noimg"><i class="fas fa-user"></i></div>')+
+    '<div class="stamp like">Like</div><div class="stamp nope">Non</div><div class="grad"></div>'+
+    '<div class="meta"><div class="nm">'+esc(p.pseudo)+(p.age?' <span class="age">'+p.age+'</span>':'')+'</div>'+
+    (distTxt?'<div class="sub"><i class="fas fa-location-dot"></i> '+esc(distTxt)+'</div>':'')+
+    (p.availableNow?'<div class="avail-pill"><i class="fas fa-bolt"></i> Disponib kounye a</div>':'')+
+    (p.bio?'<div class="bio">'+esc(p.bio)+'</div>':'')+'</div></div>';
   if(top) attachDrag(c);
-  c._data=p;
   return c;
 }
 function buildActions(){
   var wrap=document.createElement("div"); wrap.className="deck-actions";
-  wrap.innerHTML=
-    '<button class="act pass"><i class="fas fa-xmark"></i></button>'+
-    '<button class="act super"><i class="fas fa-star"></i></button>'+
-    '<button class="act like"><i class="fas fa-heart"></i></button>';
+  wrap.innerHTML='<button class="act-btn pass"><i class="fas fa-xmark"></i></button><button class="act-btn like"><i class="fas fa-heart"></i></button>';
   wrap.children[0].onclick=function(){ doSwipe("pass"); };
-  wrap.children[1].onclick=function(){ doSwipe("super"); };
-  wrap.children[2].onclick=function(){ doSwipe("like"); };
+  wrap.children[1].onclick=function(){ doSwipe("like"); };
   return wrap;
 }
-/* Drag gesture on top card */
 function attachDrag(card){
-  var sx=0,sy=0,dx=0,dy=0,drag=false;
-  function start(x,y){drag=true;sx=x;sy=y;card.style.transition="none";}
-  function move(x,y){ if(!drag)return; dx=x-sx;dy=y-sy; card.style.transform="translate("+dx+"px,"+dy+"px) rotate("+(dx/18)+"deg)";
-    var l=card.querySelector(".stamp.like"), n=card.querySelector(".stamp.nope");
-    if(l)l.style.opacity=Math.max(0,dx/90); if(n)n.style.opacity=Math.max(0,-dx/90);
-  }
+  var sx=0,sy=0,dx=0,dy=0,drag=false,moved=false;
+  function start(x,y){drag=true;moved=false;dx=0;dy=0;sx=x;sy=y;card.style.transition="none";}
+  function move(x,y){ if(!drag)return; dx=x-sx;dy=y-sy; if(Math.abs(dx)>8||Math.abs(dy)>8)moved=true; card.style.transform="translate("+dx+"px,"+dy+"px) rotate("+(dx/18)+"deg)";
+    var l=card.querySelector(".stamp.like"),n=card.querySelector(".stamp.nope"); if(l)l.style.opacity=Math.max(0,dx/90); if(n)n.style.opacity=Math.max(0,-dx/90); }
   function end(){ if(!drag)return; drag=false; card.style.transition="transform .3s";
-    if(dx>110){ flyOut(card,1); doSwipe("like",true); }
-    else if(dx<-110){ flyOut(card,-1); doSwipe("pass",true); }
-    else { card.style.transform=""; var l=card.querySelector(".stamp.like"),n=card.querySelector(".stamp.nope"); if(l)l.style.opacity=0; if(n)n.style.opacity=0; }
-  }
+    if(!moved){ card.style.transform=""; if(deckIdx<deck.length) openProfileDetail(deck[deckIdx],true); return; }
+    if(dx>110){ flyOut(card,1); doSwipe("like",true); } else if(dx<-110){ flyOut(card,-1); doSwipe("pass",true); }
+    else { card.style.transform=""; var l=card.querySelector(".stamp.like"),n=card.querySelector(".stamp.nope"); if(l)l.style.opacity=0; if(n)n.style.opacity=0; } }
   card.addEventListener("touchstart",function(e){start(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
   card.addEventListener("touchmove",function(e){move(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
   card.addEventListener("touchend",end);
@@ -517,20 +920,12 @@ function flyOut(card,dir){ card.style.transition="transform .35s,opacity .35s"; 
 var swiping=false;
 async function doSwipe(dir, fromDrag){
   if(swiping)return; if(deckIdx>=deck.length)return;
-  var p=deck[deckIdx];
-  swiping=true;
+  var p=deck[deckIdx]; swiping=true;
   if(!fromDrag){ var top=$("deck").querySelector(".swipecard"); if(top){ flyOut(top, dir==="pass"?-1:1); } }
   setTimeout(function(){ deckIdx++; renderDeck(); swiping=false; }, 300);
-  try{
-    var r=await api("social-swipe",{targetUid:p.uid, dir:dir});
-    if(r.match){ showMatchModal(p); }
-  }catch(e){
-    if(e.status===429){ if(e.data&&e.data.reason==="super"){ toast("Ou pa gen Super Like. Achte yon pak nan Pwofil."); } else { showLimitModal(e.message); } }
-    else { toast(e.message); }
-  }
+  try{ var r=await api("social-swipe",{targetUid:p.uid, dir:dir}); if(r.match){ showMatchModal(p); } }
+  catch(e){ toast(e.message); }
 }
-
-/* ============ MATCH MODAL ============ */
 function showMatchModal(p){
   var myPhoto=(PROFILE.photos&&PROFILE.photos[0])||"";
   var m=document.createElement("div"); m.className="modal";
@@ -538,60 +933,46 @@ function showMatchModal(p){
     '<p style="color:var(--muted2);font-size:.86rem">Ou ak '+esc(p.pseudo)+' like youn lòt.</p>'+
     '<div class="match-avatars"><div class="av" style="background-image:url(\''+myPhoto+'\')"></div><div class="av" style="background-image:url(\''+((p.photos&&p.photos[0])||"")+'\')"></div></div>'+
     '<button class="btn" id="mm-chat"><i class="fas fa-comment"></i> Voye yon mesaj</button>'+
-    '<button class="btn ghost" id="mm-keep" style="margin-top:10px">Kontinye swipe</button></div>';
+    '<button class="btn ghost" id="mm-keep" style="margin-top:10px">Kontinye</button></div>';
   document.body.appendChild(m);
   var pair=[ME.uid,p.uid].sort().join("_");
   m.querySelector("#mm-chat").onclick=function(){ m.remove(); switchTab("matches"); setTimeout(function(){ openChat(pair); },250); };
   m.querySelector("#mm-keep").onclick=function(){ m.remove(); };
 }
-function showLimitModal(msg){
-  var m=document.createElement("div"); m.className="modal";
-  m.innerHTML='<div class="box"><div style="font-size:2.4rem;margin-bottom:10px">⏳</div><h2 style="font-family:\'Playfair Display\';font-size:1.3rem;margin-bottom:8px">Limit jounen an</h2>'+
-    '<p style="color:var(--muted2);font-size:.86rem;margin-bottom:18px">'+esc(msg)+'</p>'+
-    '<button class="btn gold" id="lm-prem"><i class="fas fa-crown"></i> Vin Premium</button>'+
-    '<button class="btn ghost" id="lm-close" style="margin-top:10px">Fèmen</button></div>';
-  document.body.appendChild(m);
-  m.querySelector("#lm-prem").onclick=function(){ m.remove(); switchTab("profile"); openPremium(); };
-  m.querySelector("#lm-close").onclick=function(){ m.remove(); };
-}
 
-/* ============ MATCHES LIST (realtime) ============ */
+/* ============ MATCHES ============ */
 function listenMatches(){
   if(matchesUnsub)matchesUnsub();
   matchesUnsub=db.collection("socialMatches").where("users","array-contains",ME.uid).orderBy("lastAt","desc")
     .onSnapshot(function(snap){
       var strip=$("match-strip"), list=$("conv-list"); strip.innerHTML=""; list.innerHTML="";
-      var totalUnread=0, newMatches=0, conv=0;
+      var totalUnread=0, newM=0, conv=0;
       snap.forEach(function(doc){
         var d=doc.data(); matchesCache[doc.id]=d;
         var other=d.users[0]===ME.uid?d.users[1]:d.users[0];
-        var nm=(d.names&&d.names[other])||"Anonim";
-        var av=(d.avatars&&d.avatars[other])||"";
+        var nm=(d.names&&d.names[other])||"Anonim", av=(d.avatars&&d.avatars[other])||"";
         var unread=(d.unread&&d.unread[ME.uid])||0; totalUnread+=unread;
-        if(!d.lastMessage){ /* new match, no message yet -> strip */
-          newMatches++;
-          var m=document.createElement("div"); m.className="m";
-          m.innerHTML='<div class="av" style="background-image:url(\''+av+'\')"></div><div class="nm">'+esc(nm)+'</div>';
-          m.onclick=(function(id){return function(){openChat(id);};})(doc.id);
-          strip.appendChild(m);
-        } else {
-          conv++;
+        if(!d.lastMessage){ newM++;
+          var mm=document.createElement("div"); mm.className="m";
+          mm.innerHTML='<div class="av" style="background-image:url(\''+av+'\')"></div><div class="nm">'+esc(nm)+'</div>';
+          mm.onclick=(function(id){return function(){openChat(id);};})(doc.id); strip.appendChild(mm);
+        } else { conv++;
           var c=document.createElement("div"); c.className="conv";
-          c.innerHTML='<div class="av" style="background-image:url(\''+av+'\')"></div>'+
-            '<div class="info"><div class="t"><span class="nm">'+esc(nm)+'</span><span class="tm">'+timeAgo(d.lastAt)+'</span></div>'+
-            '<div class="last">'+esc(d.lastMessage||"")+'</div></div>'+
-            (unread?'<div class="unread">'+unread+'</div>':'');
-          c.onclick=(function(id){return function(){openChat(id);};})(doc.id);
-          list.appendChild(c);
+          c.innerHTML='<div class="av" style="background-image:url(\''+av+'\')"></div><div class="info"><div class="t"><span class="nm">'+esc(nm)+'</span><span class="tm">'+timeAgo(d.lastAt)+'</span></div><div class="last">'+esc(d.lastMessage||"")+'</div></div>'+(unread?'<div class="unread">'+unread+'</div>':'');
+          c.onclick=(function(id){return function(){openChat(id);};})(doc.id); list.appendChild(c);
         }
       });
-      if(newMatches===0) strip.style.display="none"; else strip.style.display="flex";
-      if(conv===0 && newMatches===0){ list.innerHTML='<div class="empty"><i class="fas fa-heart"></i>Poko gen match.<br>Ale swipe nan "Dekouvri"!</div>'; }
-      var badge=$("nav-badge");
-      if(totalUnread>0){ badge.textContent=totalUnread; badge.classList.remove("hidden"); } else { badge.classList.add("hidden"); }
+      strip.classList.toggle("hidden",newM===0);
+      if(newM){ strip.insertAdjacentHTML("afterbegin",'<div class="lbl" style="width:100%">Nouvo match</div>'); }
+      if(conv===0 && newM===0){ renderEmpty(list, {icon:"fa-regular fa-comments", title:"Poko gen match",
+        sub:"Lè ou menm ak yon moun like youn lòt, n ap parèt isit la pou nou pale.",
+        btn:"Ale nan Dekouvri", btnIcon:"fas fa-fire", onClick:function(){ switchTab("discover"); }}); }
+      var badge=$("nav-badge"), dot=$("tb-msg-dot");
+      if(totalUnread>0){ badge.textContent=totalUnread; badge.classList.remove("hidden"); dot.textContent=totalUnread; dot.classList.remove("hidden"); }
+      else { badge.classList.add("hidden"); dot.classList.add("hidden"); }
+      var pf=$("pf-matches"); if(pf)pf.textContent=newM+conv;
     }, function(err){ console.error("matches:",err); });
 }
-function clearMatchBadge(){}
 
 /* ============ CHAT ============ */
 function openChat(pairId){
@@ -599,206 +980,127 @@ function openChat(pairId){
   var other=d.users[0]===ME.uid?d.users[1]:d.users[0];
   $("chat-name").textContent=(d.names&&d.names[other])||"Anonim";
   $("chat-av").style.backgroundImage="url('"+((d.avatars&&d.avatars[other])||"")+"')";
-  $("chat-eph").textContent=d.ephemeral!==false?"🔥 Mesaj efemè — efase apre 24h":"";
-  $("chat-body").innerHTML='<div class="empty" style="margin:auto"><i class="fas fa-comments spin"></i></div>';
+  $("chat-eph").textContent=d.ephemeral!==false?"Mesaj efemè, efase apre 24h":"";
+  $("chat-body").innerHTML='<div class="empty" style="margin:auto"><i class="fas fa-circle-notch spin"></i></div>';
   $("chatview").classList.remove("hidden");
-  /* reset my unread */
   var upd={}; upd["unread."+ME.uid]=0; db.collection("socialMatches").doc(pairId).set(upd,{merge:true}).catch(function(){});
   if(chatUnsub)chatUnsub();
   chatUnsub=db.collection("socialMessages").where("pairId","==",pairId).orderBy("createdAt","asc")
     .onSnapshot(function(snap){
       var body=$("chat-body"); body.innerHTML="";
-      if(snap.empty){ body.innerHTML='<div class="empty" style="margin:auto"><i class="fas fa-hand-sparkles"></i>Di bonjou! 👋</div>'; return; }
-      snap.forEach(function(doc){
-        var m=doc.data(); var mine=m.senderId===ME.uid;
-        var b=document.createElement("div"); b.className="bubble "+(mine?"me":"you");
-        if(m.mediaUrl){ b.innerHTML='<img src="'+esc(m.mediaUrl)+'">'+(m.text?'<div>'+esc(m.text)+'</div>':''); }
-        else b.textContent=m.text||"";
-        body.appendChild(b);
-      });
+      if(snap.empty){ body.innerHTML='<div class="empty" style="margin:auto"><i class="fas fa-hand-sparkles"></i>Di bonjou!</div>'; return; }
+      snap.forEach(function(doc){ var m=doc.data(); var b=document.createElement("div"); b.className="bubble "+(m.senderId===ME.uid?"me":"you");
+        if(m.mediaUrl){ b.innerHTML='<img src="'+esc(m.mediaUrl)+'" style="border-radius:10px">'+(m.text?'<div>'+esc(m.text)+'</div>':''); } else b.textContent=m.text||""; body.appendChild(b); });
       body.scrollTop=body.scrollHeight;
     }, function(err){ console.error("chat:",err); });
 }
 $("chat-back").onclick=function(){ $("chatview").classList.add("hidden"); if(chatUnsub){chatUnsub();chatUnsub=null;} curPair=null; };
 async function sendChat(){
-  var inp=$("chat-text"); var txt=inp.value.trim(); if(!txt||!curPair)return;
-  inp.value="";
-  try{ await api("social-message",{pairId:curPair,text:txt}); }
-  catch(e){ inp.value=txt; if(e.status===429){showLimitModal(e.message);} else toast(e.message); }
+  var inp=$("chat-text"); var txt=inp.value.trim(); if(!txt||!curPair)return; inp.value="";
+  try{ await api("social-message",{pairId:curPair,text:txt}); }catch(e){ inp.value=txt; toast(e.message); }
 }
 $("chat-send").onclick=sendChat;
 $("chat-text").addEventListener("keydown",function(e){ if(e.key==="Enter"){e.preventDefault();sendChat();} });
-$("chat-menu").onclick=function(){ openChatMenu(); };
-function openChatMenu(){
+$("chat-menu").onclick=function(){ chatMenu(); };
+function chatMenu(){
   var d=matchesCache[curPair]; if(!d)return; var other=d.users[0]===ME.uid?d.users[1]:d.users[0];
   var s=document.createElement("div"); s.className="menu-sheet";
-  s.innerHTML='<div class="sheet">'+
-    '<div class="item" id="mi-report"><i class="fas fa-flag"></i> Sinyale</div>'+
-    '<div class="item danger" id="mi-block"><i class="fas fa-ban"></i> Bloke</div>'+
-    '<div class="item" id="mi-cancel"><i class="fas fa-xmark"></i> Anile</div></div>';
-  document.body.appendChild(s);
-  s.onclick=function(e){ if(e.target===s)s.remove(); };
+  s.innerHTML='<div class="sheet"><div class="item" id="mi-report"><i class="fas fa-flag"></i> Sinyale</div><div class="item danger" id="mi-block"><i class="fas fa-ban"></i> Bloke</div><div class="item" id="mi-cancel"><i class="fas fa-xmark"></i> Anile</div></div>';
+  document.body.appendChild(s); s.onclick=function(e){ if(e.target===s)s.remove(); };
   s.querySelector("#mi-cancel").onclick=function(){ s.remove(); };
-  s.querySelector("#mi-report").onclick=async function(){ s.remove();
-    try{ await api("social-moderation",{action:"report",targetUid:other,pairId:curPair,reason:"abi"}); toast("Sinyale. Mèsi — n ap verifye."); $("chat-back").onclick(); }catch(e){toast(e.message);} };
-  s.querySelector("#mi-block").onclick=async function(){ s.remove();
-    if(!confirm("Bloke moun sa a? Nou p ap wè youn lòt ankò."))return;
-    try{ await api("social-moderation",{action:"block",targetUid:other}); toast("Bloke."); $("chat-back").onclick(); }catch(e){toast(e.message);} };
+  s.querySelector("#mi-report").onclick=async function(){ s.remove(); try{ await api("social-moderation",{action:"report",targetUid:other,pairId:curPair,reason:"abi"}); toast("Sinyale. Mèsi."); $("chat-back").onclick(); }catch(e){toast(e.message);} };
+  s.querySelector("#mi-block").onclick=async function(){ s.remove(); if(!confirm("Bloke moun sa a?"))return; try{ await api("social-moderation",{action:"block",targetUid:other}); toast("Bloke."); $("chat-back").onclick(); }catch(e){toast(e.message);} };
 }
 
-/* ============ PROFILE TAB ============ */
-function hydrateProfileTab(){
+/* ============ PROFILE ============ */
+function hydrateProfile(){
+  var av=(PROFILE.photos&&PROFILE.photos[0])||"";
+  $("pf-av").style.backgroundImage="url('"+av+"')";
+  $("pf-pseudo").textContent=PROFILE.pseudo||"";
+  $("pf-bioshow").textContent=PROFILE.bio||"";
+  $("pf-followers").textContent=PROFILE.followersCount||0;
+  $("pf-following").textContent=PROFILE.followingCount||0;
   renderPhotoGrid("pf-photos",PROFILE.photos||[],"profile");
   $("pf-bio").value=PROFILE.bio||"";
-  $("premium-tag").textContent=isPremium()?"⭐ Premium":"Gratis";
-  $("sw-incognito").classList.toggle("on",!!PROFILE.incognito);
+  $("sw-discoverable").classList.toggle("on",PROFILE.discoverable!==false);
   $("sw-location").classList.toggle("on",PROFILE.shareLocation!==false);
   $("sw-ephemeral").classList.toggle("on",PROFILE.defaultEphemeral!==false);
+  loadMyPosts();
 }
-$("pf-save").onclick=async function(){ try{ await db.collection("socialProfiles").doc(ME.uid).set({bio:$("pf-bio").value.trim()},{merge:true}); toast("Anrejistre."); }catch(e){toast("Erè.");} };
-$("sw-incognito").onclick=function(){ toggleSetting("incognito",this,true); };
-$("sw-location").onclick=function(){ toggleSetting("shareLocation",this,false); };
-$("sw-ephemeral").onclick=function(){ toggleSetting("defaultEphemeral",this,false); };
-async function toggleSetting(key,el,premiumOnly){
-  if(premiumOnly && !isPremium()){ toast("Fonksyon Premium. Vin Premium pou aktive l."); return; }
-  var on=!el.classList.contains("on"); el.classList.toggle("on",on);
-  PROFILE[key]=on;
-  try{ await db.collection("socialProfiles").doc(ME.uid).set({[key]:on},{merge:true}); }catch(e){ el.classList.toggle("on",!on); toast("Erè."); }
+async function loadMyPosts(){
+  try{
+    var snap=await db.collection("socialPosts").where("authorUid","==",ME.uid).limit(60).get();
+    var mine=[]; snap.forEach(function(d){ var p=d.data(); p.id=d.id; mine.push(p); });
+    mine.sort(function(a,b){ return ((b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0)-(a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0)); });
+    var g=$("pf-grid"); g.innerHTML=""; var n=0, likes=0;
+    mine.forEach(function(p){ n++; likes+=(p.likeCount||0); var c=document.createElement("div"); c.className="cell"; if(p.imageUrl)c.style.backgroundImage="url('"+p.imageUrl+"')"; else c.innerHTML='<div style="padding:8px;font-size:.7rem;color:var(--muted)">'+esc((p.caption||"").slice(0,60))+'</div>'; c.onclick=function(){ openComments(p); }; g.appendChild(c); });
+    $("pf-posts").textContent=n; $("pf-likes").textContent=likes;
+    if(n===0)g.innerHTML='<div class="empty" style="grid-column:1/-1"><i class="fa-regular fa-images"></i>Poko gen post.</div>';
+  }catch(e){ console.warn("myposts",e); }
 }
+$("pf-editbtn").onclick=function(){ $("pf-edit").classList.toggle("hidden"); };
+$("pf-save").onclick=async function(){ try{ await db.collection("socialProfiles").doc(ME.uid).set({bio:$("pf-bio").value.trim()},{merge:true}); PROFILE.bio=$("pf-bio").value.trim(); $("pf-bioshow").textContent=PROFILE.bio; toast("Anrejistre."); }catch(e){toast("Erè.");} };
+$("sw-discoverable").onclick=function(){ toggleSetting("discoverable",this); toast(this.classList.contains("on")?"Ou parèt nan Dekouvri":"Ou pa parèt nan Dekouvri ankò"); };
+$("sw-location").onclick=function(){ toggleSetting("shareLocation",this); };
+$("sw-ephemeral").onclick=function(){ toggleSetting("defaultEphemeral",this); };
+async function toggleSetting(key,el){ var on=!el.classList.contains("on"); el.classList.toggle("on",on); PROFILE[key]=on; try{ await db.collection("socialProfiles").doc(ME.uid).set({[key]:on},{merge:true}); }catch(e){ el.classList.toggle("on",!on); toast("Erè."); } }
 $("pf-logout").onclick=function(){ auth.signOut(); };
-$("btn-premium").onclick=openPremium;
-$("btn-boost").onclick=async function(){
-  try{ await db.collection("socialProfiles").doc(ME.uid).set({availableNow:firebase.firestore.Timestamp.now()},{merge:true}); toast("Ou make 'Disponib kounye a' pou 1 èdtan! ⚡"); }catch(e){toast("Erè.");}
-};
-function openPremium(){
-  var m=document.createElement("div"); m.className="modal";
-  m.innerHTML='<div class="box"><div style="font-size:2.6rem">👑</div><h2 style="font-family:\'Playfair Display\';margin:8px 0">Bizen Social Premium</h2>'+
-    '<p style="color:var(--muted2);font-size:.85rem;margin-bottom:16px">Swipe &amp; mesaj san limit, wè kiyès ki like ou, mòd enkognito, Super Like &amp; Boost.</p>'+
-    '<p style="font-size:.8rem;color:var(--muted);margin-bottom:16px">Peman via MonCash — menm sistèm wallet Bizen ou an.</p>'+
-    '<button class="btn gold" id="pm-go"><i class="fab fa-cc-visa"></i> Kontinye ak MonCash</button>'+
-    '<button class="btn ghost" id="pm-close" style="margin-top:10px">Pita</button></div>';
-  document.body.appendChild(m);
-  m.querySelector("#pm-close").onclick=function(){m.remove();};
-  m.querySelector("#pm-go").onclick=function(){ m.remove(); toast("Peman Premium ap konekte ak wallet MonCash ou (pwochèn etap)."); };
-}
 
 /* ================================================================
-   MODE APERÇU — design uniquement, SANS serveur ni Firebase.
-   Activé UNIQUEMENT si l'URL contient ?demo  (ex: social.html?demo=1,
-   ?demo=activate, ?demo=onboard). N'a AUCUN effet en production.
-   Sert à voir tous les écrans en double-cliquant le fichier (hors-ligne).
+   MODE APERCU (design, san sèvè) - aktive sèlman ak ?demo / #demo.
+   Pa gen okenn efè an pwodiksyon.
    ================================================================ */
 (function(){
-  /* Accepte ?demo=... OU #demo=... (l'un ou l'autre selon le navigateur). */
-  var q = location.search + " " + location.hash;
+  var q=location.search+" "+location.hash;
   if(!/[?&#]demo/.test(q)) return;
-  window.DEMO = true;
-
-  /* Avatar SVG intégré (aucune image externe -> marche hors-ligne). */
-  function demoAv(hue, emoji){
-    var svg="<svg xmlns='http://www.w3.org/2000/svg' width='600' height='800'>"+
-      "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>"+
-      "<stop offset='0' stop-color='hsl("+hue+",65%,52%)'/>"+
-      "<stop offset='1' stop-color='hsl("+((hue+45)%360)+",65%,38%)'/></linearGradient></defs>"+
-      "<rect width='600' height='800' fill='url(#g)'/>"+
-      "<text x='300' y='450' font-size='230' text-anchor='middle'>"+emoji+"</text></svg>";
-    return "data:image/svg+xml,"+encodeURIComponent(svg);
-  }
-  var DEMO_PROFILES=[
-    {uid:"d1",pseudo:"Nadège",age:26,zone:"Petyonvil",distanceKm:3,availableNow:true, bio:"Renmen mizik, vwayaj ak bon konvèsasyon 🎶",photos:[demoAv(330,"🌸")]},
-    {uid:"d2",pseudo:"Jonas",age:31,zone:"Delmas",distanceKm:7,availableNow:false, bio:"Antreprenè, foutbòl chak wikenn. Senp e onèt.",photos:[demoAv(210,"⚽")]},
-    {uid:"d3",pseudo:"Mia",age:24,zone:"Pòtoprens",distanceKm:5,availableNow:false, bio:"Etidyan, atist nan kè. Fè m ri 😄",photos:[demoAv(280,"🎨")]},
-    {uid:"d4",pseudo:"Ricardo",age:29,zone:"Kwadèboukè",distanceKm:12,availableNow:true, bio:"Chèf kwizin. M ap prepare w yon bon plat 🍲",photos:[demoAv(20,"🔥")]}
-  ];
-
-  /* Stubs : neutralisent tout appel réseau (writes/reads Firestore + Storage). */
-  var noop=function(){}; var okp=function(){return Promise.resolve();};
-  var chain={ set:okp, update:okp, delete:okp, add:okp,
-    get:function(){return Promise.resolve({exists:false,data:function(){return{};},ref:{set:okp}});},
-    where:function(){return chainQ;}, doc:function(){return chain;}, orderBy:function(){return chainQ;} };
-  var chainQ={ where:function(){return chainQ;}, orderBy:function(){return chainQ;},
-    onSnapshot:function(){return noop;}, get:function(){return Promise.resolve({empty:true,forEach:noop});} };
+  window.DEMO=true;
+  function av(hue,em){ var s="<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='hsl("+hue+",62%,52%)'/><stop offset='1' stop-color='hsl("+((hue+45)%360)+",62%,38%)'/></linearGradient></defs><rect width='600' height='600' fill='url(#g)'/><text x='300' y='400' font-size='260' text-anchor='middle'>"+em+"</text></svg>"; return "data:image/svg+xml,"+encodeURIComponent(s); }
+  var noop=function(){}, okp=function(){return Promise.resolve();};
+  var chainQ={ where:function(){return chainQ;}, orderBy:function(){return chainQ;}, limit:function(){return chainQ;}, onSnapshot:function(){return noop;}, get:function(){return Promise.resolve({empty:true,forEach:noop});} };
+  var chain={ set:okp,update:okp,delete:okp,add:okp, get:function(){return Promise.resolve({exists:false,data:function(){return{};},ref:{set:okp}});}, where:function(){return chainQ;}, doc:function(){return chain;}, orderBy:function(){return chainQ;} };
   db={ collection:function(){return chain;} };
-  var storageChild={ put:okp, getDownloadURL:function(){ return Promise.resolve(demoAv(140,"📷")); } };
-  storage={ ref:function(){ return { child:function(){ return storageChild; } }; } };
+  var stChild={ put:okp, getDownloadURL:function(){return Promise.resolve(av(140,"📷"));} };
+  storage={ ref:function(){ return { child:function(){ return stChild; } }; } };
   auth={ signOut:function(){ toast("(aperçu) Dekonekte"); }, onAuthStateChanged:noop };
-
   ME={uid:"demo"}; TOKEN="demo";
-  ENT={premiumUntil:null, superCredits:3};
-  PROFILE={pseudo:"Ou",bio:"Egzanp: m renmen sinema, bon manje ak moun onèt.",
-    photos:[demoAv(300,"😊")],status:"active",visible:true,incognito:false,
-    shareLocation:true,defaultEphemeral:true,prefs:{}};
-
-  /* Remplace les appels serveur par des réponses factices. */
+  PROFILE={pseudo:"Ou",bio:"Egzanp bio, m renmen sinema ak bon manje.",photos:[av(300,"😊")],status:"active",visible:true,shareLocation:true,defaultEphemeral:true,prefs:{}};
+  var POSTS=[
+    {id:"p1",authorUid:"d1",authorName:"Nadège",authorAvatar:av(330,"🌸"),imageUrl:av(330,"🌅"),caption:"Bèl jounen nan Petyonvil. #ayiti #lavi #bonè",hashtags:["ayiti"],likeCount:42,commentCount:5,createdAt:{toMillis:function(){return Date.now()-3600000;}}},
+    {id:"p2",authorUid:"d2",authorName:"Jonas",authorAvatar:av(210,"⚽"),imageUrl:av(210,"🏝️"),caption:"Wikenn nan plaj la. Kilès ki vle vini? #plaj #detant",hashtags:["plaj"],likeCount:18,commentCount:2,createdAt:{toMillis:function(){return Date.now()-7200000;}}},
+    {id:"p3",authorUid:"d3",authorName:"Mia",authorAvatar:av(280,"🎨"),imageUrl:"",caption:"Nouvo desen fini! Sa nou panse? #atis #kreyativite",hashtags:["atis"],likeCount:31,commentCount:8,createdAt:{toMillis:function(){return Date.now()-90000000;}}}
+  ];
+  var PROFILES=[
+    {uid:"d1",pseudo:"Nadège",age:26,zone:"Petyonvil",distanceKm:3,availableNow:true,bio:"Mizik, vwayaj ak bon konvèsasyon.",photos:[av(330,"🌸")]},
+    {uid:"d2",pseudo:"Jonas",age:31,zone:"Delmas",distanceKm:7,bio:"Antreprenè, foutbòl chak wikenn.",photos:[av(210,"⚽")]},
+    {uid:"d3",pseudo:"Mia",age:24,zone:"Pòtoprens",distanceKm:5,bio:"Etidyan, atist nan kè.",photos:[av(280,"🎨")]}
+  ];
   api=async function(fn,p){
-    if(fn==="social-feed") return {profiles:DEMO_PROFILES.slice()};
-    if(fn==="social-swipe") return {match: (p.dir!=="pass") && (p.targetUid==="d1"||Math.random()<0.4)};
+    if(fn==="social-feed") return {profiles:PROFILES.slice()};
+    if(fn==="social-swipe") return {match:(p.dir!=="pass")&&(p.targetUid==="d1"||Math.random()<0.4)};
+    if(fn==="social-post" && p.action==="save") return {saved:true};
     return {success:true};
   };
-
-  /* Liste des matchs (factice). */
-  listenMatches=function(){
-    var strip=$("match-strip"), list=$("conv-list");
-    strip.style.display="flex";
-    strip.innerHTML="";
-    [["d3","Mia",280,"🎨"],["d4","Ricardo",20,"🔥"]].forEach(function(x){
-      var m=document.createElement("div"); m.className="m";
-      m.innerHTML='<div class="av" style="background-image:url(\''+demoAv(x[2],x[3])+'\')"></div><div class="nm">'+x[1]+'</div>';
-      m.onclick=function(){ openChat("demo_"+x[0]); };
-      strip.appendChild(m);
-    });
+  loadFeed=function(){ myLikes={}; mySaves={}; renderPosts(POSTS); renderStories(); };
+  function renderStories(){ var r=$("stories-row"); r.innerHTML='<div class="story-btn"><div class="ring mine"><i class="fas fa-plus"></i></div><div class="nm">Ou</div></div>'; [["Nadège",330,"🌸"],["Jonas",210,"⚽"],["Mia",280,"🎨"]].forEach(function(s){ r.insertAdjacentHTML("beforeend",'<div class="story-btn"><div class="ring"><div class="av" style="background-image:url(\''+av(s[1],s[2])+'\')"></div></div><div class="nm">'+s[0]+'</div></div>'); }); }
+  loadDeck=function(){ deck=PROFILES.slice(); deckIdx=0; renderDeck(); };
+  listenMatches=function(){ var strip=$("match-strip"), list=$("conv-list"); strip.classList.remove("hidden"); strip.innerHTML='<div class="lbl" style="width:100%">Nouvo match</div>';
+    [["Mia",280,"🎨"]].forEach(function(x){ strip.insertAdjacentHTML("beforeend",'<div class="m"><div class="av" style="background-image:url(\''+av(x[1],x[2])+'\')"></div><div class="nm">'+x[0]+'</div></div>'); });
     list.innerHTML="";
-    [["d1","Nadège",330,"🌸","Kontan nou matche! Kijan w ye? 😊","2m",2],
-     ["d2","Jonas",210,"⚽","Ok pou yon kafe samdi?","1h",0]].forEach(function(c){
-      var el=document.createElement("div"); el.className="conv";
-      el.innerHTML='<div class="av" style="background-image:url(\''+demoAv(c[2],c[3])+'\')"></div>'+
-        '<div class="info"><div class="t"><span class="nm">'+c[1]+'</span><span class="tm">'+c[5]+'</span></div>'+
-        '<div class="last">'+c[4]+'</div></div>'+(c[6]?'<div class="unread">'+c[6]+'</div>':'');
-      el.onclick=function(){ openChat("demo_"+c[0]); };
-      list.appendChild(el);
-    });
-    var badge=$("nav-badge"); badge.textContent="2"; badge.classList.remove("hidden");
-  };
+    [["Nadège",330,"🌸","Kontan nou matche! 😊","2 min",2],["Jonas",210,"⚽","Ok pou samdi?","1 h",0]].forEach(function(c){
+      list.insertAdjacentHTML("beforeend",'<div class="conv"><div class="av" style="background-image:url(\''+av(c[1],c[2])+'\')"></div><div class="info"><div class="t"><span class="nm">'+c[0]+'</span><span class="tm">'+c[4]+'</span></div><div class="last">'+c[3]+'</div></div>'+(c[5]?'<div class="unread">'+c[5]+'</div>':'')+'</div>'); });
+    $("nav-badge").textContent="2"; $("nav-badge").classList.remove("hidden"); };
+  openComments=function(p){ $("cm-list").innerHTML=""; [["Nadège",330,"🌸","Twò bèl! 😍"],["Jonas",210,"⚽","Kote sa ye?"]].forEach(function(c){ $("cm-list").appendChild(buildComment({name:c[0],avatar:av(c[1],c[2]),text:c[3],createdAt:{toMillis:function(){return Date.now()-600000;}}})); }); $("commentsview").classList.remove("hidden"); };
+  openChat=function(){ $("chat-name").textContent="Nadège"; $("chat-av").style.backgroundImage="url('"+av(330,"🌸")+"')"; $("chat-eph").textContent="Mesaj efemè, efase apre 24h"; var b=$("chat-body"); b.innerHTML=""; [["you","Kontan nou matche! 😊"],["me","Mwen menm tou!"]].forEach(function(m){ var x=document.createElement("div"); x.className="bubble "+m[0]; x.textContent=m[1]; b.appendChild(x); }); $("chatview").classList.remove("hidden"); $("chat-send").onclick=function(){ var i=$("chat-text"); if(!i.value.trim())return; var x=document.createElement("div"); x.className="bubble me"; x.textContent=i.value.trim(); b.appendChild(x); i.value=""; b.scrollTop=b.scrollHeight; }; };
+  hydrateProfile=function(){ $("pf-av").style.backgroundImage="url('"+PROFILE.photos[0]+"')"; $("pf-pseudo").textContent="Ou"; $("pf-bioshow").textContent=PROFILE.bio; $("pf-bio").value=PROFILE.bio; renderPhotoGrid("pf-photos",PROFILE.photos,"profile"); $("pf-posts").textContent="3"; $("pf-followers").textContent="128"; $("pf-following").textContent="87"; $("pf-likes").textContent="91"; $("pf-matches").textContent="3"; $("sw-discoverable").classList.add("on"); var g=$("pf-grid"); g.innerHTML=""; POSTS.forEach(function(p){ var c=document.createElement("div"); c.className="cell"; if(p.imageUrl)c.style.backgroundImage="url('"+p.imageUrl+"')"; g.appendChild(c); }); };
+  openProfileByUid=function(uid){ var pr=null; PROFILES.forEach(function(x){if(x.uid===uid)pr=x;}); openProfileDetail(pr?{uid:pr.uid,pseudo:pr.pseudo,age:pr.age,zone:pr.zone,bio:pr.bio,photos:pr.photos,followersCount:128,followingCount:87}:{uid:uid,pseudo:"Moun",photos:[],followersCount:0,followingCount:0}, false); };
 
-  /* Conversation (factice). */
-  var DEMO_CHATS={
-    demo_d1:{nm:"Nadège",hue:330,em:"🌸",msgs:[["you","Kontan nou matche! Kijan w ye? 😊"],["you","M wè ou renmen mizik tou 🎶"]]},
-    demo_d2:{nm:"Jonas",hue:210,em:"⚽",msgs:[["me","Salye! Sa k pase?"],["you","Anfòm! Ou menm?"],["you","Ok pou yon kafe samdi?"]]},
-    demo_d3:{nm:"Mia",hue:280,em:"🎨",msgs:[["me","Bèl desen ou yo! 🎨"]]},
-    demo_d4:{nm:"Ricardo",hue:20,em:"🔥",msgs:[["you","M ap prepare w yon bon plat 🍲"]]}
-  };
-  openChat=function(pairId){
-    var c=DEMO_CHATS[pairId]||{nm:"Match",hue:300,em:"💗",msgs:[]};
-    curPair=pairId;
-    $("chat-name").textContent=c.nm;
-    $("chat-av").style.backgroundImage="url('"+demoAv(c.hue,c.em)+"')";
-    $("chat-eph").textContent="🔥 Mesaj efemè — efase apre 24h";
-    var body=$("chat-body"); body.innerHTML="";
-    if(!c.msgs.length){ body.innerHTML='<div class="empty" style="margin:auto"><i class="fas fa-hand-sparkles"></i>Di bonjou! 👋</div>'; }
-    c.msgs.forEach(function(mm){ var b=document.createElement("div"); b.className="bubble "+mm[0]; b.textContent=mm[1]; body.appendChild(b); });
-    $("chatview").classList.remove("hidden");
-    body.scrollTop=body.scrollHeight;
-    $("chat-send").onclick=demoSend;   /* remplace l'envoi réel */
-  };
-  function demoSend(){
-    var inp=$("chat-text"); var t=inp.value.trim(); if(!t)return; inp.value="";
-    var b=document.createElement("div"); b.className="bubble me"; b.textContent=t;
-    $("chat-body").appendChild(b); $("chat-body").scrollTop=$("chat-body").scrollHeight;
-  }
-  sendChat=demoSend;   /* pour la touche Entrée */
-
-  /* Point d'entrée du mode aperçu selon ?demo=... */
   var which=(q.match(/[?&#]demo=([a-z0-9]+)/i)||[])[1]||"app";
+  var TABS=["feed","discover","matches","profile"];
   if(which==="activate"){ show("v-activate"); }
   else if(which==="onboard"){ PROFILE.photos=[]; enterOnboard(); }
   else if(which==="gate"){ show("v-gate"); }
-  else { enterApp(); }
-
-  /* Bandeau discret pour rappeler qu'on est en aperçu. */
-  var tag=document.createElement("div");
-  tag.textContent="APERÇU (design)";
-  tag.style.cssText="position:fixed;top:8px;left:8px;z-index:200;background:#000;border:1px solid #2a2a3a;color:#ffd700;font-size:.6rem;font-weight:700;letter-spacing:1px;padding:4px 9px;border-radius:20px;pointer-events:none";
-  document.body.appendChild(tag);
+  else { enterApp(); if(TABS.indexOf(which)!==-1){ switchTab(which); } else if(which==="post"){ var nc=$("nav-create"); if(nc)nc.click(); } }
+  var tag=document.createElement("div"); tag.textContent="APERÇU"; tag.style.cssText="position:fixed;top:10px;right:10px;z-index:200;background:#000;border:1px solid #262633;color:#ffd700;font-size:.58rem;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:20px;pointer-events:none"; document.body.appendChild(tag);
 })();
 </script>
 </body>

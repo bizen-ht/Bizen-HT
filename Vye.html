@@ -894,6 +894,19 @@
                 <i class="fas fa-clock-rotate-left"></i> Istorik VIP
             </button>
 
+            <div class="sb-cat">Bizen Social</div>
+            <button class="sb-link" onclick="goPage('social',this)">
+                <i class="fas fa-shield-halved"></i> Modérasyon
+                <span class="sb-bdg bdg-r" id="bdgSocRep">0</span>
+            </button>
+            <button class="sb-link" onclick="goPage('socialposts',this)">
+                <i class="fas fa-images"></i> Piblikasyon
+            </button>
+            <button class="sb-link" onclick="goPage('socialprofiles',this)">
+                <i class="fas fa-id-badge"></i> Pwofil Social
+                <span class="sb-bdg bdg-b" id="bdgSocProf">0</span>
+            </button>
+
             <div class="sb-cat">Aktivite</div>
             <button class="sb-link" onclick="goPage('res',this)">
                 <i class="fas fa-calendar-check"></i> Rezevasyon
@@ -1018,6 +1031,35 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- BIZEN SOCIAL — MODERATION -->
+        <div class="pg" id="pg-social">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-shield-halved" style="color:#f44336"></i> Bizen Social — Modérasyon</h1>
+                <button class="srch" style="cursor:pointer" onclick="loadSocialMod()"><i class="fas fa-rotate"></i> Aktyalize</button>
+            </div>
+            <div id="socStats" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px"></div>
+            <h3 style="margin:6px 0 12px;font-size:1rem">Sinyalman ouvè</h3>
+            <div id="socReports"><div style="color:#8a8a9c;padding:20px">Chajman...</div></div>
+        </div>
+
+        <!-- BIZEN SOCIAL — POSTS -->
+        <div class="pg" id="pg-socialposts">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-images" style="color:#4aa3ff"></i> Piblikasyon Social</h1>
+                <button class="srch" style="cursor:pointer" onclick="loadSocialPosts()"><i class="fas fa-rotate"></i> Aktyalize</button>
+            </div>
+            <div id="socPosts"><div style="color:#8a8a9c;padding:20px">Chajman...</div></div>
+        </div>
+
+        <!-- BIZEN SOCIAL — PROFILES -->
+        <div class="pg" id="pg-socialprofiles">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-id-badge" style="color:#ffd700"></i> Pwofil Bizen Social</h1>
+                <input class="srch" placeholder="Chache pseudo..." oninput="srchSocProfiles(this.value)">
+            </div>
+            <div id="socProfiles"><div style="color:#8a8a9c;padding:20px">Chajman...</div></div>
         </div>
 
         <!-- USERS -->
@@ -4004,6 +4046,131 @@ function goPage(id, btn) {
     if (id === "vedette") loadVedetteAdmin();
     if (id === "anbasade") { loadAmbassadors(); loadAmbPayouts(); }
     if (id === "wallet") loadWallets();
+    if (id === "social") loadSocialMod();
+    if (id === "socialposts") loadSocialPosts();
+    if (id === "socialprofiles") loadSocialProfiles();
+}
+
+/* ====================================
+   BIZEN SOCIAL — MODERATION ADMIN
+   ==================================== */
+function socEsc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function socTimeAgo(ts){ if(!ts||!ts.toMillis)return""; var s=(Date.now()-ts.toMillis())/1000; if(s<60)return"kounye a"; if(s<3600)return Math.floor(s/60)+"m"; if(s<86400)return Math.floor(s/3600)+"h"; return Math.floor(s/86400)+"j"; }
+var socProfilesData=[];
+
+/* Appel sécurisé de la fonction de modération (vérifie l'admin côté serveur). */
+function socialAdminAction(action, params){
+    return new Promise(function(resolve,reject){
+        if(!auth||!auth.currentUser){ reject(new Error("Sesyon admin pa valab.")); return; }
+        auth.currentUser.getIdToken().then(function(idToken){
+            var body=Object.assign({idToken:idToken,action:action},params||{});
+            return fetch("/.netlify/functions/social-admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+        }).then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error||"Erè"); return j; }); })
+        .then(resolve).catch(reject);
+    });
+}
+
+/* ---- Vue d'ensemble + signalements ---- */
+function socStatCard(label,n,cap,color,ic){ var v=(n>=cap)?(cap+"+"):n; return '<div style="flex:1;min-width:110px;background:#15151f;border:1px solid #262633;border-radius:12px;padding:14px"><div style="color:'+color+';font-size:1.05rem"><i class="fas '+ic+'"></i></div><div style="font-size:1.5rem;font-weight:700;margin-top:4px">'+v+'</div><div style="color:#8a8a9c;font-size:.74rem">'+label+'</div></div>'; }
+async function loadSocialStats(){
+    var s=document.getElementById("socStats"); if(!s)return; var cap=500;
+    try{
+        var p=await db.collection("socialProfiles").limit(cap).get();
+        var po=await db.collection("socialPosts").limit(cap).get();
+        var m=await db.collection("socialMatches").limit(cap).get();
+        var ro=await db.collection("socialReports").where("status","==","open").limit(cap).get();
+        s.innerHTML=[socStatCard("Manm",p.size,cap,"#4aa3ff","fa-users"),
+            socStatCard("Piblikasyon",po.size,cap,"#9c27b0","fa-images"),
+            socStatCard("Match",m.size,cap,"#e91e63","fa-heart"),
+            socStatCard("Sinyalman ouvè",ro.size,cap,"#f44336","fa-flag")].join("");
+    }catch(e){ s.innerHTML=""; }
+}
+async function loadSocialMod(){
+    var box=document.getElementById("socReports"); if(!box)return;
+    loadSocialStats();
+    try{
+        var rs=await db.collection("socialReports").where("status","==","open").limit(200).get();
+        var reports=[]; rs.forEach(function(d){ var x=d.data(); x.id=d.id; reports.push(x); });
+        reports.sort(function(a,b){ var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0, bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0; return bm-am; });
+        var bdg=document.getElementById("bdgSocRep"); if(bdg)bdg.textContent=reports.length;
+        if(!reports.length){ box.innerHTML='<div style="color:#8a8a9c;padding:20px">Pa gen sinyalman ouvè.</div>'; return; }
+        box.innerHTML=""; reports.forEach(function(r){ box.appendChild(socReportCard(r)); });
+    }catch(e){ box.innerHTML='<div style="color:#f44336;padding:20px">Erè: '+socEsc(e.message)+'</div>'; }
+}
+function socReportCard(r){
+    var el=document.createElement("div");
+    el.style.cssText="background:#15151f;border:1px solid #262633;border-left:3px solid #f44336;border-radius:10px;padding:14px;margin-bottom:12px";
+    el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><b style="font-size:.9rem"><i class="fas fa-flag" style="color:#f44336"></i> Motif: '+socEsc(r.reason||"?")+'</b><span style="color:#8a8a9c;font-size:.7rem">'+socTimeAgo(r.createdAt)+'</span></div>'+
+        (r.details?'<div style="font-size:.82rem;color:#b4b4c2;margin-top:6px">'+socEsc(r.details)+'</div>':'')+
+        '<div style="font-size:.72rem;color:#8a8a9c;margin-top:8px">Vize: <span class="soc-tname">'+socEsc((r.target||"").slice(0,10))+'…</span> · Sinyale pa: '+socEsc((r.reporter||"").slice(0,8))+'…</div>'+
+        '<div style="display:flex;gap:8px;margin-top:12px">'+
+          '<button class="soc-ban" style="background:#f44336;color:#fff;border-radius:8px;padding:8px 14px;font-size:.82rem;font-weight:600"><i class="fas fa-ban"></i> Bani manm</button>'+
+          '<button class="soc-res" style="background:#1a1a26;border:1px solid #262633;color:#fff;border-radius:8px;padding:8px 14px;font-size:.82rem"><i class="fas fa-check"></i> Klase</button>'+
+        '</div>';
+    /* pseudo de la cible (lecture async) */
+    if(r.target){ db.collection("socialProfiles").doc(r.target).get().then(function(s){ if(s.exists){ var n=el.querySelector(".soc-tname"); if(n)n.textContent=(s.data().pseudo||r.target.slice(0,10)); } }).catch(function(){}); }
+    el.querySelector(".soc-ban").onclick=function(){ if(!confirm("Bani manm sa a? Li p ap ka poste ni matche."))return; socialAdminAction("banProfile",{uid:r.target}).then(function(){ socialAdminAction("resolveReport",{reportId:r.id}); toast("Manm bani.",true); el.remove(); }).catch(function(e){ toast(e.message,false); }); };
+    el.querySelector(".soc-res").onclick=function(){ socialAdminAction("resolveReport",{reportId:r.id}).then(function(){ toast("Sinyalman klase.",true); el.remove(); var b=document.getElementById("bdgSocRep"); if(b)b.textContent=Math.max(0,(parseInt(b.textContent,10)||1)-1); }).catch(function(e){ toast(e.message,false); }); };
+    return el;
+}
+
+/* ---- Toutes les publications ---- */
+async function loadSocialPosts(){
+    var box=document.getElementById("socPosts"); if(!box)return;
+    try{
+        var snap=await db.collection("socialPosts").orderBy("createdAt","desc").limit(60).get();
+        if(snap.empty){ box.innerHTML='<div style="color:#8a8a9c;padding:20px">Pa gen piblikasyon.</div>'; return; }
+        box.innerHTML=""; var grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px"; box.appendChild(grid);
+        snap.forEach(function(d){ var p=d.data(); p.id=d.id; grid.appendChild(socPostCard(p)); });
+    }catch(e){ box.innerHTML='<div style="color:#f44336;padding:20px">Erè: '+socEsc(e.message)+'</div>'; }
+}
+function socPostCard(p){
+    var el=document.createElement("div");
+    el.style.cssText="background:#15151f;border:1px solid #262633;border-radius:12px;overflow:hidden";
+    var media=p.imageUrl?'<div style="aspect-ratio:1/1;background:#0a0a0f center/cover url(\''+socEsc(p.imageUrl)+'\')"></div>':'<div style="aspect-ratio:1/1;background:#0a0a0f;display:flex;align-items:center;justify-content:center;padding:12px;font-size:.82rem;color:#b4b4c2;text-align:center">'+socEsc((p.caption||"").slice(0,90))+'</div>';
+    el.innerHTML=media+'<div style="padding:9px 10px"><div style="font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+socEsc(p.authorName||"Anonim")+'</div>'+
+        '<div style="font-size:.66rem;color:#8a8a9c;margin:2px 0 8px">'+socTimeAgo(p.createdAt)+' · '+(p.likeCount||0)+' like</div>'+
+        '<button class="soc-del" style="width:100%;background:#f44336;color:#fff;border-radius:8px;padding:7px;font-size:.78rem;font-weight:600"><i class="fas fa-trash"></i> Efase</button></div>';
+    el.querySelector(".soc-del").onclick=function(){ if(!confirm("Efase piblikasyon sa a nèt?"))return; socialAdminAction("deletePost",{postId:p.id}).then(function(){ toast("Piblikasyon efase.",true); el.remove(); }).catch(function(e){ toast(e.message,false); }); };
+    return el;
+}
+
+/* ---- Profils Social ---- */
+async function loadSocialProfiles(){
+    var box=document.getElementById("socProfiles"); if(!box)return;
+    try{
+        var snap=await db.collection("socialProfiles").limit(500).get();
+        socProfilesData=[]; snap.forEach(function(d){ var x=d.data(); x.id=d.id; socProfilesData.push(x); });
+        var bdg=document.getElementById("bdgSocProf"); if(bdg)bdg.textContent=socProfilesData.length;
+        renderSocProfiles(socProfilesData);
+    }catch(e){ box.innerHTML='<div style="color:#f44336;padding:20px">Erè: '+socEsc(e.message)+'</div>'; }
+}
+function renderSocProfiles(arr){
+    var box=document.getElementById("socProfiles"); if(!box)return;
+    if(!arr.length){ box.innerHTML='<div style="color:#8a8a9c;padding:20px">Pa gen pwofil.</div>'; return; }
+    box.innerHTML="";
+    arr.forEach(function(p){ box.appendChild(socProfileRow(p)); });
+}
+function socProfileRow(p){
+    var banned=p.status==="banned";
+    var av=(p.photos&&p.photos[0])||"";
+    var el=document.createElement("div");
+    el.style.cssText="display:flex;align-items:center;gap:12px;background:#15151f;border:1px solid #262633;border-radius:10px;padding:10px 12px;margin-bottom:8px";
+    el.innerHTML='<div style="width:44px;height:44px;border-radius:50%;flex:none;background:#0a0a0f center/cover'+(av?" url('"+socEsc(av)+"')":"")+'"></div>'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:.9rem">'+socEsc(p.pseudo||"Anonim")+(banned?' <span style="color:#f44336;font-size:.7rem">(bani)</span>':'')+'</div>'+
+        '<div style="font-size:.7rem;color:#8a8a9c">'+socEsc(p.zone||"")+' · '+(p.followersCount||0)+' abòne</div></div>'+
+        '<button class="soc-tog" style="background:'+(banned?'#4caf50':'#f44336')+';color:#fff;border-radius:8px;padding:8px 12px;font-size:.78rem;font-weight:600">'+(banned?'<i class="fas fa-unlock"></i> Reyaktive':'<i class="fas fa-ban"></i> Bani')+'</button>';
+    el.querySelector(".soc-tog").onclick=function(){
+        var act=banned?"unbanProfile":"banProfile";
+        if(!banned && !confirm("Bani "+(p.pseudo||"manm sa a")+"?"))return;
+        socialAdminAction(act,{uid:p.id}).then(function(){ p.status=banned?"active":"banned"; toast(banned?"Reyaktive.":"Bani.",true); var idx=socProfilesData.indexOf(p); if(idx!==-1)socProfilesData[idx]=p; el.replaceWith(socProfileRow(p)); }).catch(function(e){ toast(e.message,false); });
+    };
+    return el;
+}
+function srchSocProfiles(v){
+    v=(v||"").toLowerCase().trim();
+    if(!v){ renderSocProfiles(socProfilesData); return; }
+    renderSocProfiles(socProfilesData.filter(function(p){ return (p.pseudo||"").toLowerCase().indexOf(v)!==-1 || (p.zone||"").toLowerCase().indexOf(v)!==-1; }));
 }
 
 /* ====================================
@@ -5426,7 +5593,7 @@ var notifList = [];
 var notifSeenTs = 0;
 var notifInited = false;
 var unsubNotifUsers = null, unsubNotifPay = null,
-    unsubNotifRes = null, unsubNotifRev = null, unsubNotifNatcash = null;
+    unsubNotifRes = null, unsubNotifRev = null, unsubNotifNatcash = null, unsubNotifContact = null;
 
 function loadNotifState() {
     try {
@@ -5601,6 +5768,15 @@ function initAdminNotifs() {
         return { ico: "fa-mobile-alt", cl: "#e2001a",
             txt: "Nouvo peman Natcash (" + obj + "): " + ((d.amount || 0).toLocaleString()) + " Gdes",
             sub: (d.eluName ? d.eluName + " | " : "") + (d.email || d.submittedByEmail || "") + " | ID " + (d.transactionId || "") };
+    });
+
+    /* Tentatives de partage de contact détectées (auto) : Elu ou VIP. */
+    unsubNotifContact = listen("contactViolations", "cv", function (d) {
+        var role = d.role === "freelancer" ? "Elu" : (d.role === "krey" ? "Krey" : "VIP");
+        var lvl = d.level === "strong" ? "sanksyone otomatik" : "sispèk — revize";
+        return { ico: "fa-triangle-exclamation", cl: "#ff5722",
+            txt: "Tantativ pataje kontak (" + role + ") — " + lvl,
+            sub: (d.name || "") + ": " + String(d.text || "").slice(0, 60) };
     });
 }
 
@@ -6483,7 +6659,7 @@ function addEluAlert(uid) {
     var all = adminUsers.concat(adminFL).concat(adminKrey);
     var u = all.find(function (x) { return x.id === uid; }) || {};
     var nc = (u.alertCount || 0) + 1;
-    if (!confirm("Bay yon alèt bay Elu sa a? Total alèt ap vin " + nc + ".")) return;
+    if (!confirm("Bay yon alèt bay kont sa a? Total alèt ap vin " + nc + ".")) return;
     var upd = { alertCount: nc };
     var pub = null;
     var msg = "Alèt bay. Total: " + nc + ".";
@@ -6674,6 +6850,28 @@ function viewAccountDetail(uid) {
                 '<div style="font-size:0.92rem;margin-bottom:2px">Total alèt: <strong style="color:#ff9800">' + alertCount + '</strong></div>' +
                 suspHtml +
                 '<div style="font-size:0.72rem;color:#6a6a80;margin:8px 0 12px">Chak 3 alèt = sispansyon otomatik : 3 alèt→3 jou · 6→7 jou · 9→15 jou · 12→30 jou · plis→jele nèt. Kont lan retabli otomatik lè tan an fini.</div>' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+                    '<button onclick="addEluAlert(\'' + uid + '\')" style="flex:1;min-width:130px;padding:10px;background:rgba(244,67,54,0.15);color:#f44336;border:1px solid rgba(244,67,54,0.4);border-radius:8px;font-weight:700;cursor:pointer;font-size:0.82rem"><i class="fas fa-plus"></i> Bay yon alèt</button>' +
+                    '<button onclick="removeEluAlert(\'' + uid + '\')" style="padding:10px 14px;background:rgba(255,255,255,0.05);color:#b0b0c0;border:1px solid #2a2a3a;border-radius:8px;cursor:pointer;font-size:0.82rem"><i class="fas fa-minus"></i> Retire</button>' +
+                '</div>' +
+            '</div>';
+    }
+
+    /* === ALERTES / SANCTIONS (VIP) — pour VIP qui partagent des contacts externes === */
+    if (user.type === "user") {
+        var vAlert = user.alertCount || 0;
+        var vSusp = (user.suspendedUntil && user.suspendedUntil.toMillis) ? user.suspendedUntil.toMillis() : 0;
+        var vFrozen = (user.status === "frozen");
+        var vSuspHtml = (vSusp > Date.now())
+            ? '<div style="color:#f44336;font-size:0.8rem;margin-top:4px"><i class="fas fa-ban"></i> Jele jiska <strong>' + fmtDate(new Date(vSusp)) + '</strong></div>'
+            : (vFrozen ? '<div style="color:#f44336;font-size:0.8rem;margin-top:4px"><i class="fas fa-ban"></i> Kont jele</div>' : '');
+        content.innerHTML +=
+            '<div style="margin-top:18px;background:rgba(244,67,54,0.06);border:1px solid rgba(244,67,54,0.25);border-radius:12px;padding:16px">' +
+                '<div style="font-size:0.72rem;color:#ef5350;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px"><i class="fas fa-triangle-exclamation"></i> Alèt / Sanksyon VIP</div>' +
+                '<div style="font-size:0.72rem;color:#6a6a80;margin-bottom:8px">Sèvi ak sa pou VIP ki eseye pataje kontak deyò (nimewo, WhatsApp...) ak Elu yo.</div>' +
+                '<div style="font-size:0.92rem;margin-bottom:2px">Total alèt: <strong style="color:#ff9800">' + vAlert + '</strong></div>' +
+                vSuspHtml +
+                '<div style="font-size:0.72rem;color:#6a6a80;margin:8px 0 12px">Chak 3 alèt = jele otomatik : 3 alèt→3 jou · 6→7 jou · 9→15 jou · 12→30 jou · plis→jele nèt. Kont lan retabli otomatik lè tan an fini.</div>' +
                 '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
                     '<button onclick="addEluAlert(\'' + uid + '\')" style="flex:1;min-width:130px;padding:10px;background:rgba(244,67,54,0.15);color:#f44336;border:1px solid rgba(244,67,54,0.4);border-radius:8px;font-weight:700;cursor:pointer;font-size:0.82rem"><i class="fas fa-plus"></i> Bay yon alèt</button>' +
                     '<button onclick="removeEluAlert(\'' + uid + '\')" style="padding:10px 14px;background:rgba(255,255,255,0.05);color:#b0b0c0;border:1px solid #2a2a3a;border-radius:8px;cursor:pointer;font-size:0.82rem"><i class="fas fa-minus"></i> Retire</button>' +

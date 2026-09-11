@@ -80,13 +80,10 @@ exports.handler = async function (event) {
         var blkB = await dbf.collection("socialBlocks").where("target", "==", uid).limit(1000).get();
         blkB.forEach(function (d) { excluded[d.data().blocker] = true; });
 
-        /* --- Candidats : profils actifs & visibles, du bon genre pour MOI --- */
-        var q = dbf.collection("socialProfiles")
-            .where("status", "==", "active")
-            .where("visible", "==", true);
-        if (me.seeking && me.seeking !== "tous") q = q.where("gender", "==", me.seeking);
-        /* On lit large puis on filtre finement en mémoire (échelle MVP). */
-        var candSnap = await q.limit(300).get();
+        /* --- Candidats : on lit les profils actifs (une seule condition = pas besoin
+           d'index composite) puis on filtre finement en memoire. --- */
+        var candSnap = await dbf.collection("socialProfiles")
+            .where("status", "==", "active").limit(400).get();
 
         var now = Date.now();
         var out = [];
@@ -94,6 +91,12 @@ exports.handler = async function (event) {
             var c = d.data();
             var cid = d.id;
             if (excluded[cid]) return;
+
+            /* Doit avoir CHOISI d'apparaitre dans Decouvri (opt-in, retirable a tout moment). */
+            if (c.discoverable !== true) return;
+
+            /* Le bon genre pour MOI (ce que je cherche). */
+            if (me.seeking && me.seeking !== "tous" && c.gender !== me.seeking) return;
 
             /* Réciprocité des préférences de genre : lui/elle doit aussi me chercher. */
             if (!genderMatches(c.seeking, me.gender)) return;

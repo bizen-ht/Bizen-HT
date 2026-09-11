@@ -103,6 +103,15 @@
 [functions.social-moderation]
   external_node_modules = ["firebase-admin"]
 
+[functions.social-post]
+  external_node_modules = ["firebase-admin"]
+
+[functions.social-follow]
+  external_node_modules = ["firebase-admin"]
+
+[functions.social-admin]
+  external_node_modules = ["firebase-admin"]
+
 [functions.social-cleanup]
   external_node_modules = ["firebase-admin"]
   schedule = "@hourly"

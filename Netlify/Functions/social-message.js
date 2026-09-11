@@ -47,6 +47,8 @@ function filterContact(text) {
 }
 
 var FREE_MSGS_PER_DAY = 20;
+/* PHASE 1 = tout gratuit. Mettre false plus tard pour reactiver le freemium. */
+var PHASE_ALL_FREE = true;
 
 exports.handler = async function (event) {
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: CORS, body: "" };
@@ -98,7 +100,7 @@ exports.handler = async function (event) {
         var isPremium = ent.premiumUntil && ent.premiumUntil.toMillis && ent.premiumUntil.toMillis() > now;
 
         /* ---- LIMITE DE MESSAGES : vérif + réservation ATOMIQUE (gratuit) ---- */
-        if (!isPremium) {
+        if (!PHASE_ALL_FREE && !isPremium) {
             var dstr = haitiDate();
             var counterRef = dbf.collection("socialCounters").doc(uid + "_" + dstr);
             var limit;

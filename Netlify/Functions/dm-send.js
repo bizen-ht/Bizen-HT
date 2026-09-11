@@ -38,6 +38,13 @@ function haitiDate() {
     return new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
+/* Mots-nombres (kreyòl + français) — pour repérer un numéro ÉPELÉ en lettres. */
+var NUMWORDS = "(?:zewo|z[ée]ro|youn|un|de|deux|twa|trois|kat|quatre|senk|cinq|sis|six|s[eè]t|sept|uit|huit|n[eè]f|neuf|dis|dix|onz|onze|douz|douze|tr[eè]z|treize|kat[oò]z|quatorze|kenz|quinze|s[eè]z|seize|dis[eè]t|dizwit|dizn[eè]f|ven|vent|vingt|vingts|trant|trente|karant|quarante|senkant|cinquante|swasant|soixante|katreven|cent|cents|mil|mille)";
+/* 5 mots-nombres OU PLUS à la file = très probablement un numéro épelé. */
+var SPELLED_RUN = new RegExp("(?:\\b" + NUMWORDS + "\\b[\\s,.\\-]*){5,}", "i");
+/* Plateformes externes explicites (signal fort). */
+var PLATFORMS = /\b(whats?a?p{1,2}|wsp|watsap|telegram|signal|viber|imo|snapchat|snap|instagram|insta|tiktok|tik\s?tok|facebook|\bfb\b|messenger|kakao|wechat|gmail|hotmail|yahoo|outlook|icloud)\b/i;
+
 /* Masque les coordonnées externes pour garder la conversation sur Bizen */
 function filterContact(text) {
     var t = String(text == null ? "" : text);
@@ -46,10 +53,60 @@ function filterContact(text) {
     /* @usernames */
     t = t.replace(/(^|[\s.,!?])@\w{2,}/g, "$1•••");
     /* séquences de chiffres façon numéro de téléphone (5+ chiffres, séparateurs permis) */
-    t = t.replace(/(\+?\d[\d\s().\-]{4,}\d)/g, "•••");
+    t = t.replace(/(\+?\d[\d\s().\-#*\/_|:~+]{4,}\d)/g, "•••");
+    /* chiffres séparés un à un (obfuscation : 3-4-5-6, #1#5#4#2#2, 5*0*9...) */
+    t = t.replace(/(?:\d\s*[#*\/_|:~]\s*){2,}\d/g, "•••");
+    t = t.replace(/(?:\d[ .\-]){4,}\d/g, "•••");
+    /* numéro ÉPELÉ EN LETTRES (5+ mots-nombres à la file) */
+    t = t.replace(SPELLED_RUN, "•••");
     /* mots-clés de plateformes externes */
     t = t.replace(/\b(whats?ap?p?|wsp|watsap|telegram|signal|viber|imo|snapchat|snap|instagram|insta|\big\b|tiktok|facebook|\bfb\b|messenger|gmail|hotmail|yahoo|outlook|e?-?mail|imel|nimewo|numero|num[ée]ro)\b/gi, "•••");
     return t;
+}
+
+/* Détecte une tentative de partage de contact dans le TEXTE BRUT.
+   "strong" => sanction auto (fiable) ; "suspect" => signalé pour revue admin. */
+function detectContactLevel(raw) {
+    var t = String(raw || "");
+    if (PLATFORMS.test(t)) return "strong";
+    if (/[\w.+-]+@[\w-]+\.[\w.-]+/.test(t)) return "strong";
+    /* Suite de chiffres (séparateurs permis : espace . - # * / _ | : ~ +) : 7+ chiffres = numéro. */
+    var mr = t.match(/\+?\d[\d\s().\-#*\/_|:~+]{5,}\d/);
+    if (mr && mr[0].replace(/\D/g, "").length >= 7) return "strong";
+    /* Chiffres séparés un à un par un séparateur DUR (# * / _ | : ~) — ex: #1#5#4#2#2. */
+    if (/(?:\d\s*[#*\/_|:~]\s*){4,}\d/.test(t)) return "strong";
+    /* Chiffres séparés un à un par un séparateur DOUX (espace . -) — ex: 3-4-5-6-2-1-5.
+       6+ chiffres => fort (numéro) ; exactement 5 => suspect (revue). */
+    var ms = t.match(/(?:\d[ .\-]){4,}\d/);
+    if (ms) return (ms[0].replace(/\D/g, "").length >= 6) ? "strong" : "suspect";
+    if (SPELLED_RUN.test(t)) return "suspect";   /* numéro épelé en lettres */
+    return "";
+}
+
+/* Alerte AUTOMATIQUE (même barème que les alertes manuelles admin) :
+   incrémente alertCount ; à chaque multiple de 3 => gel auto (3/7/15/30 j). */
+async function autoContactAlert(dbf, uid) {
+    var ALERT_DAYS = { 1: 3, 2: 7, 3: 15, 4: 30 };
+    var userRef = dbf.collection("users").doc(uid);
+    var res = await dbf.runTransaction(async function (t) {
+        var s = await t.get(userRef);
+        if (!s.exists) return null;
+        var nc = (s.data().alertCount || 0) + 1;
+        var upd = { alertCount: nc, lastAutoAlertReason: "kontak deyò", lastAutoAlertAt: admin.firestore.FieldValue.serverTimestamp() };
+        var froze = false, days = 0;
+        if (nc % 3 === 0) {
+            var lvl = nc / 3;
+            days = ALERT_DAYS[lvl] || 0;
+            upd.status = "frozen"; upd.suspendLevel = lvl;
+            if (days > 0) { upd.suspendReason = "auto_contact"; upd.suspendedUntil = admin.firestore.Timestamp.fromMillis(Date.now() + days * 86400000); }
+            else { upd.suspendReason = "auto_contact_permanent"; upd.suspendedUntil = admin.firestore.FieldValue.delete(); }
+            froze = true;
+        }
+        t.set(userRef, upd, { merge: true });
+        return { nc: nc, froze: froze, days: days };
+    });
+    if (res && res.froze) { try { await dbf.collection("publicProfiles").doc(uid).set({ status: "frozen" }, { merge: true }); } catch (e) {} }
+    return res;
 }
 
 exports.handler = async function (event) {
@@ -240,6 +297,25 @@ exports.handler = async function (event) {
             threadUpdate.userIsPremium = isPremium;        /* re-confirme le statut premium */
         }
         await threadRef.set(threadUpdate, { merge: true });
+
+        /* ---- DÉTECTION AUTO DU PARTAGE DE CONTACT (Elu ET VIP) ----
+           strong => alerte/sanction auto ; suspect (numéro épelé) => signalé
+           pour la revue admin (pas de sanction auto). Toujours journalisé. */
+        try {
+            var contactLevel = detectContactLevel(rawText);
+            if (contactLevel) {
+                await dbf.collection("contactViolations").add({
+                    uid: senderUid, name: senderName, role: (sender.type || "user"),
+                    threadId: threadId, receiverId: receiverUid,
+                    text: rawText.slice(0, 300), level: contactLevel,
+                    autoAlerted: (contactLevel === "strong"), reviewed: false,
+                    createdAt: nowTs
+                });
+                if (contactLevel === "strong") {
+                    try { await autoContactAlert(dbf, senderUid); } catch (e) { console.warn("[DM-SEND] autoAlert:", e.message); }
+                }
+            }
+        } catch (e) { console.warn("[DM-SEND] contact flag:", e.message); }
 
         /* (Le compteur a déjà été vérifié + réservé de façon atomique plus haut.) */
 

@@ -6787,11 +6787,39 @@ function showNotifUnblockHelp() {
     var wrap = document.createElement("div"); wrap.innerHTML = h; document.body.appendChild(wrap.firstChild);
 }
 
+/* Écran de blocage plein écran pour un compte gelé (sanction). Non fermable :
+   le seul bouton déconnecte. Empêche toute utilisation du site. */
+function showFrozenBlock(data) {
+    try { if (document.getElementById("frozenBlock")) return; } catch (e) {}
+    var suspTs = (data && data.suspendedUntil && data.suspendedUntil.toMillis) ? data.suspendedUntil.toMillis() : 0;
+    var until = "";
+    if (suspTs > Date.now()) {
+        var dd = new Date(suspTs);
+        until = '<p style="color:#ffcc00;font-size:0.9rem;margin-top:12px">Kont ou ap retabli otomatikman: <strong>' + dd.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) + '</strong></p>';
+    }
+    var ov = document.createElement("div");
+    ov.id = "frozenBlock";
+    ov.style.cssText = "position:fixed;inset:0;z-index:2147483647;background:rgba(10,10,16,0.97);display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Montserrat',sans-serif";
+    ov.innerHTML = '<div style="max-width:440px;text-align:center;background:#15151f;border:1px solid rgba(244,67,54,0.4);border-radius:18px;padding:34px 26px">'
+        + '<div style="width:70px;height:70px;border-radius:50%;background:rgba(244,67,54,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 18px"><i class="fas fa-ban" style="color:#f44336;font-size:2rem"></i></div>'
+        + '<h2 style="color:#fff;font-size:1.4rem;margin-bottom:10px">Kont ou jele</h2>'
+        + '<p style="color:#b0b0c0;font-size:0.92rem;line-height:1.6">Kont ou sispann paske ou pa respekte règ Bizen yo (pa egzanp, pataje kontak deyò ak Elu yo). Tout kominikasyon ak rezèvasyon dwe rete sou Bizen.</p>'
+        + until
+        + '<p style="color:#6a6a80;font-size:0.8rem;margin-top:14px">Si w panse se yon erè, kontakte sipò a.</p>'
+        + '<button onclick="try{auth.signOut()}catch(e){};location.href=\'/\'" style="margin-top:20px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:50px;padding:12px 28px;font-weight:700;cursor:pointer;font-family:inherit">Dekonekte</button>'
+        + '</div>';
+    document.body.appendChild(ov);
+    /* Ferme les modales éventuellement ouvertes derrière. */
+    try { document.querySelectorAll(".mbg.show").forEach(function (m) { m.classList.remove("show"); }); } catch (e) {}
+}
+
 function chkPrem(uid) {
     if (!db) return;
     db.collection("users").doc(uid).get()
         .then(function (d) {
             if (d.exists) {
+                /* COMPTE GELÉ (sanction) : on bloque l'accès et on déconnecte. */
+                if (d.data().status === "frozen") { window._authReady = true; showFrozenBlock(d.data()); return; }
                 currentUserType = d.data().type || "user";
                 isPremiumViewer = (d.data().isPremium === true);
                 viewerWalletBalance = parseFloat(d.data().walletBalance) || 0;

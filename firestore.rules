@@ -20,6 +20,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    /* Le compte de l'appelant n'est PAS gelé (sanction). Un compte gelé ne peut
+       plus créer de réservation. (Le doc peut ne pas exister au tout 1er instant.) */
+    function notFrozen() {
+      return isSignedIn()
+        && (!exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status != "frozen");
+    }
+
     /* -------- PROFIL PRIVÉ (users) : le propriétaire uniquement --------
        Contient e-mail, téléphone, date de naissance => JAMAIS public. */
     match /users/{userId} {
@@ -50,7 +58,7 @@ service cloud.firestore {
       allow read:   if isAdmin()
         || (isSignedIn() && (resource.data.userId == request.auth.uid
                           || resource.data.prestateId == request.auth.uid));
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && notFrozen();
       allow update: if isAdmin()
         || (isSignedIn() && (resource.data.userId == request.auth.uid
                           || resource.data.prestateId == request.auth.uid));
@@ -306,7 +314,7 @@ service cloud.firestore {
       allow update: if isAdmin()
         || (isSignedIn() && request.auth.uid == uid
             && !request.resource.data.diff(resource.data).affectedKeys()
-                 .hasAny(['status', 'boostUntil', 'activatedAt', 'uid']));
+                 .hasAny(['status', 'boostUntil', 'activatedAt', 'uid', 'followersCount', 'followingCount']));
       allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == uid);
     }
 
@@ -360,6 +368,40 @@ service cloud.firestore {
 
     /* Signalements : créés via la fonction (Admin SDK). Lecture admin only. */
     match /socialReports/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    /* -------- FIL D'ACTUALITE (socialPosts) --------
+       Posts type Instagram. Lecture par tout membre connecté. Ecriture
+       (create/like/comment/delete) via la fonction social-post (Admin SDK). */
+    match /socialPosts/{postId} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+    match /socialPostLikes/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+    match /socialPostComments/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+    /* Sauvegardes : je lis seulement les miennes (uid == moi). Ecriture serveur. */
+    match /socialSaves/{id} {
+      allow read:  if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+    /* Abonnements (follow) : lisibles par les membres connectés (compter/afficher).
+       Ecriture via la fonction social-follow (Admin SDK) pour compteurs fiables. */
+    match /socialFollows/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    /* -------- VYOLASYON KONTAK (contactViolations) --------
+       Journal des tentatives de partage de contact détectées côté serveur
+       (dm-send, Admin SDK). Admin seul peut lire/gérer. */
+    match /contactViolations/{vId} {
       allow read, write: if isAdmin();
     }
 

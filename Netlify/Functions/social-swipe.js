@@ -38,6 +38,9 @@ function haitiDate() {
 }
 
 var FREE_SWIPES_PER_DAY = 30;
+/* PHASE 1 = tout gratuit (attirer les utilisateurs). Mettre false plus tard
+   pour reactiver le modele freemium (limites + Premium). */
+var PHASE_ALL_FREE = true;
 
 exports.handler = async function (event) {
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: CORS, body: "" };
@@ -72,15 +75,14 @@ exports.handler = async function (event) {
         var ent = entSnap.exists ? entSnap.data() : {};
         var isPremium = ent.premiumUntil && ent.premiumUntil.toMillis && ent.premiumUntil.toMillis() > Date.now();
 
-        /* Super Like : nécessite un crédit (sauf premium qui en a un quota — ici on
-           consomme aussi un crédit ; les packs rechargent superCredits). */
-        if (dir === "super") {
+        /* Super Like : nécessite un crédit (sauf premium). Desactive en Phase 1. */
+        if (!PHASE_ALL_FREE && dir === "super") {
             var credits = ent.superCredits || 0;
             if (credits < 1) return err(429, "Ou pa gen Super Like disponib. Achte yon pak.", { reason: "super" });
         }
 
         /* ---- LIMITE DE SWIPES : vérif + réservation ATOMIQUE (gratuit) ---- */
-        if (!isPremium && dir !== "pass") {   /* les "pass" ne comptent pas dans la limite */
+        if (!PHASE_ALL_FREE && !isPremium && dir !== "pass") {   /* les "pass" ne comptent pas dans la limite */
             var dstr = haitiDate();
             var counterRef = dbf.collection("socialCounters").doc(uid + "_" + dstr);
             var limit;
@@ -108,8 +110,8 @@ exports.handler = async function (event) {
         var swipeRef = dbf.collection("socialSwipes").doc(uid + "_" + targetUid);
         await swipeRef.set({ from: uid, to: targetUid, dir: dir, createdAt: nowTs }, { merge: true });
 
-        /* Consomme le crédit Super Like APRÈS écriture réussie. */
-        if (dir === "super") {
+        /* Consomme le crédit Super Like APRÈS écriture réussie (sauf Phase 1 gratuite). */
+        if (!PHASE_ALL_FREE && dir === "super") {
             try { await entSnap.ref.set({ superCredits: FieldValue.increment(-1) }, { merge: true }); } catch (e) {}
         }
 
