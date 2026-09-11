@@ -7098,12 +7098,14 @@ async function unlockUI() {
 
 // Filigrane: identité de l'utilisateur connecté, en transparence sur chaque média.
 // Dissuade le partage : toute capture révèle QUI a fuité le contenu.
-function mediaWatermark() {
+function mediaWatermark(opacity) {
+    var op = (typeof opacity === "number") ? opacity : 0.20;
     var id = (auth && auth.currentUser) ? (auth.currentUser.email || "Bizen HT") : "Bizen HT";
     var safe = String(id).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; });
     /* Filigrane RÉPÉTÉ (mosaïque diagonale) : l'imel apparaît des dizaines de
-       fois sur tout le média. Impossible de le recadrer/retoucher pour l'enlever. */
-    var cell = '<span style="color:rgba(255,255,255,0.20);font-size:0.62rem;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.55);white-space:nowrap;margin:13px 20px">' + safe + '</span>';
+       fois sur tout le média. Impossible de le recadrer/retoucher pour l'enlever.
+       `opacity` plus faible = filigrane plus pâle (ex: stories). */
+    var cell = '<span style="color:rgba(255,255,255,' + op + ');font-size:0.62rem;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.4);white-space:nowrap;margin:13px 20px">' + safe + '</span>';
     var many = "";
     for (var i = 0; i < 48; i++) many += cell;
     return '<div style="position:absolute;inset:-45%;pointer-events:none;z-index:5;overflow:hidden;transform:rotate(-30deg);display:flex;flex-wrap:wrap;align-content:center;justify-content:center">' + many + '</div>';
@@ -7342,27 +7344,32 @@ function renderStoryAt(i) {
     var body = document.getElementById("storyBody");
     if (!body) return;
     recordStoryView(s._id);
-    var media = (s.type === "photo" && s.photoUrl)
+    var isPhoto = (s.type === "photo" && s.photoUrl);
+    var media = isPhoto
         ? '<img src="' + s.photoUrl + '" style="width:100%;max-height:60vh;object-fit:cover;display:block">'
         : '<div style="min-height:230px;display:flex;align-items:center;justify-content:center;padding:40px 24px;background:linear-gradient(135deg,#e91e63,#9c27b0)"><p style="color:#fff;font-size:1.35rem;text-align:center;line-height:1.5;font-weight:600">' + escapeResHotel(s.text || "") + '</p></div>';
+    /* Filigrane imel du VIP sur les PHOTOS de story — plus PÂLE que sur les fotos galri. */
+    var storyWm = isPhoto ? mediaWatermark(0.10) : "";
     var caption = (s.type === "photo" && s.text) ? '<p style="padding:12px 16px;color:#e0e0e0;font-size:0.9rem">' + escapeResHotel(s.text) + '</p>' : '';
     var dots = "";
     for (var k = 0; k < v.list.length; k++) { dots += '<span style="flex:1;height:3px;border-radius:2px;background:' + (k <= i ? '#fff' : 'rgba(255,255,255,0.3)') + '"></span>'; }
     var liked = (s.likedBy || []).indexOf(auth.currentUser.uid) !== -1;
     body.innerHTML =
         '<div style="display:flex;gap:6px;padding:10px 12px 0">' + dots + '</div>' +
-        '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px">' +
+        '<div onclick="closeStoryViewer();openEluProfile(\'' + v.eluUid + '\')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer">' +
             '<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;background:#333;flex-shrink:0">' + (s.eluPhotoUrl ? '<img src="' + s.eluPhotoUrl + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</div>' +
-            '<strong style="color:#fff;font-size:0.9rem">' + escapeResHotel(s.eluPseudo || "Elu") + '</strong></div>' +
-        '<div style="position:relative">' + media +
-            '<div onclick="storyPrev()" style="position:absolute;left:0;top:0;bottom:0;width:35%;cursor:pointer"></div>' +
-            '<div onclick="storyNext()" style="position:absolute;right:0;top:0;bottom:0;width:35%;cursor:pointer"></div>' +
+            '<strong style="color:#fff;font-size:0.9rem">' + escapeResHotel(s.eluPseudo || "Elu") + '</strong>' +
+            '<i class="fas fa-chevron-right" style="margin-left:auto;color:#b0b0c0;font-size:0.8rem"></i></div>' +
+        '<div style="position:relative;overflow:hidden">' + media + storyWm +
+            '<div onclick="storyPrev()" style="position:absolute;left:0;top:0;bottom:0;width:35%;cursor:pointer;z-index:6"></div>' +
+            '<div onclick="storyNext()" style="position:absolute;right:0;top:0;bottom:0;width:35%;cursor:pointer;z-index:6"></div>' +
         '</div>' + caption +
-        '<div style="display:flex;align-items:center;gap:16px;padding:12px 16px 16px">' +
+        '<div style="display:flex;align-items:center;gap:16px;padding:12px 16px 8px">' +
             '<button onclick="likeStory(\'' + s._id + '\')" style="background:none;border:none;color:' + (liked ? '#e91e63' : '#b0b0c0') + ';font-size:1.2rem;cursor:pointer"><i class="fas fa-heart"></i> <span style="font-size:0.85rem">' + (s.likeCount || 0) + '</span></button>' +
             '<button onclick="commentStory(\'' + s._id + '\')" style="background:none;border:none;color:#b0b0c0;font-size:1.2rem;cursor:pointer"><i class="fas fa-comment"></i> <span style="font-size:0.85rem">' + (s.commentCount || 0) + '</span></button>' +
             '<span style="margin-left:auto;color:#6a6a80;font-size:0.82rem"><i class="fas fa-eye"></i> ' + (s.viewCount || 0) + '</span>' +
         '</div>' +
+        '<div style="padding:0 16px 16px"><button onclick="closeStoryViewer();openEluProfile(\'' + v.eluUid + '\')" style="width:100%;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:12px;padding:11px;font-weight:700;cursor:pointer;font-size:0.88rem"><i class="fas fa-user"></i> Wè pwofil / Rezève</button></div>' +
         '<div id="stCommentBox" style="display:none;padding:0 16px 16px"></div>';
 }
 
