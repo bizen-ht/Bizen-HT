@@ -1693,6 +1693,78 @@ body.no-screenshot * {
 </head>
 <body>
 
+<!-- ========= VERROU PIN (discrétion, par appareil) — config depuis le Dashboard ========= -->
+<script>
+(function () {
+    var PIN_KEY = "bizenPinHash";
+    var _entry = "", _len = 4, _hiddenAt = 0, _locked = false;
+    function sha(str) {
+        try {
+            var buf = new TextEncoder().encode("bizen:" + str);
+            return crypto.subtle.digest("SHA-256", buf).then(function (h) {
+                return Array.prototype.map.call(new Uint8Array(h), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+            });
+        } catch (e) { return Promise.resolve("x" + str); }
+    }
+    function getHash() { try { return localStorage.getItem(PIN_KEY) || ""; } catch (e) { return ""; } }
+    function dotsHtml() { var h = ""; for (var i = 0; i < _len; i++) { h += '<span style="width:16px;height:16px;border-radius:50%;border:2px solid #e91e63;background:' + (i < _entry.length ? '#e91e63' : 'transparent') + '"></span>'; } return h; }
+    function refreshDots() { var d = document.getElementById("pinDots"); if (d) d.innerHTML = dotsHtml(); }
+    window.pinPush = function (n) {
+        var err = document.getElementById("pinErr"); if (err) err.textContent = "";
+        if (_entry.length >= _len) return;
+        _entry += String(n); refreshDots();
+        if (_entry.length === _len) setTimeout(verify, 120);
+    };
+    window.pinDel = function () { _entry = _entry.slice(0, -1); refreshDots(); };
+    function verify() {
+        sha(_entry).then(function (h) {
+            if (h === getHash()) { _entry = ""; hideLock(); }
+            else {
+                _entry = ""; refreshDots();
+                var err = document.getElementById("pinErr"); if (err) err.textContent = "PIN pa kòrèk. Eseye ankò.";
+                var box = document.getElementById("pinLockBox"); if (box) { box.style.animation = "none"; void box.offsetWidth; box.style.animation = "pinShake .4s"; }
+            }
+        });
+    }
+    window.pinForgot = function () {
+        if (!confirm("Dekonekte epi retire PIN sou aparèy sa a?")) return;
+        try { localStorage.removeItem(PIN_KEY); } catch (e) {}
+        try { if (typeof auth !== "undefined" && auth) auth.signOut(); } catch (e) {}
+        location.href = "/";
+    };
+    function keyBtn(n) { return '<button onclick="pinPush(' + n + ')" style="background:rgba(255,255,255,0.08);border:none;border-radius:14px;height:58px;color:#fff;font-size:1.4rem;font-weight:600;cursor:pointer">' + n + '</button>'; }
+    function lockMarkup() {
+        return '<div id="pinLock" style="position:fixed;inset:0;z-index:2147483600;background:#0b0b14;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Montserrat,sans-serif">'
+            + '<div id="pinLockBox" style="text-align:center;max-width:300px;width:100%">'
+            + '<div style="width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><i class="fas fa-lock" style="color:#fff;font-size:1.4rem"></i></div>'
+            + '<div style="color:#fff;font-weight:700;font-size:1.12rem">Antre PIN ou</div>'
+            + '<div style="color:#8a8a9e;font-size:0.8rem;margin-top:4px">Bizen HT vwerouye pou plis diskresyon</div>'
+            + '<div id="pinDots" style="display:flex;gap:14px;justify-content:center;margin:22px 0">' + dotsHtml() + '</div>'
+            + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:250px;margin:0 auto">'
+            + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(keyBtn).join('')
+            + '<span></span>' + keyBtn(0)
+            + '<button onclick="pinDel()" style="background:rgba(255,255,255,0.06);border:none;border-radius:14px;height:58px;color:#fff;font-size:1.2rem;cursor:pointer"><i class="fas fa-delete-left"></i></button>'
+            + '</div>'
+            + '<div id="pinErr" style="color:#ff6b6b;font-size:0.82rem;height:18px;margin-top:14px"></div>'
+            + '<button onclick="pinForgot()" style="margin-top:6px;background:none;border:none;color:#8a8a9e;font-size:0.82rem;text-decoration:underline;cursor:pointer;font-family:inherit">Bliye PIN? Dekonekte</button>'
+            + '</div></div>';
+    }
+    function showLock() {
+        if (document.getElementById("pinLock") || !getHash()) return;
+        _entry = "";
+        if (!document.getElementById("pinShakeStyle")) { var st = document.createElement("style"); st.id = "pinShakeStyle"; st.textContent = "@keyframes pinShake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px)}40%,60%{transform:translateX(8px)}}"; document.head.appendChild(st); }
+        var w = document.createElement("div"); w.innerHTML = lockMarkup(); document.body.appendChild(w.firstChild); _locked = true;
+    }
+    function hideLock() { var el = document.getElementById("pinLock"); if (el) el.remove(); _locked = false; }
+    document.addEventListener("visibilitychange", function () {
+        if (document.hidden) { _hiddenAt = Date.now(); }
+        else if (getHash() && !_locked && _hiddenAt && (Date.now() - _hiddenAt > 60000)) { showLock(); }
+    });
+    function init() { showLock(); }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
+})();
+</script>
+
 <!-- PRELOADER -->
 <div id="preloader" style="display:none;"> <div><span class="pre-heart"><i class="fas fa-heart"></i></span><p class="pre-title">Bizen HT</p><p class="pre-sub">Chaje eksperyans ou...</p></div></div>
 
