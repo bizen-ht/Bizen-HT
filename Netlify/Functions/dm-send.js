@@ -300,20 +300,29 @@ exports.handler = async function (event) {
 
         /* ---- DÉTECTION AUTO DU PARTAGE DE CONTACT (Elu ET VIP) ----
            strong => alerte/sanction auto ; suspect (numéro épelé) => signalé
-           pour la revue admin (pas de sanction auto). Toujours journalisé. */
+           pour la revue admin (pas de sanction auto). Toujours journalisé.
+           On renvoie le résultat au client pour l'avertir près du champ texte. */
+        var contactResult = null;
         try {
             var contactLevel = detectContactLevel(rawText);
             if (contactLevel) {
+                /* Nom du destinataire (l'Elu, ou le VIP si c'est l'Elu qui écrit) :
+                   aide l'admin à retrouver la conversation. */
+                var receiverName = isEluReply
+                    ? ((thread && thread.userName) || "VIP")
+                    : ((thread && thread.eluName) || threadUpdate.eluName || "Elu");
+                var alerted = (contactLevel === "strong");
                 await dbf.collection("contactViolations").add({
                     uid: senderUid, name: senderName, role: (sender.type || "user"),
-                    threadId: threadId, receiverId: receiverUid,
+                    threadId: threadId, receiverId: receiverUid, receiverName: receiverName,
                     text: rawText.slice(0, 300), level: contactLevel,
-                    autoAlerted: (contactLevel === "strong"), reviewed: false,
+                    autoAlerted: alerted, reviewed: false,
                     createdAt: nowTs
                 });
-                if (contactLevel === "strong") {
+                if (alerted) {
                     try { await autoContactAlert(dbf, senderUid); } catch (e) { console.warn("[DM-SEND] autoAlert:", e.message); }
                 }
+                contactResult = { level: contactLevel, alerted: alerted };
             }
         } catch (e) { console.warn("[DM-SEND] contact flag:", e.message); }
 
@@ -387,7 +396,7 @@ exports.handler = async function (event) {
             }
         } catch (e) { /* ignore */ }
 
-        return ok({ success: true, threadId: threadId, remaining: remaining });
+        return ok({ success: true, threadId: threadId, remaining: remaining, contact: contactResult });
     } catch (e) {
         console.error("[DM-SEND]", e.message);
         return err(500, e.message || "Erè sèvè.");

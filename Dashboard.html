@@ -658,6 +658,15 @@
     <!-- MAIN CONTENT -->
     <main class="dash-main">
 
+        <!-- Bannière d'alerte : le compte a reçu des alertes (ex: partage de contact) -->
+        <div id="alertBanner" style="display:none;background:linear-gradient(135deg,rgba(244,67,54,0.15),rgba(233,30,99,0.10));border:1px solid rgba(244,67,54,0.5);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;gap:14px;align-items:center;flex-wrap:wrap">
+            <div style="width:44px;height:44px;border-radius:50%;background:rgba(244,67,54,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-triangle-exclamation" style="color:#ff6b6b;font-size:1.2rem"></i></div>
+            <div style="flex:1;min-width:200px">
+                <div style="font-weight:700;color:#ff6b6b;font-size:0.98rem" id="alertBannerTitle">Ou gen yon alèt</div>
+                <p style="font-size:0.84rem;color:var(--text-secondary);line-height:1.5;margin-top:3px">Ou pa respekte règ Bizen yo (pa egzanp pataje kontak deyò ak Elu yo). Si w kontinye, kont ou ka jele otomatikman. Tout kominikasyon dwe rete sou Bizen.</p>
+            </div>
+        </div>
+
         <!-- USER OVERVIEW -->
         <div class="dash-section active" id="sec-overview">
             <div class="dash-top">
@@ -2156,6 +2165,7 @@ function setupUser() {
 
     /* Rappel "mete ki kote w ye" si la zone n'est pas encore connue */
     try { renderUserZoneCard(); } catch (e) {}
+    try { renderAlertBanner(); } catch (e) {}
 
     /* Sidebar info */
     var fullName = ((userData.prenom || "") + " " + (userData.nom || "")).trim();
@@ -2406,6 +2416,7 @@ function setupFreelancer() {
     if (moncashElLoad) moncashElLoad.value = userData.moncashNumber || "";
     /* Rappel "ajoute pri domi" pour les Elu actifs qui n'en ont pas encore. */
     try { renderDomiPrompt(); } catch (e) {}
+    try { renderAlertBanner(); } catch (e) {}
 
     /* Settings */
     var setNameEl = document.getElementById("setName");
@@ -2458,6 +2469,20 @@ function renderDomiPrompt() {
     if (tEl) {
         var hasThree = (parseFloat(userData.prixThreesome) || 0) > 0;
         tEl.style.display = (isActive && !hasThree) ? "flex" : "none";
+    }
+}
+
+/* Bannière "ou gen yon alèt" en haut du dashboard (VIP ou Elu). */
+function renderAlertBanner() {
+    var el = document.getElementById("alertBanner");
+    if (!el || !userData) return;
+    var n = userData.alertCount || 0;
+    if (n > 0) {
+        var t = document.getElementById("alertBannerTitle");
+        if (t) t.textContent = (n === 1) ? "Ou gen 1 alèt" : ("Ou gen " + n + " alèt");
+        el.style.display = "flex";
+    } else {
+        el.style.display = "none";
     }
 }
 
@@ -4040,6 +4065,18 @@ function renderEluDm(msgs) {
     body.scrollTop = body.scrollHeight;
 }
 
+/* Avertit près du champ texte quand un partage de contact est détecté. */
+function showEluDmContactWarn(contact) {
+    var w = document.getElementById("eluDmWarn");
+    if (!w || !contact) return;
+    if (contact.alerted) {
+        w.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Ou resevwa 1 alèt pou sa. Pa bay kontak deyò.';
+    } else {
+        w.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Kont ou an ka pran yon alèt pou sa. Kominikasyon dwe rete sou Bizen.';
+    }
+    w.style.display = "block";
+}
+
 function sendEluDm() {
     if (!currentUser || !eluDmOther || !eluDmOther.uid) return;
     var input = document.getElementById("eluDmInput");
@@ -4055,7 +4092,11 @@ function sendEluDm() {
         });
     }).then(function(r) { return r.json(); }).then(function(j) {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i>'; }
-        if (j && j.success) { if (input) input.value = ""; var w = document.getElementById("eluDmWarn"); if (w) w.style.display = "none"; }
+        if (j && j.success) {
+            if (input) input.value = "";
+            if (j.contact) { showEluDmContactWarn(j.contact); }
+            else { var w = document.getElementById("eluDmWarn"); if (w) w.style.display = "none"; }
+        }
         else { showToast((j && j.error) ? j.error : "Mesaj pa pati.", "error"); }
     }).catch(function(e) {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i>'; }
@@ -4256,6 +4297,7 @@ function saveFlProfile() {
                 }
             }
             try { renderDomiPrompt(); } catch (e) {}
+    try { renderAlertBanner(); } catch (e) {}
             showToast(applyPrice ? "Pwofil ak nouvo pri sove!" : "Pwofil sove!", "success");
             if (applyPrice) {
                 setEl("flPrixEx", p.toLocaleString() + " Gdes");

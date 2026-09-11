@@ -5774,9 +5774,11 @@ function initAdminNotifs() {
     unsubNotifContact = listen("contactViolations", "cv", function (d) {
         var role = d.role === "freelancer" ? "Elu" : (d.role === "krey" ? "Krey" : "VIP");
         var lvl = d.level === "strong" ? "sanksyone otomatik" : "sispèk — revize";
+        /* De <expeditè> → Pou <resevè> : facilite de retrouver la conversation. */
+        var conv = "De " + (d.name || "?") + " → Pou " + (d.receiverName || "?");
         return { ico: "fa-triangle-exclamation", cl: "#ff5722",
             txt: "Tantativ pataje kontak (" + role + ") — " + lvl,
-            sub: (d.name || "") + ": " + String(d.text || "").slice(0, 60) };
+            sub: conv + " · " + String(d.text || "").slice(0, 50) };
     });
 }
 

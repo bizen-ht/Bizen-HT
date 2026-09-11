@@ -8057,6 +8057,18 @@ function sendDMMedia(input) {
     });
 }
 
+/* Avertit près du champ texte quand un partage de contact est détecté. */
+function showDmContactWarn(contact) {
+    var w = document.getElementById("dmWarn");
+    if (!w || !contact) return;
+    if (contact.alerted) {
+        w.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Ou resevwa 1 alèt pou sa. Pa pataje kontak deyò.';
+    } else {
+        w.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Kont ou an ka pran yon alèt pou sa. Kominikasyon dwe rete sou Bizen.';
+    }
+    w.style.display = "block";
+}
+
 function sendDM() {
     if (!auth || !auth.currentUser || !dmCurrentElu) return;
     var input = document.getElementById("dmInput");
@@ -8076,7 +8088,8 @@ function sendDM() {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i>'; }
         if (res.ok && res.j.success) {
             if (input) input.value = "";
-            var w = document.getElementById("dmWarn"); if (w) w.style.display = "none";
+            if (res.j.contact) { showDmContactWarn(res.j.contact); }
+            else { var w = document.getElementById("dmWarn"); if (w) w.style.display = "none"; }
             /* le listener temps réel affichera le message */
         } else if (res.j && res.j.premiumInvite) {
             /* Limite atteinte -> invitation Premium */
