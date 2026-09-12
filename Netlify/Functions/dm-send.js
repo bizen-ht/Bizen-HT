@@ -43,7 +43,7 @@ var NUMWORDS = "(?:zewo|z[ée]ro|youn|un|de|deux|twa|trois|kat|quatre|senk|cinq|
 /* 5 mots-nombres OU PLUS à la file = très probablement un numéro épelé. */
 var SPELLED_RUN = new RegExp("(?:\\b" + NUMWORDS + "\\b[\\s,.\\-]*){5,}", "i");
 /* Plateformes externes explicites (signal fort). */
-var PLATFORMS = /\b(whats?a?p{1,2}|wsp|watsap|telegram|signal|viber|imo|snapchat|snap|instagram|insta|tiktok|tik\s?tok|facebook|\bfb\b|messenger|kakao|wechat|gmail|hotmail|yahoo|outlook|icloud)\b/i;
+var PLATFORMS = /\b(whats?a?p{1,2}|wsp|watsap|telegram|viber|imo|snapchat|snap|instagram|insta|tiktok|tik\s?tok|facebook|\bfb\b|messenger|kakao|wechat|gmail|hotmail|yahoo|outlook|icloud)\b/i;
 
 /* Masque les coordonnées externes pour garder la conversation sur Bizen */
 function filterContact(text) {
@@ -60,7 +60,7 @@ function filterContact(text) {
     /* numéro ÉPELÉ EN LETTRES (5+ mots-nombres à la file) */
     t = t.replace(SPELLED_RUN, "•••");
     /* mots-clés de plateformes externes */
-    t = t.replace(/\b(whats?ap?p?|wsp|watsap|telegram|signal|viber|imo|snapchat|snap|instagram|insta|\big\b|tiktok|facebook|\bfb\b|messenger|gmail|hotmail|yahoo|outlook|e?-?mail|imel|nimewo|numero|num[ée]ro)\b/gi, "•••");
+    t = t.replace(/\b(whats?ap?p?|wsp|watsap|telegram|viber|imo|snapchat|snap|instagram|insta|\big\b|tiktok|facebook|\bfb\b|messenger|gmail|hotmail|yahoo|outlook|e?-?mail|imel|nimewo|numero|num[ée]ro)\b/gi, "•••");
     return t;
 }
 

@@ -1066,7 +1066,7 @@
         <div class="pg" id="pg-users">
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-users" style="color:var(--blue)"></i> VIP</h1>
-                <input class="srch" placeholder="Chache..." oninput="srchTbl('tbU',this.value)">
+                <input class="srch" placeholder="Chache non, pseudo oswa imel..." oninput="srchTbl('tbU',this.value)">
             </div>
             <div class="tc">
                 <div class="tc-head">
@@ -2548,7 +2548,9 @@ function renderUsersTable(list) {
 
         var uTest = u.isTest ? ' <span class="sbadge purple" style="background:rgba(156,39,176,0.18);color:#ce93d8"><i class="fas fa-flask"></i> TEST</span>' : '';
         h += '<tr data-filter="' + (u.isPremium ? "premium" : "free") + '" data-test="' + (u.isTest ? '1' : '0') + '">';
-        h += '<td><strong>' + escHtml(u.prenom || '') + ' ' + escHtml(u.nom || '') + '</strong>' + uTest + '<br><small style="color:#6a6a80">' + escHtml(u.email || '') + '</small></td>';
+        h += '<td><strong>' + escHtml(u.prenom || '') + ' ' + escHtml(u.nom || '') + '</strong>' + uTest
+            + (u.pseudo ? '<br><small style="color:#f48fb1"><i class="fas fa-user"></i> ' + escHtml(u.pseudo) + '</small>' : '')
+            + '<br><small style="color:#6a6a80">' + escHtml(u.email || '') + '</small></td>';
         h += '<td>' + escHtml(u.telephone || 'N/A') + '</td>';
         h += '<td>' + planB + '</td>';
         h += '<td>' + statB + '</td>';
@@ -3046,7 +3048,9 @@ function renderFLTable(list) {
         var fTest = f.isTest ? ' <span class="sbadge purple" style="background:rgba(156,39,176,0.18);color:#ce93d8"><i class="fas fa-flask"></i> TEST</span>' : '';
         var fAmb = f.ambassadorCode ? ' <span class="sbadge" style="background:rgba(255,152,0,0.15);color:#ff9800;border:1px solid rgba(255,152,0,0.4)" title="Referans anbasadè: ' + escHtml(f.ambassadorCode) + '"><i class="fas fa-medal"></i> ' + escHtml(f.ambassadorCode) + '</span>' : '';
         h += '<tr data-filter="' + (f.status || '') + '" data-test="' + (f.isTest ? '1' : '0') + '">';
-        h += '<td><strong>' + escHtml(f.prenom || '') + ' ' + escHtml(f.nom || '') + '</strong>' + fTest + fAmb + '<br><small style="color:#6a6a80">' + escHtml(f.email || '') + '</small></td>';
+        h += '<td><strong>' + escHtml(f.prenom || '') + ' ' + escHtml(f.nom || '') + '</strong>' + fTest + fAmb
+            + (f.pseudo ? '<br><small style="color:#f48fb1"><i class="fas fa-user"></i> ' + escHtml(f.pseudo) + '</small>' : '')
+            + '<br><small style="color:#6a6a80">' + escHtml(f.email || '') + '</small></td>';
         h += '<td>' + (f.genre === "biseksyel" ? "Biseksyèl" : ((f.genre === "homme" || f.genre === "gason") ? "Gason" : "Fanm")) + '</td>';
         h += '<td>' + escHtml(f.localisation || 'N/A') + '</td>';
         h += '<td>' + ((f.prixMoment || 0).toLocaleString()) + ' G</td>';
