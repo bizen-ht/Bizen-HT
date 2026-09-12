@@ -33,7 +33,7 @@ img{max-width:100%;display:block}
 #app-shell{display:flex;flex-direction:column;height:100%;max-width:540px;margin:0 auto;position:relative;background:var(--bg)}
 
 /* ---------- Top bar ---------- */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line);flex:none;height:54px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;border-bottom:1px solid var(--line);flex:none}
 .topbar .logo{height:30px;width:auto}
 .topbar .tb-actions{display:flex;gap:6px}
 .tb-btn{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:var(--ink);position:relative}
@@ -95,7 +95,7 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 
 /* ---------- Create post ---------- */
 #createview,#commentsview,#chatview{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;z-index:30}
-.sheet-head{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);flex:none}
+.sheet-head{display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 14px 12px;border-bottom:1px solid var(--line);flex:none}
 .sheet-head .ttl{font-weight:700;font-size:1rem;flex:1}
 .sheet-head .go{color:var(--rose);font-weight:700;font-size:.92rem}
 .create-body{flex:1;overflow-y:auto;padding:16px}
@@ -110,9 +110,9 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .cm .body .nm{font-weight:600;font-size:.82rem;margin-right:7px}
 .cm .body .tx{font-size:.86rem;line-height:1.4}
 .cm .body .tm{font-size:.64rem;color:var(--muted);margin-top:3px}
-.cm-input{display:flex;align-items:center;gap:9px;padding:10px 12px max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--line);flex:none}
-.cm-input input{flex:1;margin:0;border-radius:50px}
-.cm-input .send{color:var(--rose);font-weight:700;padding:8px 6px}
+.cm-input{display:flex;align-items:center;gap:10px;padding:12px 14px max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--line);flex:none}
+.cm-input input{flex:1;margin:0;border-radius:24px;padding:14px 18px;font-size:.95rem;background:var(--card2);border:1px solid var(--line);color:var(--ink)}
+.cm-input .send{color:var(--rose);font-weight:700;font-size:.95rem;padding:10px 6px;flex:none}
 
 /* ---------- Swipe deck ---------- */
 #deck{position:relative;height:100%;padding:12px 12px 0}
@@ -148,7 +148,7 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .match-strip .m .av{width:62px;height:62px;border-radius:50%;background:var(--card2) center/cover;border:2px solid var(--rose);margin-bottom:5px}
 .match-strip .m .nm{font-size:.68rem;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .match-strip .lbl{font-size:.62rem;color:var(--muted);padding:0 16px 6px;text-transform:uppercase;letter-spacing:.5px}
-.chat-head{display:flex;align-items:center;gap:11px;padding:12px 14px;border-bottom:1px solid var(--line);flex:none}
+.chat-head{display:flex;align-items:center;gap:11px;padding:calc(12px + env(safe-area-inset-top)) 14px 12px;border-bottom:1px solid var(--line);flex:none}
 .chat-head .av{width:40px;height:40px;border-radius:50%;background:var(--card2) center/cover}
 .chat-head .nm{font-weight:600;font-size:.95rem;flex:1}
 .chat-body{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:8px}
@@ -174,6 +174,7 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .pf-grid .cell{aspect-ratio:1/1;background:var(--card2) center/cover}
 .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
 .photo-slot{aspect-ratio:3/4;border-radius:12px;background:var(--card2);border:1.5px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:var(--muted);position:relative;overflow:hidden;background-size:cover;background-position:center}
+.photo-slot.single{aspect-ratio:auto;width:150px;height:150px;border-radius:50%;flex-direction:column}
 .photo-slot .rm{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:.7rem}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--line)}
 .toggle-row .lbl{font-size:.9rem}
@@ -350,8 +351,8 @@ video.post-img{object-fit:cover;background:#000;display:block}
   <div id="v-onboard" class="view hidden">
     <div class="pad">
       <h3>Konplete pwofil ou</h3>
-      <p class="lead">Ajoute yon foto pwofil (obligatwa) ak yon ti deskripsyon. Premye foto a se foto prensipal ou. Ou ka ajoute otan foto ou vle.</p>
-      <label class="fld">Foto pwofil (san limit)</label>
+      <p class="lead">Ajoute yon foto pwofil (obligatwa) ak yon ti deskripsyon. Ou ka pataje otan foto ak videyo ou vle nan pòs apre.</p>
+      <label class="fld">Foto pwofil</label>
       <div class="photo-grid" id="ob-photos"></div>
       <label class="fld">Bio</label>
       <textarea id="ob-bio" placeholder="Di yon ti bagay sou ou..." maxlength="300"></textarea>
@@ -422,7 +423,7 @@ video.post-img{object-fit:cover;background:#000;display:block}
         <label class="fld">Zòn oswa vil</label>
         <input id="pf-zone" class="input" maxlength="60" placeholder="Egzanp: Petyonvil">
 
-        <label class="fld">Foto pwofil (san limit)</label>
+        <label class="fld">Foto pwofil</label>
         <div class="photo-grid" id="pf-photos"></div>
 
         <div class="sec-title">Preferans rankont</div>
@@ -607,7 +608,19 @@ $("a-submit").onclick=async function(){
 };
 
 /* ============ ONBOARDING ============ */
-function enterOnboard(){ show("v-onboard"); pendingPhotos=(PROFILE&&PROFILE.photos)?PROFILE.photos.slice():[]; renderPhotoGrid("ob-photos",pendingPhotos,"onboard"); $("ob-bio").value=(PROFILE&&PROFILE.bio)||""; }
+/* Photo de profil : UNE SEULE (l'avatar). La galerie illimitee = les posts. */
+function renderSinglePhoto(gridId, arr, target){
+  var g=$(gridId); g.style.display="flex"; g.style.justifyContent="center"; g.innerHTML="";
+  var slot=document.createElement("div"); slot.className="photo-slot single";
+  if(arr[0]){ slot.style.backgroundImage="url('"+arr[0]+"')";
+    var rm=document.createElement("div"); rm.className="rm"; rm.innerHTML='<i class="fas fa-times"></i>';
+    rm.onclick=function(ev){ ev.stopPropagation(); arr.length=0; renderSinglePhoto(gridId,arr,target); if(target==="profile")saveProfilePhotos(arr); };
+    slot.appendChild(rm);
+  } else { slot.innerHTML='<i class="fas fa-camera" style="font-size:1.6rem"></i><span style="font-size:.7rem;margin-top:5px">Foto pwofil</span>';
+    slot.onclick=function(){ uploadTarget=target; $("file-input").accept="image/*"; $("file-input").click(); }; }
+  g.appendChild(slot);
+}
+function enterOnboard(){ show("v-onboard"); pendingPhotos=(PROFILE&&PROFILE.photos)?PROFILE.photos.slice(0,1):[]; renderSinglePhoto("ob-photos",pendingPhotos,"onboard"); $("ob-bio").value=(PROFILE&&PROFILE.bio)||""; }
 $("ob-submit").onclick=async function(){
   if(pendingPhotos.length===0){ toast("Ajoute omwen 1 foto."); return; }
   var b=this; b.disabled=true;
@@ -675,11 +688,11 @@ $("file-input").onchange=async function(){
     var ext=isVideo?"mp4":"jpg";
     var path="social/"+ME.uid+"/"+Date.now()+"_"+Math.random().toString(36).slice(2)+"."+ext;
     var ref=storage.ref().child(path); await ref.put(f); var url=await ref.getDownloadURL();
-    if(uploadTarget==="onboard"){ pendingPhotos.push(url); renderPhotoGrid("ob-photos",pendingPhotos,"onboard"); }
+    if(uploadTarget==="onboard"){ pendingPhotos[0]=url; pendingPhotos.length=1; renderSinglePhoto("ob-photos",pendingPhotos,"onboard"); }
     else if(uploadTarget==="post"){ crImage=url; crMediaType=isVideo?"video":"image";
       if(isVideo){ $("cr-pick").style.backgroundImage=""; $("cr-pick").innerHTML='<video src="'+url+'" style="width:100%;height:100%;object-fit:cover" muted playsinline></video>'; }
       else { $("cr-pick").style.backgroundImage="url('"+url+"')"; $("cr-pick").innerHTML=""; } }
-    else { PROFILE.photos=PROFILE.photos||[]; PROFILE.photos.push(url); renderPhotoGrid("pf-photos",PROFILE.photos,"profile"); saveProfilePhotos(PROFILE.photos); }
+    else { PROFILE.photos=PROFILE.photos||[]; PROFILE.photos[0]=url; PROFILE.photos.length=1; renderSinglePhoto("pf-photos",PROFILE.photos,"profile"); saveProfilePhotos(PROFILE.photos); }
   }catch(e){ console.error(e); toast("Erè pandan voye a."); }
 };
 async function saveProfilePhotos(arr){ try{ await db.collection("socialProfiles").doc(ME.uid).set({photos:arr},{merge:true}); if(arr[0])$("pf-av").style.backgroundImage="url('"+arr[0]+"')"; }catch(e){} }
@@ -838,11 +851,13 @@ function postMenu(p){
 function openComments(p){
   curCommentPost=p; $("cm-list").innerHTML='<div class="empty" style="margin:auto"><i class="fas fa-circle-notch spin"></i></div>';
   $("commentsview").classList.remove("hidden");
-  db.collection("socialPostComments").where("postId","==",p.id).orderBy("createdAt","asc").limit(200).get()
+  db.collection("socialPostComments").where("postId","==",p.id).limit(300).get()
     .then(function(snap){
       var l=$("cm-list"); l.innerHTML="";
       if(snap.empty){ l.innerHTML='<div class="empty" style="margin:auto"><i class="fa-regular fa-comment"></i>Poko gen kòmantè.</div>'; return; }
-      snap.forEach(function(d){ l.appendChild(buildComment(d.data())); });
+      var arr=[]; snap.forEach(function(d){ arr.push(d.data()); });
+      arr.sort(function(a,b){ return ((a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0)-(b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0)); });
+      arr.forEach(function(c){ l.appendChild(buildComment(c)); });
       l.scrollTop=l.scrollHeight;
     }).catch(function(e){ $("cm-list").innerHTML='<div class="empty">'+esc(e.message)+'</div>'; });
 }
@@ -1019,11 +1034,13 @@ function showMatchModal(p){
 /* ============ MATCHES ============ */
 function listenMatches(){
   if(matchesUnsub)matchesUnsub();
-  matchesUnsub=db.collection("socialMatches").where("users","array-contains",ME.uid).orderBy("lastAt","desc")
+  matchesUnsub=db.collection("socialMatches").where("users","array-contains",ME.uid)
     .onSnapshot(function(snap){
       var strip=$("match-strip"), list=$("conv-list"); strip.innerHTML=""; list.innerHTML="";
       var totalUnread=0, newM=0, conv=0;
-      snap.forEach(function(doc){
+      var docs=[]; snap.forEach(function(d){ docs.push(d); });
+      docs.sort(function(a,b){ var am=(a.data().lastAt&&a.data().lastAt.toMillis)?a.data().lastAt.toMillis():0, bm=(b.data().lastAt&&b.data().lastAt.toMillis)?b.data().lastAt.toMillis():0; return bm-am; });
+      docs.forEach(function(doc){
         var d=doc.data(); matchesCache[doc.id]=d;
         var other=d.users[0]===ME.uid?d.users[1]:d.users[0];
         var nm=(d.names&&d.names[other])||"Anonim", av=(d.avatars&&d.avatars[other])||"";
@@ -1061,11 +1078,13 @@ function openChat(pairId){
   $("chatview").classList.remove("hidden");
   var upd={}; upd["unread."+ME.uid]=0; db.collection("socialMatches").doc(pairId).set(upd,{merge:true}).catch(function(){});
   if(chatUnsub)chatUnsub();
-  chatUnsub=db.collection("socialMessages").where("pairId","==",pairId).orderBy("createdAt","asc")
+  chatUnsub=db.collection("socialMessages").where("pairId","==",pairId).limit(500)
     .onSnapshot(function(snap){
       var body=$("chat-body"); body.innerHTML="";
       if(snap.empty){ body.innerHTML='<div class="empty" style="margin:auto"><i class="fas fa-hand-sparkles"></i>Di bonjou!</div>'; return; }
-      snap.forEach(function(doc){ var m=doc.data(); var b=document.createElement("div"); b.className="bubble "+(m.senderId===ME.uid?"me":"you");
+      var arr=[]; snap.forEach(function(d){ arr.push(d.data()); });
+      arr.sort(function(a,b){ return ((a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0)-(b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0)); });
+      arr.forEach(function(m){ var b=document.createElement("div"); b.className="bubble "+(m.senderId===ME.uid?"me":"you");
         if(m.mediaUrl){ b.innerHTML='<img src="'+esc(m.mediaUrl)+'" style="border-radius:10px">'+(m.text?'<div>'+esc(m.text)+'</div>':''); } else b.textContent=m.text||""; body.appendChild(b); });
       body.scrollTop=body.scrollHeight;
     }, function(err){ console.error("chat:",err); });
@@ -1120,7 +1139,7 @@ function hydrateProfile(){
   $("pf-bioshow").textContent=PROFILE.bio||"";
   $("pf-followers").textContent=PROFILE.followersCount||0;
   $("pf-following").textContent=PROFILE.followingCount||0;
-  renderPhotoGrid("pf-photos",PROFILE.photos||[],"profile");
+  renderSinglePhoto("pf-photos",PROFILE.photos||[],"profile");
   /* champs paramèt (tout modifiable) */
   $("pf-pseudo-in").value=PROFILE.pseudo||"";
   $("pf-bio").value=PROFILE.bio||"";
@@ -1234,7 +1253,7 @@ $("pf-delete").onclick=async function(){
     $("nav-badge").textContent="2"; $("nav-badge").classList.remove("hidden"); };
   openComments=function(p){ $("cm-list").innerHTML=""; [["Nadège",330,"🌸","Twò bèl! 😍"],["Jonas",210,"⚽","Kote sa ye?"]].forEach(function(c){ $("cm-list").appendChild(buildComment({name:c[0],avatar:av(c[1],c[2]),text:c[3],createdAt:{toMillis:function(){return Date.now()-600000;}}})); }); $("commentsview").classList.remove("hidden"); };
   openChat=function(){ $("chat-name").textContent="Nadège"; $("chat-av").style.backgroundImage="url('"+av(330,"🌸")+"')"; $("chat-eph").textContent="Mesaj efemè, efase apre 24h"; var b=$("chat-body"); b.innerHTML=""; [["you","Kontan nou matche! 😊"],["me","Mwen menm tou!"]].forEach(function(m){ var x=document.createElement("div"); x.className="bubble "+m[0]; x.textContent=m[1]; b.appendChild(x); }); $("chatview").classList.remove("hidden"); $("chat-send").onclick=function(){ var i=$("chat-text"); if(!i.value.trim())return; var x=document.createElement("div"); x.className="bubble me"; x.textContent=i.value.trim(); b.appendChild(x); i.value=""; b.scrollTop=b.scrollHeight; }; };
-  hydrateProfile=function(){ $("pf-av").style.backgroundImage="url('"+PROFILE.photos[0]+"')"; $("pf-pseudo").textContent="Ou"; $("pf-bioshow").textContent=PROFILE.bio; $("pf-bio").value=PROFILE.bio; $("pf-pseudo-in").value="Ou"; $("pf-gender").value=PROFILE.gender; $("pf-seeking").value=PROFILE.seeking; $("pf-zone").value=PROFILE.zone; $("pf-agemin").value=22;$("pf-ageminlbl").textContent="22"; $("pf-agemax").value=40;$("pf-agemaxlbl").textContent="40"; $("pf-dist").value=60;$("pf-distlbl").textContent="60 km"; renderPhotoGrid("pf-photos",PROFILE.photos,"profile"); $("pf-posts").textContent="3"; $("pf-followers").textContent="128"; $("pf-following").textContent="87"; $("pf-likes").textContent="91"; $("pf-matches").textContent="3"; $("sw-discoverable").classList.add("on"); renderVibePicker(PROFILE.vibe); applyMyVibe(); var g=$("pf-grid"); g.innerHTML=""; POSTS.forEach(function(p){ var c=document.createElement("div"); c.className="cell"; if(p.imageUrl)c.style.backgroundImage="url('"+p.imageUrl+"')"; g.appendChild(c); }); };
+  hydrateProfile=function(){ $("pf-av").style.backgroundImage="url('"+PROFILE.photos[0]+"')"; $("pf-pseudo").textContent="Ou"; $("pf-bioshow").textContent=PROFILE.bio; $("pf-bio").value=PROFILE.bio; $("pf-pseudo-in").value="Ou"; $("pf-gender").value=PROFILE.gender; $("pf-seeking").value=PROFILE.seeking; $("pf-zone").value=PROFILE.zone; $("pf-agemin").value=22;$("pf-ageminlbl").textContent="22"; $("pf-agemax").value=40;$("pf-agemaxlbl").textContent="40"; $("pf-dist").value=60;$("pf-distlbl").textContent="60 km"; renderSinglePhoto("pf-photos",PROFILE.photos,"profile"); $("pf-posts").textContent="3"; $("pf-followers").textContent="128"; $("pf-following").textContent="87"; $("pf-likes").textContent="91"; $("pf-matches").textContent="3"; $("sw-discoverable").classList.add("on"); renderVibePicker(PROFILE.vibe); applyMyVibe(); var g=$("pf-grid"); g.innerHTML=""; POSTS.forEach(function(p){ var c=document.createElement("div"); c.className="cell"; if(p.imageUrl)c.style.backgroundImage="url('"+p.imageUrl+"')"; g.appendChild(c); }); };
   openProfileByUid=function(uid){ var pr=null; PROFILES.forEach(function(x){if(x.uid===uid)pr=x;}); openProfileDetail(pr?{uid:pr.uid,pseudo:pr.pseudo,age:pr.age,zone:pr.zone,bio:pr.bio,photos:pr.photos,followersCount:128,followingCount:87}:{uid:uid,pseudo:"Moun",photos:[],followersCount:0,followingCount:0}, false); };
 
   var which=(q.match(/[?&#]demo=([a-z0-9]+)/i)||[])[1]||"app";
