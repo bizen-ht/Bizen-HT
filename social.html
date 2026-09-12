@@ -303,6 +303,14 @@ video.post-img{object-fit:cover;background:#000;display:block}
     <a href="/index.html" style="color:var(--muted);font-size:.82rem;margin-top:16px;text-decoration:none">Retounen sou Bizen HT</a>
   </div>
 
+  <!-- CLOSED BETA (poko piblik) -->
+  <div id="v-closed" class="center hidden">
+    <img src="Images/bizen-logo.png" alt="Bizen Social" class="logo-big">
+    <p>Bizen Social ap vini byento. Pou kounye a li ouvè sèlman pou kèk kont chwazi. Tann envitasyon ou.</p>
+    <a class="btn" href="/Dashboard.html"><i class="fas fa-arrow-left"></i> Retounen sou Dashboard</a>
+    <a href="/index.html" style="color:var(--muted);font-size:.82rem;margin-top:16px;text-decoration:none">Bizen HT prensipal</a>
+  </div>
+
   <!-- ACTIVATION -->
   <div id="v-activate" class="view hidden">
     <div class="pad">
@@ -551,7 +559,7 @@ var myLikes={}, mySaves={}, curCommentPost=null, uploadTarget=null, pendingPhoto
 
 /* ============ HELPERS ============ */
 function $(id){return document.getElementById(id);}
-function show(id){ ["v-loading","v-gate","v-activate","v-onboard","v-app"].forEach(function(v){ $(v).classList.toggle("hidden", v!==id); }); }
+function show(id){ ["v-loading","v-gate","v-closed","v-activate","v-onboard","v-app"].forEach(function(v){ $(v).classList.toggle("hidden", v!==id); }); }
 function toast(m){ var t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove("show");},2600); }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function capTags(s){ return esc(s).replace(/#([\p{L}0-9_]{2,30})/gu,'<span class="tag">#$1</span>'); }
@@ -570,6 +578,12 @@ auth.onAuthStateChanged(async function(u){
   if(!u){ show("v-gate"); return; }
   ME=u; TOKEN=await u.getIdToken();
   try{
+    /* BETA FERMÉ : Bizen Social n'est PAS encore public. Accès seulement pour les
+       comptes activés par l'admin (users.social.enabled === true), ou l'admin. */
+    var meUserDoc=await db.collection("users").doc(u.uid).get();
+    var meUser=meUserDoc.exists?meUserDoc.data():{};
+    var enabled=(meUser.social && meUser.social.enabled===true) || u.email==="bizenht@gmail.com";
+    if(!enabled){ show("v-closed"); return; }
     var snap=await db.collection("socialProfiles").doc(u.uid).get();
     if(!snap.exists || !snap.data().activatedAt){ show("v-activate"); prefillActivate(); return; }
     PROFILE=snap.data();
