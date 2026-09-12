@@ -311,10 +311,18 @@ service cloud.firestore {
     match /socialProfiles/{uid} {
       allow read:   if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == uid;
+      /* Le proprietaire edite son profil, MAIS ne touche pas aux champs sensibles
+         (compteurs, badges admin). Il peut mettre son status a "active" (fin de
+         l'onboarding) seulement s'il n'est pas banni/suspendu — jamais s'auto-bannir. */
       allow update: if isAdmin()
         || (isSignedIn() && request.auth.uid == uid
             && !request.resource.data.diff(resource.data).affectedKeys()
-                 .hasAny(['status', 'boostUntil', 'activatedAt', 'uid', 'followersCount', 'followingCount']));
+                 .hasAny(['boostUntil', 'activatedAt', 'uid', 'followersCount', 'followingCount', 'verified', 'ageVerified', 'featured', 'warnings', 'nsfwFlags'])
+            && (
+                 !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status'])
+                 || (request.resource.data.status == 'active'
+                     && resource.data.status != 'banned' && resource.data.status != 'suspended')
+               ));
       allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == uid);
     }
 

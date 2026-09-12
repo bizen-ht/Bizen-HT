@@ -269,6 +269,10 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .vibe-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
 .post-head .av.pvibe{box-shadow:0 0 0 2px var(--bg),0 0 0 3px var(--vc,transparent)}
 .cr-vibe-title{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px}
+video.post-img{object-fit:cover;background:#000;display:block}
+.pf-badge{position:absolute;bottom:5px;left:5px;background:rgba(0,0,0,.72);color:#fff;font-size:.56rem;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.3px}
+.pf-grid .cell{position:relative}
+.cell-play{position:absolute;top:6px;right:6px;color:#fff;font-size:.72rem;text-shadow:0 1px 4px #000;pointer-events:none}
 .vibe-picker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
 .vibe-opt{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:50px;background:var(--card2);border:1.5px solid var(--line);font-size:.84rem;font-weight:600;transition:.15s}
 .vibe-opt.sel{border-color:var(--vc);color:var(--vc);box-shadow:0 0 0 3px color-mix(in srgb,var(--vc) 20%,transparent)}
@@ -338,8 +342,8 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
   <div id="v-onboard" class="view hidden">
     <div class="pad">
       <h3>Konplete pwofil ou</h3>
-      <p class="lead">Ajoute omwen 1 foto ak yon ti deskripsyon. Pwofil ou vin vizib apre yon revizyon rapid.</p>
-      <label class="fld">Foto (jiska 6)</label>
+      <p class="lead">Ajoute yon foto pwofil (obligatwa) ak yon ti deskripsyon. Premye foto a se foto prensipal ou. Ou ka ajoute otan foto ou vle.</p>
+      <label class="fld">Foto pwofil (san limit)</label>
       <div class="photo-grid" id="ob-photos"></div>
       <label class="fld">Bio</label>
       <textarea id="ob-bio" placeholder="Di yon ti bagay sou ou..." maxlength="300"></textarea>
@@ -410,7 +414,7 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
         <label class="fld">Zòn oswa vil</label>
         <input id="pf-zone" class="input" maxlength="60" placeholder="Egzanp: Petyonvil">
 
-        <label class="fld">Foto (jiska 6)</label>
+        <label class="fld">Foto pwofil (san limit)</label>
         <div class="photo-grid" id="pf-photos"></div>
 
         <div class="sec-title">Preferans rankont</div>
@@ -604,15 +608,18 @@ $("ob-submit").onclick=async function(){
 /* ============ PHOTOS ============ */
 function renderPhotoGrid(gridId, arr, target){
   var g=$(gridId); g.innerHTML="";
-  for(var i=0;i<6;i++){
-    var url=arr[i]; var slot=document.createElement("div"); slot.className="photo-slot";
-    if(url){ slot.style.backgroundImage="url('"+url+"')";
-      var rm=document.createElement("div"); rm.className="rm"; rm.innerHTML='<i class="fas fa-times"></i>';
-      (function(idx){ rm.onclick=function(ev){ ev.stopPropagation(); arr.splice(idx,1); renderPhotoGrid(gridId,arr,target); if(target==="profile")saveProfilePhotos(arr); }; })(i);
-      slot.appendChild(rm);
-    } else { slot.innerHTML='<i class="fas fa-plus"></i>'; (function(t){ slot.onclick=function(){ uploadTarget=t; $("file-input").click(); }; })(target); }
+  arr.forEach(function(url,i){
+    var slot=document.createElement("div"); slot.className="photo-slot"; slot.style.backgroundImage="url('"+url+"')";
+    if(i===0){ var pb=document.createElement("div"); pb.className="pf-badge"; pb.textContent="Foto pwofil"; slot.appendChild(pb); }
+    var rm=document.createElement("div"); rm.className="rm"; rm.innerHTML='<i class="fas fa-times"></i>';
+    rm.onclick=function(ev){ ev.stopPropagation(); arr.splice(i,1); renderPhotoGrid(gridId,arr,target); if(target==="profile")saveProfilePhotos(arr); };
+    slot.appendChild(rm);
     g.appendChild(slot);
-  }
+  });
+  /* slot d'ajout, illimite */
+  var add=document.createElement("div"); add.className="photo-slot"; add.innerHTML='<i class="fas fa-plus"></i>';
+  add.onclick=function(){ uploadTarget=target; $("file-input").accept="image/*"; $("file-input").click(); };
+  g.appendChild(add);
 }
 /* ============ ANTI-NUDITE (blocage a la source, navigateur) ============
    Un modele IA (NSFWJS) analyse l'image AVANT l'envoi. Si contenu explicite,
@@ -645,17 +652,21 @@ async function isNudity(file){
 }
 $("file-input").onchange=async function(){
   var f=this.files[0]; this.value=""; if(!f)return;
-  if(f.size>15*1024*1024){ toast("Foto twò gwo (max 15Mo)."); return; }
-  toast("Ap verifye foto...");
-  if(await isNudity(f)){ toast("Foto sa a sanble gen nidite. Li pa otorize sou Bizen Social. Chwazi yon lòt."); return; }
-  toast("Ap voye foto...");
+  var isVideo=f.type.indexOf("video")===0;
+  var maxMB=isVideo?60:15;
+  if(f.size>maxMB*1024*1024){ toast("Fichye twò gwo (max "+maxMB+"Mo)."); return; }
+  if(!isVideo){ toast("Ap verifye foto..."); if(await isNudity(f)){ toast("Foto sa a sanble gen nidite. Li pa otorize sou Bizen Social. Chwazi yon lòt."); return; } }
+  toast("Ap voye...");
   try{
-    var path="social/"+ME.uid+"/"+Date.now()+"_"+Math.random().toString(36).slice(2)+".jpg";
+    var ext=isVideo?"mp4":"jpg";
+    var path="social/"+ME.uid+"/"+Date.now()+"_"+Math.random().toString(36).slice(2)+"."+ext;
     var ref=storage.ref().child(path); await ref.put(f); var url=await ref.getDownloadURL();
-    if(uploadTarget==="onboard"){ if(pendingPhotos.length<6)pendingPhotos.push(url); renderPhotoGrid("ob-photos",pendingPhotos,"onboard"); }
-    else if(uploadTarget==="post"){ crImage=url; $("cr-pick").style.backgroundImage="url('"+url+"')"; $("cr-pick").innerHTML=""; }
-    else { PROFILE.photos=PROFILE.photos||[]; if(PROFILE.photos.length<6)PROFILE.photos.push(url); renderPhotoGrid("pf-photos",PROFILE.photos,"profile"); saveProfilePhotos(PROFILE.photos); }
-  }catch(e){ console.error(e); toast("Erè voye foto."); }
+    if(uploadTarget==="onboard"){ pendingPhotos.push(url); renderPhotoGrid("ob-photos",pendingPhotos,"onboard"); }
+    else if(uploadTarget==="post"){ crImage=url; crMediaType=isVideo?"video":"image";
+      if(isVideo){ $("cr-pick").style.backgroundImage=""; $("cr-pick").innerHTML='<video src="'+url+'" style="width:100%;height:100%;object-fit:cover" muted playsinline></video>'; }
+      else { $("cr-pick").style.backgroundImage="url('"+url+"')"; $("cr-pick").innerHTML=""; } }
+    else { PROFILE.photos=PROFILE.photos||[]; PROFILE.photos.push(url); renderPhotoGrid("pf-photos",PROFILE.photos,"profile"); saveProfilePhotos(PROFILE.photos); }
+  }catch(e){ console.error(e); toast("Erè pandan voye a."); }
 };
 async function saveProfilePhotos(arr){ try{ await db.collection("socialProfiles").doc(ME.uid).set({photos:arr},{merge:true}); if(arr[0])$("pf-av").style.backgroundImage="url('"+arr[0]+"')"; }catch(e){} }
 
@@ -744,7 +755,7 @@ function buildPost(p){
       '<div class="nm clk">'+esc(p.authorName||"Anonim")+(p.vibe?' '+vibePill(p.vibe):'')+(p.zone?'<small>'+esc(p.zone)+'</small>':'')+'</div>'+
       '<button class="more"><i class="fas fa-ellipsis"></i></button>'+
     '</div>'+
-    (p.imageUrl?'<div class="post-img" style="background-image:url(\''+esc(p.imageUrl)+'\')"></div>':'')+
+    (p.imageUrl?(p.mediaType==="video"?'<video class="post-img" src="'+esc(p.imageUrl)+'" controls playsinline preload="metadata"></video>':'<div class="post-img" style="background-image:url(\''+esc(p.imageUrl)+'\')"></div>'):'')+
     (!p.imageUrl&&p.caption?'<div class="post-textonly">'+capTags(p.caption)+'</div>':'')+
     '<div class="post-actions">'+
       '<button class="act like'+(liked?' liked':'')+'"><i class="'+(liked?'fas':'fa-regular')+' fa-heart"></i></button>'+
@@ -839,16 +850,16 @@ $("cm-send").onclick=sendComment;
 $("cm-text").addEventListener("keydown",function(e){ if(e.key==="Enter"){e.preventDefault();sendComment();} });
 
 /* ============ CREATE POST ============ */
-var crTags=[], crVibe="";
+var crTags=[], crVibe="", crMediaType="image";
 function renderCrTags(){ var c=$("cr-tags"); c.innerHTML=""; crTags.forEach(function(nm,i){ var chip=document.createElement("span"); chip.className="tag-chip sel"; chip.innerHTML=esc(nm)+' <i class="fas fa-xmark"></i>'; chip.onclick=function(){ crTags.splice(i,1); renderCrTags(); }; c.appendChild(chip); }); }
 function renderCrVibe(){
   var box=$("cr-vibe"); if(!box)return;
   box.innerHTML=VIBES.map(function(v){ return '<button class="vibe-opt'+(crVibe===v.k?" sel":"")+'" data-cvk="'+v.k+'" style="--vc:'+v.color+'"><span class="vibe-dot" style="background:'+v.color+'"></span>'+v.label+'</button>'; }).join("");
   box.querySelectorAll("[data-cvk]").forEach(function(b){ b.onclick=function(){ crVibe=(crVibe===b.dataset.cvk)?"":b.dataset.cvk; renderCrVibe(); }; });
 }
-$("nav-create").onclick=function(){ crImage=""; crTags=[]; crVibe=""; $("cr-caption").value=""; renderCrTags(); renderCrVibe(); $("cr-pick").style.backgroundImage=""; $("cr-pick").innerHTML='<i class="fas fa-image"></i><span style="font-size:.82rem">Chwazi yon foto</span>'; $("createview").classList.remove("hidden"); };
+$("nav-create").onclick=function(){ crImage=""; crMediaType="image"; crTags=[]; crVibe=""; $("cr-caption").value=""; renderCrTags(); renderCrVibe(); $("cr-pick").style.backgroundImage=""; $("cr-pick").innerHTML='<i class="fas fa-image"></i><span style="font-size:.82rem">Chwazi foto oswa videyo</span>'; $("createview").classList.remove("hidden"); };
 $("cr-back").onclick=function(){ $("createview").classList.add("hidden"); };
-$("cr-pick").onclick=function(){ uploadTarget="post"; $("file-input").click(); };
+$("cr-pick").onclick=function(){ uploadTarget="post"; $("file-input").accept="image/*,video/*"; $("file-input").click(); };
 $("cr-tagbtn").onclick=function(){ openTagPicker(); };
 function openTagPicker(){
   var people=[], seen={};
@@ -867,7 +878,7 @@ $("cr-publish").onclick=async function(){
   var cap=$("cr-caption").value.trim();
   if(!crImage && !cap){ toast("Ajoute yon foto oswa yon tèks."); return; }
   var b=this; b.style.opacity=".5";
-  try{ await api("social-post",{action:"create",imageUrl:crImage,caption:cap,taggedNames:crTags,vibe:crVibe}); $("createview").classList.add("hidden"); toast("Pibliye!"); switchTab("feed"); loadFeed(); }
+  try{ await api("social-post",{action:"create",imageUrl:crImage,mediaType:crMediaType,caption:cap,taggedNames:crTags,vibe:crVibe}); $("createview").classList.add("hidden"); toast("Pibliye!"); switchTab("feed"); loadFeed(); }
   catch(e){ toast(e.message); } finally{ b.style.opacity="1"; }
 };
 
@@ -1119,7 +1130,11 @@ async function loadMyPosts(){
     var mine=[]; snap.forEach(function(d){ var p=d.data(); p.id=d.id; mine.push(p); });
     mine.sort(function(a,b){ return ((b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0)-(a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0)); });
     var g=$("pf-grid"); g.innerHTML=""; var n=0, likes=0;
-    mine.forEach(function(p){ n++; likes+=(p.likeCount||0); var c=document.createElement("div"); c.className="cell"; if(p.imageUrl)c.style.backgroundImage="url('"+p.imageUrl+"')"; else c.innerHTML='<div style="padding:8px;font-size:.7rem;color:var(--muted)">'+esc((p.caption||"").slice(0,60))+'</div>'; c.onclick=function(){ openComments(p); }; g.appendChild(c); });
+    mine.forEach(function(p){ n++; likes+=(p.likeCount||0); var c=document.createElement("div"); c.className="cell";
+      if(p.imageUrl&&p.mediaType==="video"){ c.innerHTML='<video src="'+esc(p.imageUrl)+'" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover"></video><div class="cell-play"><i class="fas fa-play"></i></div>'; }
+      else if(p.imageUrl){ c.style.backgroundImage="url('"+p.imageUrl+"')"; }
+      else { c.innerHTML='<div style="padding:8px;font-size:.7rem;color:var(--muted)">'+esc((p.caption||"").slice(0,60))+'</div>'; }
+      c.onclick=function(){ openComments(p); }; g.appendChild(c); });
     $("pf-posts").textContent=n; $("pf-likes").textContent=likes;
     if(n===0)g.innerHTML='<div class="empty" style="grid-column:1/-1"><i class="fa-regular fa-images"></i>Poko gen post.</div>';
   }catch(e){ console.warn("myposts",e); }

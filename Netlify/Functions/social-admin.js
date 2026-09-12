@@ -438,21 +438,36 @@ exports.handler = async function (event) {
             }
             var uDoc = await C("users").doc(tuid).get();
             var ud = uDoc.exists ? uDoc.data() : {};
+            /* VRAIES infos du compte Bizen (pas de valeurs fictives) :
+               date de naissance = dateNesans (YYYY-MM-DD), ville = localisation. */
+            var realBY = null;
+            if (ud.dateNesans) { var dd = new Date(ud.dateNesans); if (!isNaN(dd.getTime())) realBY = dd.getFullYear(); }
+            var realGender = (ud.genre === "femme") ? "femme" : ((ud.genre === "homme") ? "homme" : "");
+            var realZone = (ud.localisation || ud.zone || "").toString().slice(0, 60);
+            var realPseudo = (body.pseudo || ud.prenom || ud.pseudo || "").toString().slice(0, 40);
             var existing = await C("socialProfiles").doc(tuid).get();
             if (!existing.exists || !existing.data().activatedAt) {
                 await C("socialProfiles").doc(tuid).set({
-                    uid: tuid, pseudo: (body.pseudo || ud.prenom || "Test").toString().slice(0, 40),
-                    gender: ud.genre === "femme" ? "femme" : "homme", seeking: "tous",
-                    birthYear: ud.birthYear || 1995, zone: ud.localisation || ud.zone || "",
+                    uid: tuid, pseudo: realPseudo || "Manm",
+                    gender: realGender, seeking: "tous",
+                    birthYear: realBY, zone: realZone,
                     bio: "", photos: [], prefs: { minAge: 18, maxAge: 99, maxDistanceKm: 100 },
                     visible: false, discoverable: true, status: "pending",
                     createdAt: nowTs, activatedAt: nowTs, lastActive: nowTs
                 }, { merge: true });
                 await C("socialEntitlements").doc(tuid).set({ premiumUntil: null, superCredits: 1, platform: "web", updatedAt: nowTs }, { merge: true });
+            } else {
+                /* Deja active : on corrige avec les vraies infos (age/zone faux). */
+                var refresh = {};
+                if (realBY) refresh.birthYear = realBY;
+                if (realZone) refresh.zone = realZone;
+                if (realGender) refresh.gender = realGender;
+                if (realPseudo && !existing.data().pseudo) refresh.pseudo = realPseudo;
+                if (Object.keys(refresh).length) await C("socialProfiles").doc(tuid).set(refresh, { merge: true });
             }
             await C("users").doc(tuid).set({ social: { enabled: true, activatedAt: nowTs, consentAt: nowTs, consentVersion: 1, byAdmin: true } }, { merge: true });
             await audit("adminActivateSocial", tuid, { email: email });
-            return ok({ success: true, uid: tuid, email: email });
+            return ok({ success: true, uid: tuid, email: email, birthYear: realBY });
         }
 
         return err(400, "action envalid");

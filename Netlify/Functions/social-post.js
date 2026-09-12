@@ -96,6 +96,7 @@ exports.handler = async function (event) {
                 authorName: myName,
                 authorAvatar: myAvatar,
                 imageUrl: imageUrl || "",
+                mediaType: (body.mediaType === "video") ? "video" : "image",
                 caption: filterContact(caption),
                 hashtags: extractTags(caption),
                 taggedNames: taggedNames,
