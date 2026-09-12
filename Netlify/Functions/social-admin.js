@@ -428,6 +428,33 @@ exports.handler = async function (event) {
             return ok({ success: true });
         }
 
+        if (action === "adminActivateSocial") {
+            var email = (body.email || "").toString().trim().toLowerCase();
+            var tuid = (body.uid || "").toString();
+            if (!email && !tuid) return err(400, "Antre yon imel oswa uid.");
+            if (!tuid && email) {
+                try { var ur = await admin.auth().getUserByEmail(email); tuid = ur.uid; }
+                catch (e) { return err(404, "Pa gen kont Bizen pou imel sa a."); }
+            }
+            var uDoc = await C("users").doc(tuid).get();
+            var ud = uDoc.exists ? uDoc.data() : {};
+            var existing = await C("socialProfiles").doc(tuid).get();
+            if (!existing.exists || !existing.data().activatedAt) {
+                await C("socialProfiles").doc(tuid).set({
+                    uid: tuid, pseudo: (body.pseudo || ud.prenom || "Test").toString().slice(0, 40),
+                    gender: ud.genre === "femme" ? "femme" : "homme", seeking: "tous",
+                    birthYear: ud.birthYear || 1995, zone: ud.localisation || ud.zone || "",
+                    bio: "", photos: [], prefs: { minAge: 18, maxAge: 99, maxDistanceKm: 100 },
+                    visible: false, discoverable: true, status: "pending",
+                    createdAt: nowTs, activatedAt: nowTs, lastActive: nowTs
+                }, { merge: true });
+                await C("socialEntitlements").doc(tuid).set({ premiumUntil: null, superCredits: 1, platform: "web", updatedAt: nowTs }, { merge: true });
+            }
+            await C("users").doc(tuid).set({ social: { enabled: true, activatedAt: nowTs, consentAt: nowTs, consentVersion: 1, byAdmin: true } }, { merge: true });
+            await audit("adminActivateSocial", tuid, { email: email });
+            return ok({ success: true, uid: tuid, email: email });
+        }
+
         return err(400, "action envalid");
     } catch (e) {
         console.error("[SOCIAL-ADMIN]", e.message);

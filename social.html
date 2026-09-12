@@ -260,6 +260,26 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .navbtn.active::after{content:"";position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--rose)}
 .deck-hint{position:absolute;left:0;right:0;bottom:92px;text-align:center;color:rgba(255,255,255,.85);font-size:.72rem;z-index:6;pointer-events:none;text-shadow:0 1px 6px rgba(0,0,0,.8)}
 .deck-hint i{margin-right:5px}
+/* ============ REFRESH "NWIT CHO" + VIBE ============ */
+#app-shell{background:radial-gradient(125% 55% at 50% 0%, #18111d 0%, #0a0a0f 44%)}
+.topbar{position:relative;border-bottom:none;box-shadow:0 1px 0 var(--line)}
+.topbar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,#e91e63,#9c27b0,#ffb300,#e91e63);background-size:300% 100%;animation:brandflow 9s linear infinite}
+@keyframes brandflow{to{background-position:300% 0}}
+.vibe-pill{display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:50px;white-space:nowrap;line-height:1.3}
+.vibe-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.post-head .av.pvibe{box-shadow:0 0 0 2px var(--bg),0 0 0 3px var(--vc,transparent)}
+.cr-vibe-title{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px}
+.vibe-picker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.vibe-opt{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:50px;background:var(--card2);border:1.5px solid var(--line);font-size:.84rem;font-weight:600;transition:.15s}
+.vibe-opt.sel{border-color:var(--vc);color:var(--vc);box-shadow:0 0 0 3px color-mix(in srgb,var(--vc) 20%,transparent)}
+.pf-top .av.vibed{box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--vc,transparent)}
+#pf-vibe{margin-top:7px}
+.field-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.range-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.range-row .lb{font-size:.8rem;color:var(--muted);min-width:96px}
+.range-row input[type=range]{flex:1;accent-color:var(--rose)}
+.range-row .rv{font-size:.82rem;color:var(--ink);min-width:58px;text-align:right;font-weight:600}
+.switchbtn{display:inline-flex}
 </style>
 </head>
 <body>
@@ -359,6 +379,7 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
         <div class="av" id="pf-av"></div>
         <div style="flex:1">
           <div style="font-weight:700;font-size:1.05rem" id="pf-pseudo">...</div>
+          <div id="pf-vibe"></div>
           <div class="bio" style="color:var(--muted2);font-size:.82rem;margin-top:4px" id="pf-bioshow"></div>
         </div>
       </div>
@@ -372,13 +393,32 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
       <div style="padding:12px 14px"><button class="btn ghost" id="pf-editbtn"><i class="fas fa-pen"></i> Modifye pwofil</button></div>
       <div class="pf-grid" id="pf-grid"></div>
 
-      <!-- edit panel -->
+      <!-- PARAMÈT (tout modifiable) -->
       <div id="pf-edit" class="hidden" style="padding:18px">
-        <label class="fld">Foto pwofil (jiska 6)</label>
-        <div class="photo-grid" id="pf-photos"></div>
+        <div class="sec-title">Vibe ou · ambians kounye a</div>
+        <div class="vibe-picker" id="vibe-picker"></div>
+
+        <div class="sec-title">Enfòmasyon pèsonèl</div>
+        <label class="fld">Non oswa pseudo</label>
+        <input id="pf-pseudo-in" class="input" maxlength="40" placeholder="Non ou">
         <label class="fld">Bio</label>
-        <textarea id="pf-bio" maxlength="300"></textarea>
-        <button class="btn ghost" id="pf-save"><i class="fas fa-floppy-disk"></i> Anrejistre</button>
+        <textarea id="pf-bio" maxlength="300" placeholder="Di yon bagay sou ou..."></textarea>
+        <div class="field-2">
+          <div><label class="fld">Mwen se</label><select id="pf-gender" class="input"><option value="homme">Gason</option><option value="femme">Fanm</option><option value="autre">Lòt</option></select></div>
+          <div><label class="fld">M ap chèche</label><select id="pf-seeking" class="input"><option value="tous">Tout moun</option><option value="femme">Fanm</option><option value="homme">Gason</option></select></div>
+        </div>
+        <label class="fld">Zòn oswa vil</label>
+        <input id="pf-zone" class="input" maxlength="60" placeholder="Egzanp: Petyonvil">
+
+        <label class="fld">Foto (jiska 6)</label>
+        <div class="photo-grid" id="pf-photos"></div>
+
+        <div class="sec-title">Preferans rankont</div>
+        <div class="range-row"><span class="lb">Laj minimòm</span><input type="range" id="pf-agemin" min="18" max="99"><span class="rv" id="pf-ageminlbl">18</span></div>
+        <div class="range-row"><span class="lb">Laj maksimòm</span><input type="range" id="pf-agemax" min="18" max="99"><span class="rv" id="pf-agemaxlbl">99</span></div>
+        <div class="range-row"><span class="lb">Distans maks</span><input type="range" id="pf-dist" min="5" max="300"><span class="rv" id="pf-distlbl">100 km</span></div>
+
+        <button class="btn" id="pf-save"><i class="fas fa-floppy-disk"></i> Anrejistre tout chanjman</button>
 
         <div class="sec-title">Dekouvri ak rankont</div>
         <div class="toggle-row">
@@ -395,8 +435,11 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
           <div><div class="lbl">Mesaj efemè</div><div class="desc">Mesaj efase otomatikman apre 24h</div></div>
           <div class="switch on" id="sw-ephemeral"></div>
         </div>
-        <button class="btn ghost" id="pf-logout" style="margin-top:20px"><i class="fas fa-right-from-bracket"></i> Dekonekte</button>
-        <a href="/index.html" style="display:block;text-align:center;color:var(--muted);font-size:.8rem;margin-top:16px;text-decoration:none">Bizen HT prensipal</a>
+
+        <div class="sec-title">Kont</div>
+        <a class="btn ghost" href="/Dashboard.html" style="margin-bottom:10px"><i class="fas fa-repeat"></i> Ale sou kont Bizen mwen</a>
+        <button class="btn ghost" id="pf-logout"><i class="fas fa-right-from-bracket"></i> Dekonekte</button>
+        <button class="btn ghost" id="pf-delete" style="margin-top:10px;color:var(--red)"><i class="fas fa-trash"></i> Efase kont Social mwen</button>
       </div>
     </div>
 
@@ -422,6 +465,8 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
       <textarea id="cr-caption" placeholder="Ekri yon bagay... sèvi ak #hashtag" maxlength="2200"></textarea>
       <div class="tag-picker" id="cr-tags"></div>
       <button class="btn ghost" id="cr-tagbtn" style="margin-top:2px"><i class="fas fa-user-tag"></i> Idantifye zanmi</button>
+      <div class="cr-vibe-title">Vibe pou post sa a</div>
+      <div class="vibe-picker" id="cr-vibe"></div>
     </div>
   </div>
 
@@ -695,8 +740,8 @@ function buildPost(p){
     (isRepost?'<div class="repost-tag"><i class="fas fa-retweet"></i> '+esc(p.authorName||"")+' repibliye soti nan '+esc(p.repostAuthorName||"")+'</div>':'')+
     (isRepost&&p.repostComment?'<div class="repost-note">'+capTags(p.repostComment)+'</div>':'')+
     '<div class="post-head">'+
-      '<div class="av clk" style="background-image:url(\''+esc(p.authorAvatar||"")+'\')"></div>'+
-      '<div class="nm clk">'+esc(p.authorName||"Anonim")+(p.zone?'<small>'+esc(p.zone)+'</small>':'')+'</div>'+
+      '<div class="av clk'+(p.vibe?' pvibe':'')+'" style="background-image:url(\''+esc(p.authorAvatar||"")+'\')'+(p.vibe?';--vc:'+vibeColor(p.vibe):'')+'"></div>'+
+      '<div class="nm clk">'+esc(p.authorName||"Anonim")+(p.vibe?' '+vibePill(p.vibe):'')+(p.zone?'<small>'+esc(p.zone)+'</small>':'')+'</div>'+
       '<button class="more"><i class="fas fa-ellipsis"></i></button>'+
     '</div>'+
     (p.imageUrl?'<div class="post-img" style="background-image:url(\''+esc(p.imageUrl)+'\')"></div>':'')+
@@ -794,9 +839,14 @@ $("cm-send").onclick=sendComment;
 $("cm-text").addEventListener("keydown",function(e){ if(e.key==="Enter"){e.preventDefault();sendComment();} });
 
 /* ============ CREATE POST ============ */
-var crTags=[];
+var crTags=[], crVibe="";
 function renderCrTags(){ var c=$("cr-tags"); c.innerHTML=""; crTags.forEach(function(nm,i){ var chip=document.createElement("span"); chip.className="tag-chip sel"; chip.innerHTML=esc(nm)+' <i class="fas fa-xmark"></i>'; chip.onclick=function(){ crTags.splice(i,1); renderCrTags(); }; c.appendChild(chip); }); }
-$("nav-create").onclick=function(){ crImage=""; crTags=[]; $("cr-caption").value=""; renderCrTags(); $("cr-pick").style.backgroundImage=""; $("cr-pick").innerHTML='<i class="fas fa-image"></i><span style="font-size:.82rem">Chwazi yon foto</span>'; $("createview").classList.remove("hidden"); };
+function renderCrVibe(){
+  var box=$("cr-vibe"); if(!box)return;
+  box.innerHTML=VIBES.map(function(v){ return '<button class="vibe-opt'+(crVibe===v.k?" sel":"")+'" data-cvk="'+v.k+'" style="--vc:'+v.color+'"><span class="vibe-dot" style="background:'+v.color+'"></span>'+v.label+'</button>'; }).join("");
+  box.querySelectorAll("[data-cvk]").forEach(function(b){ b.onclick=function(){ crVibe=(crVibe===b.dataset.cvk)?"":b.dataset.cvk; renderCrVibe(); }; });
+}
+$("nav-create").onclick=function(){ crImage=""; crTags=[]; crVibe=""; $("cr-caption").value=""; renderCrTags(); renderCrVibe(); $("cr-pick").style.backgroundImage=""; $("cr-pick").innerHTML='<i class="fas fa-image"></i><span style="font-size:.82rem">Chwazi yon foto</span>'; $("createview").classList.remove("hidden"); };
 $("cr-back").onclick=function(){ $("createview").classList.add("hidden"); };
 $("cr-pick").onclick=function(){ uploadTarget="post"; $("file-input").click(); };
 $("cr-tagbtn").onclick=function(){ openTagPicker(); };
@@ -817,7 +867,7 @@ $("cr-publish").onclick=async function(){
   var cap=$("cr-caption").value.trim();
   if(!crImage && !cap){ toast("Ajoute yon foto oswa yon tèks."); return; }
   var b=this; b.style.opacity=".5";
-  try{ await api("social-post",{action:"create",imageUrl:crImage,caption:cap,taggedNames:crTags}); $("createview").classList.add("hidden"); toast("Pibliye!"); switchTab("feed"); loadFeed(); }
+  try{ await api("social-post",{action:"create",imageUrl:crImage,caption:cap,taggedNames:crTags,vibe:crVibe}); $("createview").classList.add("hidden"); toast("Pibliye!"); switchTab("feed"); loadFeed(); }
   catch(e){ toast(e.message); } finally{ b.style.opacity="1"; }
 };
 
@@ -828,7 +878,7 @@ async function openProfileByUid(uid){
     var snap=await db.collection("socialProfiles").doc(uid).get();
     if(!snap.exists){ toast("Pwofil pa disponib."); return; }
     var d=snap.data(); var age=d.birthYear?(new Date().getFullYear()-d.birthYear):null;
-    openProfileDetail({uid:uid,pseudo:d.pseudo,age:age,zone:d.zone,bio:d.bio,photos:d.photos,followersCount:d.followersCount||0,followingCount:d.followingCount||0}, false);
+    openProfileDetail({uid:uid,pseudo:d.pseudo,age:age,zone:d.zone,bio:d.bio,photos:d.photos,vibe:d.vibe||"",followersCount:d.followersCount||0,followingCount:d.followingCount||0}, false);
   }catch(e){ toast(e.message); }
 }
 function openProfileDetail(prof, fromSwipe){
@@ -836,7 +886,7 @@ function openProfileDetail(prof, fromSwipe){
   var photo=(prof.photos&&prof.photos[0])||"";
   $("pv-title").textContent=prof.pseudo||"Pwofil";
   $("pv-photo").style.backgroundImage=photo?"url('"+photo+"')":""; $("pv-photo").innerHTML=photo?"":'<div class="noimg"><i class="fas fa-user"></i></div>';
-  $("pv-name").innerHTML=esc(prof.pseudo||"Anonim")+(prof.age?' <span class="age">'+prof.age+'</span>':'');
+  $("pv-name").innerHTML=esc(prof.pseudo||"Anonim")+(prof.age?' <span class="age">'+prof.age+'</span>':'')+(prof.vibe?' '+vibePill(prof.vibe):'');
   $("pv-sub").innerHTML=prof.zone?'<i class="fas fa-location-dot"></i> '+esc(prof.zone):'';
   $("pv-bio").textContent=prof.bio||"";
   $("pv-stats").innerHTML='<div class="s"><b>'+(prof.followersCount||0)+'</b><span>Abòne</span></div><div class="s"><b>'+(prof.followingCount||0)+'</b><span>Ap swiv</span></div><div class="s"><b id="pv-postn">0</b><span>Post</span></div>';
@@ -887,6 +937,7 @@ function buildCard(p, top){
   c.innerHTML='<div class="photo" style="'+(photo?"background-image:url('"+photo+"')":"")+'">'+(photo?"":'<div class="noimg"><i class="fas fa-user"></i></div>')+
     '<div class="stamp like">Like</div><div class="stamp nope">Non</div><div class="grad"></div>'+
     '<div class="meta"><div class="nm">'+esc(p.pseudo)+(p.age?' <span class="age">'+p.age+'</span>':'')+'</div>'+
+    (p.vibe?'<div style="margin-top:7px">'+vibePill(p.vibe)+'</div>':'')+
     (distTxt?'<div class="sub"><i class="fas fa-location-dot"></i> '+esc(distTxt)+'</div>':'')+
     (p.availableNow?'<div class="avail-pill"><i class="fas fa-bolt"></i> Disponib kounye a</div>':'')+
     (p.bio?'<div class="bio">'+esc(p.bio)+'</div>':'')+'</div></div>';
@@ -1013,6 +1064,30 @@ function chatMenu(){
 }
 
 /* ============ PROFILE ============ */
+/* ============ VIBE (ambians — accrochage Bizen) ============ */
+var VIBES=[
+  {k:"cho",label:"Cho",emoji:"🔥",color:"#ff5a3c"},
+  {k:"chill",label:"Chill",emoji:"🌙",color:"#5b8cff"},
+  {k:"fet",label:"Fèt",emoji:"💃",color:"#c04bff"},
+  {k:"randevou",label:"Randevou",emoji:"🍷",color:"#e0245e"},
+  {k:"pale",label:"Pou pale",emoji:"💬",color:"#1fb6a6"},
+  {k:"nouvo",label:"Nouvo",emoji:"✨",color:"#ffb300"}
+];
+function vibeOf(k){ for(var i=0;i<VIBES.length;i++)if(VIBES[i].k===k)return VIBES[i]; return null; }
+function vibeColor(k){ var v=vibeOf(k); return v?v.color:""; }
+function vibePill(k){ var v=vibeOf(k); if(!v)return ""; return '<span class="vibe-pill" style="color:'+v.color+';background:'+v.color+'22;border:1px solid '+v.color+'55"><span class="vibe-dot" style="background:'+v.color+'"></span>'+v.label+'</span>'; }
+function renderVibePicker(cur){
+  var box=$("vibe-picker"); if(!box)return;
+  box.innerHTML=VIBES.map(function(v){ return '<button class="vibe-opt'+(cur===v.k?" sel":"")+'" data-vk="'+v.k+'" style="--vc:'+v.color+'"><span class="vibe-dot" style="background:'+v.color+'"></span>'+v.label+'</button>'; }).join("");
+  box.querySelectorAll("[data-vk]").forEach(function(b){ b.onclick=function(){ PROFILE.vibe=(PROFILE.vibe===b.dataset.vk)?"":b.dataset.vk; renderVibePicker(PROFILE.vibe); applyMyVibe(); saveVibe(); }; });
+}
+async function saveVibe(){ try{ await db.collection("socialProfiles").doc(ME.uid).set({vibe:PROFILE.vibe||""},{merge:true}); }catch(e){} }
+function applyMyVibe(){
+  var v=vibeOf(PROFILE.vibe), av=$("pf-av");
+  if(v){ av.classList.add("vibed"); av.style.setProperty("--vc",v.color); $("pf-vibe").innerHTML=vibePill(PROFILE.vibe); }
+  else { av.classList.remove("vibed"); $("pf-vibe").innerHTML=""; }
+}
+
 function hydrateProfile(){
   var av=(PROFILE.photos&&PROFILE.photos[0])||"";
   $("pf-av").style.backgroundImage="url('"+av+"')";
@@ -1021,10 +1096,21 @@ function hydrateProfile(){
   $("pf-followers").textContent=PROFILE.followersCount||0;
   $("pf-following").textContent=PROFILE.followingCount||0;
   renderPhotoGrid("pf-photos",PROFILE.photos||[],"profile");
+  /* champs paramèt (tout modifiable) */
+  $("pf-pseudo-in").value=PROFILE.pseudo||"";
   $("pf-bio").value=PROFILE.bio||"";
+  $("pf-gender").value=PROFILE.gender||"homme";
+  $("pf-seeking").value=PROFILE.seeking||"tous";
+  $("pf-zone").value=PROFILE.zone||"";
+  var pr=PROFILE.prefs||{};
+  var amin=pr.minAge||18, amax=pr.maxAge||99, dist=pr.maxDistanceKm||100;
+  $("pf-agemin").value=amin; $("pf-ageminlbl").textContent=amin;
+  $("pf-agemax").value=amax; $("pf-agemaxlbl").textContent=amax;
+  $("pf-dist").value=dist; $("pf-distlbl").textContent=dist+" km";
   $("sw-discoverable").classList.toggle("on",PROFILE.discoverable!==false);
   $("sw-location").classList.toggle("on",PROFILE.shareLocation!==false);
   $("sw-ephemeral").classList.toggle("on",PROFILE.defaultEphemeral!==false);
+  renderVibePicker(PROFILE.vibe||""); applyMyVibe();
   loadMyPosts();
 }
 async function loadMyPosts(){
@@ -1039,12 +1125,40 @@ async function loadMyPosts(){
   }catch(e){ console.warn("myposts",e); }
 }
 $("pf-editbtn").onclick=function(){ $("pf-edit").classList.toggle("hidden"); };
-$("pf-save").onclick=async function(){ try{ await db.collection("socialProfiles").doc(ME.uid).set({bio:$("pf-bio").value.trim()},{merge:true}); PROFILE.bio=$("pf-bio").value.trim(); $("pf-bioshow").textContent=PROFILE.bio; toast("Anrejistre."); }catch(e){toast("Erè.");} };
+$("pf-save").onclick=async function(){
+  var b=this; b.disabled=true;
+  var pseudo=$("pf-pseudo-in").value.trim().slice(0,40);
+  var patch={
+    pseudo:pseudo||PROFILE.pseudo||"",
+    bio:$("pf-bio").value.trim(),
+    gender:$("pf-gender").value,
+    seeking:$("pf-seeking").value,
+    zone:$("pf-zone").value.trim().slice(0,60),
+    prefs:{ minAge:parseInt($("pf-agemin").value,10)||18, maxAge:parseInt($("pf-agemax").value,10)||99, maxDistanceKm:parseInt($("pf-dist").value,10)||100 }
+  };
+  try{
+    await db.collection("socialProfiles").doc(ME.uid).set(patch,{merge:true});
+    Object.assign(PROFILE,patch);
+    $("pf-pseudo").textContent=PROFILE.pseudo; $("pf-bioshow").textContent=PROFILE.bio;
+    toast("Chanjman anrejistre ✓"); $("pf-edit").classList.add("hidden");
+  }catch(e){ toast("Erè anrejistreman."); } finally{ b.disabled=false; }
+};
+$("pf-agemin").addEventListener("input",function(){ $("pf-ageminlbl").textContent=this.value; if(parseInt(this.value,10)>parseInt($("pf-agemax").value,10)){$("pf-agemax").value=this.value;$("pf-agemaxlbl").textContent=this.value;} });
+$("pf-agemax").addEventListener("input",function(){ $("pf-agemaxlbl").textContent=this.value; if(parseInt(this.value,10)<parseInt($("pf-agemin").value,10)){$("pf-agemin").value=this.value;$("pf-ageminlbl").textContent=this.value;} });
+$("pf-dist").addEventListener("input",function(){ $("pf-distlbl").textContent=this.value+" km"; });
 $("sw-discoverable").onclick=function(){ toggleSetting("discoverable",this); toast(this.classList.contains("on")?"Ou parèt nan Dekouvri":"Ou pa parèt nan Dekouvri ankò"); };
 $("sw-location").onclick=function(){ toggleSetting("shareLocation",this); };
 $("sw-ephemeral").onclick=function(){ toggleSetting("defaultEphemeral",this); };
 async function toggleSetting(key,el){ var on=!el.classList.contains("on"); el.classList.toggle("on",on); PROFILE[key]=on; try{ await db.collection("socialProfiles").doc(ME.uid).set({[key]:on},{merge:true}); }catch(e){ el.classList.toggle("on",!on); toast("Erè."); } }
 $("pf-logout").onclick=function(){ auth.signOut(); };
+$("pf-delete").onclick=async function(){
+  if(!confirm("Efase kont Social ou? Pwofil ou ap disparèt sou Bizen Social. Kont Bizen prensipal ou ap rete."))return;
+  try{
+    await db.collection("socialProfiles").doc(ME.uid).delete();
+    await db.collection("users").doc(ME.uid).set({social:firebase.firestore.FieldValue.delete()},{merge:true});
+    toast("Kont Social efase."); setTimeout(function(){ location.href="/Dashboard.html"; },1000);
+  }catch(e){ toast("Erè efasman."); }
+};
 
 /* ================================================================
    MODE APERCU (design, san sèvè) - aktive sèlman ak ?demo / #demo.
@@ -1063,16 +1177,16 @@ $("pf-logout").onclick=function(){ auth.signOut(); };
   storage={ ref:function(){ return { child:function(){ return stChild; } }; } };
   auth={ signOut:function(){ toast("(aperçu) Dekonekte"); }, onAuthStateChanged:noop };
   ME={uid:"demo"}; TOKEN="demo";
-  PROFILE={pseudo:"Ou",bio:"Egzanp bio, m renmen sinema ak bon manje.",photos:[av(300,"😊")],status:"active",visible:true,shareLocation:true,defaultEphemeral:true,prefs:{}};
+  PROFILE={pseudo:"Ou",bio:"Egzanp bio, m renmen sinema ak bon manje.",photos:[av(300,"😊")],status:"active",visible:true,shareLocation:true,defaultEphemeral:true,vibe:"randevou",gender:"homme",seeking:"tous",zone:"Petyonvil",prefs:{minAge:22,maxAge:40,maxDistanceKm:60}};
   var POSTS=[
-    {id:"p1",authorUid:"d1",authorName:"Nadège",authorAvatar:av(330,"🌸"),imageUrl:av(330,"🌅"),caption:"Bèl jounen nan Petyonvil. #ayiti #lavi #bonè",hashtags:["ayiti"],likeCount:42,commentCount:5,createdAt:{toMillis:function(){return Date.now()-3600000;}}},
-    {id:"p2",authorUid:"d2",authorName:"Jonas",authorAvatar:av(210,"⚽"),imageUrl:av(210,"🏝️"),caption:"Wikenn nan plaj la. Kilès ki vle vini? #plaj #detant",hashtags:["plaj"],likeCount:18,commentCount:2,createdAt:{toMillis:function(){return Date.now()-7200000;}}},
-    {id:"p3",authorUid:"d3",authorName:"Mia",authorAvatar:av(280,"🎨"),imageUrl:"",caption:"Nouvo desen fini! Sa nou panse? #atis #kreyativite",hashtags:["atis"],likeCount:31,commentCount:8,createdAt:{toMillis:function(){return Date.now()-90000000;}}}
+    {id:"p1",authorUid:"d1",authorName:"Nadège",authorAvatar:av(330,"🌸"),imageUrl:av(330,"🌅"),vibe:"fet",caption:"Bèl jounen nan Petyonvil. #ayiti #lavi #bonè",hashtags:["ayiti"],likeCount:42,commentCount:5,createdAt:{toMillis:function(){return Date.now()-3600000;}}},
+    {id:"p2",authorUid:"d2",authorName:"Jonas",authorAvatar:av(210,"⚽"),imageUrl:av(210,"🏝️"),vibe:"chill",caption:"Wikenn nan plaj la. Kilès ki vle vini? #plaj #detant",hashtags:["plaj"],likeCount:18,commentCount:2,createdAt:{toMillis:function(){return Date.now()-7200000;}}},
+    {id:"p3",authorUid:"d3",authorName:"Mia",authorAvatar:av(280,"🎨"),imageUrl:"",vibe:"cho",caption:"Nouvo desen fini! Sa nou panse? #atis #kreyativite",hashtags:["atis"],likeCount:31,commentCount:8,createdAt:{toMillis:function(){return Date.now()-90000000;}}}
   ];
   var PROFILES=[
-    {uid:"d1",pseudo:"Nadège",age:26,zone:"Petyonvil",distanceKm:3,availableNow:true,bio:"Mizik, vwayaj ak bon konvèsasyon.",photos:[av(330,"🌸")]},
-    {uid:"d2",pseudo:"Jonas",age:31,zone:"Delmas",distanceKm:7,bio:"Antreprenè, foutbòl chak wikenn.",photos:[av(210,"⚽")]},
-    {uid:"d3",pseudo:"Mia",age:24,zone:"Pòtoprens",distanceKm:5,bio:"Etidyan, atist nan kè.",photos:[av(280,"🎨")]}
+    {uid:"d1",pseudo:"Nadège",age:26,zone:"Petyonvil",distanceKm:3,availableNow:true,vibe:"fet",bio:"Mizik, vwayaj ak bon konvèsasyon.",photos:[av(330,"🌸")]},
+    {uid:"d2",pseudo:"Jonas",age:31,zone:"Delmas",distanceKm:7,vibe:"chill",bio:"Antreprenè, foutbòl chak wikenn.",photos:[av(210,"⚽")]},
+    {uid:"d3",pseudo:"Mia",age:24,zone:"Pòtoprens",distanceKm:5,vibe:"cho",bio:"Etidyan, atist nan kè.",photos:[av(280,"🎨")]}
   ];
   api=async function(fn,p){
     if(fn==="social-feed") return {profiles:PROFILES.slice()};
@@ -1091,7 +1205,7 @@ $("pf-logout").onclick=function(){ auth.signOut(); };
     $("nav-badge").textContent="2"; $("nav-badge").classList.remove("hidden"); };
   openComments=function(p){ $("cm-list").innerHTML=""; [["Nadège",330,"🌸","Twò bèl! 😍"],["Jonas",210,"⚽","Kote sa ye?"]].forEach(function(c){ $("cm-list").appendChild(buildComment({name:c[0],avatar:av(c[1],c[2]),text:c[3],createdAt:{toMillis:function(){return Date.now()-600000;}}})); }); $("commentsview").classList.remove("hidden"); };
   openChat=function(){ $("chat-name").textContent="Nadège"; $("chat-av").style.backgroundImage="url('"+av(330,"🌸")+"')"; $("chat-eph").textContent="Mesaj efemè, efase apre 24h"; var b=$("chat-body"); b.innerHTML=""; [["you","Kontan nou matche! 😊"],["me","Mwen menm tou!"]].forEach(function(m){ var x=document.createElement("div"); x.className="bubble "+m[0]; x.textContent=m[1]; b.appendChild(x); }); $("chatview").classList.remove("hidden"); $("chat-send").onclick=function(){ var i=$("chat-text"); if(!i.value.trim())return; var x=document.createElement("div"); x.className="bubble me"; x.textContent=i.value.trim(); b.appendChild(x); i.value=""; b.scrollTop=b.scrollHeight; }; };
-  hydrateProfile=function(){ $("pf-av").style.backgroundImage="url('"+PROFILE.photos[0]+"')"; $("pf-pseudo").textContent="Ou"; $("pf-bioshow").textContent=PROFILE.bio; $("pf-bio").value=PROFILE.bio; renderPhotoGrid("pf-photos",PROFILE.photos,"profile"); $("pf-posts").textContent="3"; $("pf-followers").textContent="128"; $("pf-following").textContent="87"; $("pf-likes").textContent="91"; $("pf-matches").textContent="3"; $("sw-discoverable").classList.add("on"); var g=$("pf-grid"); g.innerHTML=""; POSTS.forEach(function(p){ var c=document.createElement("div"); c.className="cell"; if(p.imageUrl)c.style.backgroundImage="url('"+p.imageUrl+"')"; g.appendChild(c); }); };
+  hydrateProfile=function(){ $("pf-av").style.backgroundImage="url('"+PROFILE.photos[0]+"')"; $("pf-pseudo").textContent="Ou"; $("pf-bioshow").textContent=PROFILE.bio; $("pf-bio").value=PROFILE.bio; $("pf-pseudo-in").value="Ou"; $("pf-gender").value=PROFILE.gender; $("pf-seeking").value=PROFILE.seeking; $("pf-zone").value=PROFILE.zone; $("pf-agemin").value=22;$("pf-ageminlbl").textContent="22"; $("pf-agemax").value=40;$("pf-agemaxlbl").textContent="40"; $("pf-dist").value=60;$("pf-distlbl").textContent="60 km"; renderPhotoGrid("pf-photos",PROFILE.photos,"profile"); $("pf-posts").textContent="3"; $("pf-followers").textContent="128"; $("pf-following").textContent="87"; $("pf-likes").textContent="91"; $("pf-matches").textContent="3"; $("sw-discoverable").classList.add("on"); renderVibePicker(PROFILE.vibe); applyMyVibe(); var g=$("pf-grid"); g.innerHTML=""; POSTS.forEach(function(p){ var c=document.createElement("div"); c.className="cell"; if(p.imageUrl)c.style.backgroundImage="url('"+p.imageUrl+"')"; g.appendChild(c); }); };
   openProfileByUid=function(uid){ var pr=null; PROFILES.forEach(function(x){if(x.uid===uid)pr=x;}); openProfileDetail(pr?{uid:pr.uid,pseudo:pr.pseudo,age:pr.age,zone:pr.zone,bio:pr.bio,photos:pr.photos,followersCount:128,followingCount:87}:{uid:uid,pseudo:"Moun",photos:[],followersCount:0,followingCount:0}, false); };
 
   var which=(q.match(/[?&#]demo=([a-z0-9]+)/i)||[])[1]||"app";

@@ -69,7 +69,7 @@ exports.handler = async function (event) {
 
         /* Compte gelé/suspendu Bizen => pas d'activation Social. */
         if (user.status && user.status !== "active") {
-            return err(403, "Kont ou pa aktif — ou pa ka aktive Bizen Social kounye a.");
+            return err(403, "Kont ou pa aktif. Ou pa ka aktive Bizen Social kounye a.");
         }
 
         var profileRef = dbf.collection("socialProfiles").doc(uid);

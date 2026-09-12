@@ -130,6 +130,7 @@ exports.handler = async function (event) {
                 zone: c.zone || "",
                 bio: (c.bio || "").slice(0, 300),
                 photos: Array.isArray(c.photos) ? c.photos.slice(0, 6) : [],
+                vibe: c.vibe || "",
                 distanceKm: dist,               /* approximatif ; null si géoloc off */
                 availableNow: !!availActive,
                 _score: score

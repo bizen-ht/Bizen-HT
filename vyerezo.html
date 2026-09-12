@@ -385,7 +385,8 @@ async function loadOverview(){
 var uFilter="", uSearch="", uAccount="";
 function loadUsers(){
   var c=$("content");
-  c.innerHTML='<div id="segbar" class="seg-summary"></div>'+
+  c.innerHTML='<div class="card"><h3><i class="fas fa-user-gear"></i> Aktive Social sou yon kont Bizen (tès)</h3><p class="sub">Antre imel yon kont Bizen ki egziste deja. Sa aktive Bizen Social sou li pou moun nan ka konekte sou /social epi fè tès.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><input class="fld-in" id="taEmail" placeholder="imel@egzanp.com" style="flex:1;min-width:200px;margin:0"><button class="btn" id="taBtn"><i class="fas fa-bolt"></i> Aktive Social</button></div><div id="taRes" style="font-size:.82rem;margin-top:10px;color:var(--muted)"></div></div>'+
+    '<div id="segbar" class="seg-summary"></div>'+
     '<div class="toolbar"><div class="search"><i class="fas fa-search" style="color:var(--muted)"></i><input id="uq" placeholder="Chèche pa pseudo..."></div></div>'+
     '<div class="toolbar" id="ufilters">'+
     ['','active','pending','suspended','banned'].map(function(f){ return '<button class="chip'+(uFilter===f?" on":"")+'" data-f="'+f+'">'+(f===""?"Tout":({active:"Aktif",pending:"An atant",suspended:"Sispann",banned:"Bani"}[f]))+'</button>'; }).join("")+
@@ -397,6 +398,9 @@ function loadUsers(){
   $("uaccount").querySelectorAll(".chip").forEach(function(ch){ ch.onclick=function(){ uAccount=ch.dataset.a; loadUsers(); }; });
   var q=$("uq"); q.value=uSearch;
   var tmr; q.addEventListener("input",function(){ clearTimeout(tmr); tmr=setTimeout(function(){ uSearch=q.value.trim(); fetchUsers(); },350); });
+  $("taBtn").onclick=async function(){ var em=$("taEmail").value.trim(); if(!em){ toast("Antre yon imel."); return; } var b=this; b.disabled=true; $("taRes").textContent="Ap aktive...";
+    try{ var r=await adminApi("adminActivateSocial",{email:em}); $("taRes").innerHTML='<i class="fas fa-check" style="color:var(--green)"></i> Social aktive pou '+esc(em)+'. Moun nan ka konekte sou /social kounye a.'; toast("Aktive ✓"); fetchUsers(); loadSegments(); }
+    catch(e){ $("taRes").innerHTML='<i class="fas fa-xmark" style="color:var(--red)"></i> '+esc(e.message); } finally{ b.disabled=false; } };
   loadSegments(); fetchUsers();
 }
 async function loadSegments(){

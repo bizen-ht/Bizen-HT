@@ -99,6 +99,7 @@ exports.handler = async function (event) {
                 caption: filterContact(caption),
                 hashtags: extractTags(caption),
                 taggedNames: taggedNames,
+                vibe: (["cho", "chill", "fet", "randevou", "pale", "nouvo"].indexOf(body.vibe) !== -1) ? body.vibe : "",
                 likeCount: 0,
                 commentCount: 0,
                 repostCount: 0,
