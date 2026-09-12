@@ -92,10 +92,11 @@ exports.handler = async function (event) {
             bio: "",
             photos: [],                 /* URLs Firebase Storage, ajoutées à l'onboarding */
             prefs: { minAge: 18, maxAge: 99, maxDistanceKm: 100 },
-            visible: false,             /* devient true quand le profil est complet + modéré */
+            visible: false,             /* devient true a la fin de l'onboarding (photos) */
+            discoverable: false,        /* pas dans Dekouvri avant d'avoir des photos */
             incognito: false,
             availableNow: null,
-            status: "pending",          /* pending -> active (après photos/modération) */
+            status: "active",           /* compte actif direct, pas de liste d'attente */
             createdAt: nowTs,
             activatedAt: nowTs,
             lastActive: nowTs

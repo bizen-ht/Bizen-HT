@@ -452,7 +452,7 @@ exports.handler = async function (event) {
                     gender: realGender, seeking: "tous",
                     birthYear: realBY, zone: realZone,
                     bio: "", photos: [], prefs: { minAge: 18, maxAge: 99, maxDistanceKm: 100 },
-                    visible: false, discoverable: true, status: "pending",
+                    visible: false, discoverable: false, status: "active",
                     createdAt: nowTs, activatedAt: nowTs, lastActive: nowTs
                 }, { merge: true });
                 await C("socialEntitlements").doc(tuid).set({ premiumUntil: null, superCredits: 1, platform: "web", updatedAt: nowTs }, { merge: true });

@@ -361,7 +361,6 @@ async function loadOverview(){
     var html='<div class="sec-h">Kominote</div><div class="kgrid">'+
       kpi("fas fa-users","#e91e63",s.members,"Total manm")+
       kpi("fas fa-user-check","#25c26e",s.membersActive,"Aktif")+
-      kpi("fas fa-user-clock","#ffa726",s.membersPending,"An atant")+
       kpi("fas fa-user-plus","#4aa3ff",s.newToday,"Nouvo jodi a")+
       kpi("fas fa-fire","#e91e63",s.discoverable,"Nan Dekouvri")+
       kpi("fas fa-id-badge","#4aa3ff",s.verified,"Verifye")+
@@ -389,7 +388,7 @@ function loadUsers(){
     '<div id="segbar" class="seg-summary"></div>'+
     '<div class="toolbar"><div class="search"><i class="fas fa-search" style="color:var(--muted)"></i><input id="uq" placeholder="Chèche pa pseudo..."></div></div>'+
     '<div class="toolbar" id="ufilters">'+
-    ['','active','pending','suspended','banned'].map(function(f){ return '<button class="chip'+(uFilter===f?" on":"")+'" data-f="'+f+'">'+(f===""?"Tout":({active:"Aktif",pending:"An atant",suspended:"Sispann",banned:"Bani"}[f]))+'</button>'; }).join("")+
+    ['','active','suspended','banned'].map(function(f){ return '<button class="chip'+(uFilter===f?" on":"")+'" data-f="'+f+'">'+(f===""?"Tout":({active:"Aktif",suspended:"Sispann",banned:"Bani"}[f]))+'</button>'; }).join("")+
     '</div>'+
     '<div class="toolbar" id="uaccount">'+
     [['','Tout tip'],['elu','Elu ki sou Social'],['vip','VIP Bizen'],['social','Social sèlman']].map(function(f){ return '<button class="chip'+(uAccount===f[0]?" on":"")+'" data-a="'+f[0]+'">'+f[1]+'</button>'; }).join("")+

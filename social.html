@@ -573,7 +573,7 @@ auth.onAuthStateChanged(async function(u){
     var snap=await db.collection("socialProfiles").doc(u.uid).get();
     if(!snap.exists || !snap.data().activatedAt){ show("v-activate"); prefillActivate(); return; }
     PROFILE=snap.data();
-    if(PROFILE.status==="pending" || !PROFILE.photos || PROFILE.photos.length===0){ enterOnboard(); return; }
+    if(!PROFILE.photos || PROFILE.photos.length===0){ enterOnboard(); return; }
     enterApp();
   }catch(e){ console.error(e); toast("Erè chajman. Rafrechi."); }
 });
