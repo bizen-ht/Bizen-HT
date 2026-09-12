@@ -149,6 +149,12 @@
   to = "/social.html"
   status = 200
 
+# Bizen Social : dashboard admin dédié (séparé de Vye/Élu)
+[[redirects]]
+  from = "/vyerezo"
+  to = "/vyerezo.html"
+  status = 200
+
 # Lien dédié pour le formulaire Elu (ouvre le popup Inskri sur le formulaire Elu)
 [[redirects]]
   from = "/elu"

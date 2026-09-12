@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vyerezo — Admin Bizen Social</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --bg:#0a0a0f;--panel:#12121a;--panel2:#171722;--line:#262633;--ink:#fff;--muted:#8a8a9c;--muted2:#b4b4c2;
+  --rose:#e91e63;--purple:#9c27b0;--gold:#ffd700;--green:#25c26e;--red:#f4436a;--blue:#4aa3ff;--amber:#ffa726;
+  --grad:linear-gradient(135deg,#e91e63,#9c27b0);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{max-width:100%;display:block}
+input,select,textarea{font-family:inherit;font-size:14px}
+.hidden{display:none!important}
+a{color:var(--rose);text-decoration:none}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+
+/* ---- Login ---- */
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+#login .box{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:32px 26px;max-width:380px;width:100%;text-align:center}
+#login .shield{font-size:2.6rem;color:var(--rose);margin-bottom:10px}
+#login h1{font-size:1.3rem;margin-bottom:4px}
+#login p{color:var(--muted);font-size:.82rem;margin-bottom:22px}
+.fld-in{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:13px 14px;color:var(--ink);margin-bottom:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--grad);color:#fff;padding:12px 18px;border-radius:11px;font-weight:600;transition:transform .1s,opacity .1s}
+.btn:active{transform:scale(.98)}.btn:disabled{opacity:.5}
+.btn.full{width:100%}
+.btn.ghost{background:var(--panel2);border:1px solid var(--line)}
+.btn.red{background:var(--red)}.btn.green{background:var(--green)}.btn.amber{background:var(--amber);color:#1a1200}.btn.blue{background:var(--blue);color:#04121f}.btn.gold{background:linear-gradient(135deg,#ffd700,#ff9800);color:#1a1200}
+.btn.sm{padding:8px 12px;font-size:.8rem;border-radius:9px}
+#lgErr{color:var(--red);font-size:.82rem;margin-bottom:10px;display:none}
+
+/* ---- Shell ---- */
+#panel{display:none;min-height:100vh}
+.shell{display:flex;min-height:100vh}
+.side{width:230px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.side .brand{padding:18px 18px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.side .brand .lg{font-weight:800;font-size:1.05rem}
+.side .brand .lg span{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.side .brand .tag{font-size:.58rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.nav{flex:1;overflow-y:auto;padding:10px 8px}
+.nav .it{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:10px;color:var(--muted2);font-weight:500;font-size:.88rem;margin-bottom:2px;position:relative}
+.nav .it i{width:18px;text-align:center;font-size:.95rem}
+.nav .it:hover{background:var(--panel2);color:var(--ink)}
+.nav .it.active{background:var(--panel2);color:var(--ink)}
+.nav .it.active::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--rose)}
+.nav .it .cnt{margin-left:auto;background:var(--red);color:#fff;font-size:.62rem;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.nav .sep{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:14px 13px 6px}
+.side .foot{padding:12px;border-top:1px solid var(--line)}
+.side .foot .who{font-size:.72rem;color:var(--muted);margin-bottom:8px;padding:0 4px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(10,10,15,.9);backdrop-filter:blur(8px);z-index:20}
+.topbar h2{font-size:1.15rem;font-weight:700;flex:1}
+.topbar .burger{display:none}
+.content{padding:20px 22px 50px;max-width:1200px}
+
+/* ---- KPI cards ---- */
+.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px;margin-bottom:8px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 16px}
+.kpi .k-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.kpi .k-ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.95rem}
+.kpi .k-v{font-size:1.7rem;font-weight:800;line-height:1}
+.kpi .k-l{font-size:.72rem;color:var(--muted);margin-top:4px}
+.kpi.alert{border-color:rgba(244,67,106,.5)}
+.kpi.alert .k-v{color:var(--red)}
+.sec-h{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:26px 0 10px}
+
+/* ---- Toolbar / chips ---- */
+.toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:16px}
+.search{flex:1;min-width:180px;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 13px}
+.search input{background:none;border:none;color:var(--ink);flex:1;outline:none}
+.chip{padding:8px 14px;border-radius:50px;background:var(--panel);border:1px solid var(--line);color:var(--muted2);font-size:.8rem;font-weight:600}
+.chip.on{background:var(--rose);border-color:var(--rose);color:#fff}
+
+/* ---- User rows ---- */
+.urow{display:flex;align-items:center;gap:13px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:13px;margin-bottom:9px}
+.urow .av{width:48px;height:48px;border-radius:50%;background:var(--panel2) center/cover;flex:none;position:relative}
+.urow .av .vb{position:absolute;bottom:-2px;right:-2px;width:17px;height:17px;border-radius:50%;background:var(--blue);border:2px solid var(--panel);display:flex;align-items:center;justify-content:center;font-size:.5rem;color:#fff}
+.urow .u-main{flex:1;min-width:0}
+.urow .u-nm{font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.urow .u-sub{font-size:.74rem;color:var(--muted);margin-top:2px}
+.urow .u-stats{font-size:.72rem;color:var(--muted2);display:flex;gap:12px;margin-top:3px;flex-wrap:wrap}
+.badge{font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px}
+.badge.active{background:rgba(37,194,110,.16);color:var(--green)}
+.badge.pending{background:rgba(255,167,38,.16);color:var(--amber)}
+.badge.banned{background:rgba(244,67,106,.16);color:var(--red)}
+.badge.suspended{background:rgba(244,67,106,.14);color:var(--red)}
+.badge.feat{background:rgba(233,30,99,.16);color:var(--rose)}
+.badge.age{background:rgba(74,163,255,.16);color:var(--blue)}
+.mini-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:130px}
+.iconbtn{width:34px;height:34px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted2);font-size:.82rem}
+.iconbtn:hover{color:var(--ink)}
+
+/* ---- Post grid ---- */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.pcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.pcard.flag{border-color:rgba(244,67,106,.6)}
+.pcard .pimg{width:100%;aspect-ratio:1/1;background:var(--panel2) center/cover;position:relative}
+.pcard .pimg .txtonly{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:14px;font-size:.86rem;color:var(--muted2);text-align:center}
+.pcard .flagtag{position:absolute;top:8px;left:8px;background:var(--red);color:#fff;font-size:.6rem;font-weight:700;padding:3px 8px;border-radius:20px}
+.pcard .pbody{padding:10px 12px}
+.pcard .pauth{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:600;margin-bottom:5px}
+.pcard .pauth .a{width:24px;height:24px;border-radius:50%;background:var(--panel2) center/cover}
+.pcard .pcap{font-size:.76rem;color:var(--muted2);line-height:1.4;max-height:2.8em;overflow:hidden}
+.pcard .pmeta{font-size:.68rem;color:var(--muted);margin-top:6px;display:flex;gap:12px}
+.pcard .pacts{display:flex;gap:6px;padding:0 10px 10px}
+
+/* ---- Report rows ---- */
+.rrow{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px 15px;margin-bottom:10px}
+.rrow.open{border-left:3px solid var(--red)}
+.rrow .r-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.rrow .r-reason{font-weight:700;color:var(--red);text-transform:capitalize}
+.rrow .r-tm{font-size:.7rem;color:var(--muted);margin-left:auto}
+.rrow .r-body{font-size:.82rem;color:var(--muted2);margin-bottom:9px}
+.rrow .r-acts{display:flex;gap:7px;flex-wrap:wrap}
+
+/* ---- Empty / loading ---- */
+.state{text-align:center;padding:50px 20px;color:var(--muted)}
+.state i{font-size:2.2rem;display:block;margin-bottom:12px;color:var(--line)}
+.spin{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---- Bars (analytics) ---- */
+.bars{display:flex;align-items:flex-end;gap:5px;height:130px;padding:10px 0;border-bottom:1px solid var(--line);margin-bottom:6px}
+.bars .bar{flex:1;background:var(--grad);border-radius:4px 4px 0 0;min-height:2px;position:relative}
+.bars .bar span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:.54rem;color:var(--muted)}
+.taglist{display:flex;flex-wrap:wrap;gap:8px}
+.taglist .t{background:var(--panel);border:1px solid var(--line);border-radius:50px;padding:6px 12px;font-size:.8rem}
+.taglist .t b{color:var(--rose);margin-left:5px}
+
+/* ---- Toggle rows / config ---- */
+.crow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 16px;background:var(--panel);border:1px solid var(--line);border-radius:13px;margin-bottom:10px}
+.crow .c-l{font-weight:600}
+.crow .c-d{font-size:.74rem;color:var(--muted);margin-top:3px;max-width:44ch}
+.switch{width:48px;height:28px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);position:relative;flex:none;transition:.2s}
+.switch.on{background:var(--green);border-color:var(--green)}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
+.switch.on::after{transform:translateX(20px)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.card h3{font-size:1rem;margin-bottom:5px}
+.card p.sub{color:var(--muted);font-size:.8rem;margin-bottom:14px}
+
+/* ---- Drawer (user detail) ---- */
+#drawer{position:fixed;inset:0;z-index:60;display:none}
+#drawer .ov{position:absolute;inset:0;background:rgba(0,0,0,.6)}
+#drawer .dw{position:absolute;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding:0 0 30px}
+#drawer .dw-head{position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;align-items:center;gap:12px;z-index:2}
+#drawer .dw-head .ttl{font-weight:700;flex:1}
+.dw-hero{padding:20px 18px;display:flex;gap:15px;align-items:center;border-bottom:1px solid var(--line)}
+.dw-hero .av{width:74px;height:74px;border-radius:50%;background:var(--panel2) center/cover;flex:none}
+.dw-hero .nm{font-size:1.2rem;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dw-hero .sub{color:var(--muted);font-size:.8rem;margin-top:3px}
+.dw-stats{display:flex;border-bottom:1px solid var(--line)}
+.dw-stats .s{flex:1;text-align:center;padding:13px 4px;border-right:1px solid var(--line)}
+.dw-stats .s:last-child{border-right:none}
+.dw-stats .s b{display:block;font-size:1.05rem}
+.dw-stats .s span{font-size:.62rem;color:var(--muted)}
+.dw-sec{padding:16px 18px;border-bottom:1px solid var(--line)}
+.dw-sec h4{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:11px}
+.dw-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dw-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.dw-photos .ph{aspect-ratio:1/1;border-radius:9px;background:var(--panel2) center/cover}
+.dw-posts{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.dw-posts .pp{aspect-ratio:1/1;background:var(--panel2) center/cover;border-radius:6px;position:relative}
+.dw-posts .pp.flag{outline:2px solid var(--red)}
+
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#000;border:1px solid var(--line);color:#fff;padding:12px 20px;border-radius:50px;font-size:.84rem;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90%;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:820px){
+  .side{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);transition:.25s}
+  .side.open{transform:translateX(0)}
+  .topbar .burger{display:flex}
+  .content{padding:16px 14px 50px}
+  .phone{width:290px;height:600px}
+}
+
+/* ---- Realtime ---- */
+.rt-live{display:inline-flex;align-items:center;gap:6px;font-size:.6rem;font-weight:700;color:var(--green)}
+.rt-live .dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.rt-feed .ev{display:flex;align-items:center;gap:11px;padding:11px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;animation:fadein .4s}
+@keyframes fadein{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.rt-feed .ev .a{width:38px;height:38px;border-radius:50%;background:var(--panel2) center/cover;flex:none}
+.rt-feed .ev .tx{flex:1;font-size:.84rem}
+.rt-feed .ev .tm{font-size:.66rem;color:var(--muted)}
+/* ---- Matches ---- */
+.mrow{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:13px;margin-bottom:9px}
+.mrow .pair{display:flex;align-items:center}
+.mrow .pair .a{width:44px;height:44px;border-radius:50%;background:var(--panel2) center/cover;border:2px solid var(--panel)}
+.mrow .pair .a:last-child{margin-left:-14px}
+.mrow .m-main{flex:1;min-width:0}
+.mrow .m-nm{font-weight:600}
+.mrow .m-sub{font-size:.74rem;color:var(--muted);margin-top:2px}
+/* ---- Map ---- */
+.zbar{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.zbar .zn{width:130px;font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zbar .zt{flex:1;height:10px;background:var(--panel2);border-radius:6px;overflow:hidden}
+.zbar .zt i{display:block;height:100%;background:var(--grad);border-radius:6px}
+.zbar .zv{font-size:.76rem;color:var(--muted);width:34px;text-align:right}
+#leafmap{width:100%;height:360px;border-radius:14px;border:1px solid var(--line);margin-bottom:16px;background:var(--panel2)}
+.leaflet-container{background:#0e1420!important}
+/* ---- Preview phone ---- */
+.phone-wrap{display:flex;gap:26px;flex-wrap:wrap}
+.phone{width:330px;max-width:100%;height:680px;background:#000;border:9px solid #1c1c24;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);flex:none}
+.phone iframe{width:100%;height:100%;border:none;background:#0a0a0f}
+.pv-controls{flex:1;min-width:220px}
+.pv-controls .pv-screens{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+/* ---- Segments ---- */
+.seg-summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.seg-summary .sg{flex:1;min-width:120px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.seg-summary .sg b{font-size:1.4rem;display:block}
+.seg-summary .sg span{font-size:.7rem;color:var(--muted)}
+.badge.acc-elu{background:rgba(255,215,0,.16);color:var(--gold)}
+.badge.acc-vip{background:rgba(156,39,176,.22);color:#c77dff}
+.badge.acc-social{background:rgba(74,163,255,.16);color:var(--blue)}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login">
+  <div class="box">
+    <div class="shield"><i class="fas fa-shield-halved"></i></div>
+    <h1>Vyerezo</h1>
+    <p>Administrasyon Bizen Social</p>
+    <div id="lgErr"></div>
+    <input class="fld-in" id="lgEm" type="email" placeholder="Imel admin" autocomplete="username">
+    <input class="fld-in" id="lgPw" type="password" placeholder="Modpas" autocomplete="current-password">
+    <button class="btn full" id="lgBtn"><i class="fas fa-right-to-bracket"></i> Konekte</button>
+    <div style="margin-top:14px"><a href="/Vye.html" style="font-size:.78rem;color:var(--muted)">Dashboard Elu (Vye) →</a></div>
+  </div>
+</div>
+
+<!-- ============ PANEL ============ -->
+<div id="panel">
+  <div class="shell">
+    <aside class="side" id="side">
+      <div class="brand">
+        <div><div class="lg">Bizen<span>Social</span></div><div class="tag">Admin · Vyerezo</div></div>
+      </div>
+      <nav class="nav" id="nav">
+        <div class="sep">Vi jeneral</div>
+        <div class="it active" data-sec="overview"><i class="fas fa-gauge-high"></i> Apèsi</div>
+        <div class="it" data-sec="realtime"><i class="fas fa-signal"></i> Tan reyèl</div>
+        <div class="it" data-sec="analytics"><i class="fas fa-chart-line"></i> Analiz</div>
+        <div class="sep">Modérasyon</div>
+        <div class="it" data-sec="reports"><i class="fas fa-flag"></i> Siyalman <span class="cnt hidden" id="nc-reports">0</span></div>
+        <div class="it" data-sec="content"><i class="fas fa-photo-film"></i> Kontni <span class="cnt hidden" id="nc-flag">0</span></div>
+        <div class="sep">Kominote</div>
+        <div class="it" data-sec="users"><i class="fas fa-users"></i> Manm</div>
+        <div class="it" data-sec="matches"><i class="fas fa-heart"></i> Match</div>
+        <div class="it" data-sec="map"><i class="fas fa-map-location-dot"></i> Kat jeyografik</div>
+        <div class="it" data-sec="verify"><i class="fas fa-id-badge"></i> Verifikasyon</div>
+        <div class="sep">Zouti</div>
+        <div class="it" data-sec="preview"><i class="fas fa-mobile-screen"></i> Aperçu app</div>
+        <div class="it" data-sec="broadcast"><i class="fas fa-bullhorn"></i> Anons</div>
+        <div class="it" data-sec="config"><i class="fas fa-sliders"></i> Konfigirasyon</div>
+        <div class="it" data-sec="audit"><i class="fas fa-clock-rotate-left"></i> Jounal</div>
+      </nav>
+      <div class="foot">
+        <div class="who" id="whoAmI">admin</div>
+        <button class="btn ghost sm full" id="logoutBtn"><i class="fas fa-right-from-bracket"></i> Dekonekte</button>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <button class="iconbtn burger" id="burger"><i class="fas fa-bars"></i></button>
+        <h2 id="secTitle">Apèsi</h2>
+        <button class="btn ghost sm" id="refreshBtn"><i class="fas fa-rotate"></i> Rafrechi</button>
+      </div>
+      <div class="content" id="content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DRAWER ============ -->
+<div id="drawer">
+  <div class="ov" id="drawerOv"></div>
+  <div class="dw" id="drawerBody"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var fbCfg={apiKey:"AIzaSyADWklo0scZNWkhudRn_VBhrapXl4AZL_E",authDomain:"bizen-ht.firebaseapp.com",projectId:"bizen-ht",storageBucket:"bizen-ht.firebasestorage.app",messagingSenderId:"248857953518",appId:"1:248857953518:web:f85b1b37abd849add01fff"};
+var ADMIN_EMAIL="bizenht@gmail.com";
+var app;try{app=firebase.app();}catch(e){app=firebase.initializeApp(fbCfg);}
+var auth=firebase.auth(), db=firebase.firestore();
+var TOKEN=null, curSec="overview", loaded={};
+
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function toast(m){var t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("show");},2800);}
+function fmtDate(ms){if(!ms)return"";var d=new Date(ms);return d.toLocaleDateString("fr-FR")+" "+String(d.getHours()).padStart(2,"0")+"h"+String(d.getMinutes()).padStart(2,"0");}
+function ago(ms){if(!ms)return"";var s=(Date.now()-ms)/1000;if(s<60)return"kounye a";if(s<3600)return Math.floor(s/60)+"m";if(s<86400)return Math.floor(s/3600)+"h";return Math.floor(s/86400)+"j";}
+async function adminApi(action, extra){
+  var payload=Object.assign({idToken:TOKEN,action:action},extra||{});
+  var r=await fetch("/.netlify/functions/social-admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  var j={};try{j=await r.json();}catch(e){}
+  if(!r.ok)throw new Error(j.error||"Erè");
+  return j;
+}
+
+/* ---- AUTH ---- */
+auth.onAuthStateChanged(async function(u){
+  if(u && u.email===ADMIN_EMAIL){ TOKEN=await u.getIdToken(); $("login").style.display="none"; $("panel").style.display="block"; $("whoAmI").textContent=u.email; showSection("overview"); refreshBadges(); }
+  else if(u){ auth.signOut(); showLoginErr("Ou pa gen akse admin."); }
+  else { $("panel").style.display="none"; $("login").style.display="flex"; }
+});
+function showLoginErr(m){var e=$("lgErr");e.textContent=m;e.style.display="block";}
+$("lgBtn").onclick=function(){
+  var em=$("lgEm").value.trim(), pw=$("lgPw").value; $("lgErr").style.display="none";
+  if(!em||!pw){showLoginErr("Antre imel ak modpas.");return;}
+  var b=this;b.disabled=true;
+  auth.signInWithEmailAndPassword(em,pw).then(function(r){ if(r.user.email!==ADMIN_EMAIL){auth.signOut();showLoginErr("Ou pa gen akse admin.");} }).catch(function(err){ showLoginErr("Imel oswa modpas pa korek."); }).finally(function(){b.disabled=false;});
+};
+$("lgPw").addEventListener("keydown",function(e){if(e.key==="Enter")$("lgBtn").click();});
+$("logoutBtn").onclick=function(){auth.signOut();};
+$("burger").onclick=function(){$("side").classList.toggle("open");};
+$("refreshBtn").onclick=function(){loaded[curSec]=false;showSection(curSec);refreshBadges();};
+
+/* ---- NAV ---- */
+var SEC_TITLES={overview:"Apèsi",realtime:"Tan reyèl",analytics:"Analiz",reports:"Siyalman",content:"Kontni",users:"Manm",matches:"Match",map:"Kat jeyografik",verify:"Verifikasyon",preview:"Aperçu app",broadcast:"Anons",config:"Konfigirasyon",audit:"Jounal aktivite"};
+document.querySelectorAll(".nav .it").forEach(function(it){ it.onclick=function(){ showSection(it.dataset.sec); $("side").classList.remove("open"); }; });
+function showSection(sec){
+  stopRealtime();
+  curSec=sec;
+  document.querySelectorAll(".nav .it").forEach(function(i){ i.classList.toggle("active",i.dataset.sec===sec); });
+  $("secTitle").textContent=SEC_TITLES[sec]||sec;
+  var loaders={overview:loadOverview,realtime:loadRealtime,analytics:loadAnalytics,reports:loadReports,content:loadContent,users:loadUsers,matches:loadMatches,map:loadMap,verify:loadVerify,preview:loadPreview,broadcast:loadBroadcast,config:loadConfig,audit:loadAudit};
+  (loaders[sec]||function(){})();
+}
+async function refreshBadges(){
+  try{ var o=await adminApi("overview");
+    var r=o.stats.reportsOpen||0, f=o.stats.flagged||0;
+    var nr=$("nc-reports"), nf=$("nc-flag");
+    if(r){nr.textContent=r;nr.classList.remove("hidden");}else nr.classList.add("hidden");
+    if(f){nf.textContent=f;nf.classList.remove("hidden");}else nf.classList.add("hidden");
+    window._ov=o.stats;
+  }catch(e){}
+}
+
+/* ============ OVERVIEW ============ */
+function kpi(ic,col,v,l,alert){ return '<div class="kpi'+(alert?" alert":"")+'"><div class="k-top"><div class="k-ic" style="background:'+col+'22;color:'+col+'"><i class="'+ic+'"></i></div></div><div class="k-v">'+v+'</div><div class="k-l">'+l+'</div></div>'; }
+async function loadOverview(){
+  var c=$("content"); c.innerHTML='<div class="state"><i class="fas fa-circle-notch spin"></i>Chajman estatistik...</div>';
+  try{
+    var o=(window._ov)?{stats:window._ov}:await adminApi("overview"); var s=o.stats;
+    var html='<div class="sec-h">Kominote</div><div class="kgrid">'+
+      kpi("fas fa-users","#e91e63",s.members,"Total manm")+
+      kpi("fas fa-user-check","#25c26e",s.membersActive,"Aktif")+
+      kpi("fas fa-user-clock","#ffa726",s.membersPending,"An atant")+
+      kpi("fas fa-user-plus","#4aa3ff",s.newToday,"Nouvo jodi a")+
+      kpi("fas fa-fire","#e91e63",s.discoverable,"Nan Dekouvri")+
+      kpi("fas fa-id-badge","#4aa3ff",s.verified,"Verifye")+
+      '</div><div class="sec-h">Aktivite</div><div class="kgrid">'+
+      kpi("fas fa-photo-film","#9c27b0",s.posts,"Total post")+
+      kpi("fas fa-camera","#9c27b0",s.postsToday,"Post jodi a")+
+      kpi("fas fa-heart","#e91e63",s.matches,"Total match")+
+      kpi("fas fa-bolt","#ffd700",s.matchesToday,"Match jodi a")+
+      kpi("fas fa-comments","#4aa3ff",s.messagesToday,"Mesaj jodi a")+
+      '</div><div class="sec-h">Sekirite</div><div class="kgrid">'+
+      kpi("fas fa-flag","#f4436a",s.reportsOpen,"Siyalman ouvè",s.reportsOpen>0)+
+      kpi("fas fa-triangle-exclamation","#f4436a",s.flagged,"Foto make (NSFW)",s.flagged>0)+
+      kpi("fas fa-user-slash","#f4436a",s.membersBanned,"Manm bani")+
+      '</div>';
+    if(s.reportsOpen>0||s.flagged>0){ html+='<div class="card" style="margin-top:20px;border-color:rgba(244,67,106,.4)"><h3><i class="fas fa-triangle-exclamation" style="color:var(--red)"></i> Aksyon nesesè</h3><p class="sub">Gen kontni k ap tann revizyon.</p><div style="display:flex;gap:8px;flex-wrap:wrap">'+(s.reportsOpen>0?'<button class="btn red sm" onclick="showSection(\'reports\')">Wè '+s.reportsOpen+' siyalman</button>':'')+(s.flagged>0?'<button class="btn amber sm" onclick="showSection(\'content\')">Wè '+s.flagged+' foto make</button>':'')+'</div></div>'; }
+    c.innerHTML=html; window._ov=null;
+  }catch(e){ c.innerHTML='<div class="state"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
+}
+
+/* ============ USERS ============ */
+var uFilter="", uSearch="", uAccount="";
+function loadUsers(){
+  var c=$("content");
+  c.innerHTML='<div id="segbar" class="seg-summary"></div>'+
+    '<div class="toolbar"><div class="search"><i class="fas fa-search" style="color:var(--muted)"></i><input id="uq" placeholder="Chèche pa pseudo..."></div></div>'+
+    '<div class="toolbar" id="ufilters">'+
+    ['','active','pending','suspended','banned'].map(function(f){ return '<button class="chip'+(uFilter===f?" on":"")+'" data-f="'+f+'">'+(f===""?"Tout":({active:"Aktif",pending:"An atant",suspended:"Sispann",banned:"Bani"}[f]))+'</button>'; }).join("")+
+    '</div>'+
+    '<div class="toolbar" id="uaccount">'+
+    [['','Tout tip'],['elu','Elu ki sou Social'],['vip','VIP Bizen'],['social','Social sèlman']].map(function(f){ return '<button class="chip'+(uAccount===f[0]?" on":"")+'" data-a="'+f[0]+'">'+f[1]+'</button>'; }).join("")+
+    '</div><div id="ulist"><div class="state"><i class="fas fa-circle-notch spin"></i>Chajman...</div></div>';
+  $("ufilters").querySelectorAll(".chip").forEach(function(ch){ ch.onclick=function(){ uFilter=ch.dataset.f; loadUsers(); }; });
+  $("uaccount").querySelectorAll(".chip").forEach(function(ch){ ch.onclick=function(){ uAccount=ch.dataset.a; loadUsers(); }; });
+  var q=$("uq"); q.value=uSearch;
+  var tmr; q.addEventListener("input",function(){ clearTimeout(tmr); tmr=setTimeout(function(){ uSearch=q.value.trim(); fetchUsers(); },350); });
+  loadSegments(); fetchUsers();
+}
+async function loadSegments(){
+  try{ var r=await adminApi("segments"); var s=r.segments;
+    $("segbar").innerHTML='<div class="sg"><b>'+s.total+'</b><span>Total manm Social</span></div>'+
+      '<div class="sg"><b style="color:var(--gold)">'+s.elu+'</b><span>Elu ki aktive Social</span></div>'+
+      '<div class="sg"><b style="color:#c77dff">'+s.vip+'</b><span>VIP Bizen</span></div>'+
+      '<div class="sg"><b style="color:var(--blue)">'+s.social+'</b><span>Social sèlman</span></div>';
+  }catch(e){ var sb=$("segbar"); if(sb)sb.innerHTML=""; }
+}
+async function fetchUsers(){
+  var box=$("ulist"); box.innerHTML='<div class="state"><i class="fas fa-circle-notch spin"></i>Chajman...</div>';
+  try{
+    var r=await adminApi("listUsers",{status:uFilter,q:uSearch,accountType:uAccount});
+    if(!r.users.length){ box.innerHTML='<div class="state"><i class="fas fa-users"></i>Pa gen manm.</div>'; return; }
+    box.innerHTML=r.users.map(userRow).join("");
+    box.querySelectorAll("[data-uid]").forEach(function(el){ el.onclick=function(e){ if(e.target.closest(".mini-actions"))return; openUser(el.dataset.uid); }; });
+    wireQuickActions(box);
+  }catch(e){ box.innerHTML='<div class="state"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
+}
+function userRow(u){
+  return '<div class="urow" data-uid="'+u.uid+'">'+
+    '<div class="av" style="background-image:url(\''+esc(u.photo)+'\')">'+(u.verified?'<div class="vb"><i class="fas fa-check"></i></div>':'')+'</div>'+
+    '<div class="u-main"><div class="u-nm">'+esc(u.pseudo||"Anonim")+
+      ' <span class="badge '+u.status+'">'+u.status+'</span>'+(u.accountType?' <span class="badge acc-'+u.accountType+'">'+({elu:"Elu",vip:"VIP",social:"Social"}[u.accountType]||"")+'</span>':'')+(u.featured?' <span class="badge feat">featured</span>':'')+(u.ageVerified?' <span class="badge age">18+ OK</span>':'')+'</div>'+
+      '<div class="u-sub">'+esc(u.gender||"?")+(u.age?", "+u.age+" an":"")+(u.zone?" · "+esc(u.zone):"")+'</div>'+
+      '<div class="u-stats"><span><i class="fas fa-user-group"></i> '+u.followersCount+'</span>'+(u.warnings?'<span style="color:var(--amber)"><i class="fas fa-triangle-exclamation"></i> '+u.warnings+'</span>':'')+'<span>'+fmtDate(u.createdAt)+'</span></div>'+
+    '</div>'+
+    '<div class="mini-actions">'+
+      '<button class="iconbtn" data-act="verify" data-uid="'+u.uid+'" title="Verifye">'+(u.verified?'<i class="fas fa-badge-check" style="color:var(--blue)"></i>':'<i class="far fa-circle-check"></i>')+'</button>'+
+      (u.status==="banned"?'<button class="iconbtn" data-act="unban" data-uid="'+u.uid+'" title="Debloke"><i class="fas fa-unlock" style="color:var(--green)"></i></button>':'<button class="iconbtn" data-act="ban" data-uid="'+u.uid+'" title="Bani"><i class="fas fa-ban" style="color:var(--red)"></i></button>')+
+    '</div></div>';
+}
+function wireQuickActions(box){
+  box.querySelectorAll("[data-act]").forEach(function(b){ b.onclick=async function(e){ e.stopPropagation();
+    var act=b.dataset.act, uid=b.dataset.uid;
+    try{
+      if(act==="verify"){ await adminApi("verifyProfile",{uid:uid}); toast("Verifye ✓"); }
+      if(act==="ban"){ if(!confirm("Bani manm sa a?"))return; await adminApi("banProfile",{uid:uid}); toast("Bani."); }
+      if(act==="unban"){ await adminApi("unbanProfile",{uid:uid}); toast("Debloke."); }
+      fetchUsers(); refreshBadges();
+    }catch(err){ toast(err.message); }
+  }; });
+}
+
+/* ---- USER DRAWER ---- */
+async function openUser(uid){
+  var dw=$("drawerBody"); $("drawer").style.display="block";
+  dw.innerHTML='<div class="dw-head"><button class="iconbtn" id="dwClose"><i class="fas fa-xmark"></i></button><div class="ttl">Pwofil</div></div><div class="state"><i class="fas fa-circle-notch spin"></i></div>';
+  $("dwClose").onclick=closeDrawer;
+  try{
+    var r=await adminApi("getUser",{uid:uid}); var p=r.profile;
+    var acts=[
+      ['verify', p.verified?"Retire badj":"Badj verifye", p.verified?"ghost":"blue","fas fa-id-badge"],
+      ['agev', p.ageVerified?"Anile 18+":"Konfime 18+", p.ageVerified?"ghost":"amber","fas fa-user-shield"],
+      ['feature', p.featured?"Retire featured":"Mete featured", p.featured?"ghost":"gold","fas fa-star"],
+      ['warn',"Avèti","amber","fas fa-triangle-exclamation"],
+      ['suspend',"Sispann 7j","ghost","fas fa-clock"],
+      [p.status==="banned"?'unban':'ban', p.status==="banned"?"Debloke":"Bani", p.status==="banned"?"green":"red", p.status==="banned"?"fas fa-unlock":"fas fa-ban"],
+      ['delete',"Efase nèt","red","fas fa-trash"]
+    ];
+    var html='<div class="dw-head"><button class="iconbtn" id="dwClose2"><i class="fas fa-xmark"></i></button><div class="ttl">'+esc(p.pseudo||"Pwofil")+'</div></div>'+
+      '<div class="dw-hero"><div class="av" style="background-image:url(\''+esc(p.photo)+'\')"></div><div><div class="nm">'+esc(p.pseudo||"Anonim")+(p.verified?' <i class="fas fa-circle-check" style="color:var(--blue)"></i>':'')+' <span class="badge '+p.status+'">'+p.status+'</span></div><div class="sub">'+esc(p.gender||"?")+(p.age?", "+p.age+" an":"")+(p.zone?" · "+esc(p.zone):"")+'</div>'+(p.email?'<div class="sub">'+esc(p.email)+'</div>':'')+'</div></div>'+
+      '<div class="dw-stats"><div class="s"><b>'+(p.postCount||0)+'</b><span>Post</span></div><div class="s"><b>'+p.followersCount+'</b><span>Abòne</span></div><div class="s"><b>'+p.followingCount+'</b><span>Ap swiv</span></div><div class="s"><b>'+(p.matchCount||0)+'</b><span>Match</span></div><div class="s"><b style="color:'+(p.warnings?"var(--amber)":"inherit")+'">'+(p.warnings||0)+'</b><span>Avètisman</span></div></div>';
+    if(p.bio) html+='<div class="dw-sec"><h4>Bio</h4><div style="font-size:.86rem;color:var(--muted2);line-height:1.5">'+esc(p.bio)+'</div></div>';
+    if(p.photos&&p.photos.length){ html+='<div class="dw-sec"><h4>Foto pwofil</h4><div class="dw-photos">'+p.photos.map(function(ph){return '<div class="ph" style="background-image:url(\''+esc(ph)+'\')"></div>';}).join("")+'</div></div>'; }
+    if(r.posts&&r.posts.length){ html+='<div class="dw-sec"><h4>Post ('+ (p.postCount||r.posts.length) +')</h4><div class="dw-posts">'+r.posts.map(function(po){return '<div class="pp'+(po.nsfwFlag?" flag":"")+'" style="background-image:url(\''+esc(po.imageUrl)+'\')" title="'+esc(po.caption)+'"></div>';}).join("")+'</div></div>'; }
+    if(r.reports&&r.reports.length){ html+='<div class="dw-sec"><h4 style="color:var(--red)">Siyalman kont li ('+r.reports.length+')</h4>'+r.reports.map(function(rp){return '<div style="font-size:.8rem;color:var(--muted2);margin-bottom:6px"><b style="color:var(--red);text-transform:capitalize">'+esc(rp.reason)+'</b> '+esc(rp.details||"")+' <span style="color:var(--muted)">· '+ago(rp.createdAt)+'</span></div>';}).join("")+'</div>'; }
+    html+='<div class="dw-sec"><h4>Aksyon</h4><div class="dw-acts">'+acts.map(function(a){return '<button class="btn '+a[2]+' sm" data-da="'+a[0]+'"><i class="'+a[3]+'"></i> '+a[1]+'</button>';}).join("")+'</div></div>';
+    dw.innerHTML=html;
+    $("dwClose2").onclick=closeDrawer;
+    dw.querySelectorAll("[data-da]").forEach(function(b){ b.onclick=function(){ userAction(b.dataset.da, p); }; });
+  }catch(e){ dw.innerHTML='<div class="dw-head"><button class="iconbtn" id="dwClose3"><i class="fas fa-xmark"></i></button><div class="ttl">Erè</div></div><div class="state">'+esc(e.message)+'</div>'; $("dwClose3").onclick=closeDrawer; }
+}
+async function userAction(act, p){
+  var uid=p.uid;
+  try{
+    if(act==="verify"){ await adminApi(p.verified?"unverifyProfile":"verifyProfile",{uid:uid}); }
+    else if(act==="agev"){ await adminApi(p.ageVerified?"unAgeVerifyProfile":"ageVerifyProfile",{uid:uid}); }
+    else if(act==="feature"){ await adminApi(p.featured?"unfeatureProfile":"featureProfile",{uid:uid}); }
+    else if(act==="warn"){ var m=prompt("Mesaj avètisman:","Kontni ou an pa respekte règ Bizen Social."); if(m===null)return; await adminApi("warnUser",{uid:uid,message:m}); }
+    else if(act==="suspend"){ var d=prompt("Konbyen jou sispansyon?","7"); if(d===null)return; await adminApi("suspendProfile",{uid:uid,days:parseInt(d,10)||7}); }
+    else if(act==="ban"){ if(!confirm("Bani "+(p.pseudo||"manm")+" a?"))return; await adminApi("banProfile",{uid:uid}); }
+    else if(act==="unban"){ await adminApi("unbanProfile",{uid:uid}); }
+    else if(act==="delete"){ if(!confirm("EFASE NÈT "+(p.pseudo||"manm")+" ak tout done li? Aksyon sa a pa ka defèt."))return; await adminApi("deleteUser",{uid:uid}); toast("Efase nèt."); closeDrawer(); fetchUsers&&fetchUsers(); refreshBadges(); return; }
+    toast("Fèt ✓"); openUser(uid); refreshBadges();
+  }catch(e){ toast(e.message); }
+}
+function closeDrawer(){ $("drawer").style.display="none"; }
+$("drawerOv").onclick=closeDrawer;
+
+/* ============ CONTENT (posts) ============ */
+var cFilter="all";
+function loadContent(){
+  var c=$("content");
+  c.innerHTML='<div class="toolbar">'+['all','flagged','hidden'].map(function(f){return '<button class="chip'+(cFilter===f?" on":"")+'" data-f="'+f+'">'+({all:"Tout post",flagged:"Make NSFW",hidden:"Kache"}[f])+'</button>';}).join("")+'</div><div id="clist"><div class="state"><i class="fas fa-circle-notch spin"></i>Chajman...</div></div>';
+  c.querySelectorAll(".chip").forEach(function(ch){ ch.onclick=function(){ cFilter=ch.dataset.f; loadContent(); }; });
+  fetchPosts();
+}
+async function fetchPosts(){
+  var box=$("clist"); box.innerHTML='<div class="state"><i class="fas fa-circle-notch spin"></i>Chajman...</div>';
+  try{
+    var r=await adminApi("listPosts",{filter:cFilter});
+    if(!r.posts.length){ box.innerHTML='<div class="state"><i class="fas fa-photo-film"></i>Pa gen post.</div>'; return; }
+    box.innerHTML='<div class="pgrid">'+r.posts.map(postCardHtml).join("")+'</div>';
+    box.querySelectorAll("[data-pa]").forEach(function(b){ b.onclick=function(){ postAction(b.dataset.pa,b.dataset.pid,b.dataset.puid); }; });
+    box.querySelectorAll("[data-openauthor]").forEach(function(b){ b.onclick=function(){ openUser(b.dataset.openauthor); }; });
+  }catch(e){ box.innerHTML='<div class="state"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
+}
+function postCardHtml(p){
+  return '<div class="pcard'+(p.nsfwFlag?" flag":"")+'">'+
+    '<div class="pimg" style="background-image:url(\''+esc(p.imageUrl)+'\')">'+(p.nsfwFlag?'<div class="flagtag">NSFW '+(p.nsfwScore?Math.round(p.nsfwScore*100)+"%":"")+'</div>':'')+(!p.imageUrl?'<div class="txtonly">'+esc((p.caption||"").slice(0,120))+'</div>':'')+'</div>'+
+    '<div class="pbody"><div class="pauth" data-openauthor="'+p.authorUid+'"><div class="a" style="background-image:url(\''+esc(p.authorAvatar)+'\')"></div>'+esc(p.authorName||"Anonim")+'</div>'+
+    (p.imageUrl&&p.caption?'<div class="pcap">'+esc(p.caption)+'</div>':'')+
+    '<div class="pmeta"><span><i class="fas fa-heart"></i> '+p.likeCount+'</span><span><i class="fas fa-comment"></i> '+p.commentCount+'</span><span>'+ago(p.createdAt)+'</span></div></div>'+
+    '<div class="pacts">'+
+      (p.nsfwFlag?'<button class="iconbtn" data-pa="clear" data-pid="'+p.id+'" title="Retire drapo"><i class="fas fa-flag" style="color:var(--green)"></i></button>':'')+
+      (p.hidden?'<button class="iconbtn" data-pa="unhide" data-pid="'+p.id+'" title="Montre"><i class="fas fa-eye"></i></button>':'<button class="iconbtn" data-pa="hide" data-pid="'+p.id+'" title="Kache"><i class="fas fa-eye-slash"></i></button>')+
+      '<button class="iconbtn" data-pa="del" data-pid="'+p.id+'" title="Efase"><i class="fas fa-trash" style="color:var(--red)"></i></button>'+
+      '<button class="iconbtn" data-pa="warn" data-pid="'+p.id+'" data-puid="'+p.authorUid+'" title="Avèti otè"><i class="fas fa-triangle-exclamation" style="color:var(--amber)"></i></button>'+
+    '</div></div>';
+}
+async function postAction(act,pid,puid){
+  try{
+    if(act==="clear"){ await adminApi("clearFlag",{postId:pid}); }
+    else if(act==="hide"){ await adminApi("hidePost",{postId:pid}); }
+    else if(act==="unhide"){ await adminApi("unhidePost",{postId:pid}); }
+    else if(act==="del"){ if(!confirm("Efase post sa a?"))return; await adminApi("deletePost",{postId:pid}); }
+    else if(act==="warn"){ if(!puid)return; await adminApi("warnUser",{uid:puid}); toast("Otè avèti."); return; }
+    toast("Fèt ✓"); fetchPosts(); refreshBadges();
+  }catch(e){ toast(e.message); }
+}
+
+/* ============ REPORTS ============ */
+var rStatus="open";
+function loadReports(){
+  var c=$("content");
+  c.innerHTML='<div class="toolbar">'+['open','all'].map(function(f){return '<button class="chip'+(rStatus===f?" on":"")+'" data-f="'+f+'">'+({open:"Ouvè",all:"Tout"}[f])+'</button>';}).join("")+'</div><div id="rlist"><div class="state"><i class="fas fa-circle-notch spin"></i>Chajman...</div></div>';
+  c.querySelectorAll(".chip").forEach(function(ch){ ch.onclick=function(){ rStatus=ch.dataset.f; loadReports(); }; });
+  fetchReports();
+}
+async function fetchReports(){
+  var box=$("rlist"); box.innerHTML='<div class="state"><i class="fas fa-circle-notch spin"></i>Chajman...</div>';
+  try{
+    var r=await adminApi("listReports",{status:rStatus});
+    if(!r.reports.length){ box.innerHTML='<div class="state"><i class="fas fa-flag"></i>Pa gen siyalman.</div>'; return; }
+    box.innerHTML=r.reports.map(function(rp){
+      return '<div class="rrow '+(rp.status==="open"?"open":"")+'"><div class="r-top"><span class="r-reason">'+esc(rp.reason)+'</span><span class="badge '+(rp.status==="open"?"banned":"active")+'">'+esc(rp.status)+'</span><span class="r-tm">'+ago(rp.createdAt)+'</span></div>'+
+        '<div class="r-body">Sou <b>'+esc(rp.targetName||rp.target)+'</b>'+(rp.details?' — '+esc(rp.details):'')+'</div>'+
+        '<div class="r-acts"><button class="btn ghost sm" data-ra="user" data-t="'+rp.target+'"><i class="fas fa-user"></i> Wè pwofil</button>'+
+        (rp.status==="open"?'<button class="btn green sm" data-ra="resolve" data-id="'+rp.id+'"><i class="fas fa-check"></i> Trete</button><button class="btn ghost sm" data-ra="dismiss" data-id="'+rp.id+'"><i class="fas fa-xmark"></i> Ignore</button><button class="btn red sm" data-ra="ban" data-t="'+rp.target+'" data-id="'+rp.id+'"><i class="fas fa-ban"></i> Bani</button>':'')+
+        '</div></div>';
+    }).join("");
+    box.querySelectorAll("[data-ra]").forEach(function(b){ b.onclick=function(){ reportAction(b.dataset.ra,b.dataset.id,b.dataset.t); }; });
+  }catch(e){ box.innerHTML='<div class="state"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
+}
+async function reportAction(act,id,target){
+  try{
+    if(act==="user"){ openUser(target); return; }
+    if(act==="resolve"){ await adminApi("resolveReport",{reportId:id}); }
+    if(act==="dismiss"){ await adminApi("dismissReport",{reportId:id}); }
+    if(act==="ban"){ if(!confirm("Bani manm sa a e trete siyalman an?"))return; await adminApi("banProfile",{uid:target}); await adminApi("resolveReport",{reportId:id}); }
+    toast("Fèt ✓"); fetchReports(); refreshBadges();
+  }catch(e){ toast(e.message); }
+}
+
+/* ============ VERIFY ============ */
+function loadVerify(){
+  var c=$("content");
+  c.innerHTML='<div class="card"><h3><i class="fas fa-id-badge" style="color:var(--blue)"></i> Verifikasyon &amp; Laj</h3><p class="sub">Bay badj verifye (ble) bay pwofil otantik, epi konfime laj 18+ (kontwòl ID) pou moun ki poste kontni. Klike sou yon manm pou wè detay ak zouti yo.</p></div><div id="vlist"><div class="state"><i class="fas fa-circle-notch spin"></i>Chajman...</div></div>';
+  fetchVerify();
+}
+async function fetchVerify(){
+  var box=$("vlist");
+  try{
+    var r=await adminApi("listUsers",{status:"active",limit:40});
+    box.innerHTML='<div class="sec-h">Manm aktif ki pi resan</div>'+r.users.map(function(u){
+      return '<div class="urow" data-uid="'+u.uid+'"><div class="av" style="background-image:url(\''+esc(u.photo)+'\')">'+(u.verified?'<div class="vb"><i class="fas fa-check"></i></div>':'')+'</div>'+
+        '<div class="u-main"><div class="u-nm">'+esc(u.pseudo||"Anonim")+(u.ageVerified?' <span class="badge age">18+ OK</span>':'')+'</div><div class="u-sub">'+esc(u.gender||"?")+(u.age?", "+u.age+" an":"")+'</div></div>'+
+        '<div class="mini-actions"><button class="iconbtn" data-vact="verify" data-uid="'+u.uid+'" title="Badj verifye">'+(u.verified?'<i class="fas fa-circle-check" style="color:var(--blue)"></i>':'<i class="far fa-circle-check"></i>')+'</button>'+
+        '<button class="iconbtn" data-vact="age" data-uid="'+u.uid+'" title="Konfime 18+">'+(u.ageVerified?'<i class="fas fa-user-shield" style="color:var(--amber)"></i>':'<i class="far fa-user"></i>')+'</button></div></div>';
+    }).join("");
+    box.querySelectorAll("[data-uid]").forEach(function(el){ el.onclick=function(e){ if(e.target.closest(".mini-actions"))return; openUser(el.dataset.uid); }; });
+    box.querySelectorAll("[data-vact]").forEach(function(b){ b.onclick=async function(e){ e.stopPropagation(); try{ if(b.dataset.vact==="verify")await adminApi("verifyProfile",{uid:b.dataset.uid}); else await adminApi("ageVerifyProfile",{uid:b.dataset.uid}); toast("Fèt ✓"); fetchVerify(); }catch(err){toast(err.message);} }; });
+  }catch(e){ box.innerHTML='<div class="state">'+esc(e.message)+'</div>'; }
+}
+
+/* ============ ANALYTICS ============ */
+async function loadAnalytics(){
+  var c=$("content"); c.innerHTML='<div class="state"><i class="fas fa-circle-notch spin"></i>Chajman analiz...</div>';
+  try{
+    var r=await adminApi("analytics");
+    var days=[]; for(var i=13;i>=0;i--){ days.push(new Date(Date.now()-i*86400000-5*3600000).toISOString().slice(0,10)); }
+    function barChart(map){ var max=1; days.forEach(function(d){ max=Math.max(max,map[d]||0); }); return '<div class="bars">'+days.map(function(d){ var v=map[d]||0; return '<div class="bar" style="height:'+(v/max*100)+'%" title="'+d+': '+v+'"><span>'+d.slice(8)+'</span></div>'; }).join("")+'</div>'; }
+    var totalS=0,totalP=0; days.forEach(function(d){totalS+=(r.signups[d]||0);totalP+=(r.posts[d]||0);});
+    var html='<div class="card"><h3>Nouvo manm (14 jou)</h3><p class="sub">'+totalS+' enskripsyon</p>'+barChart(r.signups)+'<div style="height:14px"></div></div>'+
+      '<div class="card"><h3>Post pibliye (14 jou)</h3><p class="sub">'+totalP+' post</p>'+barChart(r.posts)+'<div style="height:14px"></div></div>'+
+      '<div class="card"><h3>Hashtag ki pi popilè</h3>'+(r.topTags.length?'<div class="taglist">'+r.topTags.map(function(t){return '<div class="t">#'+esc(t.tag)+'<b>'+t.n+'</b></div>';}).join("")+'</div>':'<p class="sub">Poko gen hashtag.</p>')+'</div>';
+    c.innerHTML=html;
+  }catch(e){ c.innerHTML='<div class="state"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
+}
+
+/* ============ BROADCAST ============ */
+function loadBroadcast(){
+  $("content").innerHTML='<div class="card"><h3><i class="fas fa-bullhorn" style="color:var(--rose)"></i> Voye yon anons</h3><p class="sub">Notifikasyon push ap ale bay tout manm Social aktif ki gen notifikasyon aktive.</p>'+
+    '<input class="fld-in" id="bcTitle" placeholder="Tit (egzanp: Nouvo fonksyon!)" maxlength="80">'+
+    '<textarea class="fld-in" id="bcBody" placeholder="Mesaj ou..." maxlength="240" style="min-height:90px;resize:vertical"></textarea>'+
+    '<button class="btn full" id="bcSend"><i class="fas fa-paper-plane"></i> Voye anons lan</button>'+
+    '<div id="bcRes" style="margin-top:12px;font-size:.82rem;color:var(--muted)"></div></div>';
+  $("bcSend").onclick=async function(){
+    var t=$("bcTitle").value.trim(), b=$("bcBody").value.trim();
+    if(!b){ toast("Ekri yon mesaj."); return; }
+    if(!confirm("Voye anons lan bay tout manm?"))return;
+    var btn=this; btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch spin"></i> Ap voye...';
+    try{ var r=await adminApi("broadcast",{title:t,body:b}); $("bcRes").innerHTML='<i class="fas fa-check" style="color:var(--green)"></i> Voye bay '+r.sent+' aparèy ('+r.targets+' token).'; toast("Anons voye!"); $("bcTitle").value="";$("bcBody").value=""; }
+    catch(e){ toast(e.message); } finally{ btn.disabled=false; btn.innerHTML='<i class="fas fa-paper-plane"></i> Voye anons lan'; }
+  };
+}
+
+/* ============ CONFIG ============ */
+async function loadConfig(){
+  var c=$("content"); c.innerHTML='<div class="state"><i class="fas fa-circle-notch spin"></i>Chajman...</div>';
+  try{
+    var r=await adminApi("getConfig"); var cf=r.config||{};
+    function row(key,label,desc,def){ var on=(cf[key]!==undefined)?cf[key]:def; return '<div class="crow"><div><div class="c-l">'+label+'</div><div class="c-d">'+desc+'</div></div><div class="switch'+(on?" on":"")+'" data-cfg="'+key+'"></div></div>'; }
+    c.innerHTML='<div class="sec-h">Fonksyonalite</div>'+
+      row("phaseAllFree","Faz 1 — tout gratis","Tout fonksyon gratis (pa gen limit ni Premium). Retire l pou aktive freemium.",true)+
+      row("discoveryOpen","Dekouvri aktif","Pèmèt seksyon swipe/rankont lan fonksyone.",true)+
+      row("requireAgeVerify","Egzije verifikasyon laj","Mande kontwòl ID 18+ anvan pibliye kontni.",false)+
+      row("maintenance","Mòd antretyen","Fèmen aplikasyon an pou manm yo (jis admin ka antre).",false)+
+      '<div class="card" style="margin-top:16px"><h3>Sansiblite deteksyon NSFW</h3><p class="sub">Nivo apati kilès yon foto bloke otomatikman (pi ba = pi sevè). Aktyèl: <b id="nsfwVal">'+Math.round((cf.nsfwThreshold!==undefined?cf.nsfwThreshold:0.7)*100)+'%</b></p><input type="range" min="40" max="95" value="'+Math.round((cf.nsfwThreshold!==undefined?cf.nsfwThreshold:0.7)*100)+'" id="nsfwRange" style="width:100%"><button class="btn ghost sm" id="nsfwSave" style="margin-top:12px">Anrejistre nivo</button></div>';
+    c.querySelectorAll("[data-cfg]").forEach(function(sw){ sw.onclick=async function(){ var on=!sw.classList.contains("on"); sw.classList.toggle("on",on); var patch={}; patch[sw.dataset.cfg]=on; try{ await adminApi("setConfig",{patch:patch}); toast("Anrejistre ✓"); }catch(e){ sw.classList.toggle("on",!on); toast(e.message); } }; });
+    var rg=$("nsfwRange"); rg.addEventListener("input",function(){ $("nsfwVal").textContent=rg.value+"%"; });
+    $("nsfwSave").onclick=async function(){ try{ await adminApi("setConfig",{patch:{nsfwThreshold:parseInt(rg.value,10)/100}}); toast("Nivo anrejistre ✓"); }catch(e){toast(e.message);} };
+  }catch(e){ c.innerHTML='<div class="state"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
+}
+
+/* ============ AUDIT LOG ============ */
+async function loadAudit(){
+  var c=$("content"); c.innerHTML='<div class="state"><i class="fas fa-circle-notch spin"></i>Chajman jounal...</div>';
+  try{
+    var snap=await db.collection("adminAudit").orderBy("at","desc").limit(120).get();
+    var rows=[]; snap.forEach(function(d){ var a=d.data(); if(a.scope&&a.scope!=="social")return; rows.push('<div class="rrow"><div class="r-top"><span class="r-reason" style="color:var(--blue);text-transform:none"><i class="fas fa-bolt"></i> '+esc(a.action)+'</span><span class="r-tm">'+ago(a.at&&a.at.toMillis?a.at.toMillis():0)+'</span></div><div class="r-body">Sib: <b>'+esc(a.target||"-")+'</b>'+(a.meta&&Object.keys(a.meta).length?' · '+esc(JSON.stringify(a.meta)):'')+'</div></div>'); });
+    if(!rows.length){ c.innerHTML='<div class="state"><i class="fas fa-clock-rotate-left"></i>Pa gen aktivite anrejistre.</div>'; return; }
+    c.innerHTML='<div class="sec-h">120 dènye aksyon admin</div>'+rows.join("");
+  }catch(e){ c.innerHTML='<div class="state"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
+}
+/* ============ REALTIME (tan reyèl) ============ */
+var rtUnsub=[];
+function stopRealtime(){ rtUnsub.forEach(function(u){ try{u();}catch(e){} }); rtUnsub=[]; }
+function htMidnightTs(){ var n=new Date(Date.now()-5*3600000); var ms=Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate())+5*3600000; return firebase.firestore.Timestamp.fromMillis(ms); }
+function loadRealtime(){
+  var c=$("content");
+  c.innerHTML='<div class="kgrid" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">'+
+    '<div class="kpi"><div class="k-top"><div class="k-ic" style="background:#25c26e22;color:#25c26e"><i class="fas fa-circle"></i></div><span class="rt-live"><span class="dot"></span>LIVE</span></div><div class="k-v" id="rtOnline">—</div><div class="k-l">Anliy kounye a (5 min)</div></div>'+
+    '<div class="kpi"><div class="k-top"><div class="k-ic" style="background:#e91e6322;color:#e91e63"><i class="fas fa-users"></i></div></div><div class="k-v" id="rtMembers">—</div><div class="k-l">Total manm</div></div>'+
+    '<div class="kpi"><div class="k-top"><div class="k-ic" style="background:#9c27b022;color:#9c27b0"><i class="fas fa-camera"></i></div></div><div class="k-v" id="rtPosts">—</div><div class="k-l">Post jodi a</div></div>'+
+    '<div class="kpi"><div class="k-top"><div class="k-ic" style="background:#ffd70022;color:#ffd700"><i class="fas fa-heart"></i></div></div><div class="k-v" id="rtMatches">—</div><div class="k-l">Match jodi a</div></div>'+
+  '</div><div class="sec-h">Aktivite an dirèk</div><div class="rt-feed" id="rtFeed"><div class="state"><i class="fas fa-circle-notch spin"></i>Koute aktivite...</div></div>';
+  var today=htMidnightTs();
+  rtUnsub.push(db.collection("socialProfiles").onSnapshot(function(snap){
+    var total=snap.size, online=0, fiveAgo=Date.now()-5*60000;
+    snap.forEach(function(d){ var la=d.data().lastActive; if(la&&la.toMillis&&la.toMillis()>fiveAgo)online++; });
+    if($("rtMembers"))$("rtMembers").textContent=total; if($("rtOnline"))$("rtOnline").textContent=online;
+  },function(e){}));
+  rtUnsub.push(db.collection("socialPosts").where("createdAt",">=",today).onSnapshot(function(snap){
+    var arr=[]; snap.forEach(function(d){ var x=d.data(); x.id=d.id; arr.push(x); });
+    if($("rtPosts"))$("rtPosts").textContent=arr.length;
+    arr.sort(function(a,b){ return ((b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0)-((a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0); });
+    var f=$("rtFeed"); if(!f)return;
+    if(!arr.length){ f.innerHTML='<div class="state"><i class="fas fa-wave-square"></i>Poko gen aktivite jodi a.</div>'; return; }
+    f.innerHTML=arr.slice(0,20).map(function(p){ return '<div class="ev"><div class="a" style="background-image:url(\''+esc(p.authorAvatar||"")+'\')"></div><div class="tx"><b>'+esc(p.authorName||"Anonim")+'</b> pibliye '+(p.imageUrl?"yon foto":"yon post")+(p.caption?': '+esc(p.caption.slice(0,60)):"")+'</div><div class="tm">'+ago(p.createdAt&&p.createdAt.toMillis?p.createdAt.toMillis():0)+'</div></div>'; }).join("");
+  },function(e){ var f=$("rtFeed"); if(f)f.innerHTML='<div class="state">'+esc(e.message)+'</div>'; }));
+  rtUnsub.push(db.collection("socialMatches").where("createdAt",">=",today).onSnapshot(function(snap){ if($("rtMatches"))$("rtMatches").textContent=snap.size; },function(e){}));
+}
+
+/* ============ MATCHES ============ */
+async function loadMatches(){
+  var c=$("content"); c.innerHTML='<div class="state"><i class="fas fa-circle-notch spin"></i>Chajman match...</div>';
+  try{
+    var r=await adminApi("listMatches");
+    if(!r.matches.length){ c.innerHTML='<div class="state"><i class="fas fa-heart"></i>Poko gen match.</div>'; return; }
+    c.innerHTML='<div class="sec-h">'+r.matches.length+' dènye match</div>'+r.matches.map(function(m){
+      var a=m.users[0]||"", b=m.users[1]||"";
+      return '<div class="mrow"><div class="pair"><div class="a" style="background-image:url(\''+esc((m.avatars&&m.avatars[a])||"")+'\')"></div><div class="a" style="background-image:url(\''+esc((m.avatars&&m.avatars[b])||"")+'\')"></div></div>'+
+        '<div class="m-main"><div class="m-nm">'+esc((m.names&&m.names[a])||"?")+' &amp; '+esc((m.names&&m.names[b])||"?")+'</div>'+
+        '<div class="m-sub">Matche '+ago(m.createdAt)+' · '+(m.hasChatted?'<span style="color:var(--green)">yo pale</span>':'<span style="color:var(--muted)">poko pale</span>')+'</div></div>'+
+        '<button class="iconbtn" data-mu="'+a+'" title="Wè pwofil"><i class="fas fa-user"></i></button></div>';
+    }).join("");
+    c.querySelectorAll("[data-mu]").forEach(function(b){ b.onclick=function(){ openUser(b.dataset.mu); }; });
+  }catch(e){ c.innerHTML='<div class="state"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
+}
+
+/* ============ MAP (kat jeyografik) ============ */
+function loadCssOnce(href){ if(document.querySelector('link[data-c="'+href+'"]'))return; var l=document.createElement("link"); l.rel="stylesheet"; l.href=href; l.setAttribute("data-c",href); document.head.appendChild(l); }
+function loadJsOnce(src){ return new Promise(function(res,rej){ if(document.querySelector('script[data-s="'+src+'"]')){res();return;} var s=document.createElement("script"); s.src=src; s.setAttribute("data-s",src); s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+async function loadMap(){
+  var c=$("content"); c.innerHTML='<div id="leafmap"></div><div class="sec-h">Repartisyon pa zòn</div><div id="zonebars"><div class="state"><i class="fas fa-circle-notch spin"></i>Chajman...</div></div>';
+  try{
+    loadCssOnce("https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css");
+    await loadJsOnce("https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js");
+    var r=await adminApi("mapData");
+    var map=L.map("leafmap",{attributionControl:false}).setView([18.97,-72.3],8);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18}).addTo(map);
+    (r.points||[]).forEach(function(p){ try{ L.circleMarker([p.lat,p.lng],{radius:6,color:"#e91e63",fillColor:"#e91e63",fillOpacity:.8,weight:1}).addTo(map).bindPopup(esc(p.pseudo)+(p.zone?" · "+esc(p.zone):"")); }catch(e){} });
+    setTimeout(function(){ try{map.invalidateSize();}catch(e){} },250);
+    var zb=$("zonebars");
+    if(!r.zones.length){ zb.innerHTML='<div class="state"><i class="fas fa-map"></i>Pa gen zòn anrejistre.</div>'; }
+    else { var max=r.zones[0].n||1; zb.innerHTML=r.zones.slice(0,20).map(function(z){ return '<div class="zbar"><div class="zn">'+esc(z.zone)+'</div><div class="zt"><i style="width:'+(z.n/max*100)+'%"></i></div><div class="zv">'+z.n+'</div></div>'; }).join(""); }
+    if((!r.points||!r.points.length)&&zb){ zb.insertAdjacentHTML("afterbegin",'<div style="font-size:.78rem;color:var(--muted);margin-bottom:12px"><i class="fas fa-circle-info"></i> Pwen sou kat la parèt sèlman pou manm ki pataje pozisyon egzat. Vil yo toujou konte anba.</div>'); }
+  }catch(e){ $("content").innerHTML='<div class="state"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
+}
+
+/* ============ PREVIEW (aperçu smartphone) ============ */
+function loadPreview(){
+  var screens=[['feed','Fil'],['discover','Dekouvri'],['post','Poste'],['matches','Mesaj'],['profile','Pwofil'],['activate','Aktivasyon'],['onboard','Onboarding']];
+  $("content").innerHTML='<div class="phone-wrap">'+
+    '<div class="phone"><iframe id="pvFrame" src="/social?demo=feed"></iframe></div>'+
+    '<div class="pv-controls">'+
+      '<div class="card"><h3>Aperçu an dirèk</h3><p class="sub">Ou wè aplikasyon an jan itilizatè yo wè l (done demo). Klike sou yon ekran, oswa rafrechi pou wè dènye chanjman yo.</p>'+
+      '<div class="pv-screens">'+screens.map(function(s){ return '<button class="chip'+(s[0]==="feed"?" on":"")+'" data-scr="'+s[0]+'">'+s[1]+'</button>'; }).join("")+'</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" id="pvReload"><i class="fas fa-rotate"></i> Rafrechi</button><button class="btn ghost sm" id="pvOpen"><i class="fas fa-up-right-from-square"></i> Ouvri nan onglè</button></div>'+
+      '</div>'+
+      '<div class="card"><h3>Pou ale pi lwen</h3><p class="sub">Pou vre app la (koneksyon reyèl) ouvri <a href="/social" target="_blank">/social</a>. Pou ajiste mòd gratis, maintenance, elatriye, ale nan <b>Konfigirasyon</b>.</p></div>'+
+    '</div></div>';
+  var cur="feed";
+  $("content").querySelectorAll("[data-scr]").forEach(function(b){ b.onclick=function(){ cur=b.dataset.scr; $("content").querySelectorAll("[data-scr]").forEach(function(x){x.classList.toggle("on",x===b);}); $("pvFrame").src="/social?demo="+cur; }; });
+  $("pvReload").onclick=function(){ $("pvFrame").src="/social?demo="+cur+"&t="+Date.now(); };
+  $("pvOpen").onclick=function(){ window.open("/social?demo="+cur,"_blank"); };
+}
+</script>
+</body>
+</html>
