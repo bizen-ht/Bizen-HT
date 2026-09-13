@@ -65,11 +65,20 @@ exports.handler = async function (event) {
             }
         });
 
-        /* Notif au profil suivi (best effort). */
+        /* Notif au profil suivi (in-app + push, best effort). */
         if (following) {
             try {
                 var meDoc = await meRef.get();
-                var myName = (meDoc.exists && meDoc.data().pseudo) || "yon moun";
+                var md = meDoc.exists ? meDoc.data() : {};
+                var myName = md.pseudo || "yon moun";
+                var myAvatar = (md.photos && md.photos[0]) || "";
+                try {
+                    await dbf.collection("socialNotifs").add({
+                        owner: targetUid, type: "follow", fromUid: uid, fromName: myName,
+                        fromAvatar: myAvatar, postId: "", text: myName + " kòmanse swiv ou.",
+                        read: false, createdAt: nowTs
+                    });
+                } catch (e) {}
                 var oDoc = await dbf.collection("users").doc(targetUid).get();
                 var tokens = (oDoc.exists && oDoc.data().fcmTokens) || [];
                 if (tokens.length) {

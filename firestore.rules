@@ -378,6 +378,25 @@ service cloud.firestore {
     match /socialReports/{id} {
       allow read, write: if isAdmin();
     }
+    /* Likes de commentaires : je lis les miens. Écriture serveur. */
+    match /socialCommentLikes/{id} {
+      allow read:  if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+    /* Stories (éphémères) : lisibles par les membres connectés. Écriture serveur. */
+    match /socialStories/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+    /* Notifications : je lis SEULEMENT les miennes (owner == moi). Je peux
+       seulement les marquer comme lues. Création par le serveur. */
+    match /socialNotifs/{id} {
+      allow read:   if isAdmin() || (isSignedIn() && resource.data.owner == request.auth.uid);
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isSignedIn() && resource.data.owner == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']));
+    }
 
     /* -------- FIL D'ACTUALITE (socialPosts) --------
        Posts type Instagram. Lecture par tout membre connecté. Ecriture

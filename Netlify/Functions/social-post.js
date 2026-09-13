@@ -54,6 +54,54 @@ function extractTags(text) {
     return out;
 }
 
+/* Notification in-app (socialNotifs) + push FCM (best effort). */
+async function notify(dbf, ownerUid, from, type, text, postId) {
+    if (!ownerUid || ownerUid === from.uid) return;
+    try {
+        await dbf.collection("socialNotifs").add({
+            owner: ownerUid, type: type, fromUid: from.uid, fromName: from.name,
+            fromAvatar: from.avatar, postId: postId || "", text: text || "",
+            read: false, createdAt: admin.firestore.Timestamp.now()
+        });
+    } catch (e) {}
+    try {
+        var oDoc = await dbf.collection("users").doc(ownerUid).get();
+        var tokens = (oDoc.exists && oDoc.data().fcmTokens) || [];
+        if (tokens.length) {
+            await admin.messaging().sendEachForMulticast({
+                tokens: tokens,
+                notification: { title: "Bizen Social", body: text || "Ou gen yon nouvo notifikasyon." },
+                data: { link: "/social.html" }
+            });
+        }
+    } catch (e) {}
+}
+
+/* Fan-out : previens les abonnes qu'un nouveau post est publie (borne). */
+async function notifyFollowers(dbf, authorUid, from, postId) {
+    try {
+        var fol = await dbf.collection("socialFollows").where("target", "==", authorUid).limit(400).get();
+        var followers = []; fol.forEach(function (d) { var fu = d.data().follower; if (fu && fu !== authorUid) followers.push(fu); });
+        if (!followers.length) return;
+        var nowTs = admin.firestore.Timestamp.now();
+        var batch = dbf.batch();
+        followers.forEach(function (fu) {
+            var nref = dbf.collection("socialNotifs").doc();
+            batch.set(nref, { owner: fu, type: "post", fromUid: authorUid, fromName: from.name, fromAvatar: from.avatar, postId: postId, text: from.name + " pibliye yon nouvo post.", read: false, createdAt: nowTs });
+        });
+        await batch.commit();
+        var tokens = [];
+        for (var k = 0; k < followers.length; k += 10) {
+            var chunk = followers.slice(k, k + 10);
+            var us = await dbf.collection("users").where(admin.firestore.FieldPath.documentId(), "in", chunk).get();
+            us.forEach(function (d) { (d.data().fcmTokens || []).forEach(function (t) { if (t) tokens.push(t); }); });
+        }
+        for (var b = 0; b < tokens.length; b += 500) {
+            try { await admin.messaging().sendEachForMulticast({ tokens: tokens.slice(b, b + 500), notification: { title: "Bizen Social", body: from.name + " pibliye yon nouvo post." }, data: { link: "/social.html" } }); } catch (e) {}
+        }
+    } catch (e) {}
+}
+
 exports.handler = async function (event) {
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: CORS, body: "" };
     if (event.httpMethod !== "POST") return err(405, "Method Not Allowed");
@@ -129,7 +177,35 @@ exports.handler = async function (event) {
             }
 
             var postRef = await dbf.collection("socialPosts").add(newPost);
+            var from = { uid: uid, name: myName, avatar: myAvatar };
+            /* Notif a l'auteur original en cas de repartage. */
+            if (repostOf && newPost.repostAuthorUid) {
+                await notify(dbf, newPost.repostAuthorUid, from, "repost", myName + " repibliye post ou a.", postRef.id);
+            }
+            /* Notif a mes abonnes : nouveau post. */
+            await notifyFollowers(dbf, uid, from, postRef.id);
             return ok({ success: true, postId: postRef.id });
+        }
+
+        /* -------- LIKE SU YON KOMANTE (bascule) -------- */
+        if (action === "commentLike") {
+            var commentId = (body.commentId || "").toString();
+            if (!commentId) return err(400, "commentId requis");
+            var cRef0 = dbf.collection("socialPostComments").doc(commentId);
+            var clRef = dbf.collection("socialCommentLikes").doc(commentId + "_" + uid);
+            var cLiked = await dbf.runTransaction(async function (t) {
+                var cs = await t.get(cRef0);
+                if (!cs.exists) throw new Error("Kòmantè pa egziste.");
+                var ls = await t.get(clRef);
+                if (ls.exists) { t.delete(clRef); t.update(cRef0, { likeCount: FieldValue.increment(-1) }); return false; }
+                t.set(clRef, { commentId: commentId, uid: uid, createdAt: nowTs });
+                t.update(cRef0, { likeCount: FieldValue.increment(1) });
+                return true;
+            });
+            if (cLiked) {
+                try { var cd = await cRef0.get(); await notify(dbf, cd.data().uid, { uid: uid, name: myName, avatar: myAvatar }, "commentLike", myName + " renmen kòmantè ou a.", cd.data().postId); } catch (e) {}
+            }
+            return ok({ success: true, liked: cLiked });
         }
 
         var postId = (body.postId || "").toString();
@@ -153,22 +229,12 @@ exports.handler = async function (event) {
                     return true;
                 }
             });
-            /* Notif au proprietaire du post quand on like (best effort). */
+            /* Notif au proprietaire du post quand on like. */
             if (liked) {
                 try {
                     var pDoc = await postRef.get();
                     var ownerUid = pDoc.exists ? pDoc.data().authorUid : null;
-                    if (ownerUid && ownerUid !== uid) {
-                        var oDoc = await dbf.collection("users").doc(ownerUid).get();
-                        var tokens = (oDoc.exists && oDoc.data().fcmTokens) || [];
-                        if (tokens.length) {
-                            await admin.messaging().sendEachForMulticast({
-                                tokens: tokens,
-                                notification: { title: "Bizen Social", body: myName + " renmen post ou a." },
-                                data: { link: "/social.html" }
-                            });
-                        }
-                    }
+                    await notify(dbf, ownerUid, { uid: uid, name: myName, avatar: myAvatar }, "like", myName + " renmen post ou a.", postId);
                 } catch (e) {}
             }
             return ok({ success: true, liked: liked });
@@ -178,13 +244,24 @@ exports.handler = async function (event) {
         if (action === "comment") {
             var text = (body.text || "").toString().trim().slice(0, 500);
             if (!text) return err(400, "Kòmantè vid.");
+            var parentId = (body.parentId || "").toString();
             var filtered = filterContact(text);
-            await dbf.collection("socialPostComments").add({
+            var cRef = await dbf.collection("socialPostComments").add({
                 postId: postId, uid: uid, name: myName, avatar: myAvatar,
-                text: filtered, createdAt: nowTs
+                text: filtered, parentId: parentId, likeCount: 0, createdAt: nowTs
             });
             await postRef.set({ commentCount: FieldValue.increment(1) }, { merge: true });
-            return ok({ success: true });
+            var cFrom = { uid: uid, name: myName, avatar: myAvatar };
+            try {
+                var pcDoc = await postRef.get();
+                var pOwner = pcDoc.exists ? pcDoc.data().authorUid : null;
+                await notify(dbf, pOwner, cFrom, "comment", myName + " kòmante post ou a.", postId);
+                if (parentId) {
+                    var par = await dbf.collection("socialPostComments").doc(parentId).get();
+                    if (par.exists) await notify(dbf, par.data().uid, cFrom, "reply", myName + " reponn kòmantè ou a.", postId);
+                }
+            } catch (e) {}
+            return ok({ success: true, commentId: cRef.id });
         }
 
         /* -------- SAUVEGARDER / RETIRER (bascule) -------- */

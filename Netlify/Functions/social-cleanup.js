@@ -37,6 +37,18 @@ exports.handler = async function () {
             if (snap.size < 400) break;
         }
 
+        /* 1b) Stories expirées (24h). */
+        while (true) {
+            var stSnap = await dbf.collection("socialStories")
+                .where("expireAt", "<=", nowTs)
+                .limit(400).get();
+            if (stSnap.empty) break;
+            var stBatch = dbf.batch();
+            stSnap.forEach(function (d) { stBatch.delete(d.ref); deleted++; });
+            await stBatch.commit();
+            if (stSnap.size < 400) break;
+        }
+
         /* 2) "Disponible maintenant" expiré (> 1h) : on enlève le drapeau. */
         var oneHourAgo = admin.firestore.Timestamp.fromMillis(Date.now() - 3600 * 1000);
         var availSnap = await dbf.collection("socialProfiles")
