@@ -3828,16 +3828,36 @@ function eluConfirmRes(reservationId, newStatus) {
    À cliquer au moment où le client et l'Elu se croisent.
    => marque la réservation "met", l'admin est averti et peut verser l'Elu. */
 function confirmMeeting(reservationId) {
-    if (!db) return;
-    if (!confirm("Konfime ou rankontre Elu a kounye a? (Apre sa, ekip Bizen ap voye peman bay Elu a)")) return;
+    if (!db || !reservationId) return;
+    /* Confirmation via une modale INTÉGRÉE (le confirm() natif peut être bloqué
+       dans l'app installée => le bouton semblait ne rien faire). */
+    var old = document.getElementById("cmM"); if (old) old.remove();
+    var m = document.createElement("div");
+    m.id = "cmM";
+    m.style.cssText = "position:fixed;inset:0;z-index:2147483500;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;padding:22px;font-family:'Montserrat',sans-serif";
+    m.innerHTML = '<div style="background:#15151f;border:1px solid #2a2a3a;border-radius:16px;max-width:380px;width:100%;padding:26px;text-align:center">'
+        + '<div style="width:56px;height:56px;border-radius:50%;background:rgba(76,175,80,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><i class="fas fa-handshake" style="color:#4caf50;font-size:1.5rem"></i></div>'
+        + '<h3 style="color:#fff;font-size:1.1rem;margin-bottom:8px">Konfime rankont la?</h3>'
+        + '<p style="color:#b0b0c0;font-size:0.88rem;line-height:1.5">Konfime ou rankontre Elu a kounye a. Apre sa, ekip Bizen ap voye peman bay Elu a.</p>'
+        + '<div style="display:flex;gap:10px;margin-top:20px">'
+        + '<button onclick="document.getElementById(\'cmM\').remove()" style="flex:1;padding:11px;border-radius:12px;border:1px solid #2a2a3a;background:transparent;color:#b0b0c0;font-weight:600;cursor:pointer;font-family:inherit">Anile</button>'
+        + '<button id="cmYes" style="flex:1;padding:11px;border-radius:12px;border:none;background:linear-gradient(135deg,#4caf50,#2e7d32);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">Wi, konfime</button>'
+        + '</div></div>';
+    document.body.appendChild(m);
+    document.getElementById("cmYes").onclick = function () { m.remove(); doConfirmMeeting(reservationId); };
+}
+
+function doConfirmMeeting(reservationId) {
+    if (!db || !reservationId) return;
     db.collection("reservations").doc(reservationId).update({
         met: true,
         metAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function() {
+    }).then(function () {
         showToast("Mèsi! Rankont konfime. Bon moman!", "success");
         loadUserReservations();
-    }).catch(function(err) {
-        showToast("Ere: " + err.message, "error");
+    }).catch(function (err) {
+        console.error("confirmMeeting:", err);
+        showToast("Erè: " + (err.message || err.code || "eseye ankò"), "error");
     });
 }
 

@@ -125,7 +125,7 @@ exports.handler = async function (event) {
         }
 
         /* ---- ÉCRITURE DU MESSAGE (filtré, éphémère selon le match) ---- */
-        var isEphemeral = match.ephemeral !== false;
+        var isEphemeral = false;   /* messages éphémères désactivés : les messages restent. */
         var filtered = filterContact(text);
         var msgDoc = {
             pairId: pairId,

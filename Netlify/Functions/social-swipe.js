@@ -151,7 +151,7 @@ exports.handler = async function (event) {
                 createdAt: nowTs,
                 lastMessage: "",
                 lastAt: nowTs,
-                ephemeral: true,               /* messages éphémères ON par défaut */
+                ephemeral: false,              /* messages éphémères désactivés (persistants) */
                 unread: { }                    /* incrémenté par socialMessages */
             }, { merge: true });
 
