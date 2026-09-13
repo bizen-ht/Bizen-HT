@@ -52,10 +52,13 @@ exports.handler = async function (event) {
             return err(403, "Bizen Social se pou granmoun 18 an+ sèlman.");
         }
 
-        var pseudo = (body.pseudo || "").toString().trim().slice(0, 40);
+        /* Nom + prénom réels obligatoires (plus de pseudo). Le nom affiché = les deux. */
+        var prenom = (body.prenom || "").toString().trim().slice(0, 40);
+        var nom = (body.nom || "").toString().trim().slice(0, 40);
+        var pseudo = (prenom + " " + nom).trim();
         var gender = ["homme", "femme", "autre"].indexOf(body.gender) !== -1 ? body.gender : "";
         var seeking = ["homme", "femme", "tous"].indexOf(body.seeking) !== -1 ? body.seeking : "tous";
-        if (!pseudo) return err(400, "Chwazi yon non/pseudo.");
+        if (!prenom || !nom) return err(400, "Antre prenon ak non ou.");
         if (!gender) return err(400, "Chwazi sèks ou.");
 
         var decoded = await admin.auth().verifyIdToken(idToken);
@@ -84,6 +87,8 @@ exports.handler = async function (event) {
 
         var profileDoc = {
             uid: uid,
+            prenom: prenom,
+            nom: nom,
             pseudo: pseudo,
             gender: gender,
             seeking: seeking,

@@ -78,6 +78,9 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .post-head .nm{font-weight:600;font-size:.9rem;flex:1}
 .post-head .nm small{display:block;font-weight:400;color:var(--muted);font-size:.7rem}
 .post-head .more{width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:1rem}
+.post-follow{background:none;border:none;color:var(--rose);font-weight:700;font-size:.82rem;padding:6px 8px;white-space:nowrap;flex:none}
+.post-follow.on{color:var(--muted)}
+.post-actions .act .act-n{font-size:.85rem;font-weight:600;margin-left:6px}
 .post-img{width:100%;aspect-ratio:1/1;background:#15151f center/cover no-repeat}
 .post-textonly{padding:4px 16px 14px;font-size:1.05rem;line-height:1.5}
 .post-actions{display:flex;align-items:center;gap:18px;padding:11px 15px 4px;font-size:1.5rem}
@@ -174,7 +177,8 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .pf-grid .cell{aspect-ratio:1/1;background:var(--card2) center/cover}
 .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
 .photo-slot{aspect-ratio:3/4;border-radius:12px;background:var(--card2);border:1.5px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:var(--muted);position:relative;overflow:hidden;background-size:cover;background-position:center}
-.photo-slot.single{aspect-ratio:auto;width:150px;height:150px;border-radius:50%;flex-direction:column}
+.photo-slot.single{aspect-ratio:auto;width:150px;height:150px;border-radius:50%;flex-direction:column;cursor:pointer}
+.photo-slot.single .ph-change{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:.58rem;font-weight:700;padding:6px;text-align:center;letter-spacing:.3px}
 .photo-slot .rm{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:.7rem}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--line)}
 .toggle-row .lbl{font-size:.9rem}
@@ -320,8 +324,10 @@ video.post-img{object-fit:cover;background:#000;display:block}
         <h3>Aktive Bizen Social</h3>
         <p class="lead">Menm kont Bizen, an 1 klik. Poste, swipe, matche ak pale ak lòt granmoun.</p>
       </div>
-      <label class="fld">Non oswa pseudo</label>
-      <input id="a-pseudo" class="input" placeholder="Kijan yo rele w?" maxlength="40">
+      <div class="field-2">
+        <div><label class="fld">Prenon</label><input id="a-prenom" class="input" placeholder="Prenon ou" maxlength="40"></div>
+        <div><label class="fld">Non</label><input id="a-nom" class="input" placeholder="Non fanmi ou" maxlength="40"></div>
+      </div>
       <label class="fld">Ane nesans (verifye 18 an+)</label>
       <input id="a-birth" class="input" type="number" placeholder="Egzanp: 1996" inputmode="numeric">
       <label class="fld">Mwen se</label>
@@ -412,8 +418,10 @@ video.post-img{object-fit:cover;background:#000;display:block}
         <div class="vibe-picker" id="vibe-picker"></div>
 
         <div class="sec-title">Enfòmasyon pèsonèl</div>
-        <label class="fld">Non oswa pseudo</label>
-        <input id="pf-pseudo-in" class="input" maxlength="40" placeholder="Non ou">
+        <div class="field-2">
+          <div><label class="fld">Prenon</label><input id="pf-prenom" class="input" maxlength="40" placeholder="Prenon ou"></div>
+          <div><label class="fld">Non</label><input id="pf-nom" class="input" maxlength="40" placeholder="Non fanmi ou"></div>
+        </div>
         <label class="fld">Bio</label>
         <textarea id="pf-bio" maxlength="300" placeholder="Di yon bagay sou ou..."></textarea>
         <div class="field-2">
@@ -572,6 +580,27 @@ async function api(fn, payload){
   return j;
 }
 function timeAgo(ts){ if(!ts||!ts.toMillis)return""; var s=(Date.now()-ts.toMillis())/1000; if(s<60)return"kounye a"; if(s<3600)return Math.floor(s/60)+" min"; if(s<86400)return Math.floor(s/3600)+" h"; return Math.floor(s/86400)+" j"; }
+/* Date relative style Instagram, en kreyòl : "sa gen X ..." */
+function kreyolAgo(ts){
+  if(!ts||!ts.toMillis)return"";
+  var s=(Date.now()-ts.toMillis())/1000;
+  if(s<60)return"kounye a";
+  if(s<3600){ var m=Math.floor(s/60); return"sa gen "+m+" minit"; }
+  if(s<86400){ var h=Math.floor(s/3600); return"sa gen "+h+" èdtan"; }
+  var d=Math.floor(s/86400);
+  if(d<7)return"sa gen "+d+" jou";
+  if(d<30){ var w=Math.floor(d/7); return"sa gen "+w+" semèn"; }
+  if(d<365){ var mo=Math.floor(d/30); return"sa gen "+mo+" mwa"; }
+  return"sa gen "+Math.floor(d/365)+" an";
+}
+/* Suivre/ne plus suivre directement depuis un post. */
+async function togglePostFollow(uid, btn){
+  if(!uid)return; var was=btn.classList.contains("on");
+  btn.classList.toggle("on"); btn.textContent=was?"Swiv":"Ap swiv";
+  if(was)delete myFollows[uid]; else myFollows[uid]=1;
+  try{ var r=await api("social-follow",{targetUid:uid}); if(r.following){myFollows[uid]=1;}else{delete myFollows[uid];} btn.classList.toggle("on",!!r.following); btn.textContent=r.following?"Ap swiv":"Swiv"; }
+  catch(e){ btn.classList.toggle("on",was); btn.textContent=was?"Ap swiv":"Swiv"; toast(e.message); }
+}
 
 /* ============ AUTH BOOT ============ */
 auth.onAuthStateChanged(async function(u){
@@ -595,12 +624,14 @@ auth.onAuthStateChanged(async function(u){
 
 /* ============ ACTIVATION ============ */
 async function prefillActivate(){
-  try{ var us=await db.collection("users").doc(ME.uid).get(); if(us.exists){ var d=us.data(); if(d.prenom)$("a-pseudo").value=d.prenom; if(d.localisation||d.zone)$("a-zone").value=d.localisation||d.zone; } }catch(e){}
+  try{ var us=await db.collection("users").doc(ME.uid).get(); if(us.exists){ var d=us.data(); if(d.prenom)$("a-prenom").value=d.prenom; if(d.nom)$("a-nom").value=d.nom; if(d.localisation||d.zone)$("a-zone").value=d.localisation||d.zone; } }catch(e){}
 }
 $("a-submit").onclick=async function(){
+  var prenom=$("a-prenom").value.trim(), nom=$("a-nom").value.trim();
+  if(!prenom||!nom){ toast("Antre prenon ak non ou."); return; }
   var b=this; b.disabled=true;
   try{
-    await api("social-activate",{ pseudo:$("a-pseudo").value.trim(), birthYear:parseInt($("a-birth").value,10),
+    await api("social-activate",{ prenom:prenom, nom:nom, birthYear:parseInt($("a-birth").value,10),
       gender:$("a-gender").value, seeking:$("a-seeking").value, zone:$("a-zone").value.trim(), consent:$("a-consent").checked });
     var snap=await db.collection("socialProfiles").doc(ME.uid).get(); PROFILE=snap.data();
     enterOnboard();
@@ -613,6 +644,10 @@ function renderSinglePhoto(gridId, arr, target){
   var g=$(gridId); g.style.display="flex"; g.style.justifyContent="center"; g.innerHTML="";
   var slot=document.createElement("div"); slot.className="photo-slot single";
   if(arr[0]){ slot.style.backgroundImage="url('"+arr[0]+"')";
+    /* Clique sur la photo = la changer ; le X = la retirer. */
+    slot.onclick=function(){ uploadTarget=target; $("file-input").accept="image/*"; $("file-input").click(); };
+    var ch=document.createElement("div"); ch.className="ph-change"; ch.innerHTML='<i class="fas fa-camera"></i> Chanje';
+    slot.appendChild(ch);
     var rm=document.createElement("div"); rm.className="rm"; rm.innerHTML='<i class="fas fa-times"></i>';
     rm.onclick=function(ev){ ev.stopPropagation(); arr.length=0; renderSinglePhoto(gridId,arr,target); if(target==="profile")saveProfilePhotos(arr); };
     slot.appendChild(rm);
@@ -726,17 +761,30 @@ function inviteFriends(){
   window.open("https://wa.me/?text="+txt,"_blank");
 }
 
-/* ============ FEED ============ */
+/* ============ FEED (tan reyèl + priyorite abòne) ============ */
+var myFollows={}, feedUnsub=null, _feedSig="";
 async function loadFeed(){
-  $("feed-list").innerHTML='<div class="empty" style="margin-top:30px"><i class="fas fa-circle-notch spin"></i>Chajman fil la...</div>';
+  if(!_feedSig)$("feed-list").innerHTML='<div class="empty" style="margin-top:30px"><i class="fas fa-circle-notch spin"></i>Chajman fil la...</div>';
   try{
-    /* Mes likes et sauvegardes pour marquer l'etat */
-    myLikes={}; mySaves={};
-    try{ var lk=await db.collection("socialPostLikes").where("uid","==",ME.uid).limit(300).get(); lk.forEach(function(d){ myLikes[d.data().postId]=1; }); }catch(e){}
-    try{ var sv=await db.collection("socialSaves").where("uid","==",ME.uid).limit(300).get(); sv.forEach(function(d){ mySaves[d.data().postId]=1; }); }catch(e){}
-    var snap=await db.collection("socialPosts").orderBy("createdAt","desc").limit(40).get();
-    var arr=[]; snap.forEach(function(d){ var x=d.data(); x.id=d.id; arr.push(x); });
-    renderPosts(arr);
+    myLikes={}; mySaves={}; myFollows={};
+    try{ var lk=await db.collection("socialPostLikes").where("uid","==",ME.uid).limit(500).get(); lk.forEach(function(d){ myLikes[d.data().postId]=1; }); }catch(e){}
+    try{ var sv=await db.collection("socialSaves").where("uid","==",ME.uid).limit(500).get(); sv.forEach(function(d){ mySaves[d.data().postId]=1; }); }catch(e){}
+    try{ var fo=await db.collection("socialFollows").where("follower","==",ME.uid).limit(1000).get(); fo.forEach(function(d){ myFollows[d.data().target]=1; }); }catch(e){}
+    if(feedUnsub)feedUnsub();
+    feedUnsub=db.collection("socialPosts").orderBy("createdAt","desc").limit(80).onSnapshot(function(snap){
+      var arr=[]; snap.forEach(function(d){ var x=d.data(); x.id=d.id; if(!x.hidden)arr.push(x); });
+      /* Priyorite pou abòne yo : post moun mwen swiv anlè, apre lòt yo, chak pa dat. */
+      arr.sort(function(a,b){
+        var af=myFollows[a.authorUid]?1:0, bf=myFollows[b.authorUid]?1:0;
+        if(af!==bf) return bf-af;
+        var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0, bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+        return bm-am;
+      });
+      /* On ne re-rend que si l'ensemble/ordre des posts a changé (evite les sauts de scroll). */
+      var sig=arr.map(function(p){return p.id;}).join(",");
+      if(sig===_feedSig) return;
+      _feedSig=sig; renderPosts(arr);
+    }, function(e){ $("feed-list").innerHTML='<div class="empty"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; });
   }catch(e){ $("feed-list").innerHTML='<div class="empty"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
 }
 function welcomeCardHtml(){
@@ -771,6 +819,7 @@ function renderPosts(arr){
 }
 function buildPost(p){
   var el=document.createElement("article"); el.className="post"; el._data=p;
+  if(p.vibe){ el.style.background='linear-gradient(135deg,'+vibeColor(p.vibe)+'14, transparent 55%)'; }
   var liked=!!myLikes[p.id], saved=!!mySaves[p.id];
   var isRepost=!!p.repostOf;
   var tagged=(p.taggedNames&&p.taggedNames.length)?('<div class="post-tagged"><i class="fas fa-user-tag"></i> avèk '+p.taggedNames.map(esc).join(", ")+'</div>'):'';
@@ -780,13 +829,14 @@ function buildPost(p){
     '<div class="post-head">'+
       '<div class="av clk'+(p.vibe?' pvibe':'')+'" style="background-image:url(\''+esc(p.authorAvatar||"")+'\')'+(p.vibe?';--vc:'+vibeColor(p.vibe):'')+'"></div>'+
       '<div class="nm clk">'+esc(p.authorName||"Anonim")+(p.vibe?' '+vibePill(p.vibe):'')+(p.zone?'<small>'+esc(p.zone)+'</small>':'')+'</div>'+
+      ((p.authorUid && p.authorUid!==ME.uid)?'<button class="post-follow'+(myFollows[p.authorUid]?' on':'')+'" data-fu="'+esc(p.authorUid)+'">'+(myFollows[p.authorUid]?'Ap swiv':'Swiv')+'</button>':'')+
       '<button class="more"><i class="fas fa-ellipsis"></i></button>'+
     '</div>'+
     (p.imageUrl?(p.mediaType==="video"?'<video class="post-img" src="'+esc(p.imageUrl)+'" controls playsinline preload="metadata"></video>':'<div class="post-img" style="background-image:url(\''+esc(p.imageUrl)+'\')"></div>'):'')+
     (!p.imageUrl&&p.caption?'<div class="post-textonly">'+capTags(p.caption)+'</div>':'')+
     '<div class="post-actions">'+
       '<button class="act like'+(liked?' liked':'')+'"><i class="'+(liked?'fas':'fa-regular')+' fa-heart"></i></button>'+
-      '<button class="act comment"><i class="fa-regular fa-comment"></i></button>'+
+      '<button class="act comment"><i class="fa-regular fa-comment"></i>'+(p.commentCount?'<span class="act-n">'+p.commentCount+'</span>':'')+'</button>'+
       '<button class="act share"><i class="fa-regular fa-paper-plane"></i></button>'+
       '<button class="act save'+(saved?' saved':'')+'"><i class="'+(saved?'fas':'fa-regular')+' fa-bookmark"></i></button>'+
     '</div>'+
@@ -794,8 +844,9 @@ function buildPost(p){
     (p.imageUrl&&p.caption?'<div class="post-caption"><span class="u">'+esc(p.authorName||"")+'</span>'+capTags(p.caption)+'</div>':'')+
     tagged+
     (p.commentCount?'<div class="post-cmlink">Wè '+p.commentCount+' kòmantè</div>':'<div class="post-cmlink">Ajoute yon kòmantè</div>')+
-    '<div class="post-time">'+timeAgo(p.createdAt)+'</div>';
+    '<div class="post-time">'+kreyolAgo(p.createdAt)+'</div>';
   /* actions */
+  var fb=el.querySelector(".post-follow"); if(fb)fb.onclick=function(){ togglePostFollow(p.authorUid, fb); };
   var likeBtn=el.querySelector(".like");
   likeBtn.onclick=function(){ toggleLike(p, likeBtn, el.querySelector(".lc")); };
   el.querySelector(".comment").onclick=function(){ openComments(p); };
@@ -1141,7 +1192,8 @@ function hydrateProfile(){
   $("pf-following").textContent=PROFILE.followingCount||0;
   renderSinglePhoto("pf-photos",PROFILE.photos||[],"profile");
   /* champs paramèt (tout modifiable) */
-  $("pf-pseudo-in").value=PROFILE.pseudo||"";
+  $("pf-prenom").value=PROFILE.prenom||"";
+  $("pf-nom").value=PROFILE.nom||"";
   $("pf-bio").value=PROFILE.bio||"";
   $("pf-gender").value=PROFILE.gender||"homme";
   $("pf-seeking").value=PROFILE.seeking||"tous";
@@ -1174,10 +1226,12 @@ async function loadMyPosts(){
 }
 $("pf-editbtn").onclick=function(){ $("pf-edit").classList.toggle("hidden"); };
 $("pf-save").onclick=async function(){
+  var prenom=$("pf-prenom").value.trim().slice(0,40), nom=$("pf-nom").value.trim().slice(0,40);
+  if(!prenom||!nom){ toast("Prenon ak non obligatwa."); return; }
   var b=this; b.disabled=true;
-  var pseudo=$("pf-pseudo-in").value.trim().slice(0,40);
   var patch={
-    pseudo:pseudo||PROFILE.pseudo||"",
+    prenom:prenom, nom:nom,
+    pseudo:(prenom+" "+nom).trim(),
     bio:$("pf-bio").value.trim(),
     gender:$("pf-gender").value,
     seeking:$("pf-seeking").value,
@@ -1225,7 +1279,7 @@ $("pf-delete").onclick=async function(){
   storage={ ref:function(){ return { child:function(){ return stChild; } }; } };
   auth={ signOut:function(){ toast("(aperçu) Dekonekte"); }, onAuthStateChanged:noop };
   ME={uid:"demo"}; TOKEN="demo";
-  PROFILE={pseudo:"Ou",bio:"Egzanp bio, m renmen sinema ak bon manje.",photos:[av(300,"😊")],status:"active",visible:true,shareLocation:true,defaultEphemeral:true,vibe:"randevou",gender:"homme",seeking:"tous",zone:"Petyonvil",prefs:{minAge:22,maxAge:40,maxDistanceKm:60}};
+  PROFILE={prenom:"Jan",nom:"Batis",pseudo:"Jan Batis",bio:"Egzanp bio, m renmen sinema ak bon manje.",photos:[av(300,"😊")],status:"active",visible:true,shareLocation:true,defaultEphemeral:true,vibe:"randevou",gender:"homme",seeking:"tous",zone:"Petyonvil",prefs:{minAge:22,maxAge:40,maxDistanceKm:60}};
   var POSTS=[
     {id:"p1",authorUid:"d1",authorName:"Nadège",authorAvatar:av(330,"🌸"),imageUrl:av(330,"🌅"),vibe:"fet",caption:"Bèl jounen nan Petyonvil. #ayiti #lavi #bonè",hashtags:["ayiti"],likeCount:42,commentCount:5,createdAt:{toMillis:function(){return Date.now()-3600000;}}},
     {id:"p2",authorUid:"d2",authorName:"Jonas",authorAvatar:av(210,"⚽"),imageUrl:av(210,"🏝️"),vibe:"chill",caption:"Wikenn nan plaj la. Kilès ki vle vini? #plaj #detant",hashtags:["plaj"],likeCount:18,commentCount:2,createdAt:{toMillis:function(){return Date.now()-7200000;}}},
@@ -1240,6 +1294,7 @@ $("pf-delete").onclick=async function(){
     if(fn==="social-feed") return {profiles:PROFILES.slice()};
     if(fn==="social-swipe") return {match:(p.dir!=="pass")&&(p.targetUid==="d1"||Math.random()<0.4)};
     if(fn==="social-post" && p.action==="save") return {saved:true};
+    if(fn==="social-follow") return {following:!myFollows[p.targetUid]};
     return {success:true};
   };
   loadFeed=function(){ myLikes={}; mySaves={}; renderPosts(POSTS); renderStories(); };
@@ -1253,7 +1308,7 @@ $("pf-delete").onclick=async function(){
     $("nav-badge").textContent="2"; $("nav-badge").classList.remove("hidden"); };
   openComments=function(p){ $("cm-list").innerHTML=""; [["Nadège",330,"🌸","Twò bèl! 😍"],["Jonas",210,"⚽","Kote sa ye?"]].forEach(function(c){ $("cm-list").appendChild(buildComment({name:c[0],avatar:av(c[1],c[2]),text:c[3],createdAt:{toMillis:function(){return Date.now()-600000;}}})); }); $("commentsview").classList.remove("hidden"); };
   openChat=function(){ $("chat-name").textContent="Nadège"; $("chat-av").style.backgroundImage="url('"+av(330,"🌸")+"')"; $("chat-eph").textContent="Mesaj efemè, efase apre 24h"; var b=$("chat-body"); b.innerHTML=""; [["you","Kontan nou matche! 😊"],["me","Mwen menm tou!"]].forEach(function(m){ var x=document.createElement("div"); x.className="bubble "+m[0]; x.textContent=m[1]; b.appendChild(x); }); $("chatview").classList.remove("hidden"); $("chat-send").onclick=function(){ var i=$("chat-text"); if(!i.value.trim())return; var x=document.createElement("div"); x.className="bubble me"; x.textContent=i.value.trim(); b.appendChild(x); i.value=""; b.scrollTop=b.scrollHeight; }; };
-  hydrateProfile=function(){ $("pf-av").style.backgroundImage="url('"+PROFILE.photos[0]+"')"; $("pf-pseudo").textContent="Ou"; $("pf-bioshow").textContent=PROFILE.bio; $("pf-bio").value=PROFILE.bio; $("pf-pseudo-in").value="Ou"; $("pf-gender").value=PROFILE.gender; $("pf-seeking").value=PROFILE.seeking; $("pf-zone").value=PROFILE.zone; $("pf-agemin").value=22;$("pf-ageminlbl").textContent="22"; $("pf-agemax").value=40;$("pf-agemaxlbl").textContent="40"; $("pf-dist").value=60;$("pf-distlbl").textContent="60 km"; renderSinglePhoto("pf-photos",PROFILE.photos,"profile"); $("pf-posts").textContent="3"; $("pf-followers").textContent="128"; $("pf-following").textContent="87"; $("pf-likes").textContent="91"; $("pf-matches").textContent="3"; $("sw-discoverable").classList.add("on"); renderVibePicker(PROFILE.vibe); applyMyVibe(); var g=$("pf-grid"); g.innerHTML=""; POSTS.forEach(function(p){ var c=document.createElement("div"); c.className="cell"; if(p.imageUrl)c.style.backgroundImage="url('"+p.imageUrl+"')"; g.appendChild(c); }); };
+  hydrateProfile=function(){ $("pf-av").style.backgroundImage="url('"+PROFILE.photos[0]+"')"; $("pf-pseudo").textContent=PROFILE.pseudo; $("pf-bioshow").textContent=PROFILE.bio; $("pf-bio").value=PROFILE.bio; $("pf-prenom").value=PROFILE.prenom; $("pf-nom").value=PROFILE.nom; $("pf-gender").value=PROFILE.gender; $("pf-seeking").value=PROFILE.seeking; $("pf-zone").value=PROFILE.zone; $("pf-agemin").value=22;$("pf-ageminlbl").textContent="22"; $("pf-agemax").value=40;$("pf-agemaxlbl").textContent="40"; $("pf-dist").value=60;$("pf-distlbl").textContent="60 km"; renderSinglePhoto("pf-photos",PROFILE.photos,"profile"); $("pf-posts").textContent="3"; $("pf-followers").textContent="128"; $("pf-following").textContent="87"; $("pf-likes").textContent="91"; $("pf-matches").textContent="3"; $("sw-discoverable").classList.add("on"); renderVibePicker(PROFILE.vibe); applyMyVibe(); var g=$("pf-grid"); g.innerHTML=""; POSTS.forEach(function(p){ var c=document.createElement("div"); c.className="cell"; if(p.imageUrl)c.style.backgroundImage="url('"+p.imageUrl+"')"; g.appendChild(c); }); };
   openProfileByUid=function(uid){ var pr=null; PROFILES.forEach(function(x){if(x.uid===uid)pr=x;}); openProfileDetail(pr?{uid:pr.uid,pseudo:pr.pseudo,age:pr.age,zone:pr.zone,bio:pr.bio,photos:pr.photos,followersCount:128,followingCount:87}:{uid:uid,pseudo:"Moun",photos:[],followersCount:0,followingCount:0}, false); };
 
   var which=(q.match(/[?&#]demo=([a-z0-9]+)/i)||[])[1]||"app";

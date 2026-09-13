@@ -444,11 +444,13 @@ exports.handler = async function (event) {
             if (ud.dateNesans) { var dd = new Date(ud.dateNesans); if (!isNaN(dd.getTime())) realBY = dd.getFullYear(); }
             var realGender = (ud.genre === "femme") ? "femme" : ((ud.genre === "homme") ? "homme" : "");
             var realZone = (ud.localisation || ud.zone || "").toString().slice(0, 60);
-            var realPseudo = (body.pseudo || ud.prenom || ud.pseudo || "").toString().slice(0, 40);
+            var realPrenom = (ud.prenom || "").toString().slice(0, 40);
+            var realNom = (ud.nom || "").toString().slice(0, 40);
+            var realPseudo = (realPrenom + " " + realNom).trim() || "Manm";
             var existing = await C("socialProfiles").doc(tuid).get();
             if (!existing.exists || !existing.data().activatedAt) {
                 await C("socialProfiles").doc(tuid).set({
-                    uid: tuid, pseudo: realPseudo || "Manm",
+                    uid: tuid, prenom: realPrenom, nom: realNom, pseudo: realPseudo,
                     gender: realGender, seeking: "tous",
                     birthYear: realBY, zone: realZone,
                     bio: "", photos: [], prefs: { minAge: 18, maxAge: 99, maxDistanceKm: 100 },
@@ -457,12 +459,14 @@ exports.handler = async function (event) {
                 }, { merge: true });
                 await C("socialEntitlements").doc(tuid).set({ premiumUntil: null, superCredits: 1, platform: "web", updatedAt: nowTs }, { merge: true });
             } else {
-                /* Deja active : on corrige avec les vraies infos (age/zone faux). */
+                /* Deja active : on corrige avec les vraies infos (age/zone/nom faux). */
                 var refresh = {};
                 if (realBY) refresh.birthYear = realBY;
                 if (realZone) refresh.zone = realZone;
                 if (realGender) refresh.gender = realGender;
-                if (realPseudo && !existing.data().pseudo) refresh.pseudo = realPseudo;
+                if (realPrenom) refresh.prenom = realPrenom;
+                if (realNom) refresh.nom = realNom;
+                if (realPrenom && realNom) refresh.pseudo = realPseudo;
                 if (Object.keys(refresh).length) await C("socialProfiles").doc(tuid).set(refresh, { merge: true });
             }
             await C("users").doc(tuid).set({ social: { enabled: true, activatedAt: nowTs, consentAt: nowTs, consentVersion: 1, byAdmin: true } }, { merge: true });
