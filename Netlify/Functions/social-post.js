@@ -133,10 +133,14 @@ exports.handler = async function (event) {
             var caption = (body.caption || "").toString().trim().slice(0, 2200);
             if (imageUrl && imageUrl.indexOf("https://") !== 0) return err(400, "Imaj pa valab.");
 
-            /* Amis identifies (on garde seulement les noms pour l'affichage). */
+            /* Amis identifies : noms (affichage) + uids (notification). */
             var taggedNames = [];
             if (Array.isArray(body.taggedNames)) {
                 taggedNames = body.taggedNames.slice(0, 20).map(function (n) { return String(n || "").slice(0, 40); }).filter(Boolean);
+            }
+            var taggedUids = [];
+            if (Array.isArray(body.taggedUids)) {
+                taggedUids = body.taggedUids.slice(0, 20).map(function (u) { return String(u || "").slice(0, 60); }).filter(Boolean);
             }
 
             var newPost = {
@@ -148,6 +152,7 @@ exports.handler = async function (event) {
                 caption: filterContact(caption),
                 hashtags: extractTags(caption),
                 taggedNames: taggedNames,
+                taggedUids: taggedUids,
                 vibe: (["cho", "chill", "fet", "randevou", "pale", "nouvo"].indexOf(body.vibe) !== -1) ? body.vibe : "",
                 likeCount: 0,
                 commentCount: 0,
@@ -181,6 +186,10 @@ exports.handler = async function (event) {
             /* Notif a l'auteur original en cas de repartage. */
             if (repostOf && newPost.repostAuthorUid) {
                 await notify(dbf, newPost.repostAuthorUid, from, "repost", myName + " repibliye post ou a.", postRef.id);
+            }
+            /* Notif aux personnes identifiees dans le post. */
+            for (var ti = 0; ti < taggedUids.length; ti++) {
+                await notify(dbf, taggedUids[ti], from, "tag", myName + " idantifye ou nan yon post.", postRef.id);
             }
             /* Notif a mes abonnes : nouveau post. */
             await notifyFollowers(dbf, uid, from, postRef.id);

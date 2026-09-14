@@ -388,6 +388,12 @@ service cloud.firestore {
       allow read:  if isSignedIn();
       allow write: if isAdmin();
     }
+    /* Vues/likes de stories : lisibles par les membres (le proprio voit qui a vu).
+       Écriture serveur (social-story). */
+    match /socialStoryViews/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
     /* Notifications : je lis SEULEMENT les miennes (owner == moi). Je peux
        seulement les marquer comme lues. Création par le serveur. */
     match /socialNotifs/{id} {

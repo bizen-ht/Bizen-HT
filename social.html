@@ -99,7 +99,13 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .post-time{padding:4px 16px 0;color:var(--muted);font-size:.66rem;text-transform:uppercase;letter-spacing:.4px}
 
 /* ---------- Create post ---------- */
-#createview,#commentsview,#chatview,#notifview,#searchview,#storycreate{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;z-index:30}
+#createview,#commentsview,#chatview,#notifview,#searchview,#storycreate,#peopleview,#storyviewers{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;z-index:30}
+#storyviewers{z-index:65}
+.sv-actions{position:absolute;left:0;right:0;bottom:0;z-index:4;display:flex;align-items:center;justify-content:center;gap:26px;padding:16px 18px max(18px,env(safe-area-inset-bottom))}
+.sv-actions .sa{color:#fff;font-size:1.5rem;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px}
+.sv-actions .sa small{font-size:.6rem}
+.sv-actions .sa.liked{color:var(--rose)}
+.sv-actions .viewers{color:#fff;display:flex;align-items:center;gap:8px;font-size:.88rem;background:rgba(0,0,0,.4);padding:9px 15px;border-radius:50px}
 /* Recherche */
 .se-input{flex:1;display:flex;align-items:center;gap:9px;background:var(--card2);border:1px solid var(--line);border-radius:24px;padding:10px 15px}
 .se-input i{color:var(--muted)}
@@ -276,6 +282,8 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .pf-statbar .st b{display:block;font-size:1.05rem}
 .pf-statbar .st span{font-size:.66rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:3px}
 .pf-statbar .st.locked b{color:var(--gold)}
+.pf-statbar .st.clk{cursor:pointer}
+.pf-statbar .st.clk:active{background:var(--card2)}
 
 /* ---------- Profile detail overlay ---------- */
 .pv-photo{width:100%;aspect-ratio:1/1;background:#15151f center/cover no-repeat;position:relative}
@@ -459,10 +467,10 @@ video.post-img{object-fit:cover;background:#000;display:block}
       </div>
       <div class="pf-statbar">
         <div class="st"><b id="pf-posts">0</b><span>Post</span></div>
-        <div class="st"><b id="pf-followers">0</b><span>Abòne</span></div>
-        <div class="st"><b id="pf-following">0</b><span>Ap swiv</span></div>
+        <div class="st clk" data-people="followers"><b id="pf-followers">0</b><span>Abòne</span></div>
+        <div class="st clk" data-people="following"><b id="pf-following">0</b><span>Ap swiv</span></div>
         <div class="st"><b id="pf-likes">0</b><span>Like</span></div>
-        <div class="st locked"><b id="pf-matches">0</b><span><i class="fas fa-lock" style="font-size:.55rem"></i> Match</span></div>
+        <div class="st clk" data-people="matches"><b id="pf-matches">0</b><span>Match</span></div>
       </div>
       <div style="padding:12px 14px"><button class="btn ghost" id="pf-editbtn"><i class="fas fa-pen"></i> Modifye pwofil</button></div>
       <div class="pf-grid" id="pf-grid"></div>
@@ -608,6 +616,12 @@ video.post-img{object-fit:cover;background:#000;display:block}
     <div class="view" id="se-results"></div>
   </div>
 
+  <!-- LISTE MOUN (abòne / ap swiv / match) -->
+  <div id="peopleview" class="hidden">
+    <div class="sheet-head"><button class="icobtn" id="pl-back"><i class="fas fa-arrow-left"></i></button><div class="ttl" id="pl-title">Moun</div></div>
+    <div class="view" id="pl-list"></div>
+  </div>
+
   <!-- STORY COMPOSER -->
   <div id="storycreate" class="hidden">
     <div class="sheet-head"><button class="icobtn" id="sc-back"><i class="fas fa-arrow-left"></i></button><div class="ttl">Nouvo story</div><button class="go" id="sc-publish">Pataje</button></div>
@@ -625,6 +639,13 @@ video.post-img{object-fit:cover;background:#000;display:block}
     <div class="sv-caption" id="sv-caption"></div>
     <div class="sv-tap sv-prev" id="sv-prev"></div>
     <div class="sv-tap sv-next" id="sv-next"></div>
+    <div class="sv-actions" id="sv-actions"></div>
+  </div>
+
+  <!-- QUI A VU LA STORY -->
+  <div id="storyviewers" class="hidden">
+    <div class="sheet-head"><button class="icobtn" id="vw-back"><i class="fas fa-arrow-left"></i></button><div class="ttl" id="vw-title">Moun ki wè</div></div>
+    <div class="view" id="vw-list"></div>
   </div>
 </div>
 
@@ -904,6 +925,7 @@ function renderPosts(arr){
     return;
   }
   arr.forEach(function(p){ list.appendChild(buildPost(p)); });
+  observeFeedVideos(list);
 }
 function buildPost(p){
   var el=document.createElement("article"); el.className="post"; el._data=p;
@@ -920,7 +942,7 @@ function buildPost(p){
       ((p.authorUid && p.authorUid!==ME.uid)?'<button class="post-follow'+(myFollows[p.authorUid]?' on':'')+'" data-fu="'+esc(p.authorUid)+'">'+(myFollows[p.authorUid]?'Ap swiv':'Swiv')+'</button>':'')+
       '<button class="more"><i class="fas fa-ellipsis"></i></button>'+
     '</div>'+
-    (p.imageUrl?(p.mediaType==="video"?'<video class="post-img" src="'+esc(p.imageUrl)+'" controls playsinline preload="metadata"></video>':'<div class="post-img" style="background-image:url(\''+esc(p.imageUrl)+'\')"></div>'):'')+
+    (p.imageUrl?(p.mediaType==="video"?'<video class="post-img" src="'+esc(p.imageUrl)+'" muted loop playsinline webkit-playsinline preload="metadata"></video>':'<div class="post-img" style="background-image:url(\''+esc(p.imageUrl)+'\')"></div>'):'')+
     (!p.imageUrl&&p.caption?'<div class="post-textonly">'+capTags(p.caption)+'</div>':'')+
     '<div class="post-actions">'+
       '<button class="act like'+(liked?' liked':'')+'"><i class="'+(liked?'fas':'fa-regular')+' fa-heart"></i></button>'+
@@ -945,7 +967,16 @@ function buildPost(p){
   var openAuthor=function(){ if(p.authorUid && p.authorUid!==ME.uid) openProfileByUid(p.authorUid); };
   el.querySelector(".post-head .av").onclick=openAuthor;
   el.querySelector(".post-head .nm").onclick=openAuthor;
+  var vid=el.querySelector("video.post-img"); if(vid){ vid.onclick=function(){ vid.muted=!vid.muted; if(!vid.muted)vid.play().catch(function(){}); }; }
   return el;
+}
+/* Autoplay: lit la video visible, met en pause les autres. */
+var feedVideoObserver=null;
+function observeFeedVideos(list){
+  if(!("IntersectionObserver" in window))return;
+  if(feedVideoObserver)feedVideoObserver.disconnect();
+  feedVideoObserver=new IntersectionObserver(function(entries){ entries.forEach(function(en){ var v=en.target; if(en.isIntersecting){ v.play().catch(function(){}); } else { v.pause(); } }); },{threshold:0.55});
+  list.querySelectorAll("video.post-img").forEach(function(v){ feedVideoObserver.observe(v); });
 }
 async function toggleLike(p, btn, lc){
   var wasLiked=btn.classList.contains("liked");
@@ -1044,7 +1075,7 @@ $("cm-text").addEventListener("keydown",function(e){ if(e.key==="Enter"){e.preve
 
 /* ============ CREATE POST ============ */
 var crTags=[], crVibe="", crMediaType="image";
-function renderCrTags(){ var c=$("cr-tags"); c.innerHTML=""; crTags.forEach(function(nm,i){ var chip=document.createElement("span"); chip.className="tag-chip sel"; chip.innerHTML=esc(nm)+' <i class="fas fa-xmark"></i>'; chip.onclick=function(){ crTags.splice(i,1); renderCrTags(); }; c.appendChild(chip); }); }
+function renderCrTags(){ var c=$("cr-tags"); c.innerHTML=""; crTags.forEach(function(t,i){ var chip=document.createElement("span"); chip.className="tag-chip sel"; chip.innerHTML=esc(t.name)+' <i class="fas fa-xmark"></i>'; chip.onclick=function(){ crTags.splice(i,1); renderCrTags(); }; c.appendChild(chip); }); }
 function renderCrVibe(){
   var box=$("cr-vibe"); if(!box)return;
   box.innerHTML=VIBES.map(function(v){ return '<button class="vibe-opt'+(crVibe===v.k?" sel":"")+'" data-cvk="'+v.k+'" style="--vc:'+v.color+'"><span class="vibe-dot" style="background:'+v.color+'"></span>'+v.label+'</button>'; }).join("");
@@ -1056,22 +1087,22 @@ $("cr-pick").onclick=function(){ uploadTarget="post"; $("file-input").accept="im
 $("cr-tagbtn").onclick=function(){ openTagPicker(); };
 function openTagPicker(){
   var people=[], seen={};
-  Object.keys(matchesCache).forEach(function(k){ var d=matchesCache[k]; if(!d.users)return; var other=d.users[0]===ME.uid?d.users[1]:d.users[0]; var nm=(d.names&&d.names[other])||""; if(nm&&!seen[nm]){ seen[nm]=1; people.push(nm); } });
+  Object.keys(matchesCache).forEach(function(k){ var d=matchesCache[k]; if(!d.users)return; var other=d.users[0]===ME.uid?d.users[1]:d.users[0]; var nm=(d.names&&d.names[other])||""; if(other&&!seen[other]){ seen[other]=1; people.push({uid:other,name:nm||"Moun"}); } });
   var s=document.createElement("div"); s.className="menu-sheet";
   var inner='<div class="sheet" style="max-height:60vh;overflow:auto"><div style="padding:14px 20px;font-weight:700">Idantifye zanmi</div>';
   if(!people.length){ inner+='<div class="item" style="color:var(--muted)">Poko gen moun pou idantifye. Matche ak moun anvan.</div>'; }
-  else { people.forEach(function(nm){ var on=crTags.indexOf(nm)!==-1; inner+='<div class="item tp" data-nm="'+esc(nm)+'"><i class="fas '+(on?'fa-square-check':'fa-square')+'" style="color:'+(on?'var(--rose)':'var(--muted)')+'"></i> '+esc(nm)+'</div>'; }); }
+  else { people.forEach(function(pp){ var on=crTags.some(function(t){return t.uid===pp.uid;}); inner+='<div class="item tp" data-uid="'+esc(pp.uid)+'" data-nm="'+esc(pp.name)+'"><i class="fas '+(on?'fa-square-check':'fa-square')+'" style="color:'+(on?'var(--rose)':'var(--muted)')+'"></i> '+esc(pp.name)+'</div>'; }); }
   inner+='<div class="item" id="tp-done" style="color:var(--rose);font-weight:700"><i class="fas fa-check"></i> Fini</div></div>';
   s.innerHTML=inner; document.body.appendChild(s);
   s.onclick=function(e){ if(e.target===s)s.remove(); };
-  s.querySelectorAll(".tp").forEach(function(it){ it.onclick=function(){ var nm=it.dataset.nm; var i=crTags.indexOf(nm); if(i===-1)crTags.push(nm); else crTags.splice(i,1); renderCrTags(); var on=crTags.indexOf(nm)!==-1; var ic=it.querySelector("i"); ic.className="fas "+(on?"fa-square-check":"fa-square"); ic.style.color=on?"var(--rose)":"var(--muted)"; }; });
+  s.querySelectorAll(".tp").forEach(function(it){ it.onclick=function(){ var uid=it.dataset.uid, nm=it.dataset.nm; var idx=-1; crTags.forEach(function(t,ii){ if(t.uid===uid)idx=ii; }); if(idx===-1)crTags.push({uid:uid,name:nm}); else crTags.splice(idx,1); renderCrTags(); var on=idx===-1; var ic=it.querySelector("i"); ic.className="fas "+(on?"fa-square-check":"fa-square"); ic.style.color=on?"var(--rose)":"var(--muted)"; }; });
   s.querySelector("#tp-done").onclick=function(){ s.remove(); };
 }
 $("cr-publish").onclick=async function(){
   var cap=$("cr-caption").value.trim();
   if(!crImage && !cap){ toast("Ajoute yon foto oswa yon tèks."); return; }
   var b=this; b.style.opacity=".5";
-  try{ await api("social-post",{action:"create",imageUrl:crImage,mediaType:crMediaType,caption:cap,taggedNames:crTags,vibe:crVibe}); $("createview").classList.add("hidden"); toast("Pibliye!"); switchTab("feed"); loadFeed(); }
+  try{ await api("social-post",{action:"create",imageUrl:crImage,mediaType:crMediaType,caption:cap,taggedNames:crTags.map(function(t){return t.name;}),taggedUids:crTags.map(function(t){return t.uid;}),vibe:crVibe}); $("createview").classList.add("hidden"); toast("Pibliye!"); switchTab("feed"); loadFeed(); }
   catch(e){ toast(e.message); } finally{ b.style.opacity="1"; }
 };
 
@@ -1383,8 +1414,8 @@ var STORY_GROUPS=[], scMedia="", scMediaType="image";
 async function renderStories(){
   var r=$("stories-row"); if(!r)return;
   var myAv=(PROFILE.photos&&PROFILE.photos[0])||"";
-  r.innerHTML='<div class="story-btn" id="add-story"><div class="ring mine">'+(myAv?'<div class="av" style="background-image:url(\''+esc(myAv)+'\')"></div>':'<i class="fas fa-plus"></i>')+'<span class="add-plus"><i class="fas fa-plus"></i></span></div><div class="nm">Ou</div></div>';
-  $("add-story").onclick=function(){ uploadTarget="story"; $("file-input").accept="image/*,video/*"; $("file-input").click(); };
+  function addBtnHtml(hasMine){ return '<div class="story-btn" id="add-story"><div class="ring'+(hasMine?"":" mine")+'">'+(myAv?'<div class="av" style="background-image:url(\''+esc(myAv)+'\')"></div>':'<i class="fas fa-plus"></i>')+'<span class="add-plus"><i class="fas fa-plus"></i></span></div><div class="nm">Ou</div></div>'; }
+  function pickFile(){ uploadTarget="story"; $("file-input").accept="image/*,video/*"; $("file-input").click(); }
   try{
     var now=firebase.firestore.Timestamp.now();
     var snap=await db.collection("socialStories").where("expireAt",">",now).limit(200).get();
@@ -1392,20 +1423,27 @@ async function renderStories(){
     snap.forEach(function(d){ var s=d.data(); s.id=d.id; arr.push(s); });
     arr.sort(function(a,b){ return ((a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0)-(b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0)); });
     arr.forEach(function(s){ if(!groups[s.authorUid]){ groups[s.authorUid]={uid:s.authorUid,name:s.authorName,avatar:s.authorAvatar,stories:[]}; order.push(s.authorUid); } groups[s.authorUid].stories.push(s); });
+    var mi=order.indexOf(ME.uid); if(mi>-1){ order.splice(mi,1); order.unshift(ME.uid); }
     STORY_GROUPS=order.map(function(u){return groups[u];});
+    var myGi=-1; STORY_GROUPS.forEach(function(g,i){ if(g.uid===ME.uid)myGi=i; });
+    var hasMine=myGi!==-1;
+    r.innerHTML=addBtnHtml(hasMine);
+    $("add-story").querySelector(".add-plus").onclick=function(ev){ ev.stopPropagation(); pickFile(); };
+    $("add-story").onclick=function(){ if(hasMine){ openStoryViewer(myGi); } else { pickFile(); } };
     STORY_GROUPS.forEach(function(g,i){
+      if(g.uid===ME.uid)return;
       var el=document.createElement("div"); el.className="story-btn";
-      el.innerHTML='<div class="ring"><div class="av" style="background-image:url(\''+esc(g.avatar||"")+'\')"></div></div><div class="nm">'+esc(g.uid===ME.uid?"Ou":(g.name||""))+'</div>';
+      el.innerHTML='<div class="ring"><div class="av" style="background-image:url(\''+esc(g.avatar||"")+'\')"></div></div><div class="nm">'+esc(g.name||"")+'</div>';
       el.onclick=function(){ openStoryViewer(i); };
       r.appendChild(el);
     });
-  }catch(e){ console.warn("stories",e); }
+  }catch(e){ console.warn("stories",e); r.innerHTML=addBtnHtml(false); $("add-story").onclick=pickFile; }
 }
 $("sc-back").onclick=function(){ $("storycreate").classList.add("hidden"); scMedia=""; $("sc-text").value=""; $("sc-preview").innerHTML=""; };
 $("sc-publish").onclick=async function(){
   if(!scMedia){ toast("Chwazi yon foto oswa videyo."); return; }
   var b=this; b.style.opacity=".5";
-  try{ await api("social-story",{action:"create",imageUrl:scMedia,mediaType:scMediaType,text:$("sc-text").value.trim(),vibe:PROFILE.vibe||""}); toast("Story pataje!"); $("storycreate").classList.add("hidden"); scMedia=""; $("sc-text").value=""; $("sc-preview").innerHTML=""; renderStories(); }
+  try{ await api("social-story",{action:"create",imageUrl:scMedia,mediaType:scMediaType,text:$("sc-text").value.trim(),vibe:PROFILE.vibe||""}); toast("Story pataje! ✓"); $("storycreate").classList.add("hidden"); scMedia=""; $("sc-text").value=""; $("sc-preview").innerHTML=""; renderStories(); }
   catch(e){ toast(e.message); } finally{ b.style.opacity="1"; }
 };
 var svGroup=-1, svIndex=0, svTimer=null;
@@ -1420,18 +1458,47 @@ function renderStoryFrame(){
   $("sv-media").innerHTML=s.mediaType==="video"?'<video src="'+esc(s.imageUrl)+'" autoplay playsinline></video>':'<img src="'+esc(s.imageUrl)+'">';
   var bars=""; g.stories.forEach(function(_,i){ bars+='<div class="b'+(i<svIndex?" done":(i===svIndex?" active":""))+'"><i></i></div>'; });
   $("sv-bars").innerHTML=bars;
+  var mine=g.uid===ME.uid;
+  if(mine){
+    $("sv-actions").innerHTML='<div class="viewers" id="sv-viewers"><i class="fas fa-eye"></i> '+(s.viewCount||0)+'</div><button class="sa" id="sv-delete"><i class="fas fa-trash"></i><small>Efase</small></button>';
+    $("sv-viewers").onclick=function(){ openStoryViewers(s); };
+    $("sv-delete").onclick=function(){ deleteStory(s); };
+  } else {
+    try{ api("social-story",{action:"view",storyId:s.id}); }catch(e){}
+    $("sv-actions").innerHTML='<button class="sa" id="sv-like"><i class="fa-regular fa-heart"></i><small>Renmen</small></button>';
+    $("sv-like").onclick=async function(){ var lb=$("sv-like"); try{ var rr=await api("social-story",{action:"like",storyId:s.id}); lb.classList.toggle("liked",!!rr.liked); lb.querySelector("i").className=(rr.liked?"fas":"fa-regular")+" fa-heart"; }catch(e){toast(e.message);} };
+  }
   clearTimeout(svTimer); svTimer=setTimeout(nextStory,5000);
 }
 function nextStory(){ var g=STORY_GROUPS[svGroup]; if(!g)return closeStory(); if(svIndex<g.stories.length-1){ svIndex++; renderStoryFrame(); } else nextStoryGroup(); }
 function prevStory(){ if(svIndex>0){ svIndex--; renderStoryFrame(); } else if(svGroup>0){ svGroup--; svIndex=STORY_GROUPS[svGroup].stories.length-1; renderStoryFrame(); } }
 function nextStoryGroup(){ if(svGroup<STORY_GROUPS.length-1){ svGroup++; svIndex=0; renderStoryFrame(); } else closeStory(); }
 function closeStory(){ clearTimeout(svTimer); $("storyview").classList.add("hidden"); $("sv-media").innerHTML=""; }
+async function deleteStory(s){
+  if(!confirm("Efase story sa a?"))return; clearTimeout(svTimer);
+  try{ await api("social-story",{action:"delete",storyId:s.id}); toast("Story efase."); closeStory(); renderStories(); }catch(e){ toast(e.message); }
+}
+$("vw-back").onclick=function(){ $("storyviewers").classList.add("hidden"); };
+async function openStoryViewers(s){
+  clearTimeout(svTimer);
+  $("vw-list").innerHTML='<div class="empty" style="margin-top:40px"><i class="fas fa-circle-notch spin"></i></div>';
+  $("storyviewers").classList.remove("hidden");
+  try{
+    var snap=await db.collection("socialStoryViews").where("storyId","==",s.id).limit(300).get();
+    var rows=[]; snap.forEach(function(d){ rows.push(d.data()); });
+    $("vw-title").textContent="Moun ki wè ("+rows.length+")";
+    if(!rows.length){ $("vw-list").innerHTML='<div class="empty" style="margin-top:40px"><i class="fas fa-eye"></i>Poko gen moun ki wè.</div>'; return; }
+    rows.sort(function(a,b){ return (b.liked?1:0)-(a.liked?1:0); });
+    $("vw-list").innerHTML=rows.map(function(v){ return '<div class="se-row" data-u="'+esc(v.uid)+'"><div class="av" style="background-image:url(\''+esc(v.avatar||"")+'\')"></div><div style="flex:1"><div class="nm">'+esc(v.name||"Anonim")+'</div></div>'+(v.liked?'<i class="fas fa-heart" style="color:var(--rose)"></i>':'')+'</div>'; }).join("");
+    $("vw-list").querySelectorAll("[data-u]").forEach(function(el){ el.onclick=function(){ $("storyviewers").classList.add("hidden"); closeStory(); openProfileByUid(el.dataset.u); }; });
+  }catch(e){ $("vw-list").innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
+}
 $("sv-close").onclick=closeStory; $("sv-next").onclick=nextStory; $("sv-prev").onclick=prevStory;
 
 /* ============ NOTIFICATIONS ============ */
 var notifUnsub=null;
 function notifText(n){
-  var m={like:"renmen post ou a.",comment:"kòmante post ou a.",reply:"reponn kòmantè ou a.",commentLike:"renmen kòmantè ou a.",repost:"repibliye post ou a.",follow:"kòmanse swiv ou.",post:"pibliye yon nouvo post."};
+  var m={like:"renmen post ou a.",comment:"kòmante post ou a.",reply:"reponn kòmantè ou a.",commentLike:"renmen kòmantè ou a.",repost:"repibliye post ou a.",follow:"kòmanse swiv ou.",post:"pibliye yon nouvo post.",tag:"idantifye ou nan yon post."};
   return m[n.type]||(n.text||"");
 }
 function listenNotifs(){
@@ -1494,6 +1561,31 @@ async function loadExplore(){
     html+='</div>'; box.innerHTML=html;
     box.querySelectorAll("[data-ex]").forEach(function(el){ el.onclick=function(){ $("searchview").classList.add("hidden"); openComments(posts[parseInt(el.dataset.ex,10)]); }; });
   }catch(e){ box.innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
+}
+
+/* ============ LISTE MOUN (abòne / ap swiv / match) ============ */
+document.querySelectorAll('.pf-statbar .st.clk').forEach(function(el){ el.onclick=function(){ openPeople(el.dataset.people); }; });
+$("pl-back").onclick=function(){ $("peopleview").classList.add("hidden"); };
+async function openPeople(kind){
+  var titles={followers:"Abòne w yo",following:"Moun w ap swiv",matches:"Match ou yo"};
+  $("pl-title").textContent=titles[kind]||"Moun";
+  $("pl-list").innerHTML='<div class="empty" style="margin-top:40px"><i class="fas fa-circle-notch spin"></i></div>';
+  $("peopleview").classList.remove("hidden");
+  try{
+    var uids=[], meta={};
+    if(kind==="followers"){ var s=await db.collection("socialFollows").where("target","==",ME.uid).limit(500).get(); s.forEach(function(d){ uids.push(d.data().follower); }); }
+    else if(kind==="following"){ var s2=await db.collection("socialFollows").where("follower","==",ME.uid).limit(500).get(); s2.forEach(function(d){ uids.push(d.data().target); }); }
+    else if(kind==="matches"){ var s3=await db.collection("socialMatches").where("users","array-contains",ME.uid).limit(500).get(); s3.forEach(function(d){ var m=d.data(); var other=m.users[0]===ME.uid?m.users[1]:m.users[0]; uids.push(other); meta[other]={name:(m.names&&m.names[other])||"",avatar:(m.avatars&&m.avatars[other])||""}; }); }
+    if(!uids.length){ $("pl-list").innerHTML='<div class="empty" style="margin-top:40px"><i class="fas fa-users"></i>Pa gen moun pou kounye a.</div>'; return; }
+    var rows=[];
+    for(var i=0;i<uids.length && i<80;i++){
+      var u=uids[i], info=meta[u];
+      if(info){ rows.push({uid:u,name:info.name||"Anonim",avatar:info.avatar}); }
+      else { try{ var pd=await db.collection("socialProfiles").doc(u).get(); if(pd.exists){ var d0=pd.data(); rows.push({uid:u,name:d0.pseudo||"Anonim",avatar:(d0.photos&&d0.photos[0])||""}); } }catch(e){} }
+    }
+    $("pl-list").innerHTML=rows.map(function(r){ return '<div class="se-row" data-u="'+esc(r.uid)+'"><div class="av" style="background-image:url(\''+esc(r.avatar)+'\')"></div><div><div class="nm">'+esc(r.name)+'</div></div></div>'; }).join("");
+    $("pl-list").querySelectorAll("[data-u]").forEach(function(el){ el.onclick=function(){ $("peopleview").classList.add("hidden"); openProfileByUid(el.dataset.u); }; });
+  }catch(e){ $("pl-list").innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
 }
 
 /* ================================================================

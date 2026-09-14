@@ -57,8 +57,47 @@ exports.handler = async function (event) {
             var sDoc = await sRef.get();
             if (sDoc.exists && (sDoc.data().authorUid === uid || decoded.email === "bizenht@gmail.com")) {
                 await sRef.delete();
+                /* Nettoyage des vues de cette story. */
+                try {
+                    var vq = await dbf.collection("socialStoryViews").where("storyId", "==", sid).limit(400).get();
+                    var vb = dbf.batch(); vq.forEach(function (d) { vb.delete(d.ref); }); await vb.commit();
+                } catch (e) {}
             }
             return ok({ success: true });
+        }
+
+        /* -------- VUE d'une story (une seule fois par personne) -------- */
+        if (action === "view") {
+            var vid = (body.storyId || "").toString();
+            if (!vid) return err(400, "storyId requis");
+            var vRef = dbf.collection("socialStoryViews").doc(vid + "_" + uid);
+            var vs = await vRef.get();
+            if (!vs.exists) {
+                await vRef.set({ storyId: vid, uid: uid, name: me.pseudo || "Anonim", avatar: (me.photos && me.photos[0]) || "", liked: false, createdAt: nowTs });
+                try { await dbf.collection("socialStories").doc(vid).set({ viewCount: admin.firestore.FieldValue.increment(1) }, { merge: true }); } catch (e) {}
+            }
+            return ok({ success: true });
+        }
+
+        /* -------- LIKE d'une story (bascule) -------- */
+        if (action === "like") {
+            var lid = (body.storyId || "").toString();
+            if (!lid) return err(400, "storyId requis");
+            var lvRef = dbf.collection("socialStoryViews").doc(lid + "_" + uid);
+            var cur = await lvRef.get();
+            var wasLiked = cur.exists && cur.data().liked === true;
+            await lvRef.set({ storyId: lid, uid: uid, name: me.pseudo || "Anonim", avatar: (me.photos && me.photos[0]) || "", liked: !wasLiked, createdAt: (cur.exists && cur.data().createdAt) || nowTs }, { merge: true });
+            if (!wasLiked) {
+                try {
+                    var sd = await dbf.collection("socialStories").doc(lid).get();
+                    if (sd.exists && sd.data().authorUid !== uid) {
+                        var oD = await dbf.collection("users").doc(sd.data().authorUid).get();
+                        var tk = (oD.exists && oD.data().fcmTokens) || [];
+                        if (tk.length) await admin.messaging().sendEachForMulticast({ tokens: tk, notification: { title: "Bizen Social", body: (me.pseudo || "Yon moun") + " renmen story ou a." }, data: { link: "/social.html" } });
+                    }
+                } catch (e) {}
+            }
+            return ok({ success: true, liked: !wasLiked });
         }
 
         /* create */
