@@ -112,6 +112,9 @@
 [functions.social-story]
   external_node_modules = ["firebase-admin"]
 
+[functions.media-upload-url]
+  external_node_modules = ["firebase-admin"]
+
 [functions.social-admin]
   external_node_modules = ["firebase-admin"]
 

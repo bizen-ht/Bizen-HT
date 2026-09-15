@@ -818,17 +818,25 @@ async function isNudity(file){
     return (s.Porn||0)>=0.6 || (s.Hentai||0)>=0.6 || (s.Sexy||0)>=0.85;
   }catch(e){ console.warn("verifikasyon foto:",e); return false; }
 }
+/* Upload direct vers Cloudflare R2 (bande passante gratuite). */
+async function uploadToR2(file, kind){
+  var token=await ME.getIdToken();
+  var r=await fetch(API+"media-upload-url",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken:token,contentType:file.type||"application/octet-stream",size:file.size,kind:kind||"post"})});
+  var j={}; try{j=await r.json();}catch(e){}
+  if(!r.ok||!j.uploadUrl) throw new Error((j&&j.error)||"Erè preparasyon voye a.");
+  var put=await fetch(j.uploadUrl,{method:"PUT",headers:{"Content-Type":file.type||"application/octet-stream"},body:file});
+  if(!put.ok) throw new Error("Erè pandan voye fichye a ("+put.status+").");
+  return j.publicUrl;
+}
 $("file-input").onchange=async function(){
   var f=this.files[0]; this.value=""; if(!f)return;
   var isVideo=f.type.indexOf("video")===0;
-  var maxMB=isVideo?60:15;
+  var maxMB=isVideo?200:15;
   if(f.size>maxMB*1024*1024){ toast("Fichye twò gwo (max "+maxMB+"Mo)."); return; }
   if(!isVideo){ toast("Ap verifye foto..."); if(await isNudity(f)){ toast("Foto sa a sanble gen nidite. Li pa otorize sou Bizen Social. Chwazi yon lòt."); return; } }
   toast("Ap voye...");
   try{
-    var ext=isVideo?"mp4":"jpg";
-    var path="social/"+ME.uid+"/"+Date.now()+"_"+Math.random().toString(36).slice(2)+"."+ext;
-    var ref=storage.ref().child(path); await ref.put(f); var url=await ref.getDownloadURL();
+    var url=await uploadToR2(f, uploadTarget);
     if(uploadTarget==="onboard"){ pendingPhotos[0]=url; pendingPhotos.length=1; renderSinglePhoto("ob-photos",pendingPhotos,"onboard"); }
     else if(uploadTarget==="post"){ crImage=url; crMediaType=isVideo?"video":"image";
       if(isVideo){ $("cr-pick").style.backgroundImage=""; $("cr-pick").innerHTML='<video src="'+url+'" style="width:100%;height:100%;object-fit:cover" muted playsinline></video>'; }
