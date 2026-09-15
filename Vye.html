@@ -3300,6 +3300,13 @@ function renderResTable(list) {
         if (r.status !== "cancelled") {
             h += actBtn("ab-del", "resAction('cancel','" + r.id + "')", "fa-times", "Anile");
         }
+        /* Confirmation MANUELLE de rankont (secours) : caché derrière un « ⋯ » pour
+           ne pas cliquer par accident. À utiliser seulement si un VIP signale que
+           sa confirmation n'est pas passée. Réservation acceptée mais pas encore met. */
+        if (r.status === "confirmed" && !r.met) {
+            h += ' <button onclick="revealForceMeet(this,\'' + r.id + '\')" title="Zouti admin" style="background:none;border:none;color:#5a5a6a;cursor:pointer;padding:4px 8px"><i class="fas fa-ellipsis-vertical"></i></button>';
+            h += '<button id="fmeet_' + r.id + '" onclick="adminForceMeet(\'' + r.id + '\')" style="display:none;background:rgba(76,175,80,0.15);color:#4caf50;border:1px solid rgba(76,175,80,0.4);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:0.72rem;margin-left:4px"><i class="fas fa-handshake"></i> Konfime rankont (manyèl)</button>';
+        }
         h += '</td></tr>';
     });
 
@@ -3822,6 +3829,29 @@ function resAction(action, id) {
                 }
             }
         });
+}
+
+/* Révèle le bouton de confirmation manuelle (secours), pour éviter un clic accidentel. */
+function revealForceMeet(btn, id) {
+    var b = document.getElementById("fmeet_" + id);
+    if (b) b.style.display = "inline-block";
+    if (btn) btn.style.display = "none";
+}
+
+/* Confirmation MANUELLE d'un rankont par l'admin (secours) — à utiliser SEULEMENT
+   quand un VIP signale que sa confirmation n'est pas passée. Écrit met:true comme
+   le ferait le VIP, pour que l'Elu et le paiement suivent. */
+function adminForceMeet(id) {
+    if (!db) return;
+    if (!confirm("KONFIME MANYÈL: make rankont sa a kòm konfime (met)?\n\nSèvi ak sa SÈLMAN si VIP la di w konfimasyon li pa t pase. Elu a ap ka peye apre sa.")) return;
+    db.collection("reservations").doc(id).update({
+        met: true,
+        metAt: firebase.firestore.FieldValue.serverTimestamp(),
+        metByAdmin: true
+    }).then(function () {
+        toast("Rankont make kòm konfime (manyèl).", true);
+        loadReservations();
+    }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
 }
 
 /* Verse le paiement à l'Elu après une rencontre confirmée par le client.
