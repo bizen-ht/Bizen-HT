@@ -84,9 +84,15 @@ exports.handler = async function (event) {
 
     try {
         init();
-        var accountId = process.env.R2_ACCOUNT_ID, akid = process.env.R2_ACCESS_KEY_ID;
+        /* Tolère un R2_ACCOUNT_ID mal collé (URL complète, https://, endpoint...) :
+           on garde uniquement le code du compte. */
+        var accountId = (process.env.R2_ACCOUNT_ID || "").trim()
+            .replace(/^https?:\/\//i, "")
+            .replace(/\.r2\.cloudflarestorage\.com.*$/i, "")
+            .replace(/\/.*$/, "");
+        var akid = process.env.R2_ACCESS_KEY_ID;
         var secret = process.env.R2_SECRET_ACCESS_KEY, bucket = process.env.R2_BUCKET;
-        var publicUrl = (process.env.R2_PUBLIC_URL || "").replace(/\/+$/, "");
+        var publicUrl = (process.env.R2_PUBLIC_URL || "").trim().replace(/\/+$/, "");
         if (!accountId || !akid || !secret || !bucket || !publicUrl) return err(500, "Konfigirasyon R2 poko fèt.");
 
         var body = JSON.parse(event.body || "{}");
