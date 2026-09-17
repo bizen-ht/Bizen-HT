@@ -845,7 +845,7 @@ $("file-input").onchange=async function(){
       $("sc-preview").style.backgroundImage=""; $("sc-preview").innerHTML=isVideo?'<video src="'+url+'" muted playsinline></video>':'<img src="'+url+'">';
       $("storycreate").classList.remove("hidden"); }
     else { PROFILE.photos=PROFILE.photos||[]; PROFILE.photos[0]=url; PROFILE.photos.length=1; renderSinglePhoto("pf-photos",PROFILE.photos,"profile"); saveProfilePhotos(PROFILE.photos); }
-  }catch(e){ console.error(e); toast("Erè pandan voye a."); }
+  }catch(e){ console.error("[UPLOAD]",e); var m=(e&&e.message)||String(e); toast("Erè voye: "+(m==="Failed to fetch"?"CORS bloke (verifye CORS R2)":m)); }
 };
 async function saveProfilePhotos(arr){ try{ await db.collection("socialProfiles").doc(ME.uid).set({photos:arr},{merge:true}); if(arr[0])$("pf-av").style.backgroundImage="url('"+arr[0]+"')"; }catch(e){} }
 
