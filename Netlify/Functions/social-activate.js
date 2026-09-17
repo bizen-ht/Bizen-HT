@@ -56,7 +56,9 @@ exports.handler = async function (event) {
         var prenom = (body.prenom || "").toString().trim().slice(0, 40);
         var nom = (body.nom || "").toString().trim().slice(0, 40);
         var pseudo = (prenom + " " + nom).trim();
-        var gender = ["homme", "femme", "autre"].indexOf(body.gender) !== -1 ? body.gender : "";
+        var gender = ["homme", "femme", "bi", "gay", "autre"].indexOf(body.gender) !== -1 ? body.gender : "";
+        var genderCustom = (body.genderCustom || "").toString().trim().slice(0, 30);
+        var maritalStatus = ["selibate", "fiyanse", "marye", "divose"].indexOf(body.maritalStatus) !== -1 ? body.maritalStatus : "";
         var seeking = ["homme", "femme", "tous"].indexOf(body.seeking) !== -1 ? body.seeking : "tous";
         if (!prenom || !nom) return err(400, "Antre prenon ak non ou.");
         if (!gender) return err(400, "Chwazi sèks ou.");
@@ -91,6 +93,8 @@ exports.handler = async function (event) {
             nom: nom,
             pseudo: pseudo,
             gender: gender,
+            genderCustom: genderCustom,
+            maritalStatus: maritalStatus,
             seeking: seeking,
             birthYear: birthYear,
             zone: zone,

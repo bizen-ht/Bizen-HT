@@ -336,6 +336,7 @@ var SEC_TITLES={overview:"Apèsi",realtime:"Tan reyèl",analytics:"Analiz",repor
 document.querySelectorAll(".nav .it").forEach(function(it){ it.onclick=function(){ showSection(it.dataset.sec); $("side").classList.remove("open"); }; });
 function showSection(sec){
   stopRealtime();
+  if(mapUnsub && sec!=="map"){ try{mapUnsub();}catch(e){} mapUnsub=null; }
   curSec=sec;
   document.querySelectorAll(".nav .it").forEach(function(i){ i.classList.toggle("active",i.dataset.sec===sec); });
   $("secTitle").textContent=SEC_TITLES[sec]||sec;
@@ -696,20 +697,32 @@ async function loadMatches(){
 /* ============ MAP (kat jeyografik) ============ */
 function loadCssOnce(href){ if(document.querySelector('link[data-c="'+href+'"]'))return; var l=document.createElement("link"); l.rel="stylesheet"; l.href=href; l.setAttribute("data-c",href); document.head.appendChild(l); }
 function loadJsOnce(src){ return new Promise(function(res,rej){ if(document.querySelector('script[data-s="'+src+'"]')){res();return;} var s=document.createElement("script"); s.src=src; s.setAttribute("data-s",src); s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+var mapUnsub=null, mapMarkers={};
 async function loadMap(){
-  var c=$("content"); c.innerHTML='<div id="leafmap"></div><div class="sec-h">Repartisyon pa zòn</div><div id="zonebars"><div class="state"><i class="fas fa-circle-notch spin"></i>Chajman...</div></div>';
+  var c=$("content"); c.innerHTML='<div id="leafmap"></div><div class="sec-h"><i class="fas fa-signal" style="color:var(--green)"></i> Pozisyon an tan reyèl &middot; <span id="mapCount">0</span> manm</div><div id="zonebars"><div class="state"><i class="fas fa-circle-notch spin"></i>Chajman...</div></div>';
   try{
     loadCssOnce("https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css");
     await loadJsOnce("https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js");
-    var r=await adminApi("mapData");
     var map=L.map("leafmap",{attributionControl:false}).setView([18.97,-72.3],8);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18}).addTo(map);
-    (r.points||[]).forEach(function(p){ try{ L.circleMarker([p.lat,p.lng],{radius:6,color:"#e91e63",fillColor:"#e91e63",fillOpacity:.8,weight:1}).addTo(map).bindPopup(esc(p.pseudo)+(p.zone?" · "+esc(p.zone):"")); }catch(e){} });
     setTimeout(function(){ try{map.invalidateSize();}catch(e){} },250);
-    var zb=$("zonebars");
-    if(!r.zones.length){ zb.innerHTML='<div class="state"><i class="fas fa-map"></i>Pa gen zòn anrejistre.</div>'; }
-    else { var max=r.zones[0].n||1; zb.innerHTML=r.zones.slice(0,20).map(function(z){ return '<div class="zbar"><div class="zn">'+esc(z.zone)+'</div><div class="zt"><i style="width:'+(z.n/max*100)+'%"></i></div><div class="zv">'+z.n+'</div></div>'; }).join(""); }
-    if((!r.points||!r.points.length)&&zb){ zb.insertAdjacentHTML("afterbegin",'<div style="font-size:.78rem;color:var(--muted);margin-bottom:12px"><i class="fas fa-circle-info"></i> Pwen sou kat la parèt sèlman pou manm ki pataje pozisyon egzat. Vil yo toujou konte anba.</div>'); }
+    /* Écoute en direct : les pins bougent quand la position des membres change. */
+    if(mapUnsub)mapUnsub();
+    mapMarkers={};
+    mapUnsub=db.collection("socialProfiles").orderBy("geoAt","desc").limit(500).onSnapshot(function(snap){
+      Object.keys(mapMarkers).forEach(function(id){ try{map.removeLayer(mapMarkers[id]);}catch(e){} }); mapMarkers={};
+      var zones={}, count=0;
+      snap.forEach(function(d){ var x=d.data(); if(!x.geo||x.geo.lat==null||x.geo.lng==null)return; count++;
+        var col=x.status==="banned"?"#888":(x.verified?"#4aa3ff":"#e91e63");
+        try{ var mk=L.circleMarker([x.geo.lat,x.geo.lng],{radius:6,color:col,fillColor:col,fillOpacity:.85,weight:1}).addTo(map).bindPopup(esc(x.pseudo||"Anonim")+(x.zone?" &middot; "+esc(x.zone):"")); mapMarkers[d.id]=mk; }catch(e){}
+        if(x.zone){ zones[x.zone]=(zones[x.zone]||0)+1; }
+      });
+      $("mapCount").textContent=count;
+      var zarr=Object.keys(zones).map(function(k){return {zone:k,n:zones[k]};}).sort(function(a,b){return b.n-a.n;});
+      var zb=$("zonebars");
+      if(!zarr.length){ zb.innerHTML='<div class="state"><i class="fas fa-map"></i>Poko gen manm ki pataje pozisyon.</div>'; }
+      else { var max=zarr[0].n||1; zb.innerHTML='<div class="sec-h" style="margin-top:0">Repartisyon pa zòn</div>'+zarr.slice(0,20).map(function(z){ return '<div class="zbar"><div class="zn">'+esc(z.zone)+'</div><div class="zt"><i style="width:'+(z.n/max*100)+'%"></i></div><div class="zv">'+z.n+'</div></div>'; }).join(""); }
+    }, function(e){ console.warn("map",e); $("zonebars").innerHTML='<div class="state">'+esc(e.message)+'</div>'; });
   }catch(e){ $("content").innerHTML='<div class="state"><i class="fas fa-triangle-exclamation"></i>'+esc(e.message)+'</div>'; }
 }
 

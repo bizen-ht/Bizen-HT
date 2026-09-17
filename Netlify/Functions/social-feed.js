@@ -131,6 +131,9 @@ exports.handler = async function (event) {
                 bio: (c.bio || "").slice(0, 300),
                 photos: Array.isArray(c.photos) ? c.photos.slice(0, 6) : [],
                 vibe: c.vibe || "",
+                gender: c.gender || "",
+                genderCustom: c.genderCustom || "",
+                maritalStatus: c.maritalStatus || "",
                 distanceKm: dist,               /* approximatif ; null si géoloc off */
                 availableNow: !!availActive,
                 _score: score

@@ -391,12 +391,23 @@ video.post-img{object-fit:cover;background:#000;display:block}
       </div>
       <label class="fld">Ane nesans (verifye 18 an+)</label>
       <input id="a-birth" class="input" type="number" placeholder="Egzanp: 1996" inputmode="numeric">
-      <label class="fld">Mwen se</label>
-      <select id="a-gender" class="input">
+      <label class="fld">Sèks / oryantasyon</label>
+      <select id="a-gender" class="input" onchange="document.getElementById('a-gender-custom').style.display=(this.value==='autre'?'block':'none')">
         <option value="">Chwazi...</option>
-        <option value="homme">Gason</option>
         <option value="femme">Fanm</option>
+        <option value="homme">Gason</option>
+        <option value="bi">Biseksyèl</option>
+        <option value="gay">Omoseksyèl</option>
         <option value="autre">Lòt</option>
+      </select>
+      <input id="a-gender-custom" class="input" placeholder="Presize (opsyonèl)" maxlength="30" style="display:none">
+      <label class="fld">Estati matrimonyal</label>
+      <select id="a-marital" class="input">
+        <option value="">Chwazi...</option>
+        <option value="selibate">Selibatè</option>
+        <option value="fiyanse">Fiyanse</option>
+        <option value="marye">Marye</option>
+        <option value="divose">Divòse</option>
       </select>
       <label class="fld">M ap chèche</label>
       <select id="a-seeking" class="input">
@@ -463,6 +474,7 @@ video.post-img{object-fit:cover;background:#000;display:block}
           <div style="font-weight:700;font-size:1.05rem" id="pf-pseudo">...</div>
           <div id="pf-vibe"></div>
           <div class="bio" style="color:var(--muted2);font-size:.82rem;margin-top:4px" id="pf-bioshow"></div>
+          <div id="pf-info" style="color:var(--muted);font-size:.76rem;margin-top:5px;display:flex;gap:12px;flex-wrap:wrap"></div>
         </div>
       </div>
       <div class="pf-statbar">
@@ -488,9 +500,12 @@ video.post-img{object-fit:cover;background:#000;display:block}
         <label class="fld">Bio</label>
         <textarea id="pf-bio" maxlength="300" placeholder="Di yon bagay sou ou..."></textarea>
         <div class="field-2">
-          <div><label class="fld">Mwen se</label><select id="pf-gender" class="input"><option value="homme">Gason</option><option value="femme">Fanm</option><option value="autre">Lòt</option></select></div>
+          <div><label class="fld">Sèks / oryantasyon</label><select id="pf-gender" class="input" onchange="document.getElementById('pf-gender-custom').style.display=(this.value==='autre'?'block':'none')"><option value="femme">Fanm</option><option value="homme">Gason</option><option value="bi">Biseksyèl</option><option value="gay">Omoseksyèl</option><option value="autre">Lòt</option></select></div>
           <div><label class="fld">M ap chèche</label><select id="pf-seeking" class="input"><option value="tous">Tout moun</option><option value="femme">Fanm</option><option value="homme">Gason</option></select></div>
         </div>
+        <input id="pf-gender-custom" class="input" placeholder="Presize sèks/oryantasyon" maxlength="30" style="display:none">
+        <label class="fld">Estati matrimonyal</label>
+        <select id="pf-marital" class="input"><option value="">Chwazi...</option><option value="selibate">Selibatè</option><option value="fiyanse">Fiyanse</option><option value="marye">Marye</option><option value="divose">Divòse</option></select>
         <label class="fld">Zòn oswa vil</label>
         <input id="pf-zone" class="input" maxlength="60" placeholder="Egzanp: Petyonvil">
 
@@ -678,11 +693,31 @@ function show(id){ ["v-loading","v-gate","v-closed","v-activate","v-onboard","v-
 function toast(m){ var t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove("show");},2600); }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function capTags(s){ return esc(s).replace(/#([\p{L}0-9_]{2,30})/gu,'<span class="tag">#$1</span>'); }
+/* Rend les messages techniques (token, auth, permission) lisibles pour l'utilisateur. */
+function friendlyErr(msg){
+  msg=String(msg||"");
+  if(/id token|token|auth|expir|credential|insufficient|permission/i.test(msg)) return "Sesyon ou ekspire. Rafrechi paj la epi eseye ankò.";
+  return msg;
+}
 async function api(fn, payload){
-  payload=payload||{}; payload.idToken=TOKEN;
+  payload=payload||{};
+  try{ payload.idToken = ME ? await ME.getIdToken() : TOKEN; }catch(e){ payload.idToken=TOKEN; }
   var r=await fetch(API+fn,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
   var j={}; try{j=await r.json();}catch(e){}
-  if(!r.ok){ var er=new Error(j.error||"Erè"); er.data=j; er.status=r.status; throw er; }
+  if(!r.ok){
+    var msg=(j&&j.error)||"Erè";
+    /* Token expiré/invalide : on force un token neuf et on réessaie une seule fois. */
+    if(ME && /id token|token|auth|expir/i.test(msg)){
+      try{
+        payload.idToken=await ME.getIdToken(true);
+        var r2=await fetch(API+fn,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+        var j2={}; try{j2=await r2.json();}catch(e){}
+        if(r2.ok) return j2;
+        msg=(j2&&j2.error)||msg;
+      }catch(e){}
+    }
+    var er=new Error(friendlyErr(msg)); er.data=j; er.status=r.status; throw er;
+  }
   return j;
 }
 function timeAgo(ts){ if(!ts||!ts.toMillis)return""; var s=(Date.now()-ts.toMillis())/1000; if(s<60)return"kounye a"; if(s<3600)return Math.floor(s/60)+" min"; if(s<86400)return Math.floor(s/3600)+" h"; return Math.floor(s/86400)+" j"; }
@@ -738,7 +773,8 @@ $("a-submit").onclick=async function(){
   var b=this; b.disabled=true;
   try{
     await api("social-activate",{ prenom:prenom, nom:nom, birthYear:parseInt($("a-birth").value,10),
-      gender:$("a-gender").value, seeking:$("a-seeking").value, zone:$("a-zone").value.trim(), consent:$("a-consent").checked });
+      gender:$("a-gender").value, genderCustom:$("a-gender-custom").value.trim(), maritalStatus:$("a-marital").value,
+      seeking:$("a-seeking").value, zone:$("a-zone").value.trim(), consent:$("a-consent").checked });
     var snap=await db.collection("socialProfiles").doc(ME.uid).get(); PROFILE=snap.data();
     enterOnboard();
   }catch(e){ toast(e.message); b.disabled=false; }
@@ -850,7 +886,21 @@ $("file-input").onchange=async function(){
 async function saveProfilePhotos(arr){ try{ await db.collection("socialProfiles").doc(ME.uid).set({photos:arr},{merge:true}); if(arr[0])$("pf-av").style.backgroundImage="url('"+arr[0]+"')"; }catch(e){} }
 
 /* ============ ENTER APP ============ */
-function enterApp(){ show("v-app"); switchTab("feed"); loadFeed(); listenMatches(); hydrateProfile(); renderStories(); listenNotifs(); }
+function enterApp(){ show("v-app"); switchTab("feed"); loadFeed(); listenMatches(); hydrateProfile(); renderStories(); listenNotifs(); captureLocation(); }
+/* Capture la position approximative (si le partage est activé) pour la distance
+   et la carte admin. Coordonnées arrondies (~100 m) pour la vie privée. */
+function captureLocation(){
+  try{
+    if(window.DEMO) return;
+    if(PROFILE && PROFILE.shareLocation===false) return;
+    if(!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(function(pos){
+      var geo={ lat:Math.round(pos.coords.latitude*1000)/1000, lng:Math.round(pos.coords.longitude*1000)/1000 };
+      if(PROFILE)PROFILE.geo=geo;
+      try{ db.collection("socialProfiles").doc(ME.uid).set({ geo:geo, geoAt:firebase.firestore.Timestamp.now() },{merge:true}); }catch(e){}
+    }, function(){}, { enableHighAccuracy:false, timeout:8000, maximumAge:300000 });
+  }catch(e){}
+}
 function switchTab(t){
   ["feed","discover","matches","profile"].forEach(function(x){ $("tab-"+x).classList.toggle("hidden",x!==t); });
   document.querySelectorAll(".navbtn[data-tab]").forEach(function(b){ b.classList.toggle("active",b.dataset.tab===t); });
@@ -1121,7 +1171,7 @@ async function openProfileByUid(uid){
     var snap=await db.collection("socialProfiles").doc(uid).get();
     if(!snap.exists){ toast("Pwofil pa disponib."); return; }
     var d=snap.data(); var age=d.birthYear?(new Date().getFullYear()-d.birthYear):null;
-    openProfileDetail({uid:uid,pseudo:d.pseudo,age:age,zone:d.zone,bio:d.bio,photos:d.photos,vibe:d.vibe||"",followersCount:d.followersCount||0,followingCount:d.followingCount||0}, false);
+    openProfileDetail({uid:uid,pseudo:d.pseudo,age:age,zone:d.zone,bio:d.bio,photos:d.photos,vibe:d.vibe||"",gender:d.gender||"",genderCustom:d.genderCustom||"",maritalStatus:d.maritalStatus||"",followersCount:d.followersCount||0,followingCount:d.followingCount||0}, false);
   }catch(e){ toast(e.message); }
 }
 function openProfileDetail(prof, fromSwipe){
@@ -1130,7 +1180,7 @@ function openProfileDetail(prof, fromSwipe){
   $("pv-title").textContent=prof.pseudo||"Pwofil";
   $("pv-photo").style.backgroundImage=photo?"url('"+photo+"')":""; $("pv-photo").innerHTML=photo?"":'<div class="noimg"><i class="fas fa-user"></i></div>';
   $("pv-name").innerHTML=esc(prof.pseudo||"Anonim")+(prof.age?' <span class="age">'+prof.age+'</span>':'')+(prof.vibe?' '+vibePill(prof.vibe):'');
-  $("pv-sub").innerHTML=prof.zone?'<i class="fas fa-location-dot"></i> '+esc(prof.zone):'';
+  var pvInfo=[]; if(prof.zone)pvInfo.push('<i class="fas fa-location-dot"></i> '+esc(prof.zone)); var pvg=genderLabel(prof.gender,prof.genderCustom); if(pvg)pvInfo.push('<i class="fas fa-venus-mars"></i> '+esc(pvg)); var pvm=maritalLabel(prof.maritalStatus); if(pvm)pvInfo.push('<i class="fas fa-ring"></i> '+esc(pvm)); $("pv-sub").innerHTML=pvInfo.join(' &nbsp; ');
   $("pv-bio").textContent=prof.bio||"";
   $("pv-stats").innerHTML='<div class="s"><b>'+(prof.followersCount||0)+'</b><span>Abòne</span></div><div class="s"><b>'+(prof.followingCount||0)+'</b><span>Ap swiv</span></div><div class="s"><b id="pv-postn">0</b><span>Post</span></div>';
   $("pv-actions").classList.toggle("hidden",!fromSwipe);
@@ -1340,11 +1390,15 @@ function applyMyVibe(){
   else { av.classList.remove("vibed"); $("pf-vibe").innerHTML=""; }
 }
 
+function genderLabel(g,custom){ var m={femme:"Fanm",homme:"Gason",bi:"Biseksyèl",gay:"Omoseksyèl",autre:(custom||"Lòt")}; return m[g]||""; }
+function maritalLabel(s){ var m={selibate:"Selibatè",fiyanse:"Fiyanse",marye:"Marye",divose:"Divòse"}; return m[s]||""; }
+function profileInfoHtml(p){ var parts=[]; var g=genderLabel(p.gender,p.genderCustom); if(g)parts.push('<span><i class="fas fa-venus-mars"></i> '+esc(g)+'</span>'); var mm=maritalLabel(p.maritalStatus); if(mm)parts.push('<span><i class="fas fa-ring"></i> '+esc(mm)+'</span>'); return parts.join(""); }
 function hydrateProfile(){
   var av=(PROFILE.photos&&PROFILE.photos[0])||"";
   $("pf-av").style.backgroundImage="url('"+av+"')";
   $("pf-pseudo").textContent=PROFILE.pseudo||"";
   $("pf-bioshow").textContent=PROFILE.bio||"";
+  $("pf-info").innerHTML=profileInfoHtml(PROFILE);
   $("pf-followers").textContent=PROFILE.followersCount||0;
   $("pf-following").textContent=PROFILE.followingCount||0;
   renderSinglePhoto("pf-photos",PROFILE.photos||[],"profile");
@@ -1352,7 +1406,10 @@ function hydrateProfile(){
   $("pf-prenom").value=PROFILE.prenom||"";
   $("pf-nom").value=PROFILE.nom||"";
   $("pf-bio").value=PROFILE.bio||"";
-  $("pf-gender").value=PROFILE.gender||"homme";
+  $("pf-gender").value=PROFILE.gender||"femme";
+  $("pf-gender-custom").value=PROFILE.genderCustom||"";
+  $("pf-gender-custom").style.display=(PROFILE.gender==="autre")?"block":"none";
+  $("pf-marital").value=PROFILE.maritalStatus||"";
   $("pf-seeking").value=PROFILE.seeking||"tous";
   $("pf-zone").value=PROFILE.zone||"";
   var pr=PROFILE.prefs||{};
@@ -1390,6 +1447,8 @@ $("pf-save").onclick=async function(){
     pseudo:(prenom+" "+nom).trim(),
     bio:$("pf-bio").value.trim(),
     gender:$("pf-gender").value,
+    genderCustom:$("pf-gender-custom").value.trim().slice(0,30),
+    maritalStatus:$("pf-marital").value,
     seeking:$("pf-seeking").value,
     zone:$("pf-zone").value.trim().slice(0,60),
     prefs:{ minAge:parseInt($("pf-agemin").value,10)||18, maxAge:parseInt($("pf-agemax").value,10)||99, maxDistanceKm:parseInt($("pf-dist").value,10)||100 }
