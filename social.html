@@ -7,8 +7,13 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="rating" content="adult">
     <meta name="theme-color" content="#e91e63">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
-    <link rel="manifest" href="/manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bizen Social">
+    <link rel="icon" href="/icon-192.png">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="manifest" href="/social.webmanifest">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -247,6 +252,10 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .switch::after{content:"";position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;background:#fff;transition:transform .2s}
 .switch.on::after{transform:translateX(19px)}
 .sec-title{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:22px 0 4px}
+.legal-links{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:24px}
+.legal-links a{color:var(--muted);font-size:.72rem;text-decoration:none}
+.legal-links a:active{color:var(--rose)}
+.legal-copy{text-align:center;color:var(--muted);font-size:.64rem;margin-top:10px;opacity:.7}
 
 /* ---------- Toast / modal / sheet ---------- */
 #toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(20px);background:#000;border:1px solid var(--line);color:#fff;padding:11px 18px;border-radius:50px;font-size:.82rem;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90%;text-align:center}
@@ -419,7 +428,7 @@ video.post-img{object-fit:cover;background:#000;display:block}
       <input id="a-zone" class="input" placeholder="Egzanp: Pòtoprens, Petyonvil..." maxlength="60">
       <label style="display:flex;gap:10px;align-items:flex-start;font-size:.8rem;color:var(--muted2);margin:6px 0 18px;cursor:pointer">
         <input type="checkbox" id="a-consent" style="width:20px;height:20px;flex:none;margin-top:1px">
-        <span>Mwen gen 18 an oswa plis e mwen aksepte <a href="/regleman" style="color:var(--rose)">règleman</a> ak <a href="/konfidansyalite" style="color:var(--rose)">konfidansyalite</a> Bizen Social. Tolerans zewo pou kontni abizif.</span>
+        <span>Mwen gen 18 an oswa plis e mwen aksepte <a href="/social-kondisyon.html" target="_blank" style="color:var(--rose)">Kondisyon</a>, <a href="/social-konfidansyalite.html" target="_blank" style="color:var(--rose)">Konfidansyalite</a> ak <a href="/social-kominote.html" target="_blank" style="color:var(--rose)">Règleman Kominote</a> Bizen Social. Tolerans zewo pou kontni abizif.</span>
       </label>
       <button id="a-submit" class="btn"><i class="fas fa-bolt"></i> Aktive kounye a</button>
     </div>
@@ -535,6 +544,13 @@ video.post-img{object-fit:cover;background:#000;display:block}
         <a class="btn ghost" href="/Dashboard.html" style="margin-bottom:10px"><i class="fas fa-repeat"></i> Ale sou kont Bizen mwen</a>
         <button class="btn ghost" id="pf-logout"><i class="fas fa-right-from-bracket"></i> Dekonekte</button>
         <button class="btn ghost" id="pf-delete" style="margin-top:10px;color:var(--red)"><i class="fas fa-trash"></i> Efase kont Social mwen</button>
+        <div class="legal-links">
+          <a href="/social-kondisyon.html">Kondisyon</a>
+          <a href="/social-konfidansyalite.html">Konfidansyalite</a>
+          <a href="/social-kominote.html">Règleman kominote</a>
+          <a href="/social-sekirite.html">Sekirite</a>
+        </div>
+        <div class="legal-copy">Bizen Social · Granmoun 18 an+ · © 2026</div>
       </div>
     </div>
 
@@ -680,6 +696,10 @@ var fbCfg = {
 var app; try{app=firebase.app();}catch(e){app=firebase.initializeApp(fbCfg);}
 var auth=firebase.auth(), db=firebase.firestore(), storage=firebase.storage();
 var API="/.netlify/functions/";
+/* Service worker (PWA installable + notifications). Ignoré en mode aperçu et hors https. */
+if("serviceWorker" in navigator && location.protocol==="https:" && !/[?&#]demo/.test(location.search+location.hash)){
+  window.addEventListener("load",function(){ navigator.serviceWorker.register("/sw.js").catch(function(){}); });
+}
 
 /* ============ STATE ============ */
 var ME=null, TOKEN=null, PROFILE=null;
@@ -749,12 +769,19 @@ auth.onAuthStateChanged(async function(u){
   if(!u){ show("v-gate"); return; }
   ME=u; TOKEN=await u.getIdToken();
   try{
-    /* BETA FERMÉ : Bizen Social n'est PAS encore public. Accès seulement pour les
-       comptes activés par l'admin (users.social.enabled === true), ou l'admin. */
-    var meUserDoc=await db.collection("users").doc(u.uid).get();
-    var meUser=meUserDoc.exists?meUserDoc.data():{};
-    var enabled=(meUser.social && meUser.social.enabled===true) || u.email==="bizenht@gmail.com";
-    if(!enabled){ show("v-closed"); return; }
+    /* Accès : l'admin et les comptes invités (users.social.enabled) entrent toujours.
+       Pour le grand public, l'accès s'ouvre quand l'admin active le lancement
+       (settings/social.dashboardButton === true) depuis /vyerezo. */
+    if(u.email!=="bizenht@gmail.com"){
+      var meUserDoc=await db.collection("users").doc(u.uid).get();
+      var meUser=meUserDoc.exists?meUserDoc.data():{};
+      var invited=meUser.social && meUser.social.enabled===true;
+      if(!invited){
+        var cfgDoc=await db.collection("settings").doc("social").get();
+        var openPublic=cfgDoc.exists && cfgDoc.data().dashboardButton===true;
+        if(!openPublic){ show("v-closed"); return; }
+      }
+    }
     var snap=await db.collection("socialProfiles").doc(u.uid).get();
     if(!snap.exists || !snap.data().activatedAt){ show("v-activate"); prefillActivate(); return; }
     PROFILE=snap.data();

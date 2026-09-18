@@ -20,7 +20,7 @@ try {
         var d = (payload && payload.data) || {};
         self.registration.showNotification(n.title || "Bizen HT", {
             body: n.body || d.body || "",
-            icon: "/icon.svg", badge: "/icon.svg",
+            icon: "/icon-192.png", badge: "/icon-192.png",
             data: { link: d.link || "/Dashboard.html" }
         });
     });

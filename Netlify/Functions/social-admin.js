@@ -422,7 +422,7 @@ exports.handler = async function (event) {
         if (action === "setConfig") {
             var patch = body.patch || {};
             var clean = {};
-            ["phaseAllFree", "discoveryOpen", "maintenance", "requireAgeVerify", "nsfwThreshold"].forEach(function (k) { if (patch[k] !== undefined) clean[k] = patch[k]; });
+            ["phaseAllFree", "discoveryOpen", "maintenance", "requireAgeVerify", "nsfwThreshold", "dashboardButton"].forEach(function (k) { if (patch[k] !== undefined) clean[k] = patch[k]; });
             await C("settings").doc("social").set(clean, { merge: true });
             await audit("setConfig", "social", clean);
             return ok({ success: true });

@@ -626,7 +626,10 @@ async function loadConfig(){
   try{
     var r=await adminApi("getConfig"); var cf=r.config||{};
     function row(key,label,desc,def){ var on=(cf[key]!==undefined)?cf[key]:def; return '<div class="crow"><div><div class="c-l">'+label+'</div><div class="c-d">'+desc+'</div></div><div class="switch'+(on?" on":"")+'" data-cfg="'+key+'"></div></div>'; }
-    c.innerHTML='<div class="sec-h">Fonksyonalite</div>'+
+    c.innerHTML='<div class="card" style="border-color:rgba(233,30,99,.45);margin-bottom:16px"><h3><i class="fas fa-rocket" style="color:var(--rose)"></i> Lansman</h3><p class="sub">Kontwole si bouton « Bizen Social » parèt sou Dashboard tout manm Bizen yo. Kite l fèmen pandan w ap prepare; aktive l an 1 klik lè ou pare pou lanse.</p>'+
+      row("dashboardButton","Montre bouton Bizen Social sou Dashboard yo","Aktive: tout manm wè bouton an epi yo ka antre sou Bizen Social. Fèmen: bouton an kache pou tout moun.",false)+
+      '</div>'+
+      '<div class="sec-h">Fonksyonalite</div>'+
       row("phaseAllFree","Faz 1 — tout gratis","Tout fonksyon gratis (pa gen limit ni Premium). Retire l pou aktive freemium.",true)+
       row("discoveryOpen","Dekouvri aktif","Pèmèt seksyon swipe/rankont lan fonksyone.",true)+
       row("requireAgeVerify","Egzije verifikasyon laj","Mande kontwòl ID 18+ anvan pibliye kontni.",false)+
