@@ -88,7 +88,13 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .post-follow{background:none;border:none;color:var(--rose);font-weight:700;font-size:.82rem;padding:6px 8px;white-space:nowrap;flex:none}
 .post-follow.on{color:var(--muted)}
 .post-actions .act .act-n{font-size:.85rem;font-weight:600;margin-left:6px}
-.post-img{width:100%;aspect-ratio:1/1;background:#15151f center/cover no-repeat}
+.post-img{width:100%;height:auto;display:block;background:#15151f}
+.post-media{position:relative;width:100%;background:#000;cursor:pointer}
+.vid-mute{position:absolute;right:10px;bottom:10px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:.95rem;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;backdrop-filter:blur(4px)}
+.vid-pause{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:1}
+.vid-pause i{font-size:3rem;color:rgba(255,255,255,.9);text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.post-link{color:var(--blue);text-decoration:none;word-break:break-word}
+.post-link:hover{text-decoration:underline}
 .post-textonly{padding:4px 16px 14px;font-size:1.05rem;line-height:1.5}
 .post-actions{display:flex;align-items:center;gap:18px;padding:11px 15px 4px;font-size:1.5rem}
 .post-actions .act{display:flex;align-items:center;color:var(--ink);transition:transform .1s}
@@ -344,7 +350,7 @@ label.fld{display:block;font-size:.72rem;color:var(--muted);margin:0 0 6px 2px;t
 .vibe-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
 .post-head .av.pvibe{box-shadow:0 0 0 2px var(--card),0 0 0 3.5px var(--vc,transparent),0 0 12px var(--vc,transparent)}
 .cr-vibe-title{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px}
-video.post-img{object-fit:cover;background:#000;display:block}
+video.post-img{width:100%;height:auto;display:block;background:#000}
 .pf-badge{position:absolute;bottom:5px;left:5px;background:rgba(0,0,0,.72);color:#fff;font-size:.56rem;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.3px}
 .pf-grid .cell{position:relative}
 .cell-play{position:absolute;top:6px;right:6px;color:#fff;font-size:.72rem;text-shadow:0 1px 4px #000;pointer-events:none}
@@ -712,7 +718,22 @@ function $(id){return document.getElementById(id);}
 function show(id){ ["v-loading","v-gate","v-closed","v-activate","v-onboard","v-app"].forEach(function(v){ $(v).classList.toggle("hidden", v!==id); }); }
 function toast(m){ var t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove("show");},2600); }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-function capTags(s){ return esc(s).replace(/#([\p{L}0-9_]{2,30})/gu,'<span class="tag">#$1</span>'); }
+function tagify(s){ return s.replace(/#([\p{L}0-9_]{2,30})/gu,'<span class="tag">#$1</span>'); }
+/* Rann tèks: echape, transfòme lyen an klikab (louvri nan navigatè), epi make #hashtag.
+   Lyen yo louvri nan yon nouvo onglè (navigatè ekstèn). */
+function capTags(s){
+  var e=esc(s), re=/((?:https?:\/\/|www\.)[^\s<]+)/gi, out="", last=0, m;
+  while((m=re.exec(e))){
+    out+=tagify(e.slice(last,m.index));
+    var raw=m[0], trail="", mt=raw.match(/[.,!?;:)\]]+$/);
+    if(mt){ trail=mt[0]; raw=raw.slice(0,raw.length-trail.length); }
+    var href=raw.replace(/&amp;/g,"&"); if(/^www\./i.test(href)) href="https://"+href;
+    out+='<a href="'+href+'" target="_blank" rel="noopener noreferrer" class="post-link" onclick="event.stopPropagation()">'+raw+'</a>'+trail;
+    last=m.index+m[0].length;
+  }
+  out+=tagify(e.slice(last));
+  return out;
+}
 /* Rend les messages techniques (token, auth, permission) lisibles pour l'utilisateur. */
 function friendlyErr(msg){
   msg=String(msg||"");
@@ -1027,7 +1048,9 @@ function buildPost(p){
       ((p.authorUid && p.authorUid!==ME.uid)?'<button class="post-follow'+(myFollows[p.authorUid]?' on':'')+'" data-fu="'+esc(p.authorUid)+'">'+(myFollows[p.authorUid]?'Ap swiv':'Swiv')+'</button>':'')+
       '<button class="more"><i class="fas fa-ellipsis"></i></button>'+
     '</div>'+
-    (p.imageUrl?(p.mediaType==="video"?'<video class="post-img" src="'+esc(p.imageUrl)+'" muted loop playsinline webkit-playsinline preload="metadata"></video>':'<div class="post-img" style="background-image:url(\''+esc(p.imageUrl)+'\')"></div>'):'')+
+    (p.imageUrl?(p.mediaType==="video"?
+        '<div class="post-media"><video class="post-img" src="'+esc(p.imageUrl)+'" loop playsinline webkit-playsinline preload="metadata"></video><button class="vid-mute"><i class="fas fa-volume-high"></i></button><div class="vid-pause"><i class="fas fa-play"></i></div></div>'
+        :'<img class="post-img" src="'+esc(p.imageUrl)+'" alt="" loading="lazy">'):'')+
     (!p.imageUrl&&p.caption?'<div class="post-textonly">'+capTags(p.caption)+'</div>':'')+
     '<div class="post-actions">'+
       '<button class="act like'+(liked?' liked':'')+'"><i class="'+(liked?'fas':'fa-regular')+' fa-heart"></i></button>'+
@@ -1052,15 +1075,36 @@ function buildPost(p){
   var openAuthor=function(){ if(p.authorUid && p.authorUid!==ME.uid) openProfileByUid(p.authorUid); };
   el.querySelector(".post-head .av").onclick=openAuthor;
   el.querySelector(".post-head .nm").onclick=openAuthor;
-  var vid=el.querySelector("video.post-img"); if(vid){ vid.onclick=function(){ vid.muted=!vid.muted; if(!vid.muted)vid.play().catch(function(){}); }; }
+  var media=el.querySelector(".post-media");
+  if(media){
+    var vid=media.querySelector("video.post-img");
+    var mBtn=media.querySelector(".vid-mute"), pOv=media.querySelector(".vid-pause");
+    var syncMute=function(){ mBtn.innerHTML='<i class="fas fa-volume-'+(vid.muted?'xmark':'high')+'"></i>'; };
+    var syncPause=function(){ pOv.style.display=vid.paused?'flex':'none'; };
+    vid.addEventListener("play",syncPause); vid.addEventListener("pause",syncPause);
+    vid.addEventListener("volumechange",syncMute);
+    /* Tap sou videyo = pause/play */
+    media.onclick=function(){ if(vid.paused){ vid.play().catch(function(){}); } else { vid.pause(); } };
+    /* Bouton = mute/unmute (preferans global pou tout videyo) */
+    mBtn.onclick=function(e){ e.stopPropagation(); SOUND_ON=vid.muted; vid.muted=!SOUND_ON; if(SOUND_ON){ vid.play().catch(function(){}); } syncMute(); };
+    syncMute(); syncPause();
+  }
   return el;
+}
+/* Preferans son: pa defo son limen. Si navigatè a bloke otoplay ak son,
+   videyo a jwe an silans epi itilizatè a ka tape bouton son an. */
+var SOUND_ON=true;
+function playInView(v){
+  v.muted=!SOUND_ON;
+  var pr=v.play();
+  if(pr&&pr.catch){ pr.catch(function(){ v.muted=true; var p2=v.play(); if(p2&&p2.catch)p2.catch(function(){}); }); }
 }
 /* Autoplay: lit la video visible, met en pause les autres. */
 var feedVideoObserver=null;
 function observeFeedVideos(list){
   if(!("IntersectionObserver" in window))return;
   if(feedVideoObserver)feedVideoObserver.disconnect();
-  feedVideoObserver=new IntersectionObserver(function(entries){ entries.forEach(function(en){ var v=en.target; if(en.isIntersecting){ v.play().catch(function(){}); } else { v.pause(); } }); },{threshold:0.55});
+  feedVideoObserver=new IntersectionObserver(function(entries){ entries.forEach(function(en){ var v=en.target; if(en.isIntersecting){ playInView(v); } else { v.pause(); } }); },{threshold:0.55});
   list.querySelectorAll("video.post-img").forEach(function(v){ feedVideoObserver.observe(v); });
 }
 async function toggleLike(p, btn, lc){
@@ -1134,7 +1178,7 @@ function buildComment(c,isReply){
   var el=document.createElement("div"); el.className="cm"+(isReply?" reply":"");
   var liked=!!myCommentLikes[c.id];
   el.innerHTML='<div class="av" style="background-image:url(\''+esc(c.avatar||"")+'\')"></div>'+
-    '<div class="body"><span class="nm">'+esc(c.name||"Anonim")+'</span> <span class="tx">'+esc(c.text||"")+'</span>'+
+    '<div class="body"><span class="nm">'+esc(c.name||"Anonim")+'</span> <span class="tx">'+capTags(c.text||"")+'</span>'+
     '<div class="cm-meta"><span class="tm">'+timeAgo(c.createdAt)+'</span>'+(c.likeCount?'<span class="cm-act">'+c.likeCount+' like</span>':'')+'<span class="cm-act cm-reply">Reponn</span></div></div>'+
     '<button class="cm-like'+(liked?' on':'')+'" data-cid="'+esc(c.id||"")+'"><i class="'+(liked?'fas':'fa-regular')+' fa-heart"></i></button>';
   var lb=el.querySelector(".cm-like"); if(lb&&c.id){ lb.onclick=function(){ toggleCommentLike(c,lb); }; }
@@ -1702,7 +1746,7 @@ async function openPeople(kind){
   PROFILE={prenom:"Jan",nom:"Batis",pseudo:"Jan Batis",bio:"Egzanp bio, m renmen sinema ak bon manje.",photos:[av(300,"😊")],status:"active",visible:true,shareLocation:true,defaultEphemeral:true,vibe:"randevou",gender:"homme",seeking:"tous",zone:"Petyonvil",prefs:{minAge:22,maxAge:40,maxDistanceKm:60}};
   var POSTS=[
     {id:"p1",authorUid:"d1",authorName:"Nadège",authorAvatar:av(330,"🌸"),imageUrl:av(330,"🌅"),vibe:"fet",caption:"Bèl jounen nan Petyonvil. #ayiti #lavi #bonè",hashtags:["ayiti"],likeCount:42,commentCount:5,createdAt:{toMillis:function(){return Date.now()-3600000;}}},
-    {id:"p2",authorUid:"d2",authorName:"Jonas",authorAvatar:av(210,"⚽"),imageUrl:av(210,"🏝️"),vibe:"chill",caption:"Wikenn nan plaj la. Kilès ki vle vini? #plaj #detant",hashtags:["plaj"],likeCount:18,commentCount:2,createdAt:{toMillis:function(){return Date.now()-7200000;}}},
+    {id:"p2",authorUid:"d2",authorName:"Jonas",authorAvatar:av(210,"⚽"),imageUrl:av(210,"🏝️"),vibe:"chill",caption:"Wikenn nan plaj la. Enfo: https://bizenht.com #plaj #detant",hashtags:["plaj"],likeCount:18,commentCount:2,createdAt:{toMillis:function(){return Date.now()-7200000;}}},
     {id:"p3",authorUid:"d3",authorName:"Mia",authorAvatar:av(280,"🎨"),imageUrl:"",vibe:"cho",caption:"Nouvo desen fini! Sa nou panse? #atis #kreyativite",hashtags:["atis"],likeCount:31,commentCount:8,createdAt:{toMillis:function(){return Date.now()-90000000;}}}
   ];
   var PROFILES=[
