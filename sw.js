@@ -39,7 +39,7 @@ self.addEventListener("notificationclick", function (e) {
     );
 });
 
-var CACHE_NAME = "bizen-ht-v2";
+var CACHE_NAME = "bizen-ht-v3";
 
 self.addEventListener("install", function (e) {
     self.skipWaiting();

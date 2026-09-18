@@ -2195,15 +2195,24 @@ if (!auth) {
 
                 userData.uid = user.uid;
 
-                /* Bouton Bizen Social : visible seulement si l'admin l'a activé
-                   (settings/social.dashboardButton === true). Contrôlé depuis /vyerezo. */
+                /* Bouton Bizen Social :
+                   - L'admin et les comptes invités par l'admin (users.social.enabled === true)
+                     voient TOUJOURS le bouton, peu importe le toggle de lancement.
+                   - Le grand public voit le bouton seulement quand l'admin ouvre le lancement
+                     (settings/social.dashboardButton === true), contrôlé depuis /vyerezo. */
                 try {
                     var _sl = document.getElementById("socialSwitchLink");
                     if (_sl) {
-                        db.collection("settings").doc("social").get().then(function (cs) {
-                            var on = cs.exists && cs.data().dashboardButton === true;
-                            _sl.style.display = on ? "" : "none";
-                        }).catch(function () { _sl.style.display = "none"; });
+                        var _invited = (user.email === "bizenht@gmail.com") ||
+                                       (userData.social && userData.social.enabled === true);
+                        if (_invited) {
+                            _sl.style.display = "";
+                        } else {
+                            db.collection("settings").doc("social").get().then(function (cs) {
+                                var on = cs.exists && cs.data().dashboardButton === true;
+                                _sl.style.display = on ? "" : "none";
+                            }).catch(function () { _sl.style.display = "none"; });
+                        }
                     }
                 } catch (e) {}
 
