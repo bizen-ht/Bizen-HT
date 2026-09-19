@@ -350,6 +350,7 @@ async function processPaidWebhook(body) {
                 eluUid: pay.eluUid, eluName: eluName,
                 fromUid: pay.userId || "", fromPseudo: fromPseudo,
                 amount: pay.amount || 0, status: "confirmed",
+                note: (pay.note || "").toString().slice(0, 200),
                 referenceId: refId,
                 createdAt: admin.firestore.FieldValue.serverTimestamp()
             });

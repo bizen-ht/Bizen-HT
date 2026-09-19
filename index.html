@@ -8204,6 +8204,7 @@ function openTepModal(eluUid, eluName) {
     h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
     [200, 500, 1000, 2000].forEach(function (v) { h += '<button type="button" onclick="document.getElementById(\'tepAmount\').value=' + v + '" style="flex:1;min-width:60px;padding:9px;border:1px solid #2a2a3a;background:rgba(255,255,255,0.05);color:#ffd700;border-radius:10px;cursor:pointer;font-weight:600">' + v.toLocaleString() + '</button>'; });
     h += '</div>';
+    h += '<div class="fg"><label>Yon ti mo pou li (opsyonèl)</label><textarea id="tepNote" maxlength="200" rows="2" placeholder="Egz: Mèsi pou bon moman an!"></textarea></div>';
     h += '<button class="btn btn-primary fw btn-glow" onclick="payTep(\'' + eluUid + '\')"><i class="fas fa-mobile-alt"></i> Peye TEP ak MonCash</button>';
     h += '<p style="font-size:0.72rem;color:#6a6a80;text-align:center;margin-top:12px">TEP la peye ak MonCash. ' + name + ' ap resevwa l sou balans TEP li.</p>';
     h += '</div></div></div>';
@@ -8215,11 +8216,12 @@ function payTep(eluUid) {
     var amount = parseInt(el ? el.value : "0", 10) || 0;
     if (amount < 100) { toast("Montan TEP minimòm se 100 Gdes.", "err"); return; }
     if (!auth || !auth.currentUser) { oM("lM"); return; }
+    var note = ((document.getElementById("tepNote") || {}).value || "").toString().trim().slice(0, 200);
     var user = auth.currentUser;
     toast("N ap konekte ak MonCash...", "success");
     fetch("/.netlify/functions/moncash", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "create", amount: amount, purpose: "tep", eluUid: eluUid, userId: user.uid, userEmail: user.email || "", firstName: "Client", lastName: "Bizen" })
+        body: JSON.stringify({ action: "create", amount: amount, purpose: "tep", eluUid: eluUid, note: note, userId: user.uid, userEmail: user.email || "", firstName: "Client", lastName: "Bizen" })
     }).then(function (r) { return r.json(); }).then(function (data) {
         var finalUrl = data.paymentUrl || (data.rawResponse && data.rawResponse.redirectUrl);
         if (data.success && finalUrl) { window.location.href = finalUrl; }

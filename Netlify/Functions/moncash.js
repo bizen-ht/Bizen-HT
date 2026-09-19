@@ -462,6 +462,7 @@ exports.handler = async function(
                             userId: body.userId,
                             email: body.userEmail || "",
                             eluUid: body.eluUid,
+                            note: (body.note || "").toString().slice(0, 200),
                             method: "moncash",
                             referenceId: referenceId,
                             amount: finalAmount,
