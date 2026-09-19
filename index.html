@@ -7776,6 +7776,10 @@ function openEluProfile(btnOrUid) {
             /* Gratuit : pas de réservation -> invitation Premium */
             h += '<button class="btn btn-primary fw btn-glow" onclick="cM(\'eluProfM\');oM(\'pM\')"><i class="fas fa-crown"></i> Vin Premium pou rezève</button>';
         }
+        /* TEP (pourboire) : réservé aux VIP Premium — bouton discret. */
+        if (isPremiumViewer) {
+            h += '<div style="text-align:center;margin-top:14px"><button onclick="openTepModal(\'' + uid + '\',\'' + safeName + '\')" style="background:transparent;border:1px solid rgba(255,215,0,0.45);color:#ffd700;font-size:0.74rem;padding:7px 18px;border-radius:20px;cursor:pointer;font-family:inherit"><i class="fas fa-gift"></i> Voye yon TEP</button></div>';
+        }
         /* Partage WhatsApp — DISCRET et en DERNIER (aperçu photo+nom via /pwofil/<kòd>) */
         h += '<div style="text-align:center;margin-top:16px">'
            + '<button onclick="shareEluWhatsApp(\'' + (d.bizenCode || "") + '\',\'' + safeName + '\')" style="background:transparent;border:1px solid rgba(37,211,102,0.4);color:#25D366;font-size:0.72rem;padding:6px 16px;border-radius:20px;cursor:pointer;font-family:inherit"><i class="fab fa-whatsapp"></i> Pataje pwofil sa a</button>'
@@ -8181,6 +8185,46 @@ function sendDM() {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i>'; }
         toast("Erè rezo. Eseye ankò.", "err");
     });
+}
+
+/* ====================================
+   TEP (pourboire) — VIP Premium => Elu, payé par MonCash.
+   ==================================== */
+function openTepModal(eluUid, eluName) {
+    if (!auth || !auth.currentUser) { oM("lM"); return; }
+    if (!isPremiumViewer) { cM("eluProfM"); oM("pM"); return; }
+    var old = document.getElementById("tepM"); if (old) old.remove();
+    var name = escapeResHotel(eluName || "Elu");
+    var h = '<div class="mbg show" id="tepM" style="z-index:10008">';
+    h += '<div class="modal" style="max-width:400px">';
+    h += '<button class="mx" onclick="cM(\'tepM\')"><i class="fas fa-times"></i></button>';
+    h += '<div class="mhead"><div class="mico" style="background:linear-gradient(135deg,#ffd700,#ff8c00)"><i class="fas fa-gift"></i></div><h2>Voye yon TEP</h2><p style="color:#b0b0c0">Yon ti rekonesans pou ' + name + '</p></div>';
+    h += '<div class="mform">';
+    h += '<div class="fg"><label>Montan TEP (Gdes)</label><input type="number" id="tepAmount" min="100" inputmode="numeric" placeholder="Egz: 500"></div>';
+    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
+    [200, 500, 1000, 2000].forEach(function (v) { h += '<button type="button" onclick="document.getElementById(\'tepAmount\').value=' + v + '" style="flex:1;min-width:60px;padding:9px;border:1px solid #2a2a3a;background:rgba(255,255,255,0.05);color:#ffd700;border-radius:10px;cursor:pointer;font-weight:600">' + v.toLocaleString() + '</button>'; });
+    h += '</div>';
+    h += '<button class="btn btn-primary fw btn-glow" onclick="payTep(\'' + eluUid + '\')"><i class="fas fa-mobile-alt"></i> Peye TEP ak MonCash</button>';
+    h += '<p style="font-size:0.72rem;color:#6a6a80;text-align:center;margin-top:12px">TEP la peye ak MonCash. ' + name + ' ap resevwa l sou balans TEP li.</p>';
+    h += '</div></div></div>';
+    var wrap = document.createElement("div"); wrap.innerHTML = h; document.body.appendChild(wrap.firstChild);
+}
+
+function payTep(eluUid) {
+    var el = document.getElementById("tepAmount");
+    var amount = parseInt(el ? el.value : "0", 10) || 0;
+    if (amount < 100) { toast("Montan TEP minimòm se 100 Gdes.", "err"); return; }
+    if (!auth || !auth.currentUser) { oM("lM"); return; }
+    var user = auth.currentUser;
+    toast("N ap konekte ak MonCash...", "success");
+    fetch("/.netlify/functions/moncash", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create", amount: amount, purpose: "tep", eluUid: eluUid, userId: user.uid, userEmail: user.email || "", firstName: "Client", lastName: "Bizen" })
+    }).then(function (r) { return r.json(); }).then(function (data) {
+        var finalUrl = data.paymentUrl || (data.rawResponse && data.rawResponse.redirectUrl);
+        if (data.success && finalUrl) { window.location.href = finalUrl; }
+        else { toast((data && data.error) ? data.error : "MonCash pa disponib kounye a. Eseye pita.", "err"); }
+    }).catch(function () { toast("Erè rezo. Eseye ankò.", "err"); });
 }
 
 function startEluBooking(uid, name, price, priceType) {

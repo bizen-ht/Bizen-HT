@@ -299,8 +299,10 @@ async function processPaidWebhook(body) {
     var docRef = snap.docs[0].ref;
     var pay = snap.docs[0].data();
 
-    /* Idempotence : déjà traité (pour le wallet, on exige aussi le crédit fait). */
-    if (pay.status === "confirmed" && (pay.purpose !== "wallet" || pay.walletCredited === true)) {
+    /* Idempotence : déjà traité (wallet et tep exigent aussi que le crédit soit fait). */
+    if (pay.status === "confirmed"
+        && (pay.purpose !== "wallet" || pay.walletCredited === true)
+        && (pay.purpose !== "tep" || pay.tepCredited === true)) {
         console.log("[WEBHOOK] Déjà traité:", refId); return;
     }
 
@@ -310,8 +312,8 @@ async function processPaidWebhook(body) {
         webhookConfirmedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    /* Premium : uniquement pour un achat Premium (ni réservation, ni dépôt wallet). */
-    if (pay.purpose !== "reservation" && pay.purpose !== "wallet" && pay.userId) {
+    /* Premium : uniquement pour un achat Premium (ni réservation, ni wallet, ni tep). */
+    if (pay.purpose !== "reservation" && pay.purpose !== "wallet" && pay.purpose !== "tep" && pay.userId) {
         await db.collection("users").doc(pay.userId).update({
             isPremium: true,
             premiumActivatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -328,6 +330,32 @@ async function processPaidWebhook(body) {
             await docRef.update({ walletCredited: true });
             console.log("[WEBHOOK] Wallet kredite:", pay.amount, "->", pay.userId);
         } catch (e) { console.log("[WEBHOOK] wallet:", e.message); }
+    }
+
+    /* TEP (pourboire) : on crédite l'Elu ciblé (collection teps), avec le pseudo
+       du VIP qui l'envoie. Idempotent via tepCredited. */
+    if (pay.purpose === "tep" && pay.eluUid && pay.tepCredited !== true) {
+        try {
+            var fromPseudo = "VIP";
+            try {
+                var uDoc = await db.collection("users").doc(pay.userId).get();
+                if (uDoc.exists) fromPseudo = uDoc.data().pseudo || uDoc.data().prenom || "VIP";
+            } catch (e) {}
+            var eluName = "";
+            try {
+                var eDoc = await db.collection("users").doc(pay.eluUid).get();
+                if (eDoc.exists) eluName = eDoc.data().pseudo || eDoc.data().prenom || "";
+            } catch (e) {}
+            await db.collection("teps").add({
+                eluUid: pay.eluUid, eluName: eluName,
+                fromUid: pay.userId || "", fromPseudo: fromPseudo,
+                amount: pay.amount || 0, status: "confirmed",
+                referenceId: refId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            await docRef.update({ tepCredited: true });
+            console.log("[WEBHOOK] TEP kredite:", pay.amount, "->", pay.eluUid);
+        } catch (e) { console.log("[WEBHOOK] tep:", e.message); }
     }
 
     /* RÉSERVATION : refléter le paiement sur la réservation liée.
@@ -351,7 +379,7 @@ async function processPaidWebhook(body) {
     }
 
     /* Commission affilié (si code valide + actif + pas déjà crédité) */
-    if (pay.promoCode && !pay.promoCredited && pay.purpose !== "reservation" && pay.purpose !== "wallet") {
+    if (pay.promoCode && !pay.promoCredited && pay.purpose !== "reservation" && pay.purpose !== "wallet" && pay.purpose !== "tep") {
         var code = String(pay.promoCode).trim().toUpperCase();
         var codeSnap = await db.collection("promoCodes").doc(code).get();
         if (codeSnap.exists) {

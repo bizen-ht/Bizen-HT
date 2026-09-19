@@ -179,6 +179,11 @@ exports.handler = async function (event) {
                 if (threadSnap.exists) { try { await threadRef.delete(); } catch (e) {} }
                 return err(404, "Elu sa a pa disponib ankò.");
             }
+            /* BLOCAGE : l'Elu peut bloquer un VIP indésirable => il ne peut plus écrire. */
+            var blocked = targetDoc.data().blockedUsers || [];
+            if (Array.isArray(blocked) && blocked.indexOf(senderUid) !== -1) {
+                return err(403, "Ou pa ka voye mesaj bay Elu sa a.");
+            }
         }
 
         /* Mode éphémère du fil : par défaut ON (24h). Si le fil a ephemeral===false,

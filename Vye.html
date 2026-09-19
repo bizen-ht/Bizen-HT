@@ -910,6 +910,10 @@
                 <i class="fas fa-credit-card"></i> Peman
                 <span class="sb-bdg bdg-o" id="bdgPy">0</span>
             </button>
+            <button class="sb-link" onclick="goPage('tep',this)">
+                <i class="fas fa-gift"></i> TEP
+                <span class="sb-bdg" id="bdgTep" style="display:none;background:#ffd700;color:#1a1a1a">0</span>
+            </button>
             <button class="sb-link" onclick="goPage('avis',this)">
                 <i class="fas fa-star"></i> Avi
                 <span class="sb-bdg bdg-r" id="bdgAv">0</span>
@@ -1433,6 +1437,34 @@
                             </tr>
                         </thead>
                         <tbody id="tbPy"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEP (pourboires reçus par les Elu + retraits) -->
+        <div class="pg" id="pg-tep">
+            <div class="ph">
+                <h1 class="ph-title"><i class="fas fa-gift" style="color:var(--gold)"></i> TEP</h1>
+            </div>
+            <div class="tc" style="margin-bottom:18px;border:1px solid rgba(255,215,0,0.4)">
+                <div class="tc-head">
+                    <div class="tc-title"><i class="fas fa-hand-holding-usd" style="color:var(--gold)"></i> Demann retrè TEP (ap tann) <span id="bdgTepWd" style="background:#ffd700;color:#1a1a1a;border-radius:50px;padding:1px 9px;font-size:0.72rem;margin-left:4px"></span></div>
+                    <div class="tc-filters"><button class="tf" onclick="loadAdminTep()"><i class="fas fa-sync"></i> Refrechi</button></div>
+                </div>
+                <div class="tscroll">
+                    <table>
+                        <thead><tr><th>Elu</th><th>Mande</th><th>Net a peye</th><th>MonCash</th><th>Dat</th><th>Aksyon</th></tr></thead>
+                        <tbody id="tbTepWd"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="tc">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-list"></i> TEP pa Elu (resevwa · peye · disponib)</div></div>
+                <div class="tscroll">
+                    <table>
+                        <thead><tr><th>Elu</th><th>Resevwa</th><th>Peye</th><th>Disponib</th></tr></thead>
+                        <tbody id="tbTepElu"></tbody>
                     </table>
                 </div>
             </div>
@@ -3455,6 +3487,86 @@ function natcashVerify(txId, action) {
     }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
 }
 
+/* ====================================
+   TEP (pourboires) — admin : demandes de retrait + récap par Elu.
+   ==================================== */
+function loadAdminTep() {
+    var tbW = document.getElementById("tbTepWd");
+    var tbE = document.getElementById("tbTepElu");
+    if (!db) return;
+    if (tbW) tbW.innerHTML = emptyRow(6, "Chajman...");
+    Promise.all([
+        db.collection("teps").get(),
+        db.collection("tepWithdrawals").get()
+    ]).then(function (r) {
+        var perElu = {};
+        r[0].forEach(function (d) {
+            var t = d.data(); if (t.status !== "confirmed") return;
+            var k = t.eluUid || "?";
+            if (!perElu[k]) perElu[k] = { name: t.eluName || "", earned: 0, paid: 0, pending: 0 };
+            perElu[k].earned += (t.amount || 0);
+            if (t.eluName && !perElu[k].name) perElu[k].name = t.eluName;
+        });
+        var pendWds = [];
+        r[1].forEach(function (d) {
+            var w = d.data(); w.id = d.id;
+            var k = w.eluUid || "?";
+            if (!perElu[k]) perElu[k] = { name: w.eluName || "", earned: 0, paid: 0, pending: 0 };
+            if (w.eluName && !perElu[k].name) perElu[k].name = w.eluName;
+            if (w.status === "paid") perElu[k].paid += (w.amount || 0);
+            else if (w.status === "pending") { perElu[k].pending += (w.amount || 0); pendWds.push(w); }
+        });
+        setBdg("bdgTepWd", pendWds.length);
+        setBdg("bdgTep", pendWds.length);
+        if (tbW) {
+            pendWds.sort(function (a, b) { var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0; var tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0; return tb - ta; });
+            if (!pendWds.length) tbW.innerHTML = emptyRow(6, "Pa gen demann retrè");
+            else {
+                var wh = "";
+                pendWds.forEach(function (w) {
+                    var dt = (w.createdAt && w.createdAt.toDate) ? w.createdAt.toDate().toLocaleString("fr-FR") : "";
+                    var net = (typeof w.net === "number") ? w.net : Math.round((w.amount || 0) * 0.90);
+                    wh += '<tr><td>' + escHtml(w.eluName || w.eluUid) + '</td>'
+                        + '<td>' + (w.amount || 0).toLocaleString() + ' G</td>'
+                        + '<td><strong style="color:#4caf50">' + net.toLocaleString() + ' G</strong></td>'
+                        + '<td>' + escHtml(w.moncashNumber || "") + '</td>'
+                        + '<td><small>' + escHtml(dt) + '</small></td>'
+                        + '<td><button onclick="payTepWithdrawal(\'' + w.id + '\')" style="background:rgba(76,175,80,0.15);color:#4caf50;border:1px solid rgba(76,175,80,0.4);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:0.72rem"><i class="fas fa-check"></i> Make peye</button></td></tr>';
+                });
+                tbW.innerHTML = wh;
+            }
+        }
+        if (tbE) {
+            var keys = Object.keys(perElu);
+            if (!keys.length) tbE.innerHTML = emptyRow(4, "Pa gen TEP");
+            else {
+                keys.sort(function (a, b) { return perElu[b].earned - perElu[a].earned; });
+                var eh = "";
+                keys.forEach(function (k) {
+                    var e = perElu[k];
+                    var avail = Math.max(0, e.earned - e.paid - e.pending);
+                    eh += '<tr><td>' + escHtml(e.name || k) + '</td>'
+                        + '<td>' + e.earned.toLocaleString() + ' G</td>'
+                        + '<td>' + e.paid.toLocaleString() + ' G</td>'
+                        + '<td><strong style="color:#ffd700">' + avail.toLocaleString() + ' G</strong></td></tr>';
+                });
+                tbE.innerHTML = eh;
+            }
+        }
+    }).catch(function (e) { if (tbW) tbW.innerHTML = emptyRow(6, "Erè: " + (e.code || e.message)); });
+}
+
+function payTepWithdrawal(id) {
+    if (!db) return;
+    if (!confirm("Make demann retrè sa a kòm PEYE?\n\nVoye SÈLMAN montan « Net a peye » a sou nimewo MonCash Elu a (Bizen kenbe 5%).")) return;
+    db.collection("tepWithdrawals").doc(id).update({
+        status: "paid",
+        paidAt: firebase.firestore.FieldValue.serverTimestamp(),
+        paidBy: (auth.currentUser ? auth.currentUser.email : "")
+    }).then(function () { toast("Retrè TEP make kòm peye.", true); loadAdminTep(); })
+      .catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
+}
+
 function renderPayTable(list) {
     var tb = document.getElementById("tbPy");
     if (!tb) return;
@@ -4054,6 +4166,7 @@ function goPage(id, btn) {
     /* Charge les données selon la page */
     if (id === "res")   loadReservations();
     if (id === "pay")   { loadPayments(); loadNatcashPending(); }
+    if (id === "tep")   loadAdminTep();
     if (id === "fin")   loadFinance();
     if (id === "comm")  loadCommissions();
     if (id === "dash")  loadRecent();
@@ -5620,7 +5733,7 @@ var notifList = [];
 var notifSeenTs = 0;
 var notifInited = false;
 var unsubNotifUsers = null, unsubNotifPay = null,
-    unsubNotifRes = null, unsubNotifRev = null, unsubNotifNatcash = null, unsubNotifContact = null;
+    unsubNotifRes = null, unsubNotifRev = null, unsubNotifNatcash = null, unsubNotifContact = null, unsubNotifTepWd = null;
 
 function loadNotifState() {
     try {
@@ -5806,6 +5919,14 @@ function initAdminNotifs() {
         return { ico: "fa-triangle-exclamation", cl: "#ff5722",
             txt: "Tantativ pataje kontak (" + role + ") — " + lvl,
             sub: conv + " · " + String(d.text || "").slice(0, 50) };
+    });
+
+    /* Demandes de retrait TEP. */
+    unsubNotifTepWd = listen("tepWithdrawals", "tw", function (d) {
+        if (d.status && d.status !== "pending") return null;
+        return { ico: "fa-gift", cl: "#ffd700",
+            txt: "Demann retrè TEP: " + ((d.amount || 0).toLocaleString()) + " Gdes",
+            sub: (d.eluName || "") + " · MonCash: " + (d.moncashNumber || "") };
     });
 }
 

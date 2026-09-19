@@ -438,6 +438,22 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    /* -------- TEP (pourboires reçus par un Elu) --------
+       Crédités par le webhook (Admin SDK). L'Elu lit SES tep ; l'admin lit tout.
+       Aucune écriture client (montants = argent). */
+    match /teps/{tepId} {
+      allow read:  if isAdmin() || (isSignedIn() && resource.data.eluUid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    /* -------- DEMANDES DE RETRAIT TEP --------
+       L'Elu crée SA demande (eluUid == lui) ; il lit les siennes ; l'admin gère. */
+    match /tepWithdrawals/{wId} {
+      allow read:   if isAdmin() || (isSignedIn() && resource.data.eluUid == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.eluUid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
     /* -------- TOUT LE RESTE : interdit par défaut --------
        (Aucune collection oubliée ne reste ouverte.) */
     match /{document=**} {

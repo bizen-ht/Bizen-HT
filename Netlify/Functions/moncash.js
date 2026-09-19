@@ -384,7 +384,7 @@ exports.handler = async function(
             /* Montant : Premium => prix calculé serveur (avec rabais éventuel).
                Réservation / Dépôt wallet => montant dynamique fourni. */
             let finalAmount;
-            if (body.purpose === "reservation" || body.purpose === "wallet") {
+            if (body.purpose === "reservation" || body.purpose === "wallet" || body.purpose === "tep") {
                 finalAmount = Math.round(parseFloat(body.amount) || 0);
             } else {
                 finalAmount = await premiumPrice();
@@ -392,6 +392,11 @@ exports.handler = async function(
             /* Dépôt wallet : montant minimum de sécurité. */
             if (body.purpose === "wallet" && finalAmount < 50) {
                 return { statusCode: 400, headers: CORS, body: JSON.stringify({ success: false, error: "Montan depo minimòm se 50 Gdes." }) };
+            }
+            /* TEP (pourboire) : cible Elu obligatoire + minimum. */
+            if (body.purpose === "tep") {
+                if (!body.eluUid) return { statusCode: 400, headers: CORS, body: JSON.stringify({ success: false, error: "eluUid manke pou TEP." }) };
+                if (finalAmount < 100) return { statusCode: 400, headers: CORS, body: JSON.stringify({ success: false, error: "Montan TEP minimòm se 100 Gdes." }) };
             }
 
             const result =
@@ -445,6 +450,28 @@ exports.handler = async function(
                         });
                     }
                 } catch (e) { console.warn("[WALLET] payments doc:", e.message); }
+            }
+
+            /* TEP : doc `payments` créé CÔTÉ SERVEUR (montant fiable). Le webhook
+               créditera l'Elu ciblé (collection teps) une fois le paiement confirmé. */
+            if (body.purpose === "tep" && paymentUrl && body.userId && body.eluUid) {
+                try {
+                    initFb();
+                    if (admin.apps.length) {
+                        await admin.firestore().collection("payments").add({
+                            userId: body.userId,
+                            email: body.userEmail || "",
+                            eluUid: body.eluUid,
+                            method: "moncash",
+                            referenceId: referenceId,
+                            amount: finalAmount,
+                            purpose: "tep",
+                            status: "en_attente",
+                            tepCredited: false,
+                            createdAt: admin.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                } catch (e) { console.warn("[TEP] payments doc:", e.message); }
             }
 
             return {

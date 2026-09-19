@@ -667,6 +667,11 @@ function pinChangeFlow() {
                         Solde Mwen
                     </button>
                     <button class="sb-link"
+                            onclick="showSection('fl-tep',this)">
+                        <i class="fas fa-gift"></i>
+                        TEP
+                    </button>
+                    <button class="sb-link"
                             onclick="showSection('fl-earnings',this)">
                         <i class="fas fa-chart-line"></i>
                         Revni
@@ -1545,6 +1550,37 @@ function pinChangeFlow() {
                     <div class="stat-val" id="flMonth">0 G</div>
                     <div class="stat-label">Mwa sa a</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- FL TEP (pourboires) -->
+        <div class="dash-section" id="sec-fl-tep">
+            <div class="dash-top">
+                <h1><i class="fas fa-gift" style="color:var(--gold)"></i> TEP <span>Mwen</span></h1>
+            </div>
+            <div class="solde-card">
+                <div class="solde-amount" id="tepAvail">0 Gdes</div>
+                <div class="solde-label">TEP disponib</div>
+            </div>
+            <div class="stats-grid" style="grid-template-columns:repeat(2,1fr)">
+                <div class="stat-card"><div class="stat-val" id="tepEarned">0 G</div><div class="stat-label">Total resevwa</div></div>
+                <div class="stat-card"><div class="stat-val" id="tepPaid">0 G</div><div class="stat-label">Total touche</div></div>
+            </div>
+            <p style="font-size:0.74rem;color:var(--text-muted);text-align:center;margin-top:10px"><i class="fas fa-circle-info"></i> Bizen pran 5% sou chak TEP, epi MonCash pran 5% sou retrè yo.</p>
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-top:18px">
+                <h3 style="font-family:'Playfair Display',serif;margin-bottom:6px"><i class="fas fa-hand-holding-usd" style="color:var(--gold)"></i> Mande yon retrè</h3>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px">Montan minimòm: <strong>1 000 Gdes</strong>. N ap voye kòb la sou nimewo MonCash ou.</p>
+                <p style="font-size:0.76rem;color:#ff9800;margin-bottom:12px"><i class="fas fa-circle-info"></i> Bizen pran <strong>5%</strong> + MonCash pran <strong>5%</strong> sou chak retrè, donk w ap resevwa <strong>90%</strong> nan montan an.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+                    <div style="flex:1;min-width:140px"><label style="display:block;font-size:0.78rem;color:var(--text-muted);margin-bottom:5px">Montan (Gdes)</label><input type="number" id="tepWdAmount" min="1000" placeholder="Egz: 1000" oninput="tepNetPreview()" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif"></div>
+                    <button onclick="requestTepWithdrawal()" style="padding:11px 20px;background:linear-gradient(135deg,var(--gold),#ff9800);color:#000;border:none;border-radius:var(--radius-full);cursor:pointer;font-weight:700"><i class="fas fa-paper-plane"></i> Mande retrè</button>
+                </div>
+                <div id="tepNet" style="font-size:0.8rem;color:var(--gold);margin-top:8px"></div>
+                <div id="tepWdList" style="margin-top:14px"></div>
+            </div>
+            <div style="margin-top:18px">
+                <h3 style="font-family:'Playfair Display',serif;margin-bottom:10px;font-size:1rem"><i class="fas fa-clock-rotate-left"></i> Istorik TEP</h3>
+                <div id="tepHist"></div>
             </div>
         </div>
 
@@ -3979,8 +4015,109 @@ function showSection(id, btn) {
     if (id === "demann") { try { setupDemannSection(); } catch (e) {} }
     if (id === "fl-demann") { try { loadFlDemann(); } catch (e) {} }
     if (id === "fl-stories") { try { loadFlStories(); } catch (e) {} }
+    if (id === "fl-tep") { try { loadTep(); } catch (e) {} }
     if (id === "anbasade") { try { loadAmbassadorSpace(); } catch (e) {} }
     closeSidebar();
+}
+
+/* ====================================
+   TEP (pourboires) — côté Elu : solde, historique, demande de retrait.
+   ==================================== */
+function loadTep() {
+    if (!db || !currentUser) return;
+    var histEl = document.getElementById("tepHist");
+    if (histEl) histEl.innerHTML = loadingHtml();
+    Promise.all([
+        db.collection("teps").where("eluUid", "==", currentUser.uid).get(),
+        db.collection("tepWithdrawals").where("eluUid", "==", currentUser.uid).get()
+    ]).then(function (res) {
+        var teps = [], earned = 0;
+        res[0].forEach(function (d) {
+            var t = d.data(); t.id = d.id;
+            if (t.status === "confirmed") { earned += (t.amount || 0); teps.push(t); }
+        });
+        var paid = 0, pending = 0, wds = [];
+        res[1].forEach(function (d) {
+            var w = d.data(); w.id = d.id; wds.push(w);
+            if (w.status === "paid") paid += (w.amount || 0);
+            else if (w.status === "pending") pending += (w.amount || 0);
+        });
+        var avail = Math.max(0, earned - paid - pending);
+        window._tepAvail = avail;
+        setEl("tepAvail", avail.toLocaleString() + " Gdes");
+        setEl("tepEarned", earned.toLocaleString() + " G");
+        setEl("tepPaid", paid.toLocaleString() + " G");
+
+        /* Historique des TEP reçus (avec le pseudo du VIP). */
+        teps.sort(function (a, b) { var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0; var tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0; return tb - ta; });
+        var hh = "";
+        if (!teps.length) { hh = emptyHtml("fa-gift", "Poko gen TEP", "Lè yon VIP voye w yon TEP, l ap parèt la."); }
+        else {
+            teps.forEach(function (t) {
+                var dt = (t.createdAt && t.createdAt.toDate) ? t.createdAt.toDate().toLocaleDateString("fr-FR") : "";
+                hh += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px">'
+                    + '<div><div style="font-weight:600;font-size:0.88rem"><i class="fas fa-gift" style="color:var(--gold)"></i> ' + escDash(t.fromPseudo || "VIP") + '</div><div style="font-size:0.72rem;color:var(--text-muted)">' + dt + '</div></div>'
+                    + '<div style="font-weight:700;color:var(--gold)">+' + (t.amount || 0).toLocaleString() + ' G</div></div>';
+            });
+        }
+        if (histEl) histEl.innerHTML = hh;
+
+        /* Liste des demandes de retrait. */
+        var wl = document.getElementById("tepWdList");
+        if (wl) {
+            wds.sort(function (a, b) { var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0; var tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0; return tb - ta; });
+            var wh = "";
+            wds.slice(0, 6).forEach(function (w) {
+                var stTxt = w.status === "paid" ? '<span style="color:#4caf50">Peye</span>' : '<span style="color:#ff9800">Ap tann</span>';
+                wh += '<div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:6px 0;border-bottom:1px solid var(--border)"><span>' + (w.amount || 0).toLocaleString() + ' G</span>' + stTxt + '</div>';
+            });
+            wl.innerHTML = wh;
+        }
+    }).catch(function (e) {
+        if (histEl) histEl.innerHTML = emptyHtml("fa-exclamation-circle", "Erè chajman", e.code || e.message);
+    });
+}
+
+/* Aperçu du net après 5% Bizen + 5% MonCash. */
+function tepNetPreview() {
+    var el = document.getElementById("tepWdAmount");
+    var amt = parseInt(el ? el.value : "0", 10) || 0;
+    var out = document.getElementById("tepNet");
+    if (!out) return;
+    out.textContent = (amt >= 1000)
+        ? ("W ap resevwa: " + Math.round(amt * 0.90).toLocaleString() + " G (apre 5% Bizen + 5% MonCash)")
+        : "";
+}
+
+function requestTepWithdrawal() {
+    if (!db || !currentUser) return;
+    var el = document.getElementById("tepWdAmount");
+    var amount = parseInt(el ? el.value : "0", 10) || 0;
+    var avail = window._tepAvail || 0;
+    if (amount < 1000) { showToast("Montan minimòm pou retrè TEP se 1 000 Gdes.", "error"); return; }
+    if (amount > avail) { showToast("Ou pa gen ase TEP disponib (" + avail.toLocaleString() + " G).", "error"); return; }
+    var moncash = (userData && userData.moncashNumber) || "";
+    if (!moncash) { showToast("Ajoute nimewo MonCash ou nan pwofil ou anvan.", "error"); return; }
+    /* 5% Bizen (komisyon) + 5% MonCash (frè) => Elu resevwa 90%. */
+    var bizenFee = Math.round(amount * 0.05);
+    var moncashFee = Math.round(amount * 0.05);
+    var net = amount - bizenFee - moncashFee;
+    db.collection("tepWithdrawals").add({
+        eluUid: currentUser.uid,
+        eluName: (userData && (userData.pseudo || userData.prenom)) || "",
+        amount: amount,
+        bizenFee: bizenFee,
+        moncashFee: moncashFee,
+        net: net,
+        moncashNumber: moncash,
+        status: "pending",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function () {
+        showToast("Demann retrè voye! W ap resevwa " + net.toLocaleString() + " G.", "success");
+        if (el) el.value = "";
+        var out = document.getElementById("tepNet"); if (out) out.textContent = "";
+        loadTep();
+    }).catch(function (e) { showToast("Erè: " + (e.message || e.code), "error"); });
 }
 
 /* ====================================
@@ -4086,6 +4223,35 @@ function eluDmCheckContact() {
     warn.style.display = dmHasContact(input.value) ? "block" : "none";
 }
 
+/* BLOCAGE VIP (Elu) : un VIP bloqué ne peut plus écrire à l'Elu (enforcé côté
+   serveur dans dm-send). Réversible via le même bouton. */
+function updateEluBlockBtn() {
+    var btn = document.getElementById("eluDmBlockBtn");
+    if (!btn) return;
+    var blocked = (userData && userData.blockedUsers) || [];
+    var isBlocked = eluDmOther && blocked.indexOf(eluDmOther.uid) !== -1;
+    btn.style.color = isBlocked ? "#4caf50" : "#f44336";
+    btn.title = isBlocked ? "VIP bloke — klike pou debloke" : "Bloke VIP sa a";
+}
+
+function eluBlockToggle() {
+    if (!currentUser || !eluDmOther || !eluDmOther.uid || !db) return;
+    var blocked = (userData && userData.blockedUsers) || [];
+    var isBlocked = blocked.indexOf(eluDmOther.uid) !== -1;
+    var op = isBlocked
+        ? firebase.firestore.FieldValue.arrayRemove(eluDmOther.uid)
+        : firebase.firestore.FieldValue.arrayUnion(eluDmOther.uid);
+    db.collection("users").doc(currentUser.uid).update({ blockedUsers: op }).then(function () {
+        if (userData) {
+            userData.blockedUsers = isBlocked
+                ? blocked.filter(function (x) { return x !== eluDmOther.uid; })
+                : blocked.concat([eluDmOther.uid]);
+        }
+        updateEluBlockBtn();
+        showToast(isBlocked ? "VIP debloke." : "VIP bloke. Li p ap ka ekri w ankò.", "success");
+    }).catch(function (e) { showToast("Erè: " + (e.message || e.code), "error"); });
+}
+
 function openEluDm(threadId, otherName, otherUid, unreadField) {
     eluDmThread = threadId;
     eluDmOther = { uid: otherUid, name: otherName };
@@ -4102,6 +4268,10 @@ function openEluDm(threadId, otherName, otherUid, unreadField) {
     h += '<button onclick="closeEluDm()" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer"><i class="fas fa-arrow-left"></i></button>';
     h += '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff"><i class="fas fa-user"></i></div>';
     h += '<div style="flex:1;font-weight:700">' + escDash(otherName) + '</div>';
+    var _isEluUser = userData && (userData.type === "freelancer" || userData.type === "krey");
+    if (_isEluUser) {
+        h += '<button id="eluDmBlockBtn" onclick="eluBlockToggle()" title="Bloke VIP sa a" style="background:none;border:none;color:#f44336;font-size:1.05rem;cursor:pointer;padding:6px;flex-shrink:0"><i class="fas fa-ban"></i></button>';
+    }
     h += '<button id="eluDmEphBtn" onclick="eluDmToggleEphemeral()" title="Mesaj efemè" style="background:none;border:none;color:#ff9800;font-size:1.05rem;cursor:pointer;padding:6px;flex-shrink:0"><i class="fas fa-clock"></i></button></div>';
     h += '<div id="eluDmBanner" style="padding:6px 16px;font-size:0.7rem;color:#ff9800;background:rgba(255,152,0,0.08);text-align:center"><i class="fas fa-clock"></i> Mesaj yo ap disparèt apre 24è. Pa bay kontak deyò, oryante vè yon rezevasyon.</div>';
     h += '<div id="eluDmBody" style="flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 16px;display:flex;flex-direction:column;gap:8px"><p style="text-align:center;color:#6a6a80;font-size:0.85rem">Chajman...</p></div>';
@@ -4115,6 +4285,7 @@ function openEluDm(threadId, otherName, otherUid, unreadField) {
     var wrap = document.createElement("div");
     wrap.innerHTML = h;
     document.body.appendChild(wrap.firstChild);
+    updateEluBlockBtn();
     listenEluDm();
 
     /* Écoute l'état éphémère du fil (partagé entre les 2 participants). */
