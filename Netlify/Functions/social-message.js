@@ -36,14 +36,11 @@ function haitiDate() {
     return new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
-/* Masque les coordonnées externes (identique à la messagerie Élu). */
+/* Bizen Social : le chat n'existe qu'APRÈS un match. Une fois matchés, les
+   deux personnes sont libres de partager leurs coordonnées (numéro, réseaux,
+   email). On ne masque donc plus rien : passthrough. */
 function filterContact(text) {
-    var t = String(text == null ? "" : text);
-    t = t.replace(/[\w.+-]+@[\w-]+\.[\w.-]+/gi, "•••");
-    t = t.replace(/(^|[\s.,!?])@\w{2,}/g, "$1•••");
-    t = t.replace(/(\+?\d[\d\s().\-]{4,}\d)/g, "•••");
-    t = t.replace(/\b(whats?ap?p?|wsp|watsap|telegram|signal|viber|imo|snapchat|snap|instagram|insta|\big\b|tiktok|facebook|\bfb\b|messenger|gmail|hotmail|yahoo|outlook|e?-?mail|imel|nimewo|numero|num[ée]ro)\b/gi, "•••");
-    return t;
+    return String(text == null ? "" : text);
 }
 
 var FREE_MSGS_PER_DAY = 20;
