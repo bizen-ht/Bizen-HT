@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.bizenht.social",
+    "sha256_cert_fingerprints": ["80:48:B8:B3:ED:29:02:8D:63:66:BF:B4:5B:52:20:60:0C:D8:0B:FF:1C:10:EC:72:5C:5B:50:E7:C8:C9:4D:04"]
+  }
+}]

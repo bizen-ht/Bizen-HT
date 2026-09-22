@@ -1,0 +1,142 @@
+# ============================================================================
+#  Bizen HT — Backup quotidien hors Google (Phase 1 — roue de secours)
+# ============================================================================
+#  Objectif : chaque nuit, copier TOUTES les donnees Firebase du projet
+#  "bizen-ht" vers Cloudflare R2, dans un format RESTAURABLE.
+#
+#  3 briques sauvegardees :
+#    1. Firestore  -> export natif (restaurable avec `gcloud firestore import`)
+#    2. Auth       -> firebase auth:export (garde les hash scrypt = reconnexion possible)
+#    3. Storage    -> rclone sync du bucket media
+#
+#  Chaine : Firestore/Storage vivent deja sur GCS -> rclone copie vers R2.
+#
+#  ---------------------------------------------------------------------------
+#  A FAIRE UNE SEULE FOIS AVANT QUE CA MARCHE (cote infra, par toi) :
+#  ---------------------------------------------------------------------------
+#  A) Creer un bucket GCS pour recevoir l'export Firestore :
+#       gcloud storage buckets create gs://bizen-ht-backups --location=us --project=bizen-ht
+#     (mets la meme region que ta base Firestore si possible)
+#
+#  B) Creer un bucket R2 chez Cloudflare, ex. nom "bizen-backups",
+#     + un token R2 (Access Key ID + Secret). Ajoute une regle de cycle de vie
+#     R2 pour supprimer les objets > 30 jours (retention).
+#
+#  C) Donner ces roles au service account (celui de FIREBASE_SERVICE_ACCOUNT) :
+#       - roles/datastore.importExportAdmin   (export Firestore)
+#       - roles/firebaseauth.admin            (export Auth)
+#       - roles/storage.admin                 (lire Storage + ecrire dans le bucket backup)
+#
+#  D) Ajouter ces 5 SECRETS GitHub (Settings > Secrets and variables > Actions) :
+#       GCP_SA_KEY            = le JSON complet du service account (meme contenu
+#                               que ta variable Netlify FIREBASE_SERVICE_ACCOUNT)
+#       R2_ACCOUNT_ID         = l'ID de compte Cloudflare (pour l'endpoint R2)
+#       R2_ACCESS_KEY_ID      = Access Key ID du token R2
+#       R2_SECRET_ACCESS_KEY  = Secret Access Key du token R2
+#       R2_BUCKET             = bizen-backups
+#  ---------------------------------------------------------------------------
+#  Pour tester tout de suite : onglet Actions > "Backup Bizen HT" > "Run workflow".
+#  Pour restaurer : voir RESTORE.md a la racine du repo.
+# ============================================================================
+
+name: Backup Bizen HT
+
+on:
+  schedule:
+    # Tous les jours a 07:00 UTC (~02:00 Haiti). cron GitHub = toujours en UTC.
+    - cron: "0 7 * * *"
+  workflow_dispatch: {}   # permet de lancer manuellement depuis l'onglet Actions
+
+# Empeche deux backups de tourner en meme temps.
+concurrency:
+  group: bizen-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    env:
+      GCP_PROJECT: bizen-ht
+      GCS_BACKUP_BUCKET: bizen-ht-backups            # bucket GCS cree en (A)
+      STORAGE_BUCKET: bizen-ht.firebasestorage.app   # ton bucket media Firebase
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+
+    steps:
+      - name: Horodatage du backup
+        id: stamp
+        run: echo "date=$(date -u +'%Y-%m-%d_%H%M')" >> "$GITHUB_OUTPUT"
+
+      # --- Authentification GCP avec le service account ----------------------
+      - name: Auth GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: bizen-ht
+
+      # --- 1) Export Firestore (format natif restaurable) --------------------
+      - name: Export Firestore -> GCS
+        run: |
+          gcloud firestore export \
+            "gs://${GCS_BACKUP_BUCKET}/firestore/${{ steps.stamp.outputs.date }}" \
+            --project "${GCP_PROJECT}"
+
+      # --- 2) Export Auth (users + hash scrypt) ------------------------------
+      - name: Export Auth
+        run: |
+          npm install -g firebase-tools
+          # GOOGLE_APPLICATION_CREDENTIALS est deja pose par l'etape "Auth GCP".
+          firebase auth:export auth-users.json \
+            --format=json \
+            --project "${GCP_PROJECT}"
+
+      # --- Config rclone (remotes GCS et R2) ---------------------------------
+      - name: Installer & configurer rclone
+        run: |
+          curl -fsSL https://rclone.org/install.sh | sudo bash
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf <<EOF
+          [gcs]
+          type = google cloud storage
+          project_number = ${GCP_PROJECT}
+          service_account_file = ${GOOGLE_APPLICATION_CREDENTIALS}
+          object_acl = private
+          bucket_acl = private
+
+          [r2]
+          type = s3
+          provider = Cloudflare
+          access_key_id = ${{ secrets.R2_ACCESS_KEY_ID }}
+          secret_access_key = ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          endpoint = https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          acl = private
+          EOF
+
+      # --- 3) Pousser tout vers R2 (hors Google) -----------------------------
+      - name: Firestore export -> R2
+        run: |
+          rclone copy \
+            "gcs:${GCS_BACKUP_BUCKET}/firestore/${{ steps.stamp.outputs.date }}" \
+            "r2:${R2_BUCKET}/firestore/${{ steps.stamp.outputs.date }}" \
+            --fast-list --transfers 8
+
+      - name: Auth export -> R2
+        run: |
+          rclone copyto auth-users.json \
+            "r2:${R2_BUCKET}/auth/auth-users-${{ steps.stamp.outputs.date }}.json"
+
+      - name: Storage media -> R2 (sync incremental)
+        run: |
+          rclone sync \
+            "gcs:${STORAGE_BUCKET}" \
+            "r2:${R2_BUCKET}/storage" \
+            --fast-list --transfers 16
+
+      - name: Nettoyage local
+        if: always()
+        run: rm -f auth-users.json
