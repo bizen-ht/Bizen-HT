@@ -2107,7 +2107,7 @@ body.no-screenshot * {
 
         <div class="see-more">
             <button class="btn btn-primary
-                           btn-glow"
+                           btn-glow buy-premium-btn"
                     onclick="pa()">
                 <i class="fas fa-crown"></i>
                 Rezève yon Krèy - Vin Premium
@@ -2180,7 +2180,7 @@ body.no-screenshot * {
                     <li class="fy"><i class="fas fa-check"></i> Sipo priorite 24/7</li>
                     <li class="fy"><i class="fas fa-check"></i> Badge manm VIP</li>
                 </ul>
-                <button class="btn-plan gld-btn" onclick="oM('pM')"><i class="fas fa-crown"></i> Achte Premium Kounye a</button>
+                <button class="btn-plan gld-btn buy-premium-btn" onclick="oM('pM')"><i class="fas fa-crown"></i> Achte Premium Kounye a</button>
             </div>
         </div>
         <div class="pay-meth">
@@ -3157,6 +3157,16 @@ body.is-premium .pc-blur{display:none!important}
                      margin-bottom:15px">
                 </div>
 
+                <!-- DÉJÀ PREMIUM : on masque le paiement et on montre ce bandeau -->
+                <div id="pmAlreadyPremium" style="display:none;text-align:center;padding:20px 16px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.4);border-radius:16px">
+                    <i class="fas fa-crown" style="color:#ffd700;font-size:2rem"></i>
+                    <div style="color:#ffd700;font-weight:700;font-size:1.05rem;margin-top:10px">Ou gen Premium deja</div>
+                    <div style="color:#b0b0c0;font-size:0.85rem;margin-top:6px;line-height:1.5">Plan Premium ou an aktif. Ou pa bezwen peye ankò.</div>
+                    <button onclick="cM('pM')" class="btn btn-primary" style="margin-top:16px;padding:9px 22px">Konprann</button>
+                </div>
+
+                <!-- ZONE DE PAIEMENT (masquée si déjà Premium) -->
+                <div id="pmPayArea">
                 <!-- MAIN PAY BUTTON -->
                 <button id="mcAutoPayBtn"
                         onclick="initMonCashPayment()"
@@ -3201,6 +3211,7 @@ body.is-premium .pc-blur{display:none!important}
                     Peman sekurise pa
                     MonCash via Bazik.io
                 </p>
+                </div><!-- /#pmPayArea -->
             </div>
 
         </div>
@@ -5344,11 +5355,22 @@ function refreshGrids() {
    MODALS
    ==================================== */
 function oM(id) {
+    if (id === "pM") { try { renderPremiumModalState(); } catch (e) {} }
     var m = document.getElementById(id);
     if (m) {
         m.classList.add("show");
         document.body.classList.add("no-scroll");
     }
+}
+
+/* Modale Premium : si le VIP est DÉJÀ Premium, on masque le paiement et on
+   affiche « Ou gen Premium deja » (empêche un double paiement). */
+function renderPremiumModalState() {
+    var prem = (isPremiumViewer === true);
+    var pay = document.getElementById("pmPayArea");
+    var already = document.getElementById("pmAlreadyPremium");
+    if (pay) pay.style.display = prem ? "none" : "";
+    if (already) already.style.display = prem ? "block" : "none";
 }
 
 function cM(id) {
@@ -7103,6 +7125,7 @@ async function unlockUI() {
     document.body.classList.add("is-premium");
     document.querySelectorAll(".pc-blur").forEach(el => el.style.display = "none");
     try { renderRabaisSlideshow(); } catch (e) {}   /* photos nettes dans le slideshow rabais */
+    try { reflectPremiumButtons(); } catch (e) {}   /* boutons « Achte Premium » => « Ou premium deja » */
 
     // 1. Débloquer les boutons et enlever le flou visuel
     document.querySelectorAll(".blur-ov").forEach(el => el.style.display = "none");
@@ -8507,6 +8530,11 @@ function openNatcashModal(purpose, opts) {
     opts = opts || {};
     if (!auth || !auth.currentUser) { oM("lM"); return; }
     if (purpose === "premium" && blockPremiumForElu()) return;
+    if (purpose === "premium" && isPremiumViewer === true) {
+        cM("pM");
+        showOk("Ou gen Premium deja", "Plan Premium ou an aktif. Ou pa bezwen peye ankò.");
+        return;
+    }
     var old = document.getElementById("natcashM"); if (old) old.remove();
     var isPrem = purpose === "premium";
     var amount = opts.amount || (isPrem ? 1000 : 0);
@@ -8782,6 +8810,11 @@ function initMonCashPayment() {
         return;
     }
     if (blockPremiumForElu()) return;   /* Elu/Krey ne peuvent pas acheter Premium */
+    if (isPremiumViewer === true) {      /* DÉJÀ Premium => pas de double paiement */
+        cM("pM");
+        showOk("Ou gen Premium deja", "Plan Premium ou an aktif. Ou pa bezwen peye ankò.");
+        return;
+    }
 
     var btn = document.getElementById(
         "mcAutoPayBtn"
@@ -9279,7 +9312,24 @@ function activatePremium(
 }
 
 
-function pa() { oM("paM"); }
+function pa() {
+    if (isPremiumViewer === true) { try { toast("Ou gen Premium deja.", "success"); } catch (e) {} return; }
+    oM("paM");
+}
+
+/* Rend NON cliquables les boutons « Achte Premium » quand le VIP est déjà Premium
+   et affiche « Ou premium deja ». Appelé dès que le statut Premium est connu. */
+function reflectPremiumButtons() {
+    if (isPremiumViewer !== true) return;
+    document.querySelectorAll(".buy-premium-btn").forEach(function (b) {
+        b.onclick = null;
+        b.removeAttribute("onclick");
+        b.style.opacity = "0.6";
+        b.style.cursor = "not-allowed";
+        b.disabled = true;
+        b.innerHTML = '<i class="fas fa-crown"></i> Ou premium deja';
+    });
+}
 
 /* ====================================
    OFFRE PREMIUM À RABAIS — bannière + compte à rebours

@@ -7027,6 +7027,25 @@ function viewAccountDetail(uid) {
                     '<button onclick="removeEluAlert(\'' + uid + '\')" style="padding:10px 14px;background:rgba(255,255,255,0.05);color:#b0b0c0;border:1px solid #2a2a3a;border-radius:8px;cursor:pointer;font-size:0.82rem"><i class="fas fa-minus"></i> Retire</button>' +
                 '</div>' +
             '</div>';
+
+        /* Détection d'un DOUBLE PAIEMENT Premium (confirmé ≥ 2 fois). */
+        content.innerHTML += '<div id="premPayCheck" style="margin-top:14px"></div>';
+        db.collection("payments").where("userId", "==", uid).get().then(function (snap) {
+            var prem = [];
+            snap.forEach(function (d) {
+                var p = d.data();
+                if (p.status === "confirmed" && p.purpose !== "reservation" && p.purpose !== "wallet" && p.purpose !== "tep") prem.push(p);
+            });
+            var box = document.getElementById("premPayCheck");
+            if (!box) return;
+            if (prem.length >= 2) {
+                var total = prem.reduce(function (s, p) { return s + (p.amount || 1000); }, 0);
+                box.innerHTML = '<div style="background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.4);border-radius:12px;padding:14px 16px">'
+                    + '<div style="color:#f44336;font-weight:700"><i class="fas fa-triangle-exclamation"></i> Peye Premium ' + prem.length + ' fwa</div>'
+                    + '<div style="font-size:0.8rem;color:#b0b0c0;margin-top:4px">Total peye: <strong>' + total.toLocaleString() + ' Gdes</strong>. Ka bezwen ranbouse ' + (prem.length - 1) + ' peman anplis.</div>'
+                    + '</div>';
+            }
+        }).catch(function () {});
     }
 
     /* === NOTE ADMIN (étoiles avec quantité par niveau) — uniquement pour les Elu === */
