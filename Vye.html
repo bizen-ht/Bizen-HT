@@ -1447,6 +1447,34 @@
             <div class="ph">
                 <h1 class="ph-title"><i class="fas fa-gift" style="color:var(--gold)"></i> TEP</h1>
             </div>
+
+            <!-- AJOUTE TEP MANYÈL POU YON ELU -->
+            <div class="tc" style="margin-bottom:18px;border:1px solid rgba(255,215,0,0.4)">
+                <div class="tc-head"><div class="tc-title"><i class="fas fa-plus-circle" style="color:var(--gold)"></i> Ajoute yon TEP manyèl</div></div>
+                <div style="padding:16px 18px">
+                    <p style="font-size:0.76rem;color:#6a6a80;margin-bottom:12px">Kredite yon Elu ak yon TEP dirèkteman (ex: TEP resevwa an kach/deyò). L ap parèt nan balans TEP Elu a.</p>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end">
+                        <div>
+                            <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Elu</label>
+                            <select id="mtepElu" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem"><option value="">Chwazi yon Elu...</option></select>
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Montan (Gdes)</label>
+                            <input id="mtepAmount" type="number" min="1" placeholder="Egz: 500" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Mansyon (soti nan)</label>
+                            <input id="mtepFrom" maxlength="40" placeholder="Egz: Yon admiratè" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                        </div>
+                    </div>
+                    <div style="margin-top:12px">
+                        <label style="display:block;font-size:0.74rem;color:#6a6a80;margin-bottom:5px">Nòt (opsyonèl)</label>
+                        <input id="mtepNote" maxlength="200" placeholder="Yon ti mo pou Elu a wè" style="width:100%;background:#0f0f17;border:1px solid #2a2a3a;color:#fff;border-radius:8px;padding:10px 12px;font-size:0.85rem">
+                    </div>
+                    <button onclick="addManualTep()" style="margin-top:14px;background:linear-gradient(135deg,#ffd700,#ff9800);color:#000;border:none;border-radius:8px;padding:11px 20px;font-weight:700;cursor:pointer;font-size:0.84rem"><i class="fas fa-gift"></i> Ajoute TEP</button>
+                </div>
+            </div>
+
             <div class="tc" style="margin-bottom:18px;border:1px solid rgba(255,215,0,0.4)">
                 <div class="tc-head">
                     <div class="tc-title"><i class="fas fa-hand-holding-usd" style="color:var(--gold)"></i> Demann retrè TEP (ap tann) <span id="bdgTepWd" style="background:#ffd700;color:#1a1a1a;border-radius:50px;padding:1px 9px;font-size:0.72rem;margin-left:4px"></span></div>
@@ -3495,6 +3523,22 @@ function loadAdminTep() {
     var tbE = document.getElementById("tbTepElu");
     if (!db) return;
     if (tbW) tbW.innerHTML = emptyRow(6, "Chajman...");
+    /* Remplit la liste des Elu pour le TEP manuel. */
+    (function () {
+        var sel = document.getElementById("mtepElu");
+        if (!sel || !window.adminFL) return;
+        var cur = sel.value;
+        var list = (adminFL || []).slice().sort(function (a, b) {
+            return ((a.pseudo || a.prenom || "") + "").localeCompare((b.pseudo || b.prenom || "") + "");
+        });
+        var opts = '<option value="">Chwazi yon Elu...</option>';
+        list.forEach(function (f) {
+            var nm = f.pseudo || ((f.prenom || "") + " " + (f.nom || "")).trim() || f.email || f.id;
+            opts += '<option value="' + f.id + '">' + escHtml(nm) + '</option>';
+        });
+        sel.innerHTML = opts;
+        if (cur) sel.value = cur;
+    })();
     Promise.all([
         db.collection("teps").get(),
         db.collection("tepWithdrawals").get()
@@ -3554,6 +3598,32 @@ function loadAdminTep() {
             }
         }
     }).catch(function (e) { if (tbW) tbW.innerHTML = emptyRow(6, "Erè: " + (e.code || e.message)); });
+}
+
+/* TEP manyèl : l'admin crédite directement un Elu (ex: TEP reçu hors-app). */
+function addManualTep() {
+    if (!db) return;
+    var sel = document.getElementById("mtepElu");
+    var eluUid = sel ? sel.value : "";
+    var amount = parseInt((document.getElementById("mtepAmount") || {}).value, 10) || 0;
+    var from = (((document.getElementById("mtepFrom") || {}).value) || "").trim().slice(0, 40) || "Bizen";
+    var note = (((document.getElementById("mtepNote") || {}).value) || "").trim().slice(0, 200);
+    if (!eluUid) { toast("Chwazi yon Elu.", false); return; }
+    if (amount < 1) { toast("Antre yon montan valab.", false); return; }
+    var elu = (adminFL || []).find(function (f) { return f.id === eluUid; }) || {};
+    var eluName = elu.pseudo || ((elu.prenom || "") + " " + (elu.nom || "")).trim() || "";
+    if (!confirm("Ajoute yon TEP " + amount.toLocaleString() + " G bay " + (eluName || eluUid) + " ?")) return;
+    db.collection("teps").add({
+        eluUid: eluUid, eluName: eluName,
+        fromUid: "admin", fromPseudo: from,
+        amount: amount, status: "confirmed",
+        note: note, manual: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function () {
+        toast("TEP ajoute bay " + (eluName || "Elu a") + "!", true);
+        ["mtepAmount", "mtepNote", "mtepFrom"].forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ""; });
+        loadAdminTep();
+    }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
 }
 
 function payTepWithdrawal(id) {
