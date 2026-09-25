@@ -1009,13 +1009,14 @@ function pinChangeFlow() {
             </div>
             <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:640px;margin-top:18px">
                 <h3 style="font-family:'Playfair Display',serif;margin-bottom:6px;font-size:1.05rem"><i class="fas fa-plus-circle" style="color:#4caf50"></i> Depoze nan wallet ou</h3>
-                <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px">Rechaje wallet ou ak MonCash. Lè w gen kòb sou wallet ou, ou ka peye yon rezèvasyon dirèkteman ak li, men se opsyonèl, ou ka toujou peye dirèk tou.</p>
+                <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px">Rechaje wallet ou ak MonCash oswa NatCash. Lè w gen kòb sou wallet ou, ou ka peye yon rezèvasyon dirèkteman ak li, men se opsyonèl, ou ka toujou peye dirèk tou.</p>
                 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
                     <div style="flex:1;min-width:160px">
                         <label style="display:block;font-size:0.78rem;color:var(--text-muted);margin-bottom:5px">Montan (Gdes)</label>
                         <input type="number" id="walletAmount" min="50" placeholder="Egz: 5000" style="width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius);color:white;font-family:'Montserrat',sans-serif;font-size:1rem">
                     </div>
                     <button id="walletDepositBtn" onclick="walletDeposit()" style="padding:12px 24px;background:linear-gradient(135deg,#4caf50,#2e7d32);color:white;border:none;border-radius:var(--radius-full);cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600"><i class="fas fa-mobile-alt"></i> Depoze ak MonCash</button>
+                    <button id="walletNatcashBtn" onclick="walletDepositNatcash()" style="padding:12px 24px;background:linear-gradient(135deg,#e2001a,#b30015);color:white;border:none;border-radius:var(--radius-full);cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600"><i class="fas fa-mobile-alt"></i> Depoze ak NatCash</button>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                     <button onclick="document.getElementById('walletAmount').value=1000" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.78rem;cursor:pointer">1 000</button>
@@ -2463,6 +2464,81 @@ function walletDeposit() {
     }).catch(function () {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-mobile-alt"></i> Depoze ak MonCash'; }
         showToast("Erè rezo.", "error");
+    });
+}
+
+/* ====================================
+   RECHARGE WALLET PAR NATCASH (manuel, admin valide)
+   Même procédure que Premium/réservation : le VIP paie sur le numéro Bizen,
+   entre son Transaction ID (14 chiffres), l'admin valide => wallet crédité.
+   ==================================== */
+var _walletNcWatch = null;
+function walletDepositNatcash() {
+    if (!auth || !auth.currentUser) return;
+    if (!userData || !userData.isPremium) { showToast("Wallet la se pou VIP Premium.", "error"); return; }
+    var amtEl = document.getElementById("walletAmount");
+    var amount = parseInt(amtEl ? amtEl.value : "0") || 0;
+    if (amount < 50) { showToast("Antre yon montan (minimòm 50 Gdes) anvan.", "error"); return; }
+    var old = document.getElementById("walletNcM"); if (old) old.remove();
+    var h = '<div id="walletNcM" style="position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;font-family:Montserrat,sans-serif">';
+    h += '<div style="background:#15151f;border:1px solid #2a2a3a;border-radius:16px;max-width:420px;width:100%;max-height:92vh;overflow-y:auto;padding:22px">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="color:#fff;font-size:1.1rem"><i class="fas fa-mobile-alt" style="color:#e2001a"></i> Depoze ak NatCash</h3><button onclick="closeWalletNc()" style="background:none;border:none;color:#b0b0c0;font-size:1.2rem;cursor:pointer"><i class="fas fa-times"></i></button></div>';
+    h += '<div style="color:#b0b0c0;font-size:0.86rem;margin-bottom:12px">Montan: <strong style="color:#ffd700">' + amount.toLocaleString() + ' Gdes</strong></div>';
+    h += '<div style="background:rgba(255,255,255,0.05);border:1px solid #2a2a3a;border-radius:12px;padding:14px;margin-bottom:14px">';
+    h += '<div style="font-size:0.72rem;color:#6a6a80;margin-bottom:6px">1. Voye <strong style="color:#fff">' + amount.toLocaleString() + ' Gdes</strong> sou nimewo Natcash sa a:</div>';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div><div style="font-weight:700;color:#fff">Baptiste Junior</div><div style="font-weight:700;color:#ffd700;font-size:1.1rem;letter-spacing:1px">+509 41228419</div></div>';
+    h += '<button onclick="copyWalletNcNum(this)" style="background:rgba(255,255,255,0.08);border:none;border-radius:10px;color:#fff;padding:9px 13px;cursor:pointer"><i class="fas fa-copy"></i></button></div></div>';
+    h += '<label style="display:block;font-size:0.78rem;color:var(--text-muted);margin-bottom:5px">2. Antre Transaction ID w la</label>';
+    h += '<input id="walletNcTxId" inputmode="numeric" placeholder="Antre Transaction ID w la" oninput="this.value=this.value.replace(/[^0-9]/g,\'\')" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.06);border:1px solid #2a2a3a;color:#fff;border-radius:10px;font-size:1rem;margin-bottom:12px">';
+    h += '<button id="walletNcSubmit" onclick="submitWalletNatcash(' + amount + ')" style="width:100%;padding:13px;background:linear-gradient(135deg,#e2001a,#b30015);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer"><i class="fas fa-check-circle"></i> Valide depo Natcash</button>';
+    h += '<div id="walletNcMsg" style="margin-top:12px;font-size:0.85rem;display:none"></div>';
+    h += '<div id="walletNcPending" style="display:none;margin-top:14px;padding:16px;border:1px solid rgba(226,0,26,0.3);background:rgba(226,0,26,0.08);border-radius:12px;text-align:center"><i class="fas fa-spinner fa-spin" style="font-size:1.8rem;color:#e2001a"></i><div style="font-weight:700;color:#fff;margin-top:10px;font-size:0.9rem">N ap verifye depo w lan</div><div style="color:#b0b0c0;font-size:0.8rem;margin-top:4px">Si li kòrèk, wallet ou an ap kredite otomatikman. Rete sou paj la.</div></div>';
+    h += '</div></div>';
+    var wrap = document.createElement("div"); wrap.innerHTML = h; document.body.appendChild(wrap.firstChild);
+}
+function copyWalletNcNum(btn) {
+    try { navigator.clipboard.writeText("+50941228419"); if (btn) { var o = btn.innerHTML; btn.innerHTML = '<i class="fas fa-check"></i>'; setTimeout(function () { btn.innerHTML = o; }, 1200); } } catch (e) {}
+}
+function closeWalletNc() {
+    if (_walletNcWatch) { _walletNcWatch(); _walletNcWatch = null; }
+    var el = document.getElementById("walletNcM"); if (el) el.remove();
+}
+function submitWalletNatcash(amount) {
+    var txEl = document.getElementById("walletNcTxId");
+    var txId = (txEl ? txEl.value : "").trim();
+    var msg = document.getElementById("walletNcMsg");
+    function showMsg(t, ok) { if (!msg) return; msg.style.display = "block"; msg.style.color = ok ? "#4caf50" : "#ff6b6b"; msg.textContent = t; }
+    if (!/^\d{14}$/.test(txId)) { showMsg("Transaction ID sa a pa valab. Verifye epi eseye ankò.", false); return; }
+    var btn = document.getElementById("walletNcSubmit");
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> N ap trete...'; }
+    auth.currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/natcash-submit", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, purpose: "wallet", amount: amount, transactionId: txId })
+        });
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) {
+        if (!res.ok || !res.d.success) { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Valide depo Natcash'; } throw new Error(res.d && res.d.error ? res.d.error : "Erè"); }
+        if (txEl) txEl.value = "";
+        if (btn) btn.style.display = "none";
+        var pend = document.getElementById("walletNcPending"); if (pend) pend.style.display = "block";
+        if (_walletNcWatch) { _walletNcWatch(); _walletNcWatch = null; }
+        _walletNcWatch = db.collection("natcashPayments").doc(txId).onSnapshot(function (doc) {
+            if (!doc.exists) return;
+            var st = doc.data().status;
+            if (st === "confirmed") {
+                closeWalletNc(); showToast("Wallet ou kredite! 💳", "success");
+                try {
+                    db.collection("users").doc(currentUser.uid).get().then(function (u) {
+                        if (u.exists && userData) { userData.walletBalance = u.data().walletBalance || 0; renderWallet(); }
+                    });
+                } catch (e) {}
+            }
+            else if (st === "rejected") { closeWalletNc(); showToast("Depo a pa t kòrèk oswa li refize.", "error"); }
+        }, function () {});
+    }).catch(function (e) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Valide depo Natcash'; }
+        showMsg(e.message || "Erè rezo.", false);
     });
 }
 

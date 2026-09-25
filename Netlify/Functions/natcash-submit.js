@@ -51,7 +51,8 @@ exports.handler = async function (event) {
         var txId = (body.transactionId || "").toString().trim();
         if (!/^\d{14}$/.test(txId)) return err(400, "Transaction ID sa a pa valab. Verifye epi eseye ankò.");
 
-        var purpose = (body.purpose === "reservation") ? "reservation" : "premium";
+        var purpose = (body.purpose === "reservation") ? "reservation"
+            : (body.purpose === "wallet") ? "wallet" : "premium";
 
         var rec = {
             transactionId: txId,
@@ -71,6 +72,13 @@ exports.handler = async function (event) {
             /* On résout le compte cible (pour l'activation à la validation). */
             var q = await dbf.collection("users").where("email", "==", email).limit(1).get();
             rec.targetUid = q.empty ? null : q.docs[0].id;
+        } else if (purpose === "wallet") {
+            /* Recharge wallet : montant personnalisé, le compte connecté est le bénéficiaire. */
+            var wamt = parseInt(String(body.amount || "0").replace(/[^0-9]/g, ""), 10) || 0;
+            if (wamt < 50) return err(400, "Montan depo minimòm se 50 Gdes.");
+            rec.targetUid = uid;
+            rec.email = callerEmail;
+            rec.amount = wamt;
         } else {
             var resId = (body.reservationId || "").toString();
             if (!resId) return err(400, "reservationId manke.");

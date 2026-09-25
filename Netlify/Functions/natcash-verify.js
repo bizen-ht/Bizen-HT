@@ -77,6 +77,18 @@ exports.handler = async function (event) {
                 amount: p.amount || 1000, purpose: "premium", status: "confirmed",
                 natcashId: txId, createdAt: FieldValue.serverTimestamp()
             });
+        } else if (p.purpose === "wallet") {
+            /* Recharge wallet : on crédite le solde du VIP. */
+            if (p.targetUid) {
+                await dbf.collection("users").doc(p.targetUid).set({
+                    walletBalance: FieldValue.increment(p.amount || 0)
+                }, { merge: true });
+                await dbf.collection("payments").add({
+                    userId: p.targetUid, email: p.email || "", method: "natcash",
+                    amount: p.amount || 0, purpose: "wallet", status: "confirmed",
+                    walletCredited: true, natcashId: txId, createdAt: FieldValue.serverTimestamp()
+                });
+            }
         } else {
             /* Réservation : refléter le paiement (comme le webhook). */
             if (p.reservationId) {
