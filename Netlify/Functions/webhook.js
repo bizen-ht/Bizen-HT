@@ -356,6 +356,20 @@ async function processPaidWebhook(body) {
             });
             await docRef.update({ tepCredited: true });
             console.log("[WEBHOOK] TEP kredite:", pay.amount, "->", pay.eluUid);
+            /* Notif push à l'Elu. */
+            try {
+                var eTokens = (eDoc.exists && eDoc.data().fcmTokens) || [];
+                if (eTokens.length) {
+                    await admin.messaging().sendEachForMulticast({
+                        tokens: eTokens,
+                        notification: {
+                            title: "Ou resevwa yon TEP! 💛",
+                            body: fromPseudo + " voye w " + (pay.amount || 0).toLocaleString() + " Gdes" + (pay.note ? " · " + pay.note : "")
+                        },
+                        data: { link: "/Dashboard.html" }
+                    });
+                }
+            } catch (e2) { /* best effort */ }
         } catch (e) { console.log("[WEBHOOK] tep:", e.message); }
     }
 

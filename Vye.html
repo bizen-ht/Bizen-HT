@@ -3626,6 +3626,22 @@ function addManualTep() {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }).then(function () {
         toast("TEP ajoute bay " + (eluName || "Elu a") + "!", true);
+        /* Notif push à l'Elu. */
+        try {
+            if (auth && auth.currentUser) {
+                auth.currentUser.getIdToken().then(function (idToken) {
+                    fetch("/.netlify/functions/notify", {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            idToken: idToken, toUid: eluUid,
+                            title: "Ou resevwa yon TEP! 💛",
+                            msg: from + " voye w " + amount.toLocaleString() + " Gdes" + (note ? " · " + note : ""),
+                            link: "/Dashboard.html"
+                        })
+                    }).catch(function () {});
+                });
+            }
+        } catch (e) {}
         ["mtepAmount", "mtepNote", "mtepFrom"].forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ""; });
         loadAdminTep();
     }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });

@@ -87,6 +87,21 @@ exports.handler = async function (event) {
                     note: p.note || "", method: "natcash", natcashId: txId,
                     createdAt: FieldValue.serverTimestamp()
                 });
+                /* Notif push à l'Elu. */
+                try {
+                    var eDoc2 = await dbf.collection("users").doc(p.eluUid).get();
+                    var tks = (eDoc2.exists && eDoc2.data().fcmTokens) || [];
+                    if (tks.length) {
+                        await admin.messaging().sendEachForMulticast({
+                            tokens: tks,
+                            notification: {
+                                title: "Ou resevwa yon TEP! 💛",
+                                body: (p.fromPseudo || "Yon VIP") + " voye w " + (p.amount || 0).toLocaleString() + " Gdes" + (p.note ? " · " + p.note : "")
+                            },
+                            data: { link: "/Dashboard.html" }
+                        });
+                    }
+                } catch (e) { /* best effort */ }
             }
         } else if (p.purpose === "wallet") {
             /* Recharge wallet : on crédite le solde du VIP. */

@@ -76,6 +76,21 @@ exports.handler = async function (event) {
             return { newBalance: bal - amount };
         });
 
+        /* Notif push à l'Elu : il a reçu un TEP. */
+        try {
+            var tokens = (eSnap.data().fcmTokens) || [];
+            if (tokens.length) {
+                await admin.messaging().sendEachForMulticast({
+                    tokens: tokens,
+                    notification: {
+                        title: "Ou resevwa yon TEP! 💛",
+                        body: fromPseudo + " voye w " + amount.toLocaleString() + " Gdes" + (note ? " · " + note : "")
+                    },
+                    data: { link: "/Dashboard.html" }
+                });
+            }
+        } catch (e) { /* best effort */ }
+
         return ok({ success: true, amount: amount, newBalance: out.newBalance });
     } catch (e) {
         if (e && e.code && e.msg) return err(e.code, e.msg, { balance: e.balance, needed: e.needed });
