@@ -52,7 +52,8 @@ exports.handler = async function (event) {
         if (!/^\d{14}$/.test(txId)) return err(400, "Transaction ID sa a pa valab. Verifye epi eseye ankò.");
 
         var purpose = (body.purpose === "reservation") ? "reservation"
-            : (body.purpose === "wallet") ? "wallet" : "premium";
+            : (body.purpose === "wallet") ? "wallet"
+            : (body.purpose === "tep") ? "tep" : "premium";
 
         var rec = {
             transactionId: txId,
@@ -79,6 +80,22 @@ exports.handler = async function (event) {
             rec.targetUid = uid;
             rec.email = callerEmail;
             rec.amount = wamt;
+        } else if (purpose === "tep") {
+            /* TEP (pourboire) envoyé par le VIP à un Elu, avec un mot optionnel. */
+            var tamt = parseInt(String(body.amount || "0").replace(/[^0-9]/g, ""), 10) || 0;
+            var teluUid = (body.eluUid || "").toString();
+            if (!teluUid) return err(400, "eluUid manke pou TEP.");
+            if (tamt < 100) return err(400, "Montan TEP minimòm se 100 Gdes.");
+            rec.eluUid = teluUid;
+            rec.fromUid = uid;
+            rec.amount = tamt;
+            rec.email = callerEmail;   /* pour l'affichage admin */
+            rec.note = (body.note || "").toString().slice(0, 200);
+            /* Pseudo du VIP + nom de l'Elu pour l'affichage. */
+            var uDoc = await dbf.collection("users").doc(uid).get();
+            rec.fromPseudo = (uDoc.exists && (uDoc.data().pseudo || uDoc.data().prenom)) || "VIP";
+            var eDoc = await dbf.collection("users").doc(teluUid).get();
+            rec.eluName = (eDoc.exists && (eDoc.data().pseudo || eDoc.data().prenom)) || "";
         } else {
             var resId = (body.reservationId || "").toString();
             if (!resId) return err(400, "reservationId manke.");

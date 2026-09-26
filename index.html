@@ -8228,10 +8228,86 @@ function openTepModal(eluUid, eluName) {
     [200, 500, 1000, 2000].forEach(function (v) { h += '<button type="button" onclick="document.getElementById(\'tepAmount\').value=' + v + '" style="flex:1;min-width:60px;padding:9px;border:1px solid #2a2a3a;background:rgba(255,255,255,0.05);color:#ffd700;border-radius:10px;cursor:pointer;font-weight:600">' + v.toLocaleString() + '</button>'; });
     h += '</div>';
     h += '<div class="fg"><label>Yon ti mo pou li (opsyonèl)</label><textarea id="tepNote" maxlength="200" rows="2" placeholder="Egz: Mèsi pou bon moman an!"></textarea></div>';
-    h += '<button class="btn btn-primary fw btn-glow" onclick="payTep(\'' + eluUid + '\')"><i class="fas fa-mobile-alt"></i> Peye TEP ak MonCash</button>';
-    h += '<p style="font-size:0.72rem;color:#6a6a80;text-align:center;margin-top:12px">TEP la peye ak MonCash. ' + name + ' ap resevwa l sou balans TEP li.</p>';
+    /* Choix du mode de paiement */
+    h += '<div id="tepPayArea">';
+    h += '<button class="btn btn-primary fw btn-glow" onclick="payTep(\'' + eluUid + '\')"><i class="fas fa-mobile-alt"></i> Peye ak MonCash</button>';
+    h += '<button class="btn btn-outline fw" style="margin-top:10px" onclick="payTepWallet(\'' + eluUid + '\')"><i class="fas fa-wallet"></i> Peye ak Wallet (balans: ' + (viewerWalletBalance || 0).toLocaleString() + ' G)</button>';
+    h += '<button class="btn btn-outline fw" style="margin-top:10px;border-color:#e2001a;color:#e2001a" onclick="payTepNatcashStart(\'' + eluUid + '\')"><i class="fas fa-mobile-alt"></i> Peye ak Natcash</button>';
+    h += '<p style="font-size:0.72rem;color:#6a6a80;text-align:center;margin-top:12px">' + name + ' ap resevwa TEP la sou balans TEP li.</p>';
+    h += '</div>';
+    /* Sous-flux NatCash (caché au départ) */
+    h += '<div id="tepNcArea" style="display:none">';
+    h += '<div style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px"><div style="font-size:0.72rem;color:#6a6a80;margin-bottom:6px">1. Voye montan an sou nimewo Natcash sa a:</div><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div><div style="font-weight:700;color:#fff">Baptiste Junior</div><div style="font-weight:700;color:var(--gold);font-size:1.1rem;letter-spacing:1px">+509 41228419</div></div><button type="button" class="btn btn-outline" style="padding:9px 13px" onclick="copyNatcashNum(this)"><i class="fas fa-copy"></i></button></div></div>';
+    h += '<div class="fg"><label>2. Antre Transaction ID w la</label><input type="text" id="tepNcTxId" inputmode="numeric" placeholder="Antre Transaction ID w la" oninput="this.value=this.value.replace(/[^0-9]/g,\'\')"></div>';
+    h += '<button class="btn btn-primary fw btn-glow" id="tepNcSubmit" onclick="submitTepNatcash(\'' + eluUid + '\')"><i class="fas fa-check-circle"></i> Valide TEP Natcash</button>';
+    h += '<div id="tepNcMsg" style="margin-top:12px;font-size:0.85rem;display:none"></div>';
+    h += '<div id="tepNcPending" style="display:none;margin-top:14px;padding:16px;border:1px solid rgba(226,0,26,0.3);background:rgba(226,0,26,0.08);border-radius:12px;text-align:center"><i class="fas fa-spinner fa-spin" style="font-size:1.8rem;color:#e2001a"></i><div style="font-weight:700;color:#fff;margin-top:10px;font-size:0.9rem">N ap verifye depo w lan</div><div style="color:#b0b0c0;font-size:0.8rem;margin-top:4px">Si li kòrèk, ' + name + ' ap resevwa TEP la. Rete sou paj la.</div></div>';
+    h += '</div>';
     h += '</div></div></div>';
     var wrap = document.createElement("div"); wrap.innerHTML = h; document.body.appendChild(wrap.firstChild);
+}
+
+/* TEP payé depuis le WALLET (instantané). */
+function payTepWallet(eluUid) {
+    var amt = parseInt((document.getElementById("tepAmount") || {}).value, 10) || 0;
+    if (amt < 100) { toast("Montan TEP minimòm se 100 Gdes.", "err"); return; }
+    if (!auth || !auth.currentUser) { oM("lM"); return; }
+    var note = ((document.getElementById("tepNote") || {}).value || "").toString().trim().slice(0, 200);
+    auth.currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/tep-wallet", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, eluUid: eluUid, amount: amt, note: note })
+        });
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) {
+        if (!res.ok || !res.d.success) throw new Error(res.d && res.d.error ? res.d.error : "Erè");
+        if (typeof res.d.newBalance === "number") viewerWalletBalance = res.d.newBalance;
+        cM("tepM");
+        showOk("TEP voye! 💛", "TEP ou an rive. Mèsi! Nouvo balans wallet ou: " + (res.d.newBalance || 0).toLocaleString() + " Gdes.");
+    }).catch(function (e) { toast(e.message || "Erè rezo.", "err"); });
+}
+
+/* Passe la modale TEP en mode NatCash. */
+function payTepNatcashStart(eluUid) {
+    var amt = parseInt((document.getElementById("tepAmount") || {}).value, 10) || 0;
+    if (amt < 100) { toast("Antre yon montan (minimòm 100 Gdes) anvan.", "err"); return; }
+    var pay = document.getElementById("tepPayArea"); if (pay) pay.style.display = "none";
+    var nc = document.getElementById("tepNcArea"); if (nc) nc.style.display = "block";
+}
+
+var _tepNcWatch = null;
+function submitTepNatcash(eluUid) {
+    var amt = parseInt((document.getElementById("tepAmount") || {}).value, 10) || 0;
+    var note = ((document.getElementById("tepNote") || {}).value || "").toString().trim().slice(0, 200);
+    var txEl = document.getElementById("tepNcTxId");
+    var txId = (txEl ? txEl.value : "").trim();
+    var msg = document.getElementById("tepNcMsg");
+    function showMsg(t, ok) { if (!msg) return; msg.style.display = "block"; msg.style.color = ok ? "#4caf50" : "#ff6b6b"; msg.textContent = t; }
+    if (amt < 100) { showMsg("Montan TEP minimòm se 100 Gdes.", false); return; }
+    if (!/^\d{14}$/.test(txId)) { showMsg("Transaction ID sa a pa valab. Verifye epi eseye ankò.", false); return; }
+    var btn = document.getElementById("tepNcSubmit");
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> N ap trete...'; }
+    auth.currentUser.getIdToken().then(function (idToken) {
+        return fetch("/.netlify/functions/natcash-submit", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: idToken, purpose: "tep", eluUid: eluUid, amount: amt, note: note, transactionId: txId })
+        });
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) {
+        if (!res.ok || !res.d.success) { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Valide TEP Natcash'; } throw new Error(res.d && res.d.error ? res.d.error : "Erè"); }
+        if (btn) btn.style.display = "none";
+        var pend = document.getElementById("tepNcPending"); if (pend) pend.style.display = "block";
+        if (_tepNcWatch) { _tepNcWatch(); _tepNcWatch = null; }
+        _tepNcWatch = db.collection("natcashPayments").doc(txId).onSnapshot(function (doc) {
+            if (!doc.exists) return;
+            var st = doc.data().status;
+            if (st === "confirmed") { if (_tepNcWatch) { _tepNcWatch(); _tepNcWatch = null; } cM("tepM"); showOk("TEP konfime! 💛", "TEP Natcash ou an konfime. Mèsi!"); }
+            else if (st === "rejected") { if (_tepNcWatch) { _tepNcWatch(); _tepNcWatch = null; } cM("tepM"); showOk("TEP refize", "Depo Natcash la pa t kòrèk oswa li refize."); }
+        }, function () {});
+    }).catch(function (e) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Valide TEP Natcash'; }
+        showMsg(e.message || "Erè rezo.", false);
+    });
 }
 
 function payTep(eluUid) {

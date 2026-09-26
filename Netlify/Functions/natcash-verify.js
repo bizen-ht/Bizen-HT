@@ -77,6 +77,17 @@ exports.handler = async function (event) {
                 amount: p.amount || 1000, purpose: "premium", status: "confirmed",
                 natcashId: txId, createdAt: FieldValue.serverTimestamp()
             });
+        } else if (p.purpose === "tep") {
+            /* TEP : on crédite l'Elu (collection teps) avec le mot du VIP. */
+            if (p.eluUid) {
+                await dbf.collection("teps").add({
+                    eluUid: p.eluUid, eluName: p.eluName || "",
+                    fromUid: p.fromUid || "", fromPseudo: p.fromPseudo || "VIP",
+                    amount: p.amount || 0, status: "confirmed",
+                    note: p.note || "", method: "natcash", natcashId: txId,
+                    createdAt: FieldValue.serverTimestamp()
+                });
+            }
         } else if (p.purpose === "wallet") {
             /* Recharge wallet : on crédite le solde du VIP. */
             if (p.targetUid) {

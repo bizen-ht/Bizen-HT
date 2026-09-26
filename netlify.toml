@@ -46,6 +46,9 @@
 [functions.wallet-pay]
   external_node_modules = ["firebase-admin"]
 
+[functions.tep-wallet]
+  external_node_modules = ["firebase-admin"]
+
 [functions.wallet-refund]
   external_node_modules = ["firebase-admin"]
 
