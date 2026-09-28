@@ -6012,13 +6012,24 @@ function initAdminNotifs() {
             sub: conv + " · " + String(d.text || "").slice(0, 50) };
     });
 
-    /* Demandes de retrait TEP. */
+    /* Demandes de retrait TEP (notif cloche). */
     unsubNotifTepWd = listen("tepWithdrawals", "tw", function (d) {
         if (d.status && d.status !== "pending") return null;
         return { ico: "fa-gift", cl: "#ffd700",
             txt: "Demann retrè TEP: " + ((d.amount || 0).toLocaleString()) + " Gdes",
             sub: (d.eluName || "") + " · MonCash: " + (d.moncashNumber || "") };
     });
+
+    /* Badge live sur le menu TEP : nombre de demandes de retrait en attente
+       (visible même sans ouvrir la page TEP). */
+    try {
+        db.collection("tepWithdrawals").where("status", "==", "pending").onSnapshot(function (snap) {
+            var el = document.getElementById("bdgTep");
+            if (!el) return;
+            el.textContent = snap.size;
+            el.style.display = snap.size > 0 ? "inline-block" : "none";
+        }, function () {});
+    } catch (e) {}
 }
 
 /* ====================================

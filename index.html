@@ -1963,7 +1963,7 @@ body.no-screenshot * {
       <button class="hfcat" data-cat="fanm" onclick="setHomeCat('fanm',this)"><i class="fas fa-venus"></i> Fanm</button>
       <button class="hfcat" data-cat="gason" onclick="setHomeCat('gason',this)"><i class="fas fa-mars"></i> Gason</button>
       <button class="hfcat" data-cat="biseksyel" onclick="setHomeCat('biseksyel',this)"><i class="fas fa-venus-mars"></i> Biseksyèl</button>
-      <button class="hfcat" data-cat="krey" onclick="setHomeCat('krey',this)"><i class="fas fa-users"></i> Krey</button>
+      <button class="hfcat" data-cat="krey" onclick="setHomeCat('krey',this)" style="display:none"><i class="fas fa-users"></i> Krey</button>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center">
       <select id="hfSort" class="hfsel" onchange="applyHomeFilters()">
@@ -2081,7 +2081,9 @@ body.no-screenshot * {
 </section>
 
 <!-- KREY SECTION -->
-<section class="section alt-bg" id="krey">
+<!-- Section Krey masquée par défaut : n'apparaît que lorsqu'un VRAI groupe
+     Krey est approuvé (voir loadRealKrey dans le script). -->
+<section class="section alt-bg" id="krey" style="display:none">
     <div class="container">
         <div class="sec-head">
             <p class="sec-sub">
@@ -3970,6 +3972,14 @@ function renderKrey() {
     );
     if (!kg) return;
 
+    /* KREY RÉELS UNIQUEMENT : plus aucun groupe fictif. La section Krey
+       n'apparaît que lorsqu'un VRAI groupe Krey a été approuvé (status "active").
+       Tout le rendu réel + affichage/masquage de la section se fait dans
+       loadRealKrey(). L'ancien rendu démo ci-dessous est désactivé. */
+    try { loadRealKrey(); } catch (e) { console.warn("Krey:", e); }
+    return;
+
+    /* eslint-disable no-unreachable */
     var html = "";
 
     for (var k = 0;
@@ -4171,6 +4181,122 @@ function renderKrey() {
     /* Lock all slides except first
        for non-premium users */
     lockKreySlides();
+}
+
+/* ====================================
+   KREY RÉELS — charge depuis Firebase
+   Affiche la section Krey UNIQUEMENT s'il existe au moins un vrai groupe
+   Krey approuvé (publicProfiles type="krey" & status "active"/"frozen").
+   Sinon la section entière + la puce de filtre "Krey" restent masquées.
+   ==================================== */
+window._hasRealKrey = false;
+function loadRealKrey() {
+    var kg = document.getElementById("kreyGrid");
+    if (!kg) return;
+
+    var sec = document.getElementById("krey");
+    var chip = document.querySelector('#homeFilters .hfcat[data-cat="krey"]');
+
+    /* Masqué par défaut tant qu'aucun vrai Krey approuvé n'existe. */
+    if (sec) sec.style.display = "none";
+    if (chip) chip.style.display = "none";
+
+    if (!db || window._kreyLoaded) return;
+    window._kreyLoaded = true;
+
+    db.collection("publicProfiles")
+        .where("type", "==", "krey")
+        .onSnapshot(function (snap) {
+            var items = [];
+            snap.forEach(function (doc) {
+                var d = doc.data();
+                /* Seuls les groupes APPROUVÉS (actifs) — un gelé reste visible
+                   mais non réservable ; on ignore en_attente / rejeté. */
+                if (d.status !== "active" && d.status !== "frozen") return;
+                items.push({ id: doc.id, d: d });
+            });
+
+            window._hasRealKrey = items.length > 0;
+
+            if (!items.length) {
+                kg.innerHTML = "";
+                if (sec) sec.style.display = "none";
+                if (chip) chip.style.display = "none";
+                return;
+            }
+
+            var html = "";
+            for (var i = 0; i < items.length; i++) {
+                var d = items[i].d;
+                var uid = items[i].id;
+                var kid = "rkrey-" + i;
+                var name = escapeHtml(d.prenom || d.kreyName || "Krey");
+                var zone = escapeHtml(d.localisation || d.kreyZone || "Ayiti");
+                var desc = escapeHtml(d.description || d.kreyDescription || "Gwoup Krey verifye Bizen HT.");
+                var priceNum = Math.round(parseFloat(d.prixMoment || d.kreyPrice) || 0);
+                var memberCount = parseInt(d.kreyMemberCount, 10) || 2;
+                var photo = d.photoUrl || "";
+                var frozen = (d.status === "frozen");
+                var online = !!d.isOnline;
+
+                html += '<div class="krey-card sr on" data-demo="0" data-uid="' + uid + '">';
+
+                /* Slideshow (photo unique publique) */
+                html += '<div class="krey-slideshow" id="' + kid + '">';
+                html += '<div class="krey-slide"';
+                if (photo) { html += ' style="background-image:url(\'' + photo.replace(/'/g, "%27") + '\')"'; }
+                html += '>';
+                if (!photo) { html += '<i class="fas fa-users"></i>'; }
+                html += '</div>';
+                if (frozen) {
+                    html += '<div class="krey-badge" style="background:rgba(244,67,54,0.85)">Kont jele</div>';
+                } else if (online) {
+                    html += '<div class="krey-badge">An Liy</div>';
+                }
+                html += '</div>';
+
+                /* Body */
+                html += '<div class="krey-body">';
+                html += '<div class="krey-count"><i class="fas fa-user-friends"></i> ' + memberCount + ' Manm nan Krey sa a</div>';
+                html += '<h3 class="krey-name"><i class="fas fa-users"></i> ' + name + '</h3>';
+                html += '<div class="krey-zone"><i class="fas fa-map-marker-alt"></i> ' + zone + '</div>';
+                html += '<p class="krey-desc">' + desc + '</p>';
+                html += '<p class="pc-blur"><span class="blt">Detay konple disponib selman pou Premium...</span></p>';
+                html += '<div class="krey-loc-notice"><i class="fas fa-map-marker-alt"></i> Ou chwazi kote Krey la ap vini</div>';
+                html += '<div class="krey-price"><i class="fas fa-tag"></i><span class="krey-price-amount">' + priceNum.toLocaleString() + ' Gdes</span><span class="krey-price-per">/ Moman Krey (Ou chwazi kote)</span></div>';
+                html += '<div class="pc-tags"><span class="tag">Verifye</span></div>';
+
+                if (frozen) {
+                    /* Gelé : bouton désactivé, non converti par unlockUI (pas de classe btn-res). */
+                    html += '<button class="btn-krey-frozen" style="width:100%;padding:12px;border-radius:12px;background:rgba(255,255,255,0.05);color:#6a6a80;border:1px solid #2a2a3a;cursor:not-allowed" onclick="showOk(\'Kont jele\',\'Gwoup Krey sa a gen kont li jele pou kounye a.\');return false;"><i class="fas fa-lock"></i> Kont jele</button>';
+                } else {
+                    /* Bouton verrouillé Premium ; unlockUI() le convertit en openKreyRes pour les Premium. */
+                    html += '<button class="btn-res" onclick="pa()"><i class="fas fa-lock"></i> Rezeve Krey - Premium</button>';
+                }
+
+                html += '</div></div>';
+            }
+            kg.innerHTML = html;
+
+            /* Affiche la section + la puce de filtre (en respectant la catégorie active). */
+            if (sec) {
+                var cat = (typeof homeFilter !== "undefined" && homeFilter.cat) ? homeFilter.cat : "all";
+                sec.style.display = (cat === "all" || cat === "krey") ? "" : "none";
+            }
+            if (chip) chip.style.display = "";
+
+            /* Si l'utilisateur est déjà Premium, déverrouille les boutons de réservation Krey. */
+            if (auth && auth.currentUser) {
+                db.collection("users").doc(auth.currentUser.uid).get()
+                    .then(function (u) {
+                        if (u.exists && u.data().isPremium === true) {
+                            try { unlockUI(); } catch (e) {}
+                        }
+                    }).catch(function () {});
+            }
+        }, function (err) {
+            console.warn("loadRealKrey error:", err && err.code);
+        });
 }
 
 /* ====================================
@@ -5215,7 +5341,8 @@ function setHomeCat(cat, btn) {
        n'affiche que les cartes du bon genre. */
     if (fs) fs.style.display = (cat === "all" || cat === "fanm" || cat === "biseksyel") ? "" : "none";
     if (hs) hs.style.display = (cat === "all" || cat === "gason") ? "" : "none";
-    if (ks) ks.style.display = (cat === "all" || cat === "krey") ? "" : "none";
+    /* La section Krey ne s'affiche que s'il existe de vrais groupes Krey approuvés. */
+    if (ks) ks.style.display = ((cat === "all" || cat === "krey") && window._hasRealKrey === true) ? "" : "none";
     /* Titre de la section "femmes" adapté à la catégorie. */
     var femTitle = document.querySelector("#femmes .sec-title");
     var femSub = document.querySelector("#femmes .sec-sub");
@@ -5277,7 +5404,10 @@ function resetHomeFilters() {
     for (var i = 0; i < chips.length; i++) chips[i].classList.toggle("active", chips[i].getAttribute("data-cat") === "all");
     if (gridState.fG) { gridState.fG.filter = "all"; gridState.fG.page = 0; }
     if (gridState.hG) { gridState.hG.filter = "all"; gridState.hG.page = 0; }
-    ["femmes", "hommes", "krey"].forEach(function (id) { var s = document.getElementById(id); if (s) s.style.display = ""; });
+    ["femmes", "hommes"].forEach(function (id) { var s = document.getElementById(id); if (s) s.style.display = ""; });
+    /* La section Krey ne réapparaît que s'il existe de vrais groupes Krey approuvés. */
+    var ksReset = document.getElementById("krey");
+    if (ksReset) ksReset.style.display = (window._hasRealKrey === true) ? "" : "none";
     var femTitle = document.querySelector("#femmes .sec-title");
     var femSub = document.querySelector("#femmes .sec-sub");
     if (femTitle) femTitle.innerHTML = 'Elu Fanm <span class="hl">Disponib</span> yo';
