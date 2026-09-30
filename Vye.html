@@ -6327,17 +6327,42 @@ function downloadReportPdf(R, gen, period) {
             theme: "grid", headStyles: { fillColor: pink }, styles: { fontSize: 9 }, margin: { left: M, right: M }
         });
 
-        /* Detay peman Natcash */
-        var ncBody = (R.natcash || []).map(function (p) {
+        /* --- REZÈVASYON (Natcash) — séparées des Premium --- */
+        var yResT = doc.lastAutoTable.finalY + 22;
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(purple[0], purple[1], purple[2]);
+        doc.text("Rezèvasyon (Natcash)", M, yResT);
+        var resNat = (R.natcash || []).filter(function (p) { return p.purpose === "reservation"; });
+        var resTotal = resNat.reduce(function (s, p) { return s + (p.amount || 0); }, 0);
+        var resBody = resNat.map(function (p) {
             var dn = repTsToDate(p.createdAt);
-            return [dn ? dn.toLocaleDateString("fr-FR") : "", p.natcashId || "", p.email || "", (p.purpose === "reservation" ? "Rezevasyon" : "Premium"), g(p.amount) + " G"];
+            return [dn ? dn.toLocaleDateString("fr-FR") : "", p.natcashId || p.transactionId || "—", p.reservationId || "—", p.email || "—", g(p.amount) + " G"];
         });
-        if (!ncBody.length) ncBody = [["—", "—", "Pa gen peman Natcash pou peryòd sa a", "—", "—"]];
+        if (!resBody.length) resBody = [["—", "—", "—", "Pa gen rezèvasyon pou peryòd sa a", "—"]];
         doc.autoTable({
-            startY: doc.lastAutoTable.finalY + 18,
-            head: [["Dat", "Transaction ID", "Imel", "Obje", "Montan"]],
-            body: ncBody,
-            theme: "striped", headStyles: { fillColor: purple }, styles: { fontSize: 8, cellWidth: "wrap" }, margin: { left: M, right: M }
+            startY: yResT + 6,
+            head: [["Dat", "Transaction ID", "Rezèvasyon ID", "Imel", "Montan"]],
+            body: resBody,
+            foot: resNat.length ? [["", "", "", "TOTAL Rezèvasyon", g(resTotal) + " G"]] : null,
+            theme: "striped", headStyles: { fillColor: purple }, footStyles: { fillColor: [245, 235, 245], textColor: 20, fontStyle: "bold" }, styles: { fontSize: 8, cellWidth: "wrap" }, margin: { left: M, right: M }
+        });
+
+        /* --- PREMIUM / MEMBERSHIP (Natcash) --- */
+        var yPremT = doc.lastAutoTable.finalY + 22;
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(pink[0], pink[1], pink[2]);
+        doc.text("Premium / Membership (Natcash)", M, yPremT);
+        var premNat = (R.natcash || []).filter(function (p) { return p.purpose !== "reservation"; });
+        var premNatTotal = premNat.reduce(function (s, p) { return s + (p.amount || 0); }, 0);
+        var premNcBody = premNat.map(function (p) {
+            var dn = repTsToDate(p.createdAt);
+            return [dn ? dn.toLocaleDateString("fr-FR") : "", p.natcashId || p.transactionId || "—", p.email || "—", g(p.amount) + " G"];
+        });
+        if (!premNcBody.length) premNcBody = [["—", "—", "Pa gen premium Natcash pou peryòd sa a", "—"]];
+        doc.autoTable({
+            startY: yPremT + 6,
+            head: [["Dat", "Transaction ID", "Imel", "Montan"]],
+            body: premNcBody,
+            foot: premNat.length ? [["", "", "TOTAL Premium Natcash", g(premNatTotal) + " G"]] : null,
+            theme: "striped", headStyles: { fillColor: pink }, footStyles: { fillColor: [252, 232, 240], textColor: 20, fontStyle: "bold" }, styles: { fontSize: 8, cellWidth: "wrap" }, margin: { left: M, right: M }
         });
 
         /* Nouvo enskripsyon */
@@ -6360,17 +6385,20 @@ function downloadReportPdf(R, gen, period) {
             theme: "striped", headStyles: { fillColor: pink }, styles: { fontSize: 8 }, margin: { left: M, right: M }
         });
 
-        /* Peman Premium */
+        /* Tout peman Premium (toutes méthodes : Natcash + MonCash + manyèl) */
         var payBody = (R.pay || []).map(function (p) {
             var d = repTsToDate(p.createdAt);
-            return [d ? d.toLocaleDateString("fr-FR") : "", p.email || "", g(p.amount) + " G", p.method || "", p.status || ""];
+            return [d ? d.toLocaleDateString("fr-FR") : "", p.natcashId || p.transactionId || p.transactionRef || "—", p.email || "", g(p.amount) + " G", p.method || "", p.status || ""];
         });
         if (payBody.length) {
+            var yPayT = doc.lastAutoTable.finalY + 22;
+            doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(pink[0], pink[1], pink[2]);
+            doc.text("Tout peman Premium (tout metòd)", M, yPayT);
             doc.autoTable({
-                startY: doc.lastAutoTable.finalY + 18,
-                head: [["Dat", "Imel", "Montan", "Metòd", "Estati"]],
+                startY: yPayT + 6,
+                head: [["Dat", "Transaction ID", "Imel", "Montan", "Metòd", "Estati"]],
                 body: payBody,
-                theme: "striped", headStyles: { fillColor: pink }, styles: { fontSize: 8 }, margin: { left: M, right: M }
+                theme: "striped", headStyles: { fillColor: pink }, styles: { fontSize: 8, cellWidth: "wrap" }, margin: { left: M, right: M }
             });
         }
 
