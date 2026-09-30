@@ -4408,6 +4408,9 @@ function renderRealFreelancers() {
                     genreCat: genreCat
                 };
 
+                /* Pré-remplit le cache photo pour le chat (avatar instantané en DM/inbox). */
+                try { seedEluPhoto(doc.id, d.photoUrl || (d.gallery && d.gallery[0]) || ""); } catch (e) {}
+
                 var typeBadge = genreCat === "gason" ? "Gason" : (genreCat === "biseksyel" ? "Biseksyèl" : "Fanm");
                 var cardHtml = mkCard(cardData, typeBadge, male);
                 var _item = {
@@ -7831,6 +7834,7 @@ function openEluProfile(btnOrUid) {
             : '<span style="color:#6a6a80;font-size:0.8rem"><i class="fas fa-circle" style="font-size:0.5rem"></i> Dekonekte</span>';
 
         window._eluPhotoUrl = photo;   /* pour le zoom (évite d'injecter l'URL dans le onclick) */
+        try { seedEluPhoto(uid, photo || (gallery && gallery[0]) || ""); } catch (e) {}   /* pré-remplit le cache avatar chat */
         var avatar = photo
             ? '<img src="' + photo + '" onclick="if(window._eluPhotoUrl)openLightbox([{type:\'image\',url:window._eluPhotoUrl}],0)" title="Klike pou agrandi" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in">'
             : '<i class="fas fa-user" style="font-size:2.5rem;color:#fff"></i>';
@@ -8014,6 +8018,47 @@ function startUserDMBadge() {
         }, function(err){ console.warn("userDMBadge:", err.code); });
 }
 
+/* ====================================================
+   PHOTO ELU NAN CHAT — rezolisyon robis (yon fwa pou tout)
+   Pwoblèm istorik: avatar la te li SÈLMAN publicProfiles.photoUrl,
+   ki ka vid/pa ajou (ansyen kont, upload rate, Elu poko rekonekte).
+   Solisyon: eseye plizyè sous PIBLIK (photoUrl OSWA gallery[0]),
+   kenbe yon kach, epi PRECHAJE imaj la (yon URL kase pa efase avatar la).
+   ==================================================== */
+var dmPhotoCache = {};   /* eluUid -> URL foto ki deja rezoud */
+
+function seedEluPhoto(eluUid, url) {
+    if (eluUid && url && !dmPhotoCache[eluUid]) dmPhotoCache[eluUid] = url;
+}
+
+function resolveEluPhoto(eluUid, hint) {
+    if (eluUid && hint) dmPhotoCache[eluUid] = hint;
+    if (eluUid && dmPhotoCache[eluUid]) return Promise.resolve(dmPhotoCache[eluUid]);
+    if (!db || !eluUid) return Promise.resolve("");
+    return db.collection("publicProfiles").doc(eluUid).get().then(function (doc) {
+        if (!doc.exists) return "";
+        var d = doc.data() || {};
+        var url = d.photoUrl || (d.gallery && d.gallery.length ? d.gallery[0] : "") || "";
+        if (url) dmPhotoCache[eluUid] = url;
+        return url;
+    }).catch(function () { return ""; });
+}
+
+/* Applique une photo ronde à un avatar : preload d'abord, sinon garde le dégradé. */
+function applyDmAvatar(elId, url) {
+    if (!url) return;
+    var img = new Image();
+    img.onload = function () {
+        var el = document.getElementById(elId);
+        if (!el) return;
+        el.style.backgroundImage = "url('" + String(url).replace(/'/g, "%27") + "')";
+        el.style.backgroundSize = "cover";
+        el.style.backgroundPosition = "center";
+        el.innerHTML = "";
+    };
+    img.src = url;
+}
+
 function openDMInbox() {
     if (!auth || !auth.currentUser) { oM("lM"); return; }
     var old = document.getElementById("dmInboxModal");
@@ -8047,16 +8092,24 @@ function renderDMInbox() {
         var when = t.lastAt && t.lastAt.toDate ? t.lastAt.toDate().toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "";
         var blurAv = isPremiumViewer ? "" : "filter:blur(6px)";
         h += '<div onclick="cM(\'dmInboxModal\');openDM(\'' + (t.eluUid||"") + '\',\'' + String(nm).replace(/'/g,"") + '\')" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid rgba(255,255,255,0.08);border-radius:14px;margin-bottom:8px;cursor:pointer">';
-        h += '<div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;' + blurAv + '"><i class="fas fa-user"></i></div>';
+        h += '<div id="dmInboxAv-' + (t.eluUid || "") + '" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;' + blurAv + '"><i class="fas fa-user"></i></div>';
         h += '<div style="flex:1;min-width:0"><div style="font-weight:600">' + escapeResHotel(nm) + '</div>';
         h += '<div style="font-size:0.8rem;color:#8a8a9a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeResHotel(t.lastMessage || "") + '</div>';
         h += '<div style="font-size:0.66rem;color:#6a6a80;margin-top:2px">' + when + '</div></div>';
         h += unread + '</div>';
     });
     box.innerHTML = h;
+
+    /* Charge les VRAIES photos des Elu dans les avatars de l'inbox (robuste + cache). */
+    userDMThreads.forEach(function (t) {
+        if (!t.eluUid) return;
+        resolveEluPhoto(t.eluUid, t.eluPhoto || "").then(function (url) {
+            applyDmAvatar("dmInboxAv-" + t.eluUid, url);
+        });
+    });
 }
 
-function openDM(eluUid, eluName) {
+function openDM(eluUid, eluName, eluPhoto) {
     if (!auth || !auth.currentUser) { oM("lM"); return; }
     if (!db) { toast("Mesajri pa disponib.", "err"); return; }
     cM("eluProfM");
@@ -8099,16 +8152,12 @@ function openDM(eluUid, eluName) {
     wrap.innerHTML = h;
     document.body.appendChild(wrap.firstChild);
 
-    /* Charge la VRAIE photo de l'Elu dans l'avatar (floue pour les gratuits) */
-    db.collection("publicProfiles").doc(eluUid).get().then(function(doc) {
-        if (!doc.exists) return;
-        var url = doc.data().photoUrl || "";
-        var av = document.getElementById("dmAvatar");
-        if (av && url) {
-            av.style.backgroundImage = "url('" + url + "')";
-            av.innerHTML = "";
-        }
-    }).catch(function(){});
+    /* Photo de l'Élu dans l'avatar : résolution ROBUSTE (photoUrl OU gallery[0]),
+       cache + preload. Le flou éventuel reste géré par le style inline (gratuits). */
+    if (eluPhoto) applyDmAvatar("dmAvatar", eluPhoto);
+    resolveEluPhoto(eluUid, eluPhoto).then(function (url) {
+        applyDmAvatar("dmAvatar", url);
+    });
 
     listenDM();
 
