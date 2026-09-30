@@ -1621,7 +1621,8 @@
                         </select>
                     </div>
                     <button onclick="downloadReport('csv')" style="background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:8px;padding:11px 18px;font-weight:600;font-size:0.85rem;cursor:pointer"><i class="fas fa-file-csv"></i> Telechaje CSV (Excel)</button>
-                    <button onclick="downloadReport('print')" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:11px 18px;font-weight:600;font-size:0.85rem;cursor:pointer"><i class="fas fa-print"></i> Enprime / PDF</button>
+                    <button onclick="downloadReport('pdf')" style="background:linear-gradient(135deg,#c62828,#e53935);color:#fff;border:none;border-radius:8px;padding:11px 18px;font-weight:600;font-size:0.85rem;cursor:pointer"><i class="fas fa-file-pdf"></i> Telechaje PDF</button>
+                    <button onclick="downloadReport('print')" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid #2a2a3a;border-radius:8px;padding:11px 18px;font-weight:600;font-size:0.85rem;cursor:pointer"><i class="fas fa-print"></i> Enprime</button>
                 </div>
                 <p style="padding:0 18px 16px;color:#6a6a80;font-size:0.76rem">Rapò a gen ladann: total rezevasyon, komisyon Bizen (10%), revni Premium, revni net, detay pa Elu, ak nouvo enskripsyon pou peryòd la.</p>
             </div>
@@ -6154,6 +6155,7 @@ function downloadReport(format) {
     var gen = new Date().toLocaleString("fr-FR");
 
     if (format === "print") { printReport(R, gen); return; }
+    if (format === "pdf") { downloadReportPdf(R, gen, period); return; }
 
     var rows = [];
     rows.push(["BIZEN HT: RAPÒ FINANSYE"]);
@@ -6251,6 +6253,144 @@ function printReport(R, gen) {
     if (!w) { if (typeof toast === "function") toast("Otorize pop-up yo pou enprime rapò a.", false); return; }
     w.document.write(html);
     w.document.close();
+}
+
+/* ====================================================
+   RAPÒ EN PDF — génère un vrai fichier .pdf téléchargeable
+   (jsPDF + autotable, chargés à la demande depuis cdnjs).
+   Repli sur la fenêtre d'impression si le CDN est injoignable.
+   ==================================================== */
+function ensurePdfLib() {
+    return new Promise(function (resolve, reject) {
+        var hasAT = window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable;
+        if (hasAT) { resolve(); return; }
+        function loadScript(src) {
+            return new Promise(function (res, rej) {
+                var s = document.createElement("script");
+                s.src = src;
+                s.onload = function () { res(); };
+                s.onerror = function () { rej(new Error("Echwe chaje " + src)); };
+                document.head.appendChild(s);
+            });
+        }
+        var base = "https://cdnjs.cloudflare.com/ajax/libs/";
+        var p = Promise.resolve();
+        if (!(window.jspdf && window.jspdf.jsPDF)) {
+            p = p.then(function () { return loadScript(base + "jspdf/2.5.1/jspdf.umd.min.js"); });
+        }
+        p.then(function () {
+            var at = window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable;
+            if (at) return null;
+            return loadScript(base + "jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+        }).then(function () { resolve(); }).catch(reject);
+    });
+}
+
+function downloadReportPdf(R, gen, period) {
+    if (typeof toast === "function") toast("N ap prepare PDF la...", true);
+    ensurePdfLib().then(function () {
+        var JsPDF = window.jspdf.jsPDF;
+        var doc = new JsPDF({ unit: "pt", format: "a4" });
+        var g = function (n) { return (n || 0).toLocaleString(); };
+        var M = 40;
+        var pink = [233, 30, 99];
+        var purple = [156, 39, 176];
+
+        doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(pink[0], pink[1], pink[2]);
+        doc.text("Bizen HT — Rapò Finansye", M, 50);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(90, 90, 90);
+        doc.text("Peryòd : " + R.range.label + "   ·   Jenere : " + gen, M, 68);
+
+        /* Rezime */
+        doc.autoTable({
+            startY: 84,
+            head: [["Rezime", "Montan"]],
+            body: [
+                ["Total Rezevasyon", g(R.totalRes) + " G"],
+                ["Komisyon Bizen 10%", g(R.commission) + " G"],
+                ["Revni Membership Premium", g(R.premium) + " G"],
+                ["Kantite Premium peye", String(R.premiumCount)],
+                ["REVNI NET TOTAL", g(R.net) + " G"]
+            ],
+            theme: "grid", headStyles: { fillColor: pink }, styles: { fontSize: 9 }, margin: { left: M, right: M }
+        });
+
+        /* Fon Natcash */
+        doc.autoTable({
+            startY: doc.lastAutoTable.finalY + 18,
+            head: [["Fon Natcash", "Montan"]],
+            body: [
+                ["Natcash Membership", g(R.natcashPrem) + " G"],
+                ["Natcash Rezevasyon", g(R.natcashRes) + " G"],
+                ["TOTAL NATCASH", g(R.natcashTotal) + " G"]
+            ],
+            theme: "grid", headStyles: { fillColor: pink }, styles: { fontSize: 9 }, margin: { left: M, right: M }
+        });
+
+        /* Detay peman Natcash */
+        var ncBody = (R.natcash || []).map(function (p) {
+            var dn = repTsToDate(p.createdAt);
+            return [dn ? dn.toLocaleDateString("fr-FR") : "", p.natcashId || "", p.email || "", (p.purpose === "reservation" ? "Rezevasyon" : "Premium"), g(p.amount) + " G"];
+        });
+        if (!ncBody.length) ncBody = [["—", "—", "Pa gen peman Natcash pou peryòd sa a", "—", "—"]];
+        doc.autoTable({
+            startY: doc.lastAutoTable.finalY + 18,
+            head: [["Dat", "Transaction ID", "Imel", "Obje", "Montan"]],
+            body: ncBody,
+            theme: "striped", headStyles: { fillColor: purple }, styles: { fontSize: 8, cellWidth: "wrap" }, margin: { left: M, right: M }
+        });
+
+        /* Nouvo enskripsyon */
+        var yIns = doc.lastAutoTable.finalY + 22;
+        doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(20, 20, 20);
+        doc.text("Nouvo enskripsyon", M, yIns);
+        doc.setFont("helvetica", "normal"); doc.setTextColor(60, 60, 60);
+        doc.text("VIP : " + R.counts.users + "   ·   Elu : " + R.counts.elu + "   ·   Krey : " + R.counts.krey + "   ·   Premium peye : " + R.premiumCount, M, yIns + 14);
+
+        /* Detay pa Elu */
+        var eluBody = Object.keys(R.perElu).map(function (name) {
+            var e = R.perElu[name];
+            return [name, String(e.count), g(e.total), g(e.comm), g(e.net)];
+        });
+        if (!eluBody.length) eluBody = [["Pa gen done pou peryòd sa a", "—", "—", "—", "—"]];
+        doc.autoTable({
+            startY: yIns + 26,
+            head: [["Elu", "Rezevasyon", "Total", "Komisyon", "Net Elu"]],
+            body: eluBody,
+            theme: "striped", headStyles: { fillColor: pink }, styles: { fontSize: 8 }, margin: { left: M, right: M }
+        });
+
+        /* Peman Premium */
+        var payBody = (R.pay || []).map(function (p) {
+            var d = repTsToDate(p.createdAt);
+            return [d ? d.toLocaleDateString("fr-FR") : "", p.email || "", g(p.amount) + " G", p.method || "", p.status || ""];
+        });
+        if (payBody.length) {
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 18,
+                head: [["Dat", "Imel", "Montan", "Metòd", "Estati"]],
+                body: payBody,
+                theme: "striped", headStyles: { fillColor: pink }, styles: { fontSize: 8 }, margin: { left: M, right: M }
+            });
+        }
+
+        /* Pied de page : numéros de page */
+        var pc = doc.internal.getNumberOfPages();
+        var pw = doc.internal.pageSize.getWidth();
+        var ph = doc.internal.pageSize.getHeight();
+        for (var i = 1; i <= pc; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8); doc.setTextColor(150, 150, 150);
+            doc.text("Bizen HT — paj " + i + "/" + pc, pw - M, ph - 16, { align: "right" });
+        }
+
+        doc.save("Bizen-HT-Rapo-" + period + "-" + new Date().toISOString().slice(0, 10) + ".pdf");
+        if (typeof toast === "function") toast("Rapò PDF telechaje!", true);
+    }).catch(function (e) {
+        console.warn("PDF lib:", e && e.message);
+        if (typeof toast === "function") toast("PDF pa disponib kounye a. N ap ouvri vèsyon enprimab la.", false);
+        printReport(R, gen);
+    });
 }
 
 /* ====================================================
