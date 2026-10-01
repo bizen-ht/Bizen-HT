@@ -52,6 +52,14 @@ service cloud.firestore {
       allow write: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
     }
 
+    /* -------- CONFIG PUBLIQUE (lecture libre) --------
+       Ex: config/vipOfMonth = les 3 VIP du mois (badge doré visible par les Elus).
+       Écrit uniquement par le serveur (Admin SDK) / l'admin. */
+    match /config/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
     /* -------- RÉSERVATIONS : client + Elu concernés + admin --------
        userId = client, prestateId = Elu. Personne d'autre ne peut lire. */
     match /reservations/{resId} {
@@ -452,6 +460,14 @@ service cloud.firestore {
       allow read:   if isAdmin() || (isSignedIn() && resource.data.eluUid == request.auth.uid);
       allow create: if isSignedIn() && request.resource.data.eluUid == request.auth.uid;
       allow update, delete: if isAdmin();
+    }
+
+    /* -------- CASHBACK WALLET VIP (3%) --------
+       Écrit UNIQUEMENT par le serveur (Admin SDK, fonction cashback.js).
+       Le VIP peut lire son propre historique ; l'admin voit tout. */
+    match /cashbacks/{cbId} {
+      allow read:  if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow write: if isAdmin();
     }
 
     /* -------- TOUT LE RESTE : interdit par défaut --------

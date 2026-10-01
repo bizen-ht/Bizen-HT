@@ -3981,6 +3981,23 @@ function doConfirmMeeting(reservationId) {
     }).then(function () {
         showToast("Mèsi! Rankont konfime. Bon moman!", "success");
         loadUserReservations();
+        /* CASHBACK WALLET VIP (3%) : si la réservation a été payée par WALLET,
+           le serveur crédite 3% du montant sur le wallet du VIP (une seule fois).
+           Fire-and-forget : n'impacte pas la confirmation si ça échoue. */
+        if (currentUser) {
+            currentUser.getIdToken().then(function (idToken) {
+                return fetch("/.netlify/functions/cashback", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ idToken: idToken, reservationId: reservationId })
+                });
+            }).then(function (res) { return res.json(); }).then(function (j) {
+                if (j && j.success && j.credited && j.cashback > 0) {
+                    showToast("💰 Ou touche " + j.cashback.toLocaleString() + " Gdes cashback (3%) nan wallet ou!", "success");
+                    try { if (userData && typeof j.newBalance === "number") { userData.walletBalance = j.newBalance; renderWallet(); } } catch (e) {}
+                }
+            }).catch(function () { /* silencieux */ });
+        }
     }).catch(function (err) {
         console.error("confirmMeeting:", err);
         showToast("Erè: " + (err.message || err.code || "eseye ankò"), "error");
@@ -4241,7 +4258,41 @@ function loadDmThreads() {
         }, function(err) { console.warn("loadDmThreads:", err.code); });
 }
 
+/* ====================================================
+   BADGE "VIP MWA a" — Top 3 VIP du mois (config/vipOfMonth, public)
+   L'Elu voit un badge doré à côté du nom des VIP gagnants (chat + demandes).
+   Chargé une seule fois par session ; re-render des listes visibles à l'arrivée.
+   ==================================================== */
+var _vipMonthSet = null;          /* null = pas encore chargé */
+var _vipMonthLoading = false;
+var _lastDmThreadList = null;     /* pour re-render quand le badge arrive */
+function loadVipOfMonth() {
+    if (!db || _vipMonthSet !== null || _vipMonthLoading) return;
+    _vipMonthLoading = true;
+    db.collection("config").doc("vipOfMonth").get().then(function (d) {
+        var uids = (d.exists && d.data().uids) || [];
+        var map = {};
+        uids.forEach(function (u) { map[u] = true; });
+        _vipMonthSet = map;
+        _vipMonthLoading = false;
+        /* Re-render des listes déjà affichées pour faire apparaître le badge. */
+        try { if (_lastDmThreadList) renderDmThreads(_lastDmThreadList); } catch (e) {}
+        try {
+            var elList = document.getElementById("flDemannList");
+            if (elList && elList.children.length) loadFlDemann();
+        } catch (e) {}
+    }).catch(function () { _vipMonthSet = {}; _vipMonthLoading = false; });
+}
+function isVipOfMonth(uid) { return !!(uid && _vipMonthSet && _vipMonthSet[uid]); }
+function vipMonthBadge(uid) {
+    return isVipOfMonth(uid)
+        ? '<span title="VIP Mwa a" style="background:linear-gradient(135deg,#ffd700,#ff9800);color:#1a1a1a;font-size:0.6rem;font-weight:800;padding:1px 7px;border-radius:10px;margin-left:6px;white-space:nowrap"><i class="fas fa-crown"></i> VIP Mwa a</span>'
+        : '';
+}
+
 function renderDmThreads(list) {
+    loadVipOfMonth();
+    _lastDmThreadList = list;
     var box = document.getElementById("flDmThreads");
     var badge = document.getElementById("flMsgBadge");
     if (!box) return;
@@ -4263,7 +4314,7 @@ function renderDmThreads(list) {
         var nm = (t.userName || "VIP");
         h += '<div onclick="openEluDm(\'' + t.id + '\',\'' + String(nm).replace(/'/g,"") + '\',\'' + (t.userUid||"") + '\')" style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg-card);border:1px solid ' + (t.userIsPremium ? "rgba(255,215,0,0.35)" : "var(--border)") + ';border-radius:var(--radius-lg);margin-bottom:10px;cursor:pointer">';
         h += '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0"><i class="fas fa-user"></i></div>';
-        h += '<div style="flex:1;min-width:0"><div style="font-weight:600;display:flex;align-items:center;flex-wrap:wrap">' + escDash(nm) + premBadge + '</div>';
+        h += '<div style="flex:1;min-width:0"><div style="font-weight:600;display:flex;align-items:center;flex-wrap:wrap">' + escDash(nm) + premBadge + vipMonthBadge(t.userUid) + '</div>';
         h += '<div style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escDash(t.lastMessage || "") + '</div>';
         h += '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px">' + when + '</div></div>';
         h += unread + '</div>';
@@ -4333,6 +4384,7 @@ function eluBlockToggle() {
 }
 
 function openEluDm(threadId, otherName, otherUid, unreadField) {
+    loadVipOfMonth();
     eluDmThread = threadId;
     eluDmOther = { uid: otherUid, name: otherName };
 
@@ -4347,7 +4399,7 @@ function openEluDm(threadId, otherName, otherUid, unreadField) {
     h += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(156,39,176,0.08)">';
     h += '<button onclick="closeEluDm()" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer"><i class="fas fa-arrow-left"></i></button>';
     h += '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff"><i class="fas fa-user"></i></div>';
-    h += '<div style="flex:1;font-weight:700">' + escDash(otherName) + '</div>';
+    h += '<div style="flex:1;font-weight:700;display:flex;align-items:center;flex-wrap:wrap">' + escDash(otherName) + vipMonthBadge(otherUid) + '</div>';
     var _isEluUser = userData && (userData.type === "freelancer" || userData.type === "krey");
     if (_isEluUser) {
         h += '<button id="eluDmBlockBtn" onclick="eluBlockToggle()" title="Bloke VIP sa a" style="background:none;border:none;color:#f44336;font-size:1.05rem;cursor:pointer;padding:6px;flex-shrink:0"><i class="fas fa-ban"></i></button>';
@@ -4908,6 +4960,7 @@ function eluZoneSet() {
 
 function loadFlDemann() {
     if (!db || !currentUser) return;
+    loadVipOfMonth();
     db.collection("vipDemands").where("status", "==", "active").limit(100).get()
       .then(function (snap) {
         var now = Date.now();
@@ -4950,7 +5003,7 @@ function loadFlDemann() {
             var lf = x.lookingFor === "gason" ? "Gason" : (x.lookingFor === "fanm" ? "Fanm" : (x.lookingFor === "biseksyel" ? "Biseksyèl" : "Tout"));
             h += '<div data-demand-id="' + x._id + '" style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px">' +
                 '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#9c27b0);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0"><i class="fas fa-user"></i></div>' +
-                '<div style="min-width:0"><div style="font-weight:600;color:#fff">' + escDash(x.vipPseudo || "VIP") + '</div>' +
+                '<div style="min-width:0"><div style="font-weight:600;color:#fff;display:flex;align-items:center;flex-wrap:wrap">' + escDash(x.vipPseudo || "VIP") + vipMonthBadge(x.vipUid) + '</div>' +
                 '<div style="font-size:0.72rem;color:var(--text-muted)"><i class="fas fa-map-marker-alt"></i> ' + escDash(x.zone || "") + ' · ' + lf + '</div></div></div>' +
                 '<p style="color:var(--text-secondary);font-size:0.9rem;line-height:1.5;margin-bottom:12px">' + escDash(x.text || "") + '</p>' +
                 (replied
