@@ -3332,6 +3332,10 @@ function renderResTable(list) {
         return;
     }
 
+    /* Lookup Elu par id (pour afficher le Kado byenveni sur les lignes à payer). */
+    var eluById = {};
+    adminFL.concat(adminKrey).forEach(function(e){ eluById[e.id] = e; });
+
     var h = "";
     list.forEach(function(r) {
         var stCl = r.status === "confirmed" ? "green" : r.status === "cancelled" ? "red" : "orange";
@@ -3357,6 +3361,11 @@ function renderResTable(list) {
         }
         if (r.met && !r.paidOut) {
             h += actBtn("ab-app", "resPayout('" + r.id + "')", "fa-money-bill-wave", "Peye Elu");
+            /* Kado byenveni : signale à l'équipe de paiement d'ajouter +10% (reliquat restant). */
+            var wbRow = welcomeBonusInfo(eluById[r.prestateId]);
+            if (wbRow.release > 0) {
+                h += ' <span class="sbadge gold" style="background:rgba(255,215,0,0.18);color:#ffd700" title="Ajoute +' + wbRow.release.toLocaleString() + ' G nan peman an (Kado byenveni). Rès apre: ' + (wbRow.remaining - wbRow.release).toLocaleString() + ' G"><i class="fas fa-gift"></i> Kado +' + wbRow.release.toLocaleString() + ' G</span>';
+            }
         }
         if (r.status !== "cancelled") {
             h += actBtn("ab-del", "resAction('cancel','" + r.id + "')", "fa-times", "Anile");
@@ -3378,11 +3387,20 @@ function renderResTable(list) {
     var pendingPayout = list.filter(function (r) {
         return r.met === true && r.paidOut !== true && r.status !== "cancelled";
     }).length;
+    /* Total Kado byenveni à ajouter sur l'ensemble des paiements en attente
+       (pour que l'équipe de paiement sache toujours le +10% à verser). */
+    var bonusPending = list.reduce(function(sum, r) {
+        if (r.met === true && r.paidOut !== true && r.status !== "cancelled") {
+            sum += welcomeBonusInfo(eluById[r.prestateId]).release;
+        }
+        return sum;
+    }, 0);
     var alertEl = document.getElementById("resPayoutAlert");
     if (alertEl) {
         if (pendingPayout > 0) {
             alertEl.style.display = "flex";
-            alertEl.innerHTML = '<i class="fas fa-hand-holding-usd"></i> <span>' + pendingPayout + ' rankont konfime, pare pou peye Elu (klike « Peye Elu » sou liy lan).</span>';
+            var extra = bonusPending > 0 ? ' · <strong style="color:#ffd700">🎁 Kado byenveni pou ajoute: ' + bonusPending.toLocaleString() + ' G</strong>' : '';
+            alertEl.innerHTML = '<i class="fas fa-hand-holding-usd"></i> <span>' + pendingPayout + ' rankont konfime, pare pou peye Elu (klike « Peye Elu » sou liy lan).' + extra + '</span>';
         } else { alertEl.style.display = "none"; }
     }
     var payBdg = document.getElementById("bdgRPay");
@@ -3987,6 +4005,21 @@ function admAction(action, uid) {
         .then(function() {
             /* Reflète le changement sur le profil PUBLIC (catalogue) */
             db.collection("publicProfiles").doc(uid).set(updates, { merge: true }).catch(function(){});
+            /* KADO BYENVENI : à l'approbation d'un nouvel Elu, active 2500 G
+               automatiquement (une seule fois, s'il n'en a pas déjà un). */
+            if (action === "approve") {
+                db.collection("users").doc(uid).get().then(function(s) {
+                    var d = s.exists ? s.data() : {};
+                    if ((d.type === "freelancer" || d.type === "krey") && typeof d.welcomeBonusTotal !== "number") {
+                        db.collection("users").doc(uid).set({
+                            welcomeBonusTotal: WELCOME_BONUS_TOTAL,
+                            welcomeBonusRemaining: WELCOME_BONUS_TOTAL,
+                            welcomeBonusPaid: 0,
+                            welcomeBonusActivatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true }).catch(function(){});
+                    }
+                }).catch(function(){});
+            }
             toast("Aksyon fini!", true);
             loadAll();
         })
@@ -4058,6 +4091,23 @@ function adminForceMeet(id) {
     }).catch(function (e) { toast("Erè: " + (e.message || e.code), false); });
 }
 
+/* ====================================
+   KADO BYENVENI (bonus d'accueil Elu)
+   2500 G activé automatiquement à l'approbation d'un nouvel Elu ; libéré
+   par tranches de 10% (250 G) à CHAQUE paiement de l'Elu, jusqu'à épuisement.
+   Le reliquat (welcomeBonusRemaining) s'affiche sur le dashboard de l'Elu et
+   disparaît à 0. L'admin voit le +10% à ajouter à chaque paiement.
+   ==================================== */
+var WELCOME_BONUS_TOTAL = 2500;
+var WELCOME_BONUS_PCT = 0.10;
+function welcomeBonusInfo(elu) {
+    var total = (elu && typeof elu.welcomeBonusTotal === "number") ? elu.welcomeBonusTotal : 0;
+    var remaining = (elu && typeof elu.welcomeBonusRemaining === "number") ? elu.welcomeBonusRemaining : 0;
+    if (total <= 0 || remaining <= 0) return { total: total, remaining: Math.max(0, remaining), release: 0 };
+    var step = Math.round(total * WELCOME_BONUS_PCT);
+    return { total: total, remaining: remaining, release: Math.min(step, remaining) };
+}
+
 /* Verse le paiement à l'Elu après une rencontre confirmée par le client.
    Affiche le net (−10%) à payer + le numéro MonCash de l'Elu, puis marque payé. */
 function resPayout(id) {
@@ -4073,17 +4123,35 @@ function resPayout(id) {
     db.collection("users").doc(r.prestateId).get().then(function(doc) {
         var elu = doc.exists ? doc.data() : {};
         var finish = function(mcNumber, isBoss, bossId, bossName) {
+            /* Kado byenveni : libère 10% (250 G) à ce paiement si l'Elu en a encore. */
+            var wb = welcomeBonusInfo(elu);
+            var release = wb.release;
+            var totalSend = net + release;
             var who = isBoss ? ("BOSS « " + bossName.trim() + " »") : "Elu a";
-            if (!confirm("Voye " + net.toLocaleString() + " G (net) bay " + who + " sou MonCash:\n" + (mcNumber || "(pa gen nimewo MonCash)") + " ?")) return;
+            var msg = "Voye " + net.toLocaleString() + " G (net) bay " + who;
+            if (release > 0) {
+                msg += "\n🎁 Kado byenveni (10%): +" + release.toLocaleString() + " G"
+                     + "\n──────────\nTOTAL POU VOYE: " + totalSend.toLocaleString() + " G"
+                     + "\n(Rès Kado byenveni apre: " + (wb.remaining - release).toLocaleString() + " G)";
+            }
+            msg += "\n\nsou MonCash:\n" + (mcNumber || "(pa gen nimewo MonCash)") + " ?";
+            if (!confirm(msg)) return;
             var upd = { paidOut: true, paidOutAmount: net, paidOutTo: isBoss ? "boss" : "elu", paidOutAt: firebase.firestore.FieldValue.serverTimestamp() };
             if (isBoss) upd.bossId = bossId;
+            if (release > 0) { upd.welcomeBonusReleased = release; upd.totalSentWithBonus = totalSend; }
             db.collection("reservations").doc(id).update(upd).then(function() {
                 /* Le montant est TOUJOURS comptabilisé sur l'Elu (pour que le Boss voie qui rapporte). */
-                db.collection("users").doc(r.prestateId).update({
+                var eluUpd = {
                     totalEarnings: firebase.firestore.FieldValue.increment(net),
                     paidMeetings: firebase.firestore.FieldValue.increment(1)
-                }).catch(function(){});
-                toast(isBoss ? "Peman voye bay Boss la! (konte sou Elu a)" : "Peman Elu make kòm voye!", true);
+                };
+                /* Décrémente le Kado byenveni de l'Elu (reliquat temps réel sur son dashboard). */
+                if (release > 0) {
+                    eluUpd.welcomeBonusRemaining = firebase.firestore.FieldValue.increment(-release);
+                    eluUpd.welcomeBonusPaid = firebase.firestore.FieldValue.increment(release);
+                }
+                db.collection("users").doc(r.prestateId).update(eluUpd).catch(function(){});
+                toast((isBoss ? "Peman voye bay Boss la!" : "Peman Elu make kòm voye!") + (release > 0 ? " (+ Kado byenveni " + release.toLocaleString() + " G)" : ""), true);
                 try { loadReservations(); } catch(e) {}
             }).catch(function(e) { toast("Ere: " + e.message, false); });
         };

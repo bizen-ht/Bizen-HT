@@ -1538,6 +1538,17 @@ function pinChangeFlow() {
                 <div class="solde-amount" id="flSoldeMain">0 Gdes</div>
                 <div class="solde-label">Solde Disponib</div>
             </div>
+            <!-- KADO BYENVENI : bonus d'accueil 2500 G, libéré à 10% par paiement.
+                 Reliquat en temps réel ; disparaît quand il est épuisé. -->
+            <div id="kadoByenveniCard" style="display:none;max-width:640px;margin-top:14px;background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,152,0,0.08));border:1px solid rgba(255,215,0,0.4);border-radius:var(--radius-lg);padding:18px 20px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                    <i class="fas fa-gift" style="color:var(--gold);font-size:1.3rem"></i>
+                    <span style="font-weight:700;color:#ffd700">Kado Byenveni 🎉</span>
+                </div>
+                <div class="solde-amount" id="kadoByenveniAmount" style="color:#ffd700">0 Gdes</div>
+                <div class="solde-label">Rès kado w — ou touche <strong>10%</strong> sou chak peman jiskaske l fini 💛</div>
+                <div style="height:8px;background:rgba(255,255,255,0.12);border-radius:50px;margin-top:12px;overflow:hidden"><div id="kadoByenveniBar" style="height:100%;width:0%;background:linear-gradient(90deg,#ffd700,#ff9800);border-radius:50px;transition:width .4s"></div></div>
+            </div>
             <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
                 <div class="stat-card">
                     <div class="stat-val" id="flToday">0 G</div>
@@ -2275,6 +2286,9 @@ if (!auth) {
                     /* Synchronise / backfill le profil PUBLIC (sans imel ni telefòn) */
                     try { syncPublicProfile(user.uid, userData, true); } catch (e) { console.warn("syncPublicProfile:", e); }
 
+                    /* Kado byenveni : compteur temps réel (reliquat mis à jour quand l'admin paie). */
+                    try { watchKadoByenveni(); } catch (e) {}
+
                     /* Notifie les VIP qui ont mis cet Elu en favori qu'il/elle est
                        en ligne (le serveur throttle à 6h pour ne pas spammer). */
                     if (userData.status === "active") {
@@ -2435,6 +2449,37 @@ function renderWallet() {
     if (btn) btn.style.display = isPrem ? "flex" : "none";
     var bal = (userData && parseFloat(userData.walletBalance)) || 0;
     setEl("walletBalanceMain", bal.toLocaleString() + " Gdes");
+}
+
+/* ====================================================
+   KADO BYENVENI (bonus d'accueil Elu) — affichage + compteur TEMPS RÉEL
+   2500 G activé à l'approbation ; -10% (250 G) à chaque paiement reçu.
+   La carte disparaît quand le reliquat atteint 0.
+   ==================================================== */
+var _kadoUnsub = null;
+function renderKadoByenveni() {
+    var card = document.getElementById("kadoByenveniCard");
+    if (!card) return;
+    var isElu = userData && (userData.type === "freelancer" || userData.type === "krey");
+    var total = (userData && typeof userData.welcomeBonusTotal === "number") ? userData.welcomeBonusTotal : 0;
+    var remaining = (userData && typeof userData.welcomeBonusRemaining === "number") ? userData.welcomeBonusRemaining : 0;
+    if (!isElu || total <= 0 || remaining <= 0) { card.style.display = "none"; return; }
+    card.style.display = "block";
+    setEl("kadoByenveniAmount", remaining.toLocaleString() + " Gdes");
+    var pct = Math.max(0, Math.min(100, Math.round(((total - remaining) / total) * 100)));
+    var bar = document.getElementById("kadoByenveniBar");
+    if (bar) bar.style.width = pct + "%";
+}
+function watchKadoByenveni() {
+    if (!db || !currentUser) return;
+    if (_kadoUnsub) { try { _kadoUnsub(); } catch (e) {} }
+    _kadoUnsub = db.collection("users").doc(currentUser.uid).onSnapshot(function (d) {
+        if (!d.exists || !userData) return;
+        var nd = d.data();
+        userData.welcomeBonusTotal = nd.welcomeBonusTotal;
+        userData.welcomeBonusRemaining = nd.welcomeBonusRemaining;
+        renderKadoByenveni();
+    }, function () {});
 }
 
 function walletDeposit() {
@@ -2617,6 +2662,7 @@ function setupFreelancer() {
     setEl("flSolde", solde.toLocaleString() + " G");
     setEl("flTotal", total.toLocaleString() + " G");
     setEl("flSoldeMain", solde.toLocaleString() + " Gdes");
+    try { renderKadoByenveni(); } catch (e) {}
     setEl("flPrixEx", prix.toLocaleString() + " Gdes");
     setEl("flNetEx", net.toLocaleString() + " Gdes");
 
