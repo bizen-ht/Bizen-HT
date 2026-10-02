@@ -570,6 +570,42 @@
         .wacl:hover{background:rgba(255,255,255,0.05);color:white}
         .wanot{position:absolute;top:-4px;right:-4px;width:20px;height:20px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:white;border:2px solid var(--bg-dark)}
 
+        /* ===== BIZI — asistan gid an dirèk ===== */
+        .bizi-wrap{position:fixed;bottom:30px;right:30px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:14px}
+        .bizi-bub{position:relative;width:66px;height:66px;border-radius:50%;border:2px solid rgba(233,30,99,0.6);background:radial-gradient(circle at 50% 35%,#2a2a3a,#15151f);cursor:pointer;box-shadow:0 8px 28px rgba(233,30,99,0.35);transition:transform .25s ease;padding:0;animation:wap 2.4s infinite}
+        .bizi-bub:hover{transform:scale(1.1)}
+        .bizi-bub-img{position:absolute;left:50%;bottom:0;transform:translateX(-50%);height:76px;width:auto;pointer-events:none;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.45))}
+        .bizi-note{position:absolute;top:-4px;right:-4px;width:20px;height:20px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#fff;border:2px solid var(--bg-dark);z-index:2}
+        .bizi-panel{display:none;flex-direction:column;width:342px;max-width:calc(100vw - 36px);height:68vh;max-height:540px;background:#15151f;border:1px solid var(--border);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,0.55);overflow:hidden}
+        .bizi-panel.open{display:flex}
+        .bizi-head{display:flex;align-items:center;gap:10px;padding:12px 14px;background:linear-gradient(135deg,rgba(233,30,99,0.18),rgba(156,39,176,0.12));border-bottom:1px solid var(--border)}
+        .bizi-head-av{height:40px;width:auto;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4))}
+        .bizi-head-info{flex:1;min-width:0}
+        .bizi-head-info h4{font-size:1rem;margin:0;color:#fff}
+        .bizi-on{display:flex;align-items:center;gap:5px;font-size:0.72rem;color:#4caf50}
+        .bizi-dot{width:7px;height:7px;background:#4caf50;border-radius:50%;animation:waob 1.5s infinite}
+        .bizi-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.95rem;padding:4px 9px;border-radius:6px}
+        .bizi-close:hover{background:rgba(255,255,255,0.06);color:#fff}
+        .bizi-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+        .bizi-row{display:flex;gap:8px;align-items:flex-end}
+        .bizi-row.me{justify-content:flex-end}
+        .bizi-ava{height:50px;width:auto;flex-shrink:0;align-self:flex-end;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4))}
+        .bizi-hint{position:absolute;bottom:74px;right:2px;max-width:210px;background:#fff;color:#1a1a1a;font-size:0.8rem;font-weight:600;line-height:1.35;padding:9px 13px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.35);display:none;cursor:pointer}
+        .bizi-hint::after{content:'';position:absolute;bottom:-6px;right:26px;width:13px;height:13px;background:#fff;transform:rotate(45deg)}
+        .bizi-hint.show{display:block;animation:biziPop .3s ease}
+        @keyframes biziPop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+        .bizi-bubble{max-width:82%;padding:10px 13px;border-radius:14px;font-size:0.86rem;line-height:1.5;background:rgba(255,255,255,0.08);color:#eee;border-bottom-left-radius:4px}
+        .bizi-row.me .bizi-bubble{background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border-bottom-right-radius:4px;border-bottom-left-radius:14px}
+        .bizi-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+        .bizi-chip{background:rgba(233,30,99,0.12);border:1px solid rgba(233,30,99,0.4);color:#f48fb1;border-radius:50px;padding:7px 13px;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+        .bizi-chip:hover{background:rgba(233,30,99,0.25);color:#fff}
+        .bizi-act{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;border:none;border-radius:10px;padding:9px 15px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:9px}
+        .bizi-act.bizi-wa{background:#25D366}
+        .bizi-input{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border)}
+        .bizi-input input{flex:1;min-width:0;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#fff;border-radius:50px;padding:10px 14px;font-size:16px;outline:none;font-family:inherit}
+        .bizi-input button{width:42px;height:42px;border-radius:50%;border:none;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;cursor:pointer;flex-shrink:0}
+        @media(max-width:480px){.bizi-wrap{bottom:20px;right:20px}.bizi-bub{width:58px;height:58px}.bizi-bub-img{height:66px}.bizi-panel{height:72vh}}
+
         /* RESPONSIVE */
         @media(max-width:1024px){.hero-title{font-size:3.5rem}.cursive{font-size:4.5rem}.sec-title{font-size:2.5rem}.gal-grid{grid-template-columns:repeat(3,1fr)}.foot-grid{grid-template-columns:1fr 1fr;gap:30px}}
         @media(max-width:768px){.nav-links{position:fixed;top:0;right:-100%;width:280px;height:100vh;background:rgba(10,10,15,0.98);backdrop-filter:blur(20px);flex-direction:column;padding:80px 30px 30px;transition:var(--transition);border-left:1px solid var(--border);z-index:999}.nav-links.open{right:0}.nav-btns{display:none}.hbg{display:flex}.hero-title{font-size:2.5rem}.cursive{font-size:3.5rem}.hero-tag{font-size:1.1rem}.section{padding:70px 0}.sec-title{font-size:2rem}.pg{grid-template-columns:1fr;max-width:400px;margin-left:auto;margin-right:auto}.gal-grid{grid-template-columns:repeat(2,1fr)}.gi.lg{grid-column:span 2}.plans-wrap{flex-direction:column;align-items:center}.plan.gold-plan{transform:none}.plan.gold-plan:hover{transform:translateY(-5px)}.con-grid{grid-template-columns:1fr;gap:40px}.foot-grid{grid-template-columns:1fr}.steps-wrap{flex-direction:column;align-items:center}.step-arr{transform:rotate(90deg);margin:0}.atypes{grid-template-columns:1fr}.frow{grid-template-columns:1fr}.modal{padding:25px;margin:10px}.stat-div{display:none}.stat-n{font-size:2rem}}
@@ -3296,8 +3332,26 @@ body.is-premium .pc-blur{display:none!important}
 <!-- AGE -->
 <div class="mbg show" id="agM"><div class="modal sm"><div class="awrap"><div class="aico2"><span>18+</span></div><h2>Verifikasyon Laj</h2><p>Sit sa a se pou moun ki gen 18 an oswa plis selman. Eske ou gen omwen 18 an?</p><p class="asml">Ce site est reserve aux personnes de 18 ans et plus.</p><div class="abtns"><button class="btn btn-primary" onclick="aY()"><i class="fas fa-check"></i> Wi, mwen gen 18+</button><button class="btn btn-outline" onclick="aN()"><i class="fas fa-times"></i> Non</button></div></div></div></div>
 
-<!-- WHATSAPP -->
-<div class="wabtn" id="waB"><div class="watt" id="waT"><button class="wacl" onclick="cWa()">&#10005;</button><div class="wath"><div class="waav"><i class="fas fa-heart"></i></div><div><h4>Bizen HT Support</h4><div class="waon"><span class="waot"></span> En ligne</div></div></div><p>Bonjou! Nou disponib pou ede w. Hotel inclus nan tout rezevasyon!</p><a class="walat" href="https://wa.me/50947464283?text=Bonjou%20Bizen%20HT" target="_blank" rel="noopener" onclick="cWa()"><i class="fab fa-whatsapp"></i> Kòmanse Chat</a></div><div style="position:relative"><button class="wabub" id="waB2" onclick="tWa()"><i class="fab fa-whatsapp" id="waI"></i></button><div class="wanot" id="waN">1</div></div></div>
+<!-- BIZI — Asistan gid an dirèk (Phase 1 scripté). WhatsApp entènde ladan l. -->
+<div class="bizi-wrap" id="biziWrap">
+    <div class="bizi-hint" id="biziHint" onclick="biziToggle(true)"></div>
+    <div class="bizi-panel" id="biziPanel">
+        <div class="bizi-head">
+            <img src="Images/bizi-avatar.png" alt="Bizi" class="bizi-head-av">
+            <div class="bizi-head-info"><h4>Bizi 💖</h4><div class="bizi-on"><span class="bizi-dot"></span> Gid ou an dirèk</div></div>
+            <button class="bizi-close" onclick="biziToggle(false)" aria-label="Fèmen">&#10005;</button>
+        </div>
+        <div class="bizi-body" id="biziBody"></div>
+        <div class="bizi-input">
+            <input id="biziInput" type="text" placeholder="Ekri yon kesyon ba Bizi..." maxlength="200" onkeydown="if(event.key==='Enter'){var v=this.value;this.value='';biziAsk(v);}">
+            <button onclick="var i=document.getElementById('biziInput');var v=i.value;i.value='';biziAsk(v);" aria-label="Voye"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+    <button class="bizi-bub" id="biziBub" onclick="biziToggle()" aria-label="Louvri Bizi, gid ou">
+        <img src="Images/bizi.png" alt="Bizi" class="bizi-bub-img">
+        <span class="bizi-note" id="biziNote">1</span>
+    </button>
+</div>
 
 <script>
 /* ====================================
@@ -10154,35 +10208,207 @@ function removePhoto(index) {
 /* ====================================
    WHATSAPP
    ==================================== */
-var waOp = false;
+/* ====================================
+   BIZI — Asistan gid scripté (Phase 1)
+   Guide les nouveaux utilisateurs en Kreyòl : réponses aux questions
+   fréquentes + boutons d'action (ouvre les popups réels) + escalade
+   WhatsApp (humain). 100% client, gratuit, instantané. Mascotte = Bizi.
+   ==================================== */
+var biziOpen = false;
+var biziStarted = false;
+var BIZI_WA = "https://wa.me/50947464283?text=Bonjou%20Bizen%20HT";
 
-function tWa() {
-    waOp = !waOp;
-    var tt = document.getElementById("waT");
-    var ic = document.getElementById("waI");
-    var nt = document.getElementById("waN");
-    var bb = document.getElementById("waB2");
-    if (!tt || !ic || !bb) return;
-    if (waOp) {
-        tt.classList.add("open"); ic.className = "fas fa-times";
-        bb.style.background = "#20ba5a"; if (nt) nt.style.display = "none";
+/* Expressions de Bizi (fiche découpée). Utilisées selon le contexte. */
+var biziPoses = {
+    wave: "Images/bizi-wave.png", shh: "Images/bizi-shh.png", thumb: "Images/bizi-thumb.png",
+    open: "Images/bizi-open.png", idle: "Images/bizi-idle.png", wave2: "Images/bizi-wave2.png",
+    peekR: "Images/bizi-peekR.png", peekL: "Images/bizi-peekL.png"
+};
+/* Bulles de dialogue (attrape l'attention quand le panneau est fermé). */
+var biziHints = [
+    "Bezwen èd? Mwen la pou ou 💬",
+    "Kreye kont ou nan 1 minit ✨",
+    "Vin VIP 👑, jwenn plis avantaj!",
+    "Ou gen yon kesyon? Mande Bizi! 😊"
+];
+var biziHintIdx = 0, biziHintTimer = null;
+
+var biziChipLabels = {
+    account: "🆕 Kreye yon kont", elu: "💃 Vin yon Elu", premium: "👑 Premium se kisa?",
+    reserve: "📅 Kijan pou m rezève?", zone: "📍 Elu nan zòn mwen?", wallet: "💰 Wallet & Cashback",
+    tep: "🎁 TEP", security: "🛡️ Sekirite & diskresyon", human: "💬 Pale ak yon moun"
+};
+var biziMainChips = ["account", "elu", "premium", "reserve", "zone", "wallet", "tep", "security", "human"];
+
+function biziToggle(force) {
+    biziOpen = (typeof force === "boolean") ? force : !biziOpen;
+    var p = document.getElementById("biziPanel");
+    var n = document.getElementById("biziNote");
+    if (!p) return;
+    if (biziOpen) {
+        p.classList.add("open");
+        if (n) n.style.display = "none";
+        var hint = document.getElementById("biziHint"); if (hint) hint.classList.remove("show");
+        if (!biziStarted) { biziStarted = true; biziGreet(); }
     } else {
-        tt.classList.remove("open"); ic.className = "fab fa-whatsapp"; bb.style.background = "#25D366";
+        p.classList.remove("open");
     }
 }
 
-function cWa() {
-    waOp = false;
-    var tt = document.getElementById("waT"); if (tt) tt.classList.remove("open");
-    var ic = document.getElementById("waI"); if (ic) ic.className = "fab fa-whatsapp";
-    var bb = document.getElementById("waB2"); if (bb) bb.style.background = "#25D366";
+function biziScroll() { var b = document.getElementById("biziBody"); if (b) b.scrollTop = b.scrollHeight; }
+function biziEsc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+/* Message de Bizi (gauche) + expression (pose). `html` = contenu contrôlé.
+   Accepte biziSay(html, pose) OU biziSay(html, extras, pose) : si le 2e arg
+   est une clé de pose connue, on le traite comme la pose. */
+function biziSay(html, extras, pose) {
+    var b = document.getElementById("biziBody"); if (!b) return;
+    if (pose === undefined && biziPoses[extras]) { pose = extras; extras = ""; }
+    var img = biziPoses[pose] || "Images/bizi-avatar.png";
+    var row = document.createElement("div");
+    row.className = "bizi-row";
+    row.innerHTML = '<img src="' + img + '" class="bizi-ava" alt="Bizi"><div class="bizi-bubble">' + html + (extras || "") + '</div>';
+    b.appendChild(row); biziScroll();
+    var hv = document.querySelector(".bizi-head-av"); if (hv && biziPoses[pose]) hv.src = biziPoses[pose];
+}
+function biziMe(text) {
+    var b = document.getElementById("biziBody"); if (!b) return;
+    var row = document.createElement("div");
+    row.className = "bizi-row me";
+    row.innerHTML = '<div class="bizi-bubble">' + biziEsc(text) + '</div>';
+    b.appendChild(row); biziScroll();
+}
+function biziChips(keys) {
+    var h = '<div class="bizi-chips">';
+    keys.forEach(function (k) { h += '<button class="bizi-chip" onclick="biziPick(\'' + k + '\')">' + biziChipLabels[k] + '</button>'; });
+    return h + '</div>';
+}
+function biziActHtml(label, go, cls) {
+    return '<button class="bizi-act ' + (cls || "") + '" onclick="biziGo(\'' + go + '\')">' + label + '</button>';
 }
 
-setTimeout(function () { if (!waOp) tWa(); }, 5000);
-document.addEventListener("click", function (e) {
-    var wb = document.getElementById("waB");
-    if (wb && !wb.contains(e.target) && waOp) cWa();
-});
+function biziGreet() {
+    biziSay("Bonjou! 👋 Mwen se <b>Bizi</b>, gid ou sou <b>Bizen HT</b> 💖<br>Ki sa w vle fè jodi a?", biziChips(biziMainChips), "wave");
+}
+
+/* L'utilisateur clique une puce. */
+function biziPick(key) {
+    biziMe((biziChipLabels[key] || key).replace(/^\S+\s/, ""));
+    biziAnswer(key);
+}
+
+/* Déclenche une action réelle du site (ouvre un popup, scroll, WhatsApp). */
+function biziGo(what) {
+    biziToggle(false);
+    try {
+        if (what === "account") { oM('sM'); try { pT('user'); } catch (e) {} }
+        else if (what === "elu") { oM('sM'); try { pT('freelancer'); } catch (e) {} }
+        else if (what === "premium") { oM('pM'); }
+        else if (what === "login") { oM('lM'); }
+        else if (what === "wa") { window.open(BIZI_WA, "_blank", "noopener"); }
+        else if (what === "reserve") {
+            var sec = document.getElementById("femmes") || document.getElementById("home");
+            if (sec) sec.scrollIntoView({ behavior: "smooth" });
+        }
+    } catch (e) {}
+}
+
+/* Réponses guidées de Bizi. */
+function biziAnswer(key) {
+    switch (key) {
+        case "account":
+            biziSay("Kreye kont ou an 3 etap ✨<br>1️⃣ Klike bouton an anba<br>2️⃣ Chwazi <b>VIP</b> (si w ap chèche yon Elu)<br>3️⃣ Ranpli fòmilè a, kreye yon modpas<br>Epi se fini! 🎉" +
+                biziActHtml("🆕 Kreye kont kounye a", "account") + biziChips(["elu", "premium", "human"]), "open");
+            break;
+        case "elu":
+            biziSay("Vle ofri sèvis kòm <b>Elu</b>? 💃 Enskripsyon an <b>gratis</b>!<br>✋ Si w se yon <b>gason</b>, ou pa bezwen kontinye pou moman an — nou pa p pran demann gason.<br>Si w se yon <b>fi</b>, ou mèt kontinye: ranpli fòmilè a (tout enfo ou, foto, epi aksepte kontra a), apre sa voye demann ou. Ekip la ap kontakte w nan yon ti tan.<br>🎁 Chak nouvo Elu ki apwouve resevwa yon <b>Kado Byenveni 2500 Gdes</b> sou kont li!" +
+                biziActHtml("💃 Vin Elu kounye a", "elu") + biziChips(["account", "security", "human"]), "thumb");
+            break;
+        case "premium":
+            biziSay("Ak <b>Premium</b> 👑 ou ka:<br>✅ Debloke tout pwofil yo e wè vrè foto Elu yo<br>✅ Chat san limit<br>✅ Rezève yon rankont<br>✅ Itilize Wallet + <b>3% cashback</b><br>✅ Poste yon demann" +
+                biziActHtml("👑 Wè Premium", "premium") + biziChips(["wallet", "reserve", "human"]), "thumb");
+            break;
+        case "reserve":
+            biziSay("Pou rezève yon rankont 📅:<br>1️⃣ Chwazi yon Elu, ekri l pou w konnen disponiblite l, lè w fini konkli avè l<br>2️⃣ Klike « Wè Pwofil & Rezève »<br>3️⃣ Chwazi dat, lè ak kote<br>4️⃣ Peye (MonCash, NatCash oswa Wallet)<br>Lè nou kontre, klike <b>Konfime rankont</b> lan pou Bizen ka voye kòb Elu a ba li ✅" +
+                biziActHtml("👀 Wè Elu yo", "reserve") + biziChips(["premium", "security", "human"]), "open");
+            break;
+        case "zone":
+            biziSay("📍 Pou w konnen si gen Elu nan zòn ou (Okap, Okay, Jakmèl, Kafou, elatriye), <b>gade nan lis Elu yo</b> — adrès chak Elu make sou pwofil li.<br>Ou ka filtre tou pa zòn sou paj dakèy la." +
+                biziActHtml("👀 Wè Elu yo", "reserve") + biziChips(["reserve", "account", "human"]), "open");
+            break;
+        case "wallet":
+            biziSay("💰 <b>Wallet</b> la se bous Bizen ou — ou depoze kòb davans pou peye pi fasil.<br>🎁 Lè w peye yon rankont <b>ak wallet</b> epi w konfime l, ou resevwa <b>3% cashback</b> otomatik nan wallet ou!" +
+                biziActHtml("👑 Aktive Premium", "premium") + biziChips(["tep", "reserve", "human"]), "thumb");
+            break;
+        case "tep":
+            biziSay("🎁 <b>TEP</b> se yon ti kado (pourboire) yon VIP ka voye bay yon Elu li renmen, an plis rezèvasyon an. Senp, rapid, ak anpil kè! 💛" +
+                biziChips(["premium", "wallet", "human"]), "open");
+            break;
+        case "security":
+            biziSay("🛡️ Sou Bizen tout bagay <b>diskrè ak sekirize</b>:<br>🔒 Enfo ou rete prive — se sèl <b>pseudo</b> w ki vizib<br>🙅 Pa pataje kontak deyò (tout sou Bizen)<br>🔞 Sit la se pou 18 an+" +
+                biziChips(["account", "reserve", "human"]), "shh");
+            break;
+        case "human":
+            biziSay("Pa gen pwoblèm! 💬 Klike anba pou pale dirèk ak yon moun nan ekip Bizen sou WhatsApp 👇" +
+                biziActHtml("💬 Pale sou WhatsApp", "wa", "bizi-wa") + biziChips(["account", "elu", "premium", "reserve"]), "wave2");
+            break;
+        default:
+            biziFallback();
+    }
+}
+
+function biziFallback() {
+    biziSay("M pa fin sèten m konprann sa 🤔. Chwazi youn nan opsyon sa yo, oswa pale ak yon moun 👇" + biziChips(biziMainChips), "shh");
+}
+
+/* ===== Bulle de dialogue (quand le panneau est fermé) ===== */
+function biziShowHint() {
+    if (biziOpen) return;
+    var el = document.getElementById("biziHint"); if (!el) return;
+    el.textContent = biziHints[biziHintIdx % biziHints.length];
+    biziHintIdx++;
+    el.classList.add("show");
+    setTimeout(function () { el.classList.remove("show"); }, 6000);
+}
+function biziStartHints() {
+    if (biziHintTimer) return;
+    setTimeout(function () { biziShowHint(); }, 9000);
+    biziHintTimer = setInterval(biziShowHint, 24000);
+}
+
+/* Question en texte libre -> détection par mots-clés (effet « IA » sans coût). */
+function biziAsk(text) {
+    text = (text || "").trim();
+    if (!text) return;
+    biziMe(text);
+    var t = text.toLowerCase();
+    var has = function (arr) { return arr.some(function (w) { return t.indexOf(w) !== -1; }); };
+    if (has(["okap", "okay", "jakmel", "jakmèl", "carrefour", "kafou", "zòn", "zon"])) return biziAnswer("zone");
+    if (has(["kont", "enskri", "kreye", "account", "compte", "inscrire", "sign", "register", "login", "konekte"])) return biziAnswer("account");
+    if (has(["elu", "prestate", "travay", "ofri", "become", "kado"])) return biziAnswer("elu");
+    if (has(["premium", "abòne", "abone", "avantaj", "vip"])) return biziAnswer("premium");
+    if (has(["rezev", "rankont", "randevou", "booking", "reserve", "rezève"])) return biziAnswer("reserve");
+    if (has(["wallet", "cashback", "depo", "solde", "balans", "kòb"])) return biziAnswer("wallet");
+    if (has(["tep", "poubwa", "pourboire", "tip"])) return biziAnswer("tep");
+    if (has(["sekirite", "diskre", "prive", "safe", "18", "hotel", "otèl"])) return biziAnswer("security");
+    if (has(["moun", "humain", "asistan", "support", "ede", "whatsapp", "wsp", "agent", "pale"])) return biziAnswer("human");
+    biziFallback();
+}
+
+/* Ouverture automatique une seule fois (nouveaux visiteurs), après l'âge-gate. */
+function biziAutoOpen() {
+    var ag = document.getElementById("agM");
+    if (ag && ag.classList.contains("show")) { setTimeout(biziAutoOpen, 2000); return; }
+    if (!biziOpen) biziToggle(true);
+    try { localStorage.setItem("bizi_seen", "1"); } catch (e) {}
+}
+(function () {
+    var seen = false;
+    try { seen = localStorage.getItem("bizi_seen") === "1"; } catch (e) {}
+    if (!seen) setTimeout(biziAutoOpen, 2600);
+    /* Bulles de dialogue d'accroche (s'affichent seulement quand Bizi est fermé). */
+    try { biziStartHints(); } catch (e) {}
+})();
 
 /* ====================================
    SMOOTH SCROLL
