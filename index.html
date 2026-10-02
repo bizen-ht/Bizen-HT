@@ -10372,7 +10372,7 @@ function biziShowHint() {
 }
 function biziStartHints() {
     if (biziHintTimer) return;
-    setTimeout(function () { biziShowHint(); }, 9000);
+    setTimeout(function () { biziShowHint(); }, 15000);
     biziHintTimer = setInterval(biziShowHint, 24000);
 }
 
@@ -10395,18 +10395,23 @@ function biziAsk(text) {
     biziFallback();
 }
 
-/* Ouverture automatique une seule fois (nouveaux visiteurs), après l'âge-gate. */
-function biziAutoOpen() {
+/* Salutation douce au chargement : Bizi NE s'ouvre PLUS tout seul (le panneau
+   bloquait la vue au démarrage). Il montre juste une petite bulle de bonjour,
+   après l'âge-gate. Le panneau s'ouvre SEULEMENT si l'utilisateur clique Bizi. */
+function biziWelcome() {
     var ag = document.getElementById("agM");
-    if (ag && ag.classList.contains("show")) { setTimeout(biziAutoOpen, 2000); return; }
-    if (!biziOpen) biziToggle(true);
-    try { localStorage.setItem("bizi_seen", "1"); } catch (e) {}
+    if (ag && ag.classList.contains("show")) { setTimeout(biziWelcome, 1500); return; }
+    if (biziOpen) return;
+    var el = document.getElementById("biziHint");
+    if (el) {
+        el.textContent = "Bonjou! 👋 Mwen se Bizi — klike m si w bezwen èd 😊";
+        el.classList.add("show");
+        setTimeout(function () { el.classList.remove("show"); }, 8000);
+    }
 }
 (function () {
-    var seen = false;
-    try { seen = localStorage.getItem("bizi_seen") === "1"; } catch (e) {}
-    if (!seen) setTimeout(biziAutoOpen, 2600);
-    /* Bulles de dialogue d'accroche (s'affichent seulement quand Bizi est fermé). */
+    setTimeout(biziWelcome, 1800);
+    /* Bulles d'accroche (s'affichent seulement quand Bizi est fermé). */
     try { biziStartHints(); } catch (e) {}
 })();
 
